@@ -1,0 +1,181 @@
+type Mutation {
+  import(config: ImportConfig!, 
+    types: [TypeImportRequest],
+    relations: [RelationImportRequest],
+    items: [ItemImportRequest], 
+    itemRelations: [ItemRelationImportRequest]
+    attrGroups: [AttrGroupImportRequest]
+    attributes: [AttributeImportRequest]
+    roles: [RoleImportRequest]
+    users: [UserImportRequest]
+    lovs: [LOVImportRequest]
+    ): ImportResponses!
+}
+
+input ImportConfig {
+  mode: ImportMode!
+  errors: ErrorProcessing!
+}
+
+enum ImportMode {
+  CREATE_ONLY,
+  UPDATE_ONLY,
+  CREATE_UPDATE
+}
+
+enum ErrorProcessing {
+  PROCESS_WARN,
+  WARN_REJECTED
+}
+
+type ImportResponses {
+  types: [ImportResponse]
+  relations: [ImportResponse]
+  items: [ImportResponse]
+  itemRelations: [ImportResponse]
+  attrGroups: [ImportResponse]
+  attributes: [ImportResponse]
+  roles: [ImportResponse]
+  users: [ImportResponse]
+  lovs: [ImportResponse]
+}
+
+enum ImportResult {
+  CREATED,
+  UPDATED,
+  DELETED,
+  REJECTED
+}
+
+type ReturnMessage {
+  code: Int!
+  message: String!
+}
+
+type ImportResponse {
+  identifier: String
+  result: ImportResult!
+  id: ID
+  warnings: [ReturnMessage]
+  errors: [ReturnMessage]
+}
+
+input ItemImportRequest {
+  delete: Boolean
+  identifier: String!
+  typeIdentifier: String
+  parentIdentifier: String
+  name: LanguageDependentString
+  values: JSONObject
+}
+
+input ItemRelationImportRequest {
+  delete: Boolean
+  identifier: String!
+  relationIdentifier: String
+  itemIdentifier: String
+  targetIdentifier: String
+  values: JSONObject
+}
+
+input TypeImportRequest {
+  delete: Boolean
+  identifier: String!
+  parentIdentifier: String
+  linkIdentifier: String
+  name: LanguageDependentString
+  icon: String
+  iconColor: String
+  file: Boolean
+  mainImage: String
+  images: [String]
+}
+
+input RelationImportRequest {
+  delete: Boolean
+  identifier: String!
+  name: LanguageDependentString
+  sources: [String]
+  targets: [String]
+  child: Boolean
+  multi: Boolean
+}
+
+input AttrGroupImportRequest {
+  delete: Boolean
+  identifier: String!
+  name: LanguageDependentString
+  order: Int
+  visible: Boolean
+}
+
+input AttributeImportRequest {
+  delete: Boolean
+  identifier: String!
+  name: LanguageDependentString
+  valid: [String]
+  visible: [String]
+  relations: [String]
+  order: Int
+  languageDependent: Boolean
+  groups: [String]
+  type: Int
+  pattern: String
+  errorMessage: LanguageDependentString
+  lov: String
+  richText: Boolean
+  multiLine: Boolean
+}
+
+input UserImportRequest {
+  delete: Boolean
+  login: String!
+  name: String
+  roles: [String]
+  email: String
+  props: JSONObject
+}
+
+input RoleImportRequest {
+  delete: Boolean
+  identifier: String!
+  name: String
+  configAccess: ConfigAccessRequest
+  relAccess: RelAccessRequest
+  itemAccess: ItemAccessRequest 
+}
+
+input ConfigAccessRequest {
+  lovs: Int!
+  roles: Int!
+  types: Int!
+  users: Int!
+  languages: Int!
+  relations: Int!
+  attributes: Int!
+}
+
+input RelAccessRequest {
+  access: Int!
+  relations: [String]
+  groups: [GroupsAccessRequest]
+}
+
+input GroupsAccessRequest {
+  access: Int!
+  groupIdentifier: String!
+}
+
+input ItemAccessRequest {
+  access: Int!
+  valid: [String]
+  groups: [GroupsAccessRequest]
+  fromItems: [String]
+}
+
+input LOVImportRequest {
+  delete: Boolean
+  identifier: String!
+  name: LanguageDependentString
+  values: JSON
+}

@@ -1,0 +1,50 @@
+type Query {
+  getAttributesInfo: JSON
+  getAttributeGroup(id: ID!): AttrGroup
+  getAttribute(id: ID!): Attribute
+}
+
+type Mutation {
+  createAttributeGroup(identifier: String!, name: LanguageDependentString!, order: Int, visible: Boolean): ID!
+  updateAttributeGroup(id: ID!, name: LanguageDependentString, order: Int, visible: Boolean) : ID!
+  removeAttributeGroup(id: ID!) : Boolean!
+  createAttribute(groupId: ID!, identifier: String!, name: LanguageDependentString!, order: Int, valid: [ID], visible: [ID], relations: [ID], languageDependent: Boolean, type: Int!, pattern: String, errorMessage: LanguageDependentString, lov: ID, richText: Boolean, multiLine: Boolean): ID!
+  updateAttribute(id: ID!, name: LanguageDependentString, order: Int, valid: [ID], visible: [ID], relations: [ID], languageDependent: Boolean, type: Int, pattern: String, errorMessage: LanguageDependentString, lov: ID, richText: Boolean, multiLine: Boolean) : ID!
+  removeAttribute(id: ID!) : Boolean!
+  assignAttribute(id: ID!, groupId: ID!) : Boolean!
+  unassignAttribute(id: ID!, groupId: ID!) : Boolean!
+}
+
+type AttrGroup {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  order: Int!
+  visible: Boolean!
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}
+
+type Attribute {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  order: Int!
+  valid: [String]
+  visible: [String]
+  relations: [String]
+  languageDependent: Boolean!
+  groups: [String]!
+  type: Int!
+  pattern: String
+  errorMessage: LanguageDependentString
+  lov: ID
+  richText: Boolean!
+  multiLine: Boolean!
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}

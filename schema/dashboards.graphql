@@ -1,0 +1,22 @@
+type Query {
+  getDashboards: [Dashboard]
+  getDashboardComponentData(dashboardId: ID!, componentId: ID!): JSONObject
+}
+
+type Mutation {
+  createDashboard(identifier: String!, name: LanguageDependentString!, users: [String], components: JSON!): ID!
+  updateDashboard(id: ID!, name: LanguageDependentString, users: [String], components: JSON) : ID!
+  removeDashboard(id: ID!) : Boolean!
+}
+
+type Dashboard {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  users: JSON!
+  components: JSON!
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}

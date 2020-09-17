@@ -1,0 +1,24 @@
+type Query {
+  getRelations: JSON
+  getRelation(id: ID!): Relation
+}
+
+type Mutation {
+  createRelation(identifier: String!, name: LanguageDependentString!, sources: [ID], targets: [ID], child: Boolean, multi: Boolean): ID!
+  updateRelation(id: ID!, name: LanguageDependentString, sources: [ID], targets: [ID], child: Boolean, multi: Boolean) : ID!
+  removeRelation(id: ID!) : Boolean!
+}
+
+type Relation {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  child: Boolean!
+  multi: Boolean!
+  sources: [String]
+  targets: [String]
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}

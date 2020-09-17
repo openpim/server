@@ -1,0 +1,162 @@
+import Context, { ConfigAccess } from '../context'
+import { ModelsManager } from '../models/manager'
+import { sequelize } from '../models'
+import { Action } from '../models/actions'
+import { Item } from '../models/items'
+import { processItemButtonActions, testAction } from './utils'
+
+export default {
+    Query: {
+        getActions: async (parent: any, args: any, context: Context) => {
+            context.checkAuth()
+            
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            return mng.getActions()
+        }
+    },
+    Mutation: {
+        createAction: async (parent: any, {identifier, name, code, triggers}: any, context: Context) => {
+            context.checkAuth()
+            if (!context.canEditConfig(ConfigAccess.ACTIONS)) 
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create action, tenant: ' + context.getCurrentUser()!.tenantId)
+
+            if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const tst = mng.getActions().find( act => act.identifier === identifier)
+            if (tst) {
+                throw new Error('Identifier already exists: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            const c = code ? code.replace(/_#n#_/g, "\n").replace(/_#dbl#_/g, "\"") : ''
+            const action = await sequelize.transaction(async (t) => {
+                return await Action.create ({
+                    identifier: identifier,
+                    tenantId: context.getCurrentUser()!.tenantId,
+                    createdBy: context.getCurrentUser()!.login,
+                    updatedBy: context.getCurrentUser()!.login,
+                    name: name,
+                    code: c,
+                    triggers: triggers || []
+                }, {transaction: t})
+            })
+
+            mng.getActions().push(action)
+            return action.id
+        },
+        updateAction: async (parent: any, { id, name, code, triggers }: any, context: Context) => {
+            context.checkAuth()
+            if (!context.canEditConfig(ConfigAccess.ACTIONS)) 
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update action, tenant: ' + context.getCurrentUser()!.tenantId)
+
+            const nId = parseInt(id)
+
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            let act  = mng.getActions().find(act => act.id === nId)
+            if (!act) {
+                throw new Error('Failed to find action by id: ' + id + ', tenant: ' + mng.getTenantId())
+            }
+
+            if (name) act.name = name
+            if (code) act.code = code.replace(/_#n#_/g, "\n").replace(/_#dbl#_/g, "\"")
+            if (triggers) act.triggers = triggers
+            act.updatedBy = context.getCurrentUser()!.login
+            await sequelize.transaction(async (t) => {
+                await act!.save({transaction: t})
+            })
+            delete mng.getActionsCache()[act.identifier]
+            return act.id
+        },
+        removeAction: async (parent: any, { id }: any, context: Context) => {
+            context.checkAuth()
+            if (!context.canEditConfig(ConfigAccess.ACTIONS)) 
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to remove action, tenant: ' + context.getCurrentUser()!.tenantId)
+
+            const nId = parseInt(id)
+
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const idx = mng.getActions().findIndex(act => act.id === nId)    
+            if (idx === -1) {
+                throw new Error('Failed to find action by id: ' + id + ', tenant: ' + mng.getTenantId())
+            }
+
+            const act  = mng.getActions()[idx]
+            act.updatedBy = context.getCurrentUser()!.login
+            // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
+            act.identifier = act.identifier + '_d_' + Date.now() 
+            await sequelize.transaction(async (t) => {
+                await act!.save({transaction: t})
+                await act!.destroy({transaction: t})
+            })
+
+            mng.getActions().splice(idx, 1)
+
+            return true
+        },
+        executeButtonAction: async (parent: any, { itemId, buttonText }: any, context: Context) => {
+            context.checkAuth()
+
+            const nId = parseInt(itemId)
+
+            const item = await Item.applyScope(context).findByPk(nId)
+            if (!item) {
+                throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            if (!context.canEditItem(item)) {
+                throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            const values = await processItemButtonActions(context, buttonText, item)
+
+            item.values = values
+
+            item.updatedBy = context.getCurrentUser()!.login
+            await sequelize.transaction(async (t) => {
+                await item.save({transaction: t})
+            })
+            return true
+        },
+        testAction: async (parent: any, { itemId, actionId }: any, context: Context) => {
+            context.checkAuth()
+
+            const nId = parseInt(itemId)
+
+            const item = await Item.applyScope(context).findByPk(nId)
+            if (!item) {
+                throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            if (!context.canEditItem(item)) {
+                throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            const cId = parseInt(actionId)
+
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            let act  = mng.getActions().find(act => act.id === cId)
+            if (!act) {
+                throw new Error('Failed to find action by id: ' + cId + ', tenant: ' + mng.getTenantId())
+            }
+
+            try {
+                const { values, log, compileError } = await testAction(context, act, item)
+
+                item.values = values
+
+                item.updatedBy = context.getCurrentUser()!.login
+                await sequelize.transaction(async (t) => {
+                    await item.save({transaction: t})
+                })
+
+                return {failed: compileError ? true : false, log: log, error: '', compileError:compileError || ''}
+            } catch (error) {
+                return {failed: true, log: '', error: error.message, compileError:''}
+            }
+        }
+    }
+}

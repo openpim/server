@@ -1,0 +1,31 @@
+type Query {
+  getLOVs: [LOV]
+  getLOV(id: ID!): LOV
+}
+
+type Mutation {
+  createLOV(identifier: String!, name: LanguageDependentString!, values: [LOVitemInput]): ID!
+  updateLOV(id: ID!, name: LanguageDependentString, values: [LOVitemInput]) : ID!
+  removeLOV(id: ID!) : Boolean!
+}
+
+type LOV {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  values: [LOVitem]
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}
+
+type LOVitem {
+  id: Int!
+  value: LanguageDependentString!
+}
+
+input LOVitemInput {
+  id: Int!
+  value: LanguageDependentString!
+}

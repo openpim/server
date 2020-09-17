@@ -1,0 +1,71 @@
+import { Base } from './base'
+import BaseColumns from './base'
+import { Sequelize, DataTypes} from 'sequelize';
+import Context from '../context';
+
+export class SavedSearch extends Base {
+    public identifier!: string
+    public name!: any
+    public public!: boolean
+    public extended!: boolean
+    public filters!: any
+    public whereClause!: any
+    public user!: string
+    public static applyScope(context: Context) {
+      return SavedSearch.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
+    }
+}
+
+export function init(sequelize: Sequelize):void {
+    SavedSearch.init({
+        identifier: {
+          type: new DataTypes.STRING(250),
+          allowNull: false,
+          unique: 'uniqueIdentifierSearch'
+        },
+        name: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+        },
+        public: {
+          type: 'BOOLEAN',
+          allowNull: false
+        },
+        extended: {
+          type: 'BOOLEAN',
+          allowNull: false
+        },
+        filters: {
+            type: DataTypes.JSONB,
+            allowNull: false,
+        },        
+        whereClause: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+        },       
+        user: {
+            type: new DataTypes.STRING(250),
+            allowNull: false
+        },
+        ...BaseColumns,
+        tenantId: { // override base for uniqueIdentifier
+          type: new DataTypes.STRING(50),
+          allowNull: false,
+          unique: 'uniqueIdentifierSearch'
+        }
+      }, {
+        tableName: 'savedSearch',
+        paranoid: true,
+        timestamps: true,
+        sequelize: sequelize, // this bit is important
+        scopes: {
+          tenant(value) {
+            return {
+              where: {
+                tenantId: value
+              }
+            }
+          }
+        }        
+    });    
+}

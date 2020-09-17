@@ -1,0 +1,30 @@
+type Query {
+  getTypes: JSON
+  getType(id: ID!): Type
+}
+
+type Mutation {
+  createType(parentId: ID, identifier: String!, name: LanguageDependentString!, icon: String, iconColor: String, file: Boolean, mainImage: ID, images:[ID]): ID!
+  updateType(id: ID!, name: LanguageDependentString, icon: String, iconColor: String, file: Boolean, mainImage: ID, images:[ID]) : ID!
+  removeType(id: ID!) : Boolean!
+  linkType(id: ID!, parentId: ID!) : ID!
+}
+
+type Type {
+  id: ID!
+  path: String!
+  identifier: String!
+  parentIdentifier: String!
+  name: LanguageDependentString!
+  link: ID!
+  linkIdentifier: String!
+  icon: String
+  iconColor: String
+  file: Boolean!
+  mainImage: ID
+  images: [ID]
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}

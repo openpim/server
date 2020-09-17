@@ -1,0 +1,102 @@
+type Query {
+  search(requests: [SearchRequest]!): SearchResponses!
+  getSearchByIdentifier(identifier: String!): SavedSearch
+  getSearches(onlyMy: Boolean!): [SavedSearch]!
+}
+
+type Mutation {
+  saveSearch(identifier: String!, name: LanguageDependentString, publicSearch: Boolean, extended: Boolean, filters: JSON, whereClause: JSONObject): ID!
+  removeSearch(identifier: String!): Boolean!
+}
+
+input SearchRequest {
+  entity: EntityEnum!
+  where: JSONObject
+  order: JSON
+  offset: Int!
+  limit: Int!
+}
+
+type SavedSearch {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  public: Boolean!
+  extended: Boolean!
+  filters: JSON
+  whereClause: JSONObject
+  user: String!
+}
+
+type SearchResponses {
+  responses: [SearchResponse]
+}
+union SearchResponse = ItemsResponse | TypesResponse | AttributesResponse | AttrGroupsResponse | RelationsResponse | SearchItemRelationResponse | UsersResponse | RolesResponse | LOVsResponse
+
+enum EntityEnum {
+  ITEM
+  TYPE
+  ATTRIBUTE_GROUP
+  ATTRIBUTE
+  RELATION
+  ITEM_RELATION
+  USER
+  ROLE
+  LOV
+}
+
+type TypesResponse {
+  count: Int
+  rows: [Type]
+}
+
+type AttributesResponse {
+  count: Int
+  rows: [Attribute]
+}
+
+type AttrGroupsResponse {
+  count: Int
+  rows: [AttrGroup]
+}
+
+type RelationsResponse {
+  count: Int
+  rows: [Relation]
+}
+
+type SearchItemRelation {
+  id: ID!
+  identifier: String!
+  relationId: ID!
+  relationIdentifier: String!
+  itemId: ID!
+  itemIdentifier: String!
+  targetId: ID!
+  targetIdentifier: String!
+  values: JSONObject
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}
+
+type SearchItemRelationResponse {
+  count: Int
+  rows: [SearchItemRelation]
+}
+
+type UsersResponse {
+  count: Int
+  rows: [User]
+}
+
+type RolesResponse {
+  count: Int
+  rows: [Role]
+}
+
+type LOVsResponse {
+  count: Int
+  rows: [LOV]
+}

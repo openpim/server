@@ -1,0 +1,21 @@
+scalar JSON
+scalar JSONObject
+scalar LanguageDependentString
+scalar UTCDateTime
+
+# import Query.*, Mutation.* from "users.graphql"
+# import Query.*, Mutation.* from "types.graphql"
+# import Query.*, Mutation.* from "attributes.graphql"
+# import Query.*, Mutation.* from "relations.graphql"
+# import Query.*, Mutation.* from "items.graphql"
+# import Query.*, Mutation.* from "languages.graphql"
+# import Query.*, Mutation.* from "itemRelations.graphql"
+# import Query.*, Mutation.* from "lovs.graphql"
+# import Query.*, Mutation.* from "search.graphql"
+# import Query.*, Mutation.* from "actions.graphql"
+# import Query.*, Mutation.* from "dashboards.graphql"
+# import Mutation.* from "import.graphql"
+
+type Query {
+  ping: String
+}
