@@ -1,0 +1,2 @@
+insert into users (id, login, name, roles, "password", "tenantId", "createdBy", "createdAt" , "updatedBy" , "updatedAt" ) 
+values (nextval('users_id_seq'), 'admin', 'Administrator', '[1]'::jsonb, '$2b$10$WtKEm5gspljprGVuHAj4QeO.QwzWiDmdEFN9VzXRbxyrSpQi9m4Fq', 'default', 'system', now(), 'system', now())

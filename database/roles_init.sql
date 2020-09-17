@@ -1,0 +1,5 @@
+insert into roles (id, identifier, name, "configAccess", "relAccess", "itemAccess", "tenantId", "createdBy", "createdAt" , "updatedBy" , "updatedAt" ) 
+values (nextval('roles_id_seq'), 'admin', 'Administrator', '{"types": 2, "attributes": 2, "relations": 2, "users": 2, "roles": 2, "languages": 2, "lovs": 2, "actions": 2, "dashboards": 2 }'::jsonb,'{"access": 0, "groups": [], "relations": []}'::jsonb ,'{"valid": [], "access": 0, "groups": [], "fromItems": []}'::jsonb, 'default', 'system', now(), 'system', now());
+
+insert into roles (id, identifier, name, "configAccess", "relAccess", "itemAccess", "tenantId", "createdBy", "createdAt" , "updatedBy" , "updatedAt" ) 
+values (nextval('roles_id_seq'), 'user', 'User', '{"types": 0, "attributes": 0, "relations": 0, "users": 0, "roles": 0, "languages": 0, "lovs": 0, "actions": 0, "dashboards": 0 }'::jsonb,'{"access": 0, "groups": [], "relations": []}'::jsonb ,'{"valid": [], "access": 0, "groups": [], "fromItems": []}'::jsonb, 'default', 'system', now(), 'system', now());
