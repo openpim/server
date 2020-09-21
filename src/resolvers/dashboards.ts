@@ -155,15 +155,21 @@ export default {
                     labels.push(query.label)
 
                     const options = query.where ? prepareWhere(context, JSON.parse(query.where)) : {where: null, include: null}
-                    const result: any = await Item.applyScope(context).findAll({
-                        attributes: [
-                            [fn('count', '*'), 'count']
-                        ],
-                        where: options.where,
-                        include: options.include
-                    })
-    
-                    records.push(result[0].getDataValue('count'))
+                    if (options.include) {
+                        const result: any = await Item.applyScope(context).findAll({
+                            where: options.where,
+                            include: options.include
+                        })
+                        records.push(result.length)
+                    } else {
+                        const result: any = await Item.applyScope(context).findAll({
+                            attributes: [
+                                [fn('count', '*'), 'count']
+                            ],
+                            where: options.where
+                        })
+                        records.push(result[0].getDataValue('count'))
+                    }
                 }
 
                 data = {
