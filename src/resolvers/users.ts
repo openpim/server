@@ -166,10 +166,10 @@ export default {
                     (<any>user).internalId = user.id
                     return {token, user}
                 } else {
-                    throw new GraphQLError('Неверный логин или пароль')
+                    throw new GraphQLError('Wrong login or password')
                 }                   
             } else {
-                throw new GraphQLError('Неверный логин или пароль')
+                throw new GraphQLError('Wrong login or password')
             }
         },
         signInAs: async (parent: any, { id }: any, context: Context) => {
