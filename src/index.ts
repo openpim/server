@@ -11,6 +11,12 @@ const env = process.argv.length > 2 ? '.'+process.argv[2] : ''
 console.log("Using environment: [" + env + "]")
 dotenv.config({ path: './.env' + env  })
 
+if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
+if (process.env.OPENPIM_DATABASE_NAME) process.env.DATABASE_NAME = process.env.OPENPIM_DATABASE_NAME
+if (process.env.OPENPIM_DATABASE_USER) process.env.DATABASE_USER = process.env.OPENPIM_DATABASE_USER
+if (process.env.OPENPIM_DATABASE_PASSWORD) process.env.DATABASE_PASSWORD = process.env.OPENPIM_DATABASE_PASSWORD
+
+
 import resolvers from './resolvers'
 import Context from './context'
 import { IncomingMessage } from 'http';
@@ -19,7 +25,7 @@ import { ModelsManager } from './models/manager'
 import { processUpload, processDownload } from './media';
 
 // Construct a schema, using GraphQL schema language
-async function start() {
+async function start() { 
   console.log('Arguments: ' + process.argv)
   
   const typeDefs = await importSchema('./schema/index.graphql'); 

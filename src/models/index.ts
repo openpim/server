@@ -14,17 +14,19 @@ import * as search from './search'
 import * as actions from './actions'
 import * as dashboards from './dashboards'
 
-const sequelize = new Sequelize(
-    <string>process.env.DATABASE_NAME,
-    <string>process.env.DATABASE_USER,
-    <string>process.env.DATABASE_PASSWORD, {
-    host: process.env.DATABASE_URL,
-    dialect: 'postgres',
-});
+let sequelize:Sequelize
 
 export { sequelize }
 
 export async function initModels() {
+    sequelize = new Sequelize(
+        <string>process.env.DATABASE_NAME,
+        <string>process.env.DATABASE_USER,
+        <string>process.env.DATABASE_PASSWORD, {
+        host: process.env.DATABASE_URL,
+        dialect: 'postgres',
+    })
+
     users.init(sequelize)
     types.init(sequelize)
     attributes.init(sequelize)
