@@ -60,7 +60,14 @@ export class FileManager {
 
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
-        fs.renameSync(file.path, fullPath)
+        try {
+            fs.renameSync(file.path, fullPath)
+        } catch (e) { 
+            console.error('Failed to rename file (will use copy instead): ', file.path, fullPath)
+            console.error(e)
+            fs.copyFileSync(file.path, fullPath)
+            fs.unlinkSync(file.path)
+        }
 
         item.storagePath = relativePath
 
