@@ -275,8 +275,10 @@ export default class Context {
             grp.getAttributes().forEach( attr => {
                 if (attrMap[attr.identifier]) {
                     attrMap[attr.identifier].push(grp.getGroup().id)
+                    if (attr.type === 8) attrMap[attr.identifier + '_text'].push(grp.getGroup().id) // URL attribute
                 } else {
                     attrMap[attr.identifier] = [grp.getGroup().id]
+                    if (attr.type === 8) attrMap[attr.identifier + '_text'] = [grp.getGroup().id] // URL attribute
                 }
             })
         })
