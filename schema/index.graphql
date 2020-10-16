@@ -18,4 +18,5 @@ scalar UTCDateTime
 
 type Query {
   ping: String
+  nextId: String
 }

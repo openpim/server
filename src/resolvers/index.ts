@@ -13,12 +13,23 @@ import lovResolvers from './lovs'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
 import LanguageDependentString from './utils/languageDependentString'
 import { GraphQLDateTime } from 'graphql-iso-date'
+import Context from '../context'
+import { QueryTypes } from 'sequelize'
+import { sequelize } from '../models'
 
 const testResolver = {
     Query: {
         ping: () => {
             return 'pong'
-        }
+        },
+        nextId: async (parent: any, params: any, context: Context) => {
+            context.checkAuth()
+            const results:any = await sequelize.query("SELECT nextval('identifier_seq')", { 
+                type: QueryTypes.SELECT
+            });
+            const id = (results[0]).nextval
+            return id
+        },
     }
 }
 
