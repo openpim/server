@@ -350,11 +350,11 @@ export default {
             item.updatedBy = context.getCurrentUser()!.login
 
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
-            /* item.identifier = item.identifier + '_d_' + Date.now() 
+            item.identifier = item.identifier + '_d_' + Date.now() 
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
                 await item.destroy({transaction: t})
-            }) */
+            })
 
             await processItemActions(context, EventType.AfterDelete, item, null, false)
             return true
