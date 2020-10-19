@@ -9,6 +9,7 @@ import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../models/actions'
+import { ItemRelation } from '../models/itemRelations'
 
 export default {
     Query: {
@@ -324,17 +325,36 @@ export default {
             // check Attributes
             const tst2 = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: nId}}})
             if (tst2) throw new Error('Can not remove this item because there are attributes linked to it.');
+            // check children
+            const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                replacements: { 
+                    tenant: context.getCurrentUser()!.tenantId,
+                    lquery: item.path + '.*{1}',
+                },
+                plain: true,
+                raw: true,
+                type: QueryTypes.SELECT
+            })
+            const childrenNumber = parseInt(cnt.count)
+            if (childrenNumber > 0) throw new Error('Can not remove item with children, remove children first.');
+            // check relations
+            const num = await ItemRelation.applyScope(context).count({
+                where: {
+                    [Op.or]: [{itemId: item.id}, {targetId: item.id}]
+                },
+            })
+            if (num > 0) throw new Error('Can not remove item that has relations, remove them first.');
 
             await processItemActions(context, EventType.BeforeDelete, item, null, false)
 
             item.updatedBy = context.getCurrentUser()!.login
 
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
-            item.identifier = item.identifier + '_d_' + Date.now() 
+            /* item.identifier = item.identifier + '_d_' + Date.now() 
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
                 await item.destroy({transaction: t})
-            })
+            }) */
 
             await processItemActions(context, EventType.AfterDelete, item, null, false)
             return true

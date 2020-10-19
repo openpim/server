@@ -38,8 +38,10 @@ export class ReturnMessage {
   public static WrongTypeRoot = new ReturnMessage(6, "Can not create item with such typeIdentifier under root")
   public static WrongTypeParent = new ReturnMessage(7, "Can not create item with such typeIdentifier under this parent")
   public static ParentNotFound = new ReturnMessage(8, "Failed to find Parent Item by identifier")
-  public static ItemNoAccess = new ReturnMessage(112, "This user can not edit this item")
-  public static ItemDeleteFailed = new ReturnMessage(113, "Can not delete this item because there are attrinutes or roles with links to it")
+  public static ItemNoAccess = new ReturnMessage(9, "This user can not edit this item")
+  public static ItemDeleteFailed = new ReturnMessage(10, "Can not delete this item because there are attributes or roles with links to it")
+  public static ItemDeleteFailedChildren = new ReturnMessage(11, "Can not delete this item because it has children, remove them first")
+  public static ItemDeleteFailedRelations = new ReturnMessage(12, "Can not delete this item because it has relations, remove them first")
 
   public static ItemRelationNotFound = new ReturnMessage(100, "Failed to find Item Relation by identifier")
   public static ItemRelationExist = new ReturnMessage(101, "Item Relation with such identifier already exists")

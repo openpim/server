@@ -8,6 +8,7 @@ import { filterValues, mergeValues, checkValues, processItemActions } from '../u
 import { Attribute } from '../../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
+import { ItemRelation } from '../../models/itemRelations'
 
 /*
 
@@ -66,6 +67,33 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 const tst2 = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: data.id}}})
                 if (tst1 || tst2) {
                     result.addError(ReturnMessage.ItemDeleteFailed)
+                    result.result = ImportResult.REJECTED
+                    return result
+                }
+                // check children
+                const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                    replacements: { 
+                        tenant: context.getCurrentUser()!.tenantId,
+                        lquery: data.path + '.*{1}',
+                    },
+                    plain: true,
+                    raw: true,
+                    type: QueryTypes.SELECT
+                })
+                const childrenNumber = parseInt(cnt.count)
+                if (childrenNumber > 0) {
+                    result.addError(ReturnMessage.ItemDeleteFailedChildren)
+                    result.result = ImportResult.REJECTED
+                    return result
+                }
+                // check relations
+                const num = await ItemRelation.applyScope(context).count({
+                    where: {
+                        [Op.or]: [{itemId: data.id}, {targetId: data.id}]
+                    },
+                })
+                if (num > 0) {
+                    result.addError(ReturnMessage.ItemDeleteFailedRelations)
                     result.result = ImportResult.REJECTED
                     return result
                 }
