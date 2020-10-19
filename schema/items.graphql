@@ -5,6 +5,7 @@ type Query {
   getItemByIdentifier(identifier: String!): Item
   getAssets(id: ID!): [Asset]
   getMainImages(ids: [ID]!) : [Thumbnail]
+  hasRelations(id: ID!): Boolean!
 }
 
 type Mutation {

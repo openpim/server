@@ -85,6 +85,16 @@ export default {
                 return null
             }
         },
+        hasRelations: async (parent: any, { id }: any, context: Context) => {
+            context.checkAuth()
+            const nId = parseInt(id)
+            const num = await ItemRelation.applyScope(context).count({
+                where: {
+                    [Op.or]: [{itemId: nId}, {targetId: nId}]
+                },
+            })
+            return (num > 0)
+        },
         getItemsByIds: async (parent: any, { ids }: any, context: Context) => {
             context.checkAuth()
             const arr = ids.map((elem:any) => parseInt(elem))
