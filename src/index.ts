@@ -4,7 +4,7 @@ import { importSchema } from 'graphql-import'
 import { makeExecutableSchema } from 'graphql-tools'
 import { GraphQLError } from 'graphql'
 import * as cors from 'cors'
-// import * as bodyParser from 'body-parser'
+import * as bodyParser from 'body-parser'
 
 import * as dotenv from "dotenv";
 const env = process.argv.length > 2 ? '.'+process.argv[2] : ''
@@ -35,6 +35,7 @@ async function start() {
   ModelsManager.getInstance().init()
 
   let app = express();
+  app.use(bodyParser.json({limit: '100mb'}));
   app.use(cors())
   // app.use(bodyParser.json({ limit: '1mb' })); - this is not working, how to increase buffer? Now it is 100K
   app.use('/graphql', graphqlHTTP(async (request: IncomingMessage ) => ({
