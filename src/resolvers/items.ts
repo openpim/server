@@ -52,7 +52,7 @@ export default {
                     raw: true,
                     type: QueryTypes.SELECT
                 })
-                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery limit :limit offset :offset', {
+                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery order by id limit :limit offset :offset', {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         lquery: parentItem.path + '.*{1}',
