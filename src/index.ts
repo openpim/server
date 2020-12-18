@@ -1,21 +1,23 @@
-import * as express from 'express';
-import * as graphqlHTTP from 'express-graphql'; 
+import * as express from 'express'
+import * as graphqlHTTP from 'express-graphql' 
 import { importSchema } from 'graphql-import'
 import { makeExecutableSchema } from 'graphql-tools'
 import { GraphQLError } from 'graphql'
 import * as cors from 'cors'
 import * as bodyParser from 'body-parser'
+import logger from './logger'
 
 import * as dotenv from "dotenv";
+
+
 const env = process.argv.length > 2 ? '.'+process.argv[2] : ''
-console.log("Using environment: [" + env + "]")
+logger.info("Using environment: [" + env + "]")
 dotenv.config({ path: './.env' + env  })
 
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
 if (process.env.OPENPIM_DATABASE_NAME) process.env.DATABASE_NAME = process.env.OPENPIM_DATABASE_NAME
 if (process.env.OPENPIM_DATABASE_USER) process.env.DATABASE_USER = process.env.OPENPIM_DATABASE_USER
 if (process.env.OPENPIM_DATABASE_PASSWORD) process.env.DATABASE_PASSWORD = process.env.OPENPIM_DATABASE_PASSWORD
-
 
 import resolvers from './resolvers'
 import Context from './context'
@@ -26,7 +28,7 @@ import { processUpload, processDownload } from './media';
 
 // Construct a schema, using GraphQL schema language
 async function start() { 
-  console.log('Arguments: ' + process.argv)
+  logger.info('Arguments: ' + process.argv)
   
   const typeDefs = await importSchema('./schema/index.graphql'); 
   let schema = await makeExecutableSchema({ typeDefs, resolvers })
@@ -37,7 +39,6 @@ async function start() {
   let app = express();
   app.use(bodyParser.json({limit: '100mb'}));
   app.use(cors())
-  // app.use(bodyParser.json({ limit: '1mb' })); - this is not working, how to increase buffer? Now it is 100K
   app.use('/graphql', graphqlHTTP(async (request: IncomingMessage ) => ({
     schema: schema,
     graphiql: false,
@@ -46,7 +47,7 @@ async function start() {
       const params = {
         message: error.message
       };
-      console.error('ERROR -', error, error.source);
+      logger.error('ERROR -', error, error.source);
       return (params);
     }    
   })));
@@ -83,7 +84,7 @@ async function start() {
   })
 
   app.listen(process.env.PORT);
-  console.log('Running a GraphQL API server at http://localhost:'+process.env.PORT+'/graphql');
+  logger.info('Running a GraphQL API server at http://localhost:'+process.env.PORT+'/graphql');
 }
 
 start()

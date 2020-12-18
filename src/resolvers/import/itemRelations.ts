@@ -8,6 +8,8 @@ import { Relation } from "../../models/relations"
 import { mergeValues, filterValues, checkValues, processItemRelationActions } from "../utils"
 import { EventType } from "../../models/actions"
 
+import logger from '../../logger'
+
 /*
 
 mutation { import(
@@ -238,7 +240,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
     } catch (error) {
         result.addError(new ReturnMessage(0, ""+error))
         result.result = ImportResult.REJECTED
-        console.error(error)
+        logger.error(error)
     }
 
     return result

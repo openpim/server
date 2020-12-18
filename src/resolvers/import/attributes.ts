@@ -6,6 +6,8 @@ import { AttrGroup, Attribute } from "../../models/attributes"
 import { Item } from "../../models/items"
 import { LOV } from "../../models/lovs"
 
+import logger from '../../logger'
+
 /*
 mutation { import(
     config: {
@@ -206,7 +208,7 @@ export async function importAttribute(context: Context, config: IImportConfig, a
     } catch (error) {
         result.addError(new ReturnMessage(0, ""+error))
         result.result = ImportResult.REJECTED
-        console.error(error)
+        logger.error(error)
     }
 
     return result

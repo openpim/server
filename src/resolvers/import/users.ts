@@ -6,6 +6,8 @@ import { User } from "../../models/users"
 import * as bcrypt from 'bcrypt';
 import { Op } from 'sequelize'
 
+import logger from '../../logger'
+
 export async function importUser(context: Context, config: IImportConfig, user: IUserImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(user.login)
 
@@ -124,7 +126,7 @@ export async function importUser(context: Context, config: IImportConfig, user: 
     } catch (error) {
         result.addError(new ReturnMessage(0, ""+error))
         result.result = ImportResult.REJECTED
-        console.error(error)
+        logger.error(error)
     }
 
     return result

@@ -10,6 +10,8 @@ import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
 import { ItemRelation } from '../../models/itemRelations'
 
+import logger from '../../logger'
+
 /*
 
 mutation { import(
@@ -261,7 +263,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
     } catch (error) {
         result.addError(new ReturnMessage(0, ""+error))
         result.result = ImportResult.REJECTED
-        console.error(error)
+        logger.error(error)
     }
     return result
 }

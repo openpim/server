@@ -20,3 +20,7 @@ type Query {
   ping: String
   nextId: String
 }
+
+type Mutation {
+  logLevel(level: String!) : Boolean!
+}

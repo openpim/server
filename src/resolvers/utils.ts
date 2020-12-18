@@ -7,6 +7,8 @@ import Context from "../context"
 import { ItemRelation } from "../models/itemRelations"
 const { Op } = require("sequelize");
 
+import logger from '../logger'
+
 export function filterValues(allowedAttributes: string[] | null, values:any) {
     if (allowedAttributes) {
         for (const prop in values) {
@@ -126,8 +128,8 @@ export async function testAction(context: Context, action: Action, item: Item) {
 
 async function processActions(mng: ModelManager, actions: Action[], sandbox: any) {
     const cons = { 
-        log: ((...args: any) => {console.log('VM: ', args)}),
-        error: ((...args: any) => {console.error('VM: ', args)})
+        log: ((...args: any) => {logger.info('VM: ', args)}),
+        error: ((...args: any) => {logger.error('VM: ', args)})
     }
     await processActionsWithLog(mng, actions, sandbox, cons , false)
 }
@@ -155,7 +157,7 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                         script.compile()
                     } catch (err) {
                         if (returnCompileError) return err.message
-                        console.error('Failed to compile script.', err);
+                        logger.error('Failed to compile script.', err);
                         script = 'compile_error'
                     }
                     mng.getActionsCache()[action.identifier] = script

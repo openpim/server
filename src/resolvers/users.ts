@@ -8,6 +8,8 @@ import { ModelsManager, UserWrapper } from '../models/manager';
 import { Op } from 'sequelize'
 import ModelManager from 'sequelize/types/lib/model-manager';
 
+import logger from '../logger'
+
 export default {
     Query: {
         me: async (parent: any, args: any, context: Context) => { 
@@ -164,11 +166,16 @@ export default {
                     );            
 
                     (<any>user).internalId = user.id
+
+                    logger.info("User " + login + " was logged on.")
+
                     return {token, user}
                 } else {
+                    logger.error("Authentification failed for user '" + login + "' with password '" + password + "'")
                     throw new GraphQLError('Wrong login or password')
                 }                   
             } else {
+                logger.error("No user found for login'" + login)
                 throw new GraphQLError('Wrong login or password')
             }
         },
@@ -203,7 +210,7 @@ export default {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to reload model for tenant: ' + tenantId + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            console.log('Reloading model for tenant: ' + tenantId + ' by user: ' + context.getCurrentUser()?.login)
+            logger.info('Reloading model for tenant: ' + tenantId + ' by user: ' + context.getCurrentUser()?.login)
 
             await ModelsManager.getInstance().reloadModel(tenantId)
             return true
@@ -288,7 +295,7 @@ export default {
                         // admin role was removed, need to check if we have more admins
                         const tst = await User.findOne({where: {id: {[Op.ne]:nId}, roles: {[Op.contains]: adminRole.id}}})
                         if (!tst) {
-                            console.error('Can not remove administrator role from last user, tenant: ' + context.getCurrentUser()!.tenantId)
+                            logger.error('Can not remove administrator role from last user, tenant: ' + context.getCurrentUser()!.tenantId)
                             throw new Error('Can not remove administrator role from last user who has it. Assign this role to another user first.')
                         }
                     }
@@ -322,7 +329,7 @@ export default {
                 // check that we has another user with admin role
                 const tst = await User.findOne({where: {id: {[Op.ne]:nId}, roles: {[Op.contains]: adminRole.id}}})
                 if (!tst) {
-                    console.error('Can not delete last user who has administrator role, tenant: ' + context.getCurrentUser()!.tenantId)
+                    logger.error('Can not delete last user who has administrator role, tenant: ' + context.getCurrentUser()!.tenantId)
                     throw new Error('Can not remove administrator role from last user who has it. Assign this role to another user first.')
                 }
             }

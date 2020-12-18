@@ -4,6 +4,7 @@ import * as Jimp from 'jimp'
 import { mergeValues } from '../resolvers/utils'
 import { FragmentsOnCompositeTypes } from 'graphql/validation/rules/FragmentsOnCompositeTypes'
 import {File} from 'formidable'
+import logger from '../logger'
 
 export class FileManager {
     private static instance: FileManager
@@ -63,8 +64,8 @@ export class FileManager {
         try {
             fs.renameSync(file.path, fullPath)
         } catch (e) { 
-            console.error('Failed to rename file (will use copy instead): ', file.path, fullPath)
-            console.error(e)
+            logger.error('Failed to rename file (will use copy instead): ', file.path, fullPath)
+            logger.error(e)
             fs.copyFileSync(file.path, fullPath)
             fs.unlinkSync(file.path)
         }

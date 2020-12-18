@@ -6,6 +6,8 @@ import { Item } from "../../models/items"
 import { Role, User } from "../../models/users"
 import { Op } from 'sequelize'
 
+import logger from '../../logger'
+
 /*
 
 mutation { import(
@@ -174,7 +176,7 @@ export async function importRole(context: Context, config: IImportConfig, role: 
     } catch (error) {
         result.addError(new ReturnMessage(0, ""+error))
         result.result = ImportResult.REJECTED
-        console.error(error)
+        logger.error(error)
     }
 
     return result

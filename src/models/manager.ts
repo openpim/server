@@ -8,6 +8,8 @@ import { Action } from './actions'
 import { Dashboard } from './dashboards'
 import { WhereOptions } from 'sequelize/types'
 
+import logger from '../logger'
+
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
     private tenantId: string
@@ -98,7 +100,7 @@ export class ModelManager {
                 const node = new TreeNode<Type>(type, parent)
                 parent.getChildren().push(node)
             } else {
-                console.error('Failed to find parent by id: ' + parentId + ' in manager: ' + this.tenantId)
+                logger.error('Failed to find parent by id: ' + parentId + ' in manager: ' + this.tenantId)
             }
         } else {
             const node = new TreeNode<Type>(type, this.typeRoot)
@@ -212,7 +214,7 @@ export class ModelsManager {
     public getModelManager(tenant: string): ModelManager {
         let tst = this.tenantMap[tenant]
         if (!tst) {
-            console.warn('Can not find model for tenant: ' + tenant);
+            logger.warn('Can not find model for tenant: ' + tenant);
             // const mng = new ModelManager(tenant)
             // this.tenantMap[tenant] = mng
         }
@@ -281,7 +283,7 @@ export class ModelsManager {
         await this.initActions(where)
         await this.initDashboards(where)
 
-        console.log('Data models were loaded')
+        logger.info('Data models were loaded')
     }
 
     public async initRoles(where: WhereOptions | undefined) {

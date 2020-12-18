@@ -6,6 +6,8 @@ import { ModelsManager } from '../models/manager'
 import { FileManager } from './FileManager'
 import { sequelize } from '../models'
 
+import logger from '../logger'
+
 export async function processDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
     const id = parseInt(idStr)
@@ -13,19 +15,19 @@ export async function processDownload(context: Context, req: Request, res: Respo
 
     const item = await Item.applyScope(context).findByPk(id)
     if (!item) {
-        console.error('Failed to find item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        logger.error('Failed to find item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
         res.status(400).send('Failed to find image')
         return
     }
 
     if (!context.canViewItem(item)) {
-        console.error('User :' + context.getCurrentUser()?.login + ' can not view item (asset download) :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
+        logger.error('User :' + context.getCurrentUser()?.login + ' can not view item (asset download) :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
         res.status(400).send('You do not have permissions to view this item')
         return
     }
 
     if (!item.storagePath) {
-        console.error('Failed to find image for item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        logger.error('Failed to find image for item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
         res.status(400).send('Failed to find image')
         return
     }
@@ -79,7 +81,7 @@ export async function processUpload(context: Context, req: Request, res: Respons
 
             res.send('OK')
         } catch (error) {
-            console.error(error)
+            logger.error(error)
             res.status(400).send(error.message)
         }
     });

@@ -5,6 +5,8 @@ import { ModelsManager, ModelManager, AttrGroupWrapper, UserWrapper } from "../.
 import { LOV } from "../../models/lovs"
 import { Attribute } from "../../models/attributes"
 
+import logger from '../../logger'
+
 export async function importLOV(context: Context, config: IImportConfig, lov: ILOVImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(lov.identifier)
 
@@ -87,7 +89,7 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
     } catch (error) {
         result.addError(new ReturnMessage(0, ""+error))
         result.result = ImportResult.REJECTED
-        console.error(error)
+        logger.error(error)
     }
 
     return result

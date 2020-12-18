@@ -14,6 +14,9 @@ import * as search from './search'
 import * as actions from './actions'
 import * as dashboards from './dashboards'
 
+import logger from '../logger'
+
+
 let sequelize:Sequelize
 
 export { sequelize }
@@ -25,6 +28,7 @@ export async function initModels() {
         <string>process.env.DATABASE_PASSWORD, {
         host: process.env.DATABASE_URL,
         dialect: 'postgres',
+        logging: logger.debug.bind(logger)
     })
 
     users.init(sequelize)

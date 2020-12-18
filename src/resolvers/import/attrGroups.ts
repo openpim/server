@@ -4,6 +4,8 @@ import { sequelize } from "../../models"
 import { ModelsManager, TreeNode, ModelManager, AttrGroupWrapper } from "../../models/manager"
 import { AttrGroup } from "../../models/attributes"
 
+import logger from '../../logger'
+
 /*
 mutation { import(
     config: {
@@ -128,7 +130,7 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
     } catch (error) {
         result.addError(new ReturnMessage(0, ""+error))
         result.result = ImportResult.REJECTED
-        console.error(error)
+        logger.error(error)
     }
 
     return result

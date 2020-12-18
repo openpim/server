@@ -10,6 +10,8 @@ import { Attribute } from "../../models/attributes"
 import { Item } from "../../models/items"
 import { Op } from 'sequelize'
 
+import logger from '../../logger'
+
 /*
 mutation { import(
     config: {
@@ -229,7 +231,7 @@ export async function importType(context: Context, config: IImportConfig, type: 
     } catch (error) {
         result.addError(new ReturnMessage(0, ""+error))
         result.result = ImportResult.REJECTED
-        console.error(error)
+        logger.error(error)
     }
 
     return result

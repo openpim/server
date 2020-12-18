@@ -17,7 +17,10 @@ import Context from '../context'
 import { QueryTypes } from 'sequelize'
 import { sequelize } from '../models'
 
-const testResolver = {
+import logger from '../logger'
+import { level } from 'winston'
+
+const resolver = {
     Query: {
         ping: () => {
             return 'pong'
@@ -30,6 +33,19 @@ const testResolver = {
             const id = (results[0]).nextval
             return id
         },
+    }, 
+    Mutation: {
+        logLevel: async (parent: any, {level}: any, context: Context) => {
+            context.checkAuth()    
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to set log level, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            logger.info('Setting log level to ' + level + ' by user: ' + context.getCurrentUser()?.login)
+
+            logger.transports[0].level = level;
+            return true
+        }
     }
 }
 
@@ -39,7 +55,7 @@ export default {
     LanguageDependentString: LanguageDependentString,
     UTCDateTime: GraphQLDateTime,
     Query: {
-        ...testResolver.Query,
+        ...resolver.Query,
         ...userResolvers.Query,
         ...typeResolvers.Query,
         ...attrResolvers.Query,
@@ -53,6 +69,7 @@ export default {
         ...lovResolvers.Query
     },
     Mutation: {
+        ...resolver.Mutation,
         ...userResolvers.Mutation,
         ...typeResolvers.Mutation,
         ...attrResolvers.Mutation,
