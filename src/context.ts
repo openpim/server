@@ -116,24 +116,26 @@ export default class Context {
 
     public canViewItemRelation(relationId: number): boolean {
         if (!this.user) return false
+        let access = -1
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i]
             if(role.relAccess.relations.find((id:number) => id === relationId)) {
-                if (role.relAccess.access === 0) return false
+                if (role.relAccess.access > access) access = role.relAccess.access
             }
         }
-        return true
+        return access == -1 || access > 0
     }
 
     public canEditItemRelation(relationId: number): boolean {
         if (!this.user) return false
+        let access = -1
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i]
             if(role.relAccess.relations.find((id:number) => id === relationId)) {
-                if (role.relAccess.access === 0 || role.relAccess.access === 1) return false
+                if (role.relAccess.access > access) access = role.relAccess.access
             }
         }
-        return true
+        return access == -1 || access > 1
     }
 
     public getViewItemRelationAttributes(relationId: number): string[] | null {
@@ -184,15 +186,16 @@ export default class Context {
 
     public canViewItem(item: Item): boolean {
         if (!this.user) return false
+        let access = -1
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i]
             if(role.itemAccess.valid.find((typeId:number) => typeId === item.typeId)) {
                 const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
                 const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
-                if (tst && role.itemAccess.access === 0) return false
+                if (tst && role.itemAccess.access > access) access = role.itemAccess.access
             }
         }
-        return true
+        return access == -1 || access > 0
     }
 
     public canEditItem(item: Item): boolean {
@@ -201,15 +204,16 @@ export default class Context {
 
     public canEditItem2(typeId: number, path: string): boolean {
         if (!this.user) return false
+        let access = -1
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i]
             if(role.itemAccess.valid.find((typeId:number) => typeId === typeId)) {
                 const pathArr = path.split('.').map((elem:string) => parseInt(elem))
                 const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
-                if (tst && (role.itemAccess.access === 0 || role.itemAccess.access === 1)) return false
+                if (tst && role.itemAccess.access > access) access = role.itemAccess.access
             }
         }
-        return true
+        return access == -1 || access > 1
     }
 
     public getViewItemAttributes(item: Item): string[] | null {
