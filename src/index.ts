@@ -47,9 +47,11 @@ async function start() {
       const params = {
         message: error.message
       };
+      // console.log(request)
       logger.error('ERROR -', error, error.source);
+      logger.error('   request - ' + JSON.stringify((<any>request).body));
       return (params);
-    }    
+    }
   })));
 
   app.post('/asset-upload', async (req, res) => {
