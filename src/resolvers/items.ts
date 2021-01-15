@@ -316,6 +316,57 @@ export default {
             await processItemActions(context, EventType.AfterUpdate, item, values, false)
             return item.id
         },
+        moveItem: async (parent: any, { id, parentId }: any, context: Context) => {
+            context.checkAuth()
+            const nId = parseInt(id)
+            const nparentId = parseInt(parentId)
+
+            const item = await Item.applyScope(context).findByPk(nId)
+            if (!item) {
+                throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            const parentItem = await Item.applyScope(context).findByPk(nparentId)
+            if (!parentItem) {
+                throw new Error('Failed to find item by id: ' + nparentId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            if (!context.canEditItem(item)) {
+                throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            // check children
+            const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                replacements: { 
+                    tenant: context.getCurrentUser()!.tenantId,
+                    lquery: item.path + '.*{1}',
+                },
+                plain: true,
+                raw: true,
+                type: QueryTypes.SELECT
+            })
+            const childrenNumber = parseInt(cnt.count)
+            if (childrenNumber > 0) throw new Error('Can not move item with children, remove children first.');
+
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            const parentType = mng.getTypeById(parentItem.typeId)!
+            const itemType = mng.getTypeByIdentifier(item.typeIdentifier)!
+    
+            const tstType = parentType.getChildren().find(elem => (elem.getValue().identifier === item.typeIdentifier) || (elem.getValue().link === itemType.getValue().id))
+            if (!tstType) throw new Error('Can not move this item to this parent because this is not allowed by data model.');
+
+            let newPath = parentItem.path+"."+item.id
+            if (newPath !== item.path) {
+                item.path = newPath
+                item.parentIdentifier = parentItem.identifier;
+
+                await sequelize.transaction(async (t) => {
+                    await item.save({transaction: t})
+                })
+            }
+
+            return item
+        },
         removeItem: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
             const nId = parseInt(id)

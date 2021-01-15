@@ -11,6 +11,7 @@ type Query {
 type Mutation {
   createItem(parentId: ID, identifier: String!, name: LanguageDependentString!, typeId: ID!, values: JSONObject): ID!
   updateItem(id: ID!, name: LanguageDependentString, values: JSONObject) : ID!
+  moveItem(id: ID!, parentId: ID!) : Item!
   removeItem(id: ID!) : Boolean!
   removeFile(id: ID!) : Boolean!
 }
