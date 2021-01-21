@@ -109,6 +109,9 @@ export default {
             // check ItemRelations
             const tst1 = await ItemRelation.applyScope(context).findOne({where: {relationId: nId}})
             if (tst1) throw new Error('Can not remove this relation because there are objects of this type.');
+            // check Roles
+            const tst3 = mng.getRoles().find(role => role.relAccess.relations.includes(nId));
+            if (tst3) throw new Error('Can not remove this relation because there are roles linked to it.');
 
             const rel  = mng.getRelations()[idx]
             rel.updatedBy = context.getCurrentUser()!.login
