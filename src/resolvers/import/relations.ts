@@ -56,7 +56,9 @@ export async function importRelation(context: Context, config: IImportConfig, re
                 const tst2 = await Attribute.applyScope(context).findOne({where: {relations: { [Op.contains]: data.id}}})
                 // check ItemRelations
                 const tst1 = await ItemRelation.applyScope(context).findOne({where: {relationId: data.id}})
-                if (tst1 || tst2) {
+                // check Roles
+                const tst3 = mng.getRoles().find(role => role.relAccess.relations.includes(data.id));
+                if (tst1 || tst2 || tst3) {
                     result.addError(ReturnMessage.RelationCanNotDelete)
                     result.result = ImportResult.REJECTED
                     return result
