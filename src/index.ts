@@ -24,7 +24,7 @@ import Context from './context'
 import { IncomingMessage } from 'http';
 import { initModels } from './models'
 import { ModelsManager } from './models/manager'
-import { processUpload, processDownload } from './media';
+import { processUpload, processCreateUpload, processDownload } from './media';
 
 // Construct a schema, using GraphQL schema language
 async function start() { 
@@ -60,6 +60,17 @@ async function start() {
       context.checkAuth()
 
       await processUpload(context, req, res)
+    } catch (error) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.post('/asset-create-upload', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+
+      await processCreateUpload(context, req, res)
     } catch (error) {
       res.status(400).send(error.message)
     }

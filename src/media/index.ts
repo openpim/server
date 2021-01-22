@@ -5,8 +5,11 @@ import { Item } from '../models/items'
 import { ModelsManager } from '../models/manager'
 import { FileManager } from './FileManager'
 import { sequelize } from '../models'
+import { QueryTypes } from 'sequelize'
 
 import logger from '../logger'
+import { Type } from '../models/types'
+import { ItemRelation } from '../models/itemRelations'
 
 export async function processDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -77,6 +80,156 @@ export async function processUpload(context: Context, req: Request, res: Respons
             item.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
+            })
+
+            res.send('OK')
+        } catch (error) {
+            logger.error(error)
+            res.status(400).send(error.message)
+        }
+    });
+}
+
+export async function processCreateUpload(context: Context, req: Request, res: Response) {
+    const form = new IncomingForm()
+    form.keepExtensions = true
+ 
+    form.parse(req, async (err, fields, files) => {
+        try {
+            context.checkAuth();
+
+            // file, fileItemTypeId, parentId, relationId
+            const file = files['file']
+            const itemIdStr =  <string>fields['itemId']
+            const fileItemTypeIdStr =  <string>fields['fileItemTypeId']
+            const parentIdStr =  <string>fields['parentId']
+            const relationIdStr =  <string>fields['relationId']
+
+            if (!file) throw new Error('Failed to find "file" parameter')
+            if (!itemIdStr) throw new Error('Failed to find "itemId" parameter')
+            if (!fileItemTypeIdStr) throw new Error('Failed to find "fileItemTypeId" parameter')
+            if (!parentIdStr) throw new Error('Failed to find "parentId" parameter')
+            if (!relationIdStr) throw new Error('Failed to find "relationId" parameter')
+
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            // *** create file item ***
+            const tmp = mng.getTypeById(parseInt(fileItemTypeIdStr))
+            if (!tmp) throw new Error('Failed to find type by id: ' + fileItemTypeIdStr)
+            const fileItemType = <Type>tmp!.getValue()
+
+            let results:any = await sequelize.query("SELECT nextval('identifier_seq')", { 
+                type: QueryTypes.SELECT
+            });
+            // TODO: do we need to check if we have such item already?
+            const nextId = (results[0]).nextval
+            const fileItemIdent = fileItemType.identifier + nextId
+
+            results = await sequelize.query("SELECT nextval('items_id_seq')", { 
+                type: QueryTypes.SELECT
+            });
+            const id = (results[0]).nextval
+            
+            let path:string
+            let parentIdentifier:string
+            const pId = parseInt(parentIdStr)
+            const parentItem = await Item.applyScope(context).findByPk(pId)
+            if (!parentItem) {
+                throw new Error('Failed to find parent item by id: ' + parentIdStr + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            const parentType = mng.getTypeById(parentItem.typeId)!
+            const tstType = parentType.getChildren().find(elem => (elem.getValue().id === fileItemType.id) || (elem.getValue().link === fileItemType.id))
+            if (!tstType) {
+                throw new Error('Failed to create item with type: ' + fileItemType.id + ' under type: ' + parentItem.typeId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            parentIdentifier = parentItem.identifier
+            path = parentItem.path + "." + id
+            if (!context.canEditItem2(fileItemType.id, path)) {
+                throw new Error('User :' + context.getCurrentUser()?.login + ' can not create such item , tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            // TODO: process item actions
+            const item:Item = Item.build ({
+                id: id,
+                path: path,
+                identifier: fileItemIdent,
+                tenantId: context.getCurrentUser()!.tenantId,
+                createdBy: context.getCurrentUser()!.login,
+                updatedBy: context.getCurrentUser()!.login,
+                name: {ru: file.name, en: file.name},
+                typeId: fileItemType.id,
+                typeIdentifier: fileItemType.identifier,
+                parentIdentifier: parentIdentifier, 
+                values: {},
+                fileOrigName: '',
+                storagePath: '',
+                mimeType: ''
+            })
+
+            // *** upload file ***
+            const type = mng.getTypeById(item.typeId)?.getValue()
+            if (!type!.file) throw new Error('Item with id: ' + id + ' is not a file, user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+
+            const fm = FileManager.getInstance()
+            await fm.saveFile(context.getCurrentUser()!.tenantId, item, file)
+
+            item.fileOrigName = file.name
+            item.mimeType = file.type
+            item.updatedBy = context.getCurrentUser()!.login
+            await sequelize.transaction(async (t) => {
+                await item.save({transaction: t})
+            })
+
+            // *** create link to item ***
+            const rel = mng.getRelationById(parseInt(relationIdStr))
+            if (!rel) throw new Error('Failed to find relation by id: ' + relationIdStr)
+
+            if (!context.canEditItemRelation(rel.id)) {
+                throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + rel.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            const relIdent = rel.identifier + nextId
+
+            const nItemId = parseInt(itemIdStr)
+            const source = await Item.applyScope(context).findByPk(nItemId)
+            if (!source) {
+                throw new Error('Failed to find item by id: ' + itemIdStr + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            const tst3 = rel.targets.find((typeId: number) => typeId === item.typeId)
+            if (!tst3) {
+                throw new Error('Relation with id: ' + rel.id + ' can not have target with type: ' + item.typeId + ', tenant: ' + mng.getTenantId())
+            }
+
+            if (!rel.multi) {
+                const count = await ItemRelation.applyScope(context).count( {
+                    where: {
+                        itemId: nItemId,
+                        relationId: rel.id
+                    }
+                })
+
+                if (count > 0) {
+                    throw new Error('Relation with id: ' + rel.id + ' can not have more then one target, tenant: ' + mng.getTenantId())
+                }
+            }
+
+            // TODO: process item relation actions
+            const itemRelation = await ItemRelation.build ({
+                identifier: relIdent,
+                tenantId: context.getCurrentUser()!.tenantId,
+                createdBy: context.getCurrentUser()!.login,
+                updatedBy: context.getCurrentUser()!.login,
+                relationId: rel.id,
+                relationIdentifier: rel.identifier,
+                itemId: nItemId,
+                itemIdentifier: source.identifier,
+                targetId: item.id,
+                targetIdentifier: item.identifier,
+                values: {}
+            })
+
+            await sequelize.transaction(async (t) => {
+                await itemRelation.save({transaction: t})
             })
 
             res.send('OK')
