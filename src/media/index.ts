@@ -104,12 +104,14 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             const fileItemTypeIdStr =  <string>fields['fileItemTypeId']
             const parentIdStr =  <string>fields['parentId']
             const relationIdStr =  <string>fields['relationId']
+            const lang =  <string>fields['lang']
 
             if (!file) throw new Error('Failed to find "file" parameter')
             if (!itemIdStr) throw new Error('Failed to find "itemId" parameter')
             if (!fileItemTypeIdStr) throw new Error('Failed to find "fileItemTypeId" parameter')
             if (!parentIdStr) throw new Error('Failed to find "parentId" parameter')
             if (!relationIdStr) throw new Error('Failed to find "relationId" parameter')
+            if (!lang) throw new Error('Failed to find "lang" parameter')
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
@@ -147,6 +149,8 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             if (!context.canEditItem2(fileItemType.id, path)) {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not create such item , tenant: ' + context.getCurrentUser()!.tenantId)
             }
+            const name:any = {}
+            name[lang] = file.name
             // TODO: process item actions
             const item:Item = Item.build ({
                 id: id,
@@ -155,7 +159,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,
                 updatedBy: context.getCurrentUser()!.login,
-                name: {ru: file.name, en: file.name},
+                name: name,
                 typeId: fileItemType.id,
                 typeIdentifier: fileItemType.identifier,
                 parentIdentifier: parentIdentifier, 
