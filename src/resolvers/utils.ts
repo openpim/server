@@ -72,6 +72,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         return false
     })
     await processActions(mng, actions, { Op: Op,
+        user: context.getCurrentUser(),
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, 
         models: { 
@@ -98,6 +99,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     })
     const values = {...item.values}
     await processActions(mng, actions, { Op: Op,
+        user: context.getCurrentUser(),
         buttonText: buttonText, 
         item: makeItemProxy(item), values: values, 
         models: { 
@@ -113,6 +115,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
     const values = {...item.values}
     let log = ''
     const compileError = await processActionsWithLog(mng, [action], { Op: Op, 
+        user: context.getCurrentUser(),
         item: makeItemProxy(item), values: values, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
@@ -129,8 +132,8 @@ export async function testAction(context: Context, action: Action, item: Item) {
 
 async function processActions(mng: ModelManager, actions: Action[], sandbox: any) {
     const cons = { 
-        log: ((...args: any) => {logger.info('VM: ', args)}),
-        error: ((...args: any) => {logger.error('VM: ', args)})
+        log: ((...args: any) => {logger.info('ACTION: ' + args)}),
+        error: ((...args: any) => {logger.error('ACTION: ' + args)})
     }
     await processActionsWithLog(mng, actions, sandbox, cons , false)
 }
@@ -221,6 +224,24 @@ function makeItemProxy(item: any) {
             } else  if ((<string>property) =='createdAt') { return target[ property ]
             } else  if ((<string>property) =='updatedAt') { return target[ property ]
             }
+        },
+        set: function(target, prop, value, receiver) {
+            if (
+                prop === 'path' ||
+                prop === 'typeId' ||
+                prop === 'typeIdentifier' ||
+                prop === 'parentIdentifier' ||
+                prop === 'name' ||
+                prop === 'values' ||
+                prop === 'fileOrigName' ||
+                prop === 'mimeType' ||
+                prop === 'updatedBy'
+                ) {
+                target[prop] = value
+                return true
+            } else {
+                return false
+            }
         }
     })    
 }
@@ -238,6 +259,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         return false
     })
     await processActions(mng, actions, { Op: Op,
+        user: context.getCurrentUser(),
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
@@ -272,6 +294,23 @@ function makeItemRelationProxy(item: any) {
             } else  if ((<string>property) =='updatedBy') { return target[ property ]
             } else  if ((<string>property) =='createdAt') { return target[ property ]
             } else  if ((<string>property) =='updatedAt') { return target[ property ]
+            }
+        },
+        set: function(target, prop, value, receiver) {
+            if (
+                prop === 'relationId' ||
+                prop === 'relationIdentifier' ||
+                prop === 'itemId' ||
+                prop === 'itemIdentifier' ||
+                prop === 'targetId' ||
+                prop === 'targetIdentifier' ||
+                prop === 'values' ||
+                prop === 'updatedBy'
+                ) {
+                target[prop] = value
+                return true
+            } else {
+                return false
             }
         }
     })    
