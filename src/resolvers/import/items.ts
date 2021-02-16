@@ -218,7 +218,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 }
             }
 
-            if (item.parentIdentifier) {
+            if (item.parentIdentifier && data.parentIdentifier !== item.parentIdentifier) {
                 let parent = await checkParent(item, result, mng, context)
                 if (result.result) return result
 
