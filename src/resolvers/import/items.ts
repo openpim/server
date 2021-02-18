@@ -216,6 +216,8 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     data.typeId = type!.getValue().id
                     data.typeIdentifier = type!.getValue().identifier
                 }
+            } else {
+                item.typeIdentifier = data.typeIdentifier
             }
 
             if (item.parentIdentifier && data.parentIdentifier !== item.parentIdentifier) {
