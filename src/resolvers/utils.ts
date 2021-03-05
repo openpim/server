@@ -320,12 +320,12 @@ function makeItemRelationProxy(item: any) {
 }
 
 class ActionUtils {
-    private context: Context
+    private tenantId!: string
 
-    public constructor(context: Context) { this.context = context }
+    public constructor(context: Context) { this.tenantId = context.getCurrentUser()!.tenantId }
 
     public getItemAttributes(item: Item) {
-        const mng = ModelsManager.getInstance().getModelManager(this.context.getCurrentUser()!.tenantId)
+        const mng = ModelsManager.getInstance().getModelManager(this.tenantId)
         const attrArr: string[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
@@ -348,7 +348,7 @@ class ActionUtils {
     }
 
     public getRelationAttributes(rel: ItemRelation) {
-        const mng = ModelsManager.getInstance().getModelManager(this.context.getCurrentUser()!.tenantId)
+        const mng = ModelsManager.getInstance().getModelManager(this.tenantId)
         const attrArr: string[] = []
 
         mng.getAttrGroups().forEach(group => {
