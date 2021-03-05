@@ -72,7 +72,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         return false
     })
     await processActions(mng, actions, { Op: Op,
-        user: context.getCurrentUser(),
+        user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, 
@@ -100,7 +100,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     })
     const values = {...item.values}
     await processActions(mng, actions, { Op: Op,
-        user: context.getCurrentUser(),
+        user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
         buttonText: buttonText, 
         item: makeItemProxy(item), values: values, 
@@ -117,7 +117,8 @@ export async function testAction(context: Context, action: Action, item: Item) {
     const values = {...item.values}
     let log = ''
     const compileError = await processActionsWithLog(mng, [action], { Op: Op, 
-        user: context.getCurrentUser(),
+        user: context.getCurrentUser()?.login,
+        utils: new ActionUtils(context),
         item: makeItemProxy(item), values: values, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
@@ -261,7 +262,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         return false
     })
     await processActions(mng, actions, { Op: Op,
-        user: context.getCurrentUser(),
+        user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
