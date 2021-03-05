@@ -73,6 +73,7 @@ export async function processItemActions(context: Context, event: EventType, ite
     })
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser(),
+        utils: new ActionUtils(context),
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, 
         models: { 
@@ -100,6 +101,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     const values = {...item.values}
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser(),
+        utils: new ActionUtils(context),
         buttonText: buttonText, 
         item: makeItemProxy(item), values: values, 
         models: { 
@@ -260,6 +262,7 @@ export async function processItemRelationActions(context: Context, event: EventT
     })
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser(),
+        utils: new ActionUtils(context),
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
@@ -313,5 +316,51 @@ function makeItemRelationProxy(item: any) {
                 return false
             }
         }
-    })    
+    })
+}
+
+class ActionUtils {
+    private context: Context
+
+    public constructor(context: Context) { this.context = context }
+
+    public getItemAttributes(item: Item) {
+        const mng = ModelsManager.getInstance().getModelManager(this.context.getCurrentUser()!.tenantId)
+        const attrArr: string[] = []
+        const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
+
+        mng.getAttrGroups().forEach(group => {
+            if (group.getGroup().visible) {
+                group.getAttributes().forEach(attr => {
+                    if (attr.valid.includes(item.typeId)) {
+                        for (let i=0; i<attr.visible.length; i++ ) {
+                            const visible: number = attr.visible[i]
+                            if (pathArr.includes(visible)) {
+                                if (!attrArr.find(tst => tst === attr.identifier)) attrArr.push(attr.identifier)
+                                break
+                            }
+                        }
+                    }
+                })
+            }
+        })
+        return attrArr
+    }
+
+    public getRelationAttributes(rel: ItemRelation) {
+        const mng = ModelsManager.getInstance().getModelManager(this.context.getCurrentUser()!.tenantId)
+        const attrArr: string[] = []
+
+        mng.getAttrGroups().forEach(group => {
+            if (group.getGroup().visible) {
+                group.getAttributes().forEach(attr => {
+                    if (attr.relations.includes(rel.relationId)) {
+                        if (!attrArr.find(tst => tst === attr.identifier)) attrArr.push(attr.identifier)
+                    }
+                })
+            }
+        })
+        return attrArr
+    }
+
 }
