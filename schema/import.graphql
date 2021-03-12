@@ -175,11 +175,11 @@ input ItemAccessRequest {
 }
 
 input OtherAccessRequest {
-  audit: Int!
-  search: Int!
-  exportXLS: Int!
-  exportCSV: Int!
-  importXLS: Int!
+  audit: Boolean!
+  search: Boolean!
+  exportXLS: Boolean!
+  exportCSV: Boolean!
+  importXLS: Boolean!
 }
 
 input LOVImportRequest {

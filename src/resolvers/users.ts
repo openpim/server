@@ -77,7 +77,7 @@ export default {
                     configAccess: configAccess || { types: 0, attributes: 0, relations: 0, users: 0, roles: 0, languages: 0 },
                     relAccess: relAccess || { relations: [], access: 0, groups: [] },
                     itemAccess: itemAccess || { valid: [], fromItems: [], access: 0, groups: [] },
-                    otherAccess: otherAccess || { audit: 0, search: 0, exportXLS: 0, exportCSV: 0, importXLS: 0 }
+                    otherAccess: otherAccess || { audit: false, search: false, exportXLS: false, exportCSV: false, importXLS: false }
                 }, {transaction: t})
             })
 

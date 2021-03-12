@@ -244,11 +244,11 @@ export interface IUserImportRequest {
 }
 
 export interface IOtherAccessRequest {
-  audit: number
-  search: number
-  exportXLS: number
-  exportCSV: number
-  importXLS: number
+  audit: boolean
+  search: boolean
+  exportXLS: boolean
+  exportCSV: boolean
+  importXLS: boolean
 }
 
 export interface ILOVImportRequest {

@@ -132,7 +132,7 @@ export async function importRole(context: Context, config: IImportConfig, role: 
                     configAccess: role.configAccess || { types: 0, attributes: 0, relations: 0, users: 0, roles: 0, languages: 0 },
                     relAccess: relAccess,
                     itemAccess: itemAccess,
-                    otherAccess: role.otherAccess || { audit: 0, search: 0, exportXLS: 0, exportCSV: 0, importXLS: 0 }
+                    otherAccess: role.otherAccess || { audit: false, search: false, exportXLS: false, exportCSV: false, importXLS: false }
                 }, {transaction: t})
             })
 
