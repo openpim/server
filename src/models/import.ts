@@ -203,6 +203,7 @@ export interface IRoleImportRequest {
   configAccess: IConfigAccessRequest
   relAccess: IRelAccessRequest
   itemAccess: IItemAccessRequest 
+  otherAccess: IOtherAccessRequest 
 }
 
 export interface IConfigAccessRequest {
@@ -240,6 +241,14 @@ export interface IUserImportRequest {
   roles: [string]
   email: string
   props: any
+}
+
+export interface IOtherAccessRequest {
+  audit: number
+  search: number
+  exportXLS: number
+  exportCSV: number
+  importXLS: number
 }
 
 export interface ILOVImportRequest {

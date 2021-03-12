@@ -131,7 +131,8 @@ export async function importRole(context: Context, config: IImportConfig, role: 
                     name: role.name || '',
                     configAccess: role.configAccess || { types: 0, attributes: 0, relations: 0, users: 0, roles: 0, languages: 0 },
                     relAccess: relAccess,
-                    itemAccess: itemAccess
+                    itemAccess: itemAccess,
+                    otherAccess: role.otherAccess || { audit: 0, search: 0, exportXLS: 0, exportCSV: 0, importXLS: 0 }
                 }, {transaction: t})
             })
 
@@ -165,6 +166,7 @@ export async function importRole(context: Context, config: IImportConfig, role: 
                 
                 data.itemAccess = itemAccess
             }
+            if (role.otherAccess) data.otherAccess = role.otherAccess
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})

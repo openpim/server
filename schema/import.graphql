@@ -143,6 +143,7 @@ input RoleImportRequest {
   configAccess: ConfigAccessRequest
   relAccess: RelAccessRequest
   itemAccess: ItemAccessRequest 
+  otherAccess: OtherAccessRequest 
 }
 
 input ConfigAccessRequest {
@@ -171,6 +172,14 @@ input ItemAccessRequest {
   valid: [String]
   groups: [GroupsAccessRequest]
   fromItems: [String]
+}
+
+input OtherAccessRequest {
+  audit: Int!
+  search: Int!
+  exportXLS: Int!
+  exportCSV: Int!
+  importXLS: Int!
 }
 
 input LOVImportRequest {
