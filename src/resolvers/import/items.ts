@@ -4,13 +4,15 @@ import { Item } from '../../models/items'
 import { sequelize } from '../../models'
 import { QueryTypes } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions } from '../utils'
+import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty } from '../utils'
 import { Attribute } from '../../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
 import { ItemRelation } from '../../models/itemRelations'
 
 import logger from '../../logger'
+import audit from '../../audit'
+import { ChangeType, ItemChanges, AuditItem } from '../../audit'
 
 /*
 
@@ -112,6 +114,16 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 await processItemActions(context, EventType.AfterDelete, data, null, true)
 
+                if (audit.auditEnabled()) {
+                    const itemChanges: ItemChanges = {
+                        typeIdentifier: data.typeIdentifier,
+                        parentIdentifier: data.parentIdentifier,
+                        name: data.name,
+                        values: data.values
+                    }
+                    audit.auditItem(ChangeType.DELETE, item.identifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)
+                }
+    
                 result.result = ImportResult.DELETED
             }
             return result
@@ -197,22 +209,36 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
             await processItemActions(context, EventType.AfterCreate, data, item.values, true)
 
+            if (audit.auditEnabled()) {
+                const itemChanges: ItemChanges = {
+                    typeIdentifier: data.typeIdentifier,
+                    parentIdentifier: data.parentIdentifier,
+                    name: data.name,
+                    values: data.values
+                }
+                audit.auditItem(ChangeType.CREATE, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, data.createdAt)
+            }
+
             result.id = ""+data.id
             result.result = ImportResult.CREATED
         } else {
             // update
-
             if (!context.canEditItem(data)) {
                 result.addError(ReturnMessage.ItemNoAccess)
                 result.result = ImportResult.REJECTED
                 return result
             }
 
+            let itemDiff: AuditItem = {added:{}, changed:{}, old:{}, deleted: {}}
             if (item.typeIdentifier) {
                 const type = checkType(item, result, mng)
                 if (result.result) return result
                 
                 if (data.typeId !== type!.getValue().id) {
+                    if (audit.auditEnabled()) {
+                        itemDiff.changed!.typeIdentifier = type!.getValue().identifier
+                        itemDiff.old!.typeIdentifier = data.typeIdentifier
+                    }
                     data.typeId = type!.getValue().id
                     data.typeIdentifier = type!.getValue().identifier
                 }
@@ -223,6 +249,11 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             if (item.parentIdentifier && data.parentIdentifier !== item.parentIdentifier) {
                 let parent = await checkParent(item, result, mng, context)
                 if (result.result) return result
+
+                if (audit.auditEnabled()) {
+                    itemDiff.changed!.parentIdentifier = item.parentIdentifier
+                    itemDiff.old!.parentIdentifier = data.parentIdentifier
+                }
 
                 // check children
                 const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
@@ -253,7 +284,15 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 }
             }
 
-            if (item.name) data.name = {...data.name, ...item.name}
+            if (item.name) {
+                if (audit.auditEnabled()) {
+                    const nameDiff: AuditItem = diff({name:data.name}, {name:item.name})
+                    itemDiff.added = {...itemDiff.added, ...nameDiff.added}
+                    itemDiff.changed = {...itemDiff.changed, ...nameDiff.changed}
+                    itemDiff.old = {...itemDiff.old, ...nameDiff.old}
+                }
+                data.name = {...data.name, ...item.name}
+            }
 
             if (!item.values) item.values = {}
             await processItemActions(context, EventType.BeforeUpdate, data, item.values, true)
@@ -267,6 +306,13 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 return result
             }
 
+            if (audit.auditEnabled()) {
+                const valuesDiff: AuditItem = diff({values:data.values}, {values:item.values})
+                itemDiff.added = {...itemDiff.added, ...valuesDiff.added}
+                itemDiff.changed = {...itemDiff.changed, ...valuesDiff.changed}
+                itemDiff.old = {...itemDiff.old, ...valuesDiff.old}
+            }
+
             data.values = mergeValues(item.values, data.values)
 
             data.updatedBy = context.getCurrentUser()!.login
@@ -275,6 +321,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             })
 
             await processItemActions(context, EventType.AfterUpdate, data, item.values, true)
+
+            if (audit.auditEnabled()) {
+                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)
+            }
 
             result.id = ""+data.id
             result.result = ImportResult.UPDATED

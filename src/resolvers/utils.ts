@@ -38,6 +38,96 @@ export function mergeValues(newValues: any, oldValues: any): any {
     }
 }
 
+/*!
+ * Find the differences between two objects and push to a new object
+ * @param  {Object} obj1 The original object
+ * @param  {Object} obj2 The object to compare against it
+ * @return {Object}      An object of differences between the two
+ */
+export function diff(obj1: any, obj2: any) {
+    // Make sure an object to compare is provided
+    if (!obj2 || Object.prototype.toString.call(obj2) !== '[object Object]') {
+        return obj1;
+    }
+
+    //
+    // Variables
+    //
+    var diffs: any = {added:{}, changed: {}, old:{}, deleted: {}};
+    var key;
+
+    //
+    // Methods
+    //
+    /**
+     * Compare two items and push non-matches to object
+     * @param  {*}      item1 The first item
+     * @param  {*}      item2 The second item
+     * @param  {String} key   The key in our object
+     */
+    var compare = function (item1: any, item2: any, key: any) {
+        // Get the object type
+        var type1 = Object.prototype.toString.call(item1);
+        var type2 = Object.prototype.toString.call(item2);
+
+        // If type2 is undefined it has been removed
+        if (type2 === '[object Undefined]') {
+            diffs.deleted[key] = item1;
+            return;
+        }
+
+        // If items are different types
+        if (type1 !== type2) {
+            diffs.changed[key] = item2;
+            diffs.old[key] = item1;
+            return;
+        }
+
+        // If an object, compare recursively
+        if (type1 === '[object Object]') {
+            var objDiff = diff(item1, item2);
+            if (Object.keys(objDiff).length > 0) {
+                if (Object.keys(objDiff.added).length > 0) diffs.added[key] = objDiff.added;
+                if (Object.keys(objDiff.changed).length > 0) diffs.changed[key] = objDiff.changed;
+                if (Object.keys(objDiff.old).length > 0) diffs.old[key] = objDiff.old;
+                if (Object.keys(objDiff.deleted).length > 0) diffs.deleted[key] = objDiff.deleted;
+            }
+            return;
+        }
+
+        if (item1 !== item2) {
+            diffs.changed[key] = item2;
+            diffs.old[key] = item1;
+        }
+    };
+
+    //
+    // Compare our objects
+    //
+    // Loop through the first object
+    for (key in obj1) {
+        if (key in obj1) {
+            compare(obj1[key], obj2[key], key);
+        }
+    }
+
+    // Loop through the second object and find missing items
+    for (key in obj2) {
+        if (key in obj2) {
+            if (!(key in obj1) && obj1[key] !== obj2[key]) {
+                diffs.added[key] = obj2[key];
+            }
+        }
+    }
+
+    // Return the object of differences
+    return diffs
+}
+
+export function isObjectEmpty(obj:any) {
+    return Object.keys(obj).length === 0;
+}
+
 export function checkValues(mng: ModelManager, values: any) {
     for(const prop in values) {
         const attr = mng.getAttributeByIdentifier(prop)?.attr

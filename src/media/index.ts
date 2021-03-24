@@ -10,6 +10,7 @@ import { QueryTypes } from 'sequelize'
 import logger from '../logger'
 import { Type } from '../models/types'
 import { ItemRelation } from '../models/itemRelations'
+import audit, { AuditItem, ChangeType } from '../audit'
 
 export async function processDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -75,12 +76,29 @@ export async function processUpload(context: Context, req: Request, res: Respons
             const fm = FileManager.getInstance()
             await fm.saveFile(context.getCurrentUser()!.tenantId, item, file)
 
+            const mimeOld = item.mimeType
+            const fileOld = item.fileOrigName
+
             item.fileOrigName = file.name
             item.mimeType = file.type
             item.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
+
+            if (audit.auditEnabled()) {
+                const itemChanges: AuditItem = {
+                    changed: {
+                        mimeType: '',
+                        fileOrigName: ''
+                    },
+                    old: {
+                        mimeType: mimeOld,
+                        fileOrigName: fileOld
+                    }
+                }
+                audit.auditItem(ChangeType.UPDATE, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
+            }
 
             res.send('OK')
         } catch (error) {
@@ -182,6 +200,17 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
+
+            if (audit.auditEnabled()) {
+                const itemChanges: AuditItem = {
+                    added: {
+                        mimeType: file.type,
+                        fileOrigName: file.name
+                    }
+                }
+                audit.auditItem(ChangeType.CREATE, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
+            }
+
 
             // *** create link to item ***
             const rel = mng.getRelationById(parseInt(relationIdStr))

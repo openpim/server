@@ -1,15 +1,18 @@
 import Context from '../context'
 import { sequelize } from '../models'
-import { QueryTypes } from 'sequelize'
+import { QueryTypes, Utils } from 'sequelize'
 import { Item } from '../models/items'
 import {  ModelsManager } from '../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions } from './utils'
+import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../models/actions'
 import { ItemRelation } from '../models/itemRelations'
+
+import audit from '../audit'
+import { ChangeType, ItemChanges, AuditItem } from '../audit'
 
 export default {
     Query: {
@@ -283,6 +286,16 @@ export default {
 
             await processItemActions(context, EventType.AfterCreate, item, values, false)
 
+            if (audit.auditEnabled()) {
+                const itemChanges: ItemChanges = {
+                    typeIdentifier: item.typeIdentifier,
+                    parentIdentifier: item.parentIdentifier,
+                    name: item.name,
+                    values: values
+                }
+                audit.auditItem(ChangeType.CREATE, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, item.createdAt)
+            }
+
             return item.id
         },
         updateItem: async (parent: any, { id, name, values }: any, context: Context) => {
@@ -298,22 +311,32 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            if (name) item.name = name
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             item.updatedBy = context.getCurrentUser()!.login
 
             await processItemActions(context, EventType.BeforeUpdate, item, values, false)
 
+            let itemDiff: AuditItem
             if (values) {
                 filterValues(context.getEditItemAttributes(item), values)
                 checkValues(mng, values)
+                if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values}, {name: name, values: values})
                 item.values = mergeValues(values, item.values)
+            } else {
+                if (audit.auditEnabled()) itemDiff = diff({name: item.name}, {name: name})
             }
+
+            if (name) item.name = name
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
 
             await processItemActions(context, EventType.AfterUpdate, item, values, false)
+
+            if (audit.auditEnabled()) {
+                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+            }
+
             return item.id
         },
         moveItem: async (parent: any, { id, parentId }: any, context: Context) => {
@@ -358,11 +381,17 @@ export default {
             let newPath = parentItem.path+"."+item.id
             if (newPath !== item.path) {
                 item.path = newPath
+                const old = item.parentIdentifier
                 item.parentIdentifier = parentItem.identifier;
 
                 await sequelize.transaction(async (t) => {
                     await item.save({transaction: t})
                 })
+
+                if (audit.auditEnabled()) {
+                    const itemDiff: AuditItem = {changed: {parentIdentifier: parentItem.identifier}, old: {parentIdentifier: old}}
+                    audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff, context.getCurrentUser()!.login, item.updatedAt)
+                }
             }
 
             return item
@@ -418,6 +447,17 @@ export default {
             })
 
             await processItemActions(context, EventType.AfterDelete, item, null, false)
+
+            if (audit.auditEnabled()) {
+                const itemChanges: ItemChanges = {
+                    typeIdentifier: item.typeIdentifier,
+                    parentIdentifier: item.parentIdentifier,
+                    name: item.name,
+                    values: item.values
+                }
+                audit.auditItem(ChangeType.DELETE, item.identifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
+            }
+
             return true
         },
         removeFile: async (parent: any, { id }: any, context: Context) => {
@@ -441,6 +481,9 @@ export default {
             const fm = FileManager.getInstance()
             await fm.removeFile(item)
 
+            const mimeOld = item.mimeType
+            const fileOld = item.fileOrigName
+
             item.mimeType = ''
             item.fileOrigName = ''
 
@@ -448,6 +491,20 @@ export default {
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
+
+            if (audit.auditEnabled()) {
+                const itemChanges: AuditItem = {
+                    changed: {
+                        mimeType: '',
+                        fileOrigName: ''
+                    },
+                    old: {
+                        mimeType: mimeOld,
+                        fileOrigName: fileOld
+                    }
+                }
+                audit.auditItem(ChangeType.UPDATE, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
+            }
 
             return true
         }

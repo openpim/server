@@ -3,7 +3,8 @@ import { ModelsManager } from '../models/manager'
 import { sequelize } from '../models'
 import { Action } from '../models/actions'
 import { Item } from '../models/items'
-import { processItemButtonActions, testAction } from './utils'
+import { diff, isObjectEmpty, processItemButtonActions, testAction } from './utils'
+import audit, { AuditItem, ChangeType } from '../audit'
 
 export default {
     Query: {
@@ -112,12 +113,20 @@ export default {
 
             const values = await processItemButtonActions(context, buttonText, item)
 
+            let itemDiff: AuditItem
+            if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
+
             item.values = values
 
             item.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
+
+            if (audit.auditEnabled()) {
+                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+            }
+
             return true
         },
         testAction: async (parent: any, { itemId, actionId }: any, context: Context) => {
@@ -146,6 +155,9 @@ export default {
             try {
                 const { values, log, compileError } = await testAction(context, act, item)
 
+                let itemDiff: AuditItem
+                if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
+    
                 item.values = values
 
                 item.updatedBy = context.getCurrentUser()!.login
@@ -153,6 +165,10 @@ export default {
                     await item.save({transaction: t})
                 })
 
+                if (audit.auditEnabled()) {
+                    if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+                }
+    
                 return {failed: compileError ? true : false, log: log, error: '', compileError:compileError || ''}
             } catch (error) {
                 return {failed: true, log: '', error: error.message, compileError:''}

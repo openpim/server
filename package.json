@@ -30,6 +30,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^7.11.0",
     "@types/dotenv": "^8.2.0",
     "@types/formidable": "^1.0.31",
     "@types/graphql-type-json": "^0.3.2",
