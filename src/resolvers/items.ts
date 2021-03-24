@@ -440,6 +440,7 @@ export default {
             item.updatedBy = context.getCurrentUser()!.login
 
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
+            const oldIdentifier = item.identifier
             item.identifier = item.identifier + '_d_' + Date.now() 
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
@@ -455,7 +456,7 @@ export default {
                     name: item.name,
                     values: item.values
                 }
-                audit.auditItem(ChangeType.DELETE, item.identifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
+                audit.auditItem(ChangeType.DELETE, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
             }
 
             return true

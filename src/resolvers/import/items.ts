@@ -106,6 +106,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 await processItemActions(context, EventType.BeforeDelete, data, null, true)
 
+                const oldIdentifier = item.identifier
                 data.identifier = item.identifier + '_d_' + Date.now() 
                 await sequelize.transaction(async (t) => {
                     await data.save({transaction: t})
@@ -121,7 +122,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                         name: data.name,
                         values: data.values
                     }
-                    audit.auditItem(ChangeType.DELETE, item.identifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)
+                    audit.auditItem(ChangeType.DELETE, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)
                 }
     
                 result.result = ImportResult.DELETED
