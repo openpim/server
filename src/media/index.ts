@@ -10,7 +10,7 @@ import { QueryTypes } from 'sequelize'
 import logger from '../logger'
 import { Type } from '../models/types'
 import { ItemRelation } from '../models/itemRelations'
-import audit, { AuditItem, ChangeType } from '../audit'
+import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
 
 export async function processDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -264,6 +264,16 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
             })
+
+            if (audit.auditEnabled()) {
+                const itemRelationChanges: ItemRelationChanges = {
+                    relationIdentifier: itemRelation.relationIdentifier,
+                    itemIdentifier: itemRelation.itemIdentifier,
+                    targetIdentifier: itemRelation.targetIdentifier,
+                    values: itemRelation.values
+                }
+                audit.auditItemRelation(ChangeType.CREATE, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
+            }
 
             res.send('OK')
         } catch (error) {

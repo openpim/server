@@ -27,6 +27,20 @@ class Audit {
         })
     }
 
+    public async auditItemRelation(change: ChangeType, identifier: string, item: AuditItemRelation, login: string, changedAt: Date) {
+        if (!this.auditEnabled()) return
+        await this.client.index({
+            index: "item_relations",
+            body: {
+                identifier: identifier,
+                operation: change,
+                user: login,
+                changedAt: changedAt,
+                data: item
+            }
+        })
+    }
+
 }
 
 export enum ChangeType {
@@ -50,8 +64,15 @@ export interface ItemChanges {
     fileOrigName?: string
     mimeType?: string
 }
-  
+
 export interface AuditItemRelation {
+    added?: ItemRelationChanges,
+    changed?: ItemRelationChanges,
+    old?: ItemRelationChanges,
+    deleted?: ItemRelationChanges
+}
+
+export interface ItemRelationChanges {
     relationIdentifier?: string
     itemIdentifier?: string
     targetIdentifier?: string

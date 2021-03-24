@@ -4,8 +4,9 @@ import { Item } from '../models/items'
 import { ItemRelation, IItemRelation } from '../models/itemRelations'
 import { ModelsManager } from '../models/manager'
 import { QueryTypes } from 'sequelize'
-import { filterValues, mergeValues, checkValues, processItemRelationActions } from './utils'
+import { filterValues, mergeValues, checkValues, processItemRelationActions, diff, isObjectEmpty } from './utils'
 import { EventType } from '../models/actions'
+import audit, { AuditItemRelation, ChangeType, ItemRelationChanges } from '../audit'
 
 export default {
     Query: {
@@ -251,6 +252,16 @@ export default {
             })
 
             await processItemRelationActions(context, EventType.AfterCreate, itemRelation, values, false)
+ 
+            if (audit.auditEnabled()) {
+                const itemRelationChanges: ItemRelationChanges = {
+                    relationIdentifier: itemRelation.relationIdentifier,
+                    itemIdentifier: itemRelation.itemIdentifier,
+                    targetIdentifier: itemRelation.targetIdentifier,
+                    values: values
+                }
+                audit.auditItemRelation(ChangeType.CREATE, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
+            }
 
             return itemRelation.id
         },
@@ -267,20 +278,30 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
+            let relDiff: AuditItemRelation = {added:{}, changed: {}, old: {}, deleted: {}}
+
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             const rel = mng.getRelationById(itemRelation.relationId)
             if (targetId) {
                 const nTargetId = parseInt(targetId)
-                const targetItem = await Item.applyScope(context).findByPk(nTargetId)
-                if (!targetItem) {
-                    throw new Error('Failed to find target item by id: ' + targetId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+                if (itemRelation.targetId !== nTargetId) {
+                    const targetItem = await Item.applyScope(context).findByPk(nTargetId)
+                    if (!targetItem) {
+                        throw new Error('Failed to find target item by id: ' + targetId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+                    }
+                    const tst3 = rel!.targets.find((typeId: number) => typeId === targetItem.typeId)
+                    if (!tst3) {
+                        throw new Error('Relation with id: ' + itemRelation.relationId + ' can not have target with type: ' + targetItem.typeId + ', tenant: ' + mng.getTenantId())
+                    }
+
+                    if (audit.auditEnabled()) {
+                        relDiff.changed!.targetIdentifier = targetItem.identifier
+                        relDiff.old!.targetIdentifier = itemRelation.targetIdentifier
+                    }
+
+                    itemRelation.targetId = nTargetId
+                    itemRelation.targetIdentifier = targetItem.identifier
                 }
-                const tst3 = rel!.targets.find((typeId: number) => typeId === targetItem.typeId)
-                if (!tst3) {
-                    throw new Error('Relation with id: ' + itemRelation.relationId + ' can not have target with type: ' + targetItem.typeId + ', tenant: ' + mng.getTenantId())
-                }
-                itemRelation.targetId = nTargetId
-                itemRelation.targetIdentifier = targetItem.identifier
             }
 
             await processItemRelationActions(context, EventType.BeforeUpdate, itemRelation, values, false)
@@ -288,6 +309,15 @@ export default {
             if (values) {
                 filterValues(context.getEditItemRelationAttributes(itemRelation.relationId), values)
                 checkValues(mng, values)
+
+                let valuesDiff: AuditItemRelation
+                if (audit.auditEnabled()) {
+                    valuesDiff = diff({values: itemRelation.values}, {values: values})
+                    relDiff.added = {...relDiff.added, ...valuesDiff.added}
+                    relDiff.changed = {...relDiff.changed, ...valuesDiff.changed}
+                    relDiff.old = {...relDiff.old, ...valuesDiff.old}
+                }
+
                 itemRelation.values = mergeValues(values, itemRelation.values)
             }
             itemRelation.updatedBy = context.getCurrentUser()!.login
@@ -295,6 +325,11 @@ export default {
                 await itemRelation.save({transaction: t})
             })
             await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, values, false)
+
+            if (audit.auditEnabled()) {
+                if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
+            }
+
             return itemRelation.id
         },
         removeItemRelation: async (parent: any, { id }: any, context: Context) => {
@@ -314,6 +349,7 @@ export default {
 
             itemRelation.updatedBy = context.getCurrentUser()!.login
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
+            const oldIdentifier = itemRelation.identifier
             itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now() 
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
@@ -321,6 +357,16 @@ export default {
             })
 
             await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, false)
+
+            if (audit.auditEnabled()) {
+                const itemRelationChanges: ItemRelationChanges = {
+                    relationIdentifier: itemRelation.relationIdentifier,
+                    itemIdentifier: itemRelation.itemIdentifier,
+                    targetIdentifier: itemRelation.targetIdentifier,
+                    values: itemRelation.values
+                }
+                audit.auditItemRelation(ChangeType.DELETE, oldIdentifier, {deleted: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.updatedAt)
+            }
 
             return true
         }
