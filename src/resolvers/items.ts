@@ -103,11 +103,17 @@ export default {
             const arr = ids.map((elem:any) => parseInt(elem))
             let items = await Item.applyScope(context).findAll({ where: { id: arr} })
             items = items.filter(item => context.canViewItem(item))
-
+ 
             items.forEach(item => {   
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
             })
+
+            // DB can return data in different order then we send to it, so we need to order it
+            items.sort(function (a, b) {
+                return arr.indexOf(a.id) - arr.indexOf(b.id)
+            })
+
             return items
         },
         getItemByIdentifier: async (parent: any, { identifier }: any, context: Context) => {

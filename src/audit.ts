@@ -4,9 +4,11 @@ class Audit {
     private client: any
 
     public constructor() {
-        this.client = new Client({
-            node: process.env.AUDIT_URL
-        })
+        if (this.auditEnabled()) {
+            this.client = new Client({
+                node: process.env.AUDIT_URL
+            })
+        }
     }    
 
     public auditEnabled(): boolean {
