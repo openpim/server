@@ -19,6 +19,7 @@ type Mutation {
 type Asset {
   id: ID!
   identifier: String!
+  name: LanguageDependentString!
   image: Boolean!
   mainImage: Boolean!
   mimeType: String!
