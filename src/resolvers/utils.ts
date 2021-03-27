@@ -5,9 +5,17 @@ import { EventType, TriggerType, Action } from "../models/actions"
 import {VM, VMScript} from 'vm2'
 import Context from "../context"
 import { ItemRelation } from "../models/itemRelations"
+import { exec } from 'child_process'
 const { Op } = require("sequelize");
+import { sequelize } from '../models'
+import { QueryTypes } from 'sequelize'
+import audit, { ChangeType, ItemChanges } from '../audit'
+
+const util = require('util');
+const awaitExec = util.promisify(exec);
 
 import logger from '../logger'
+const dateFormat = require("dateformat")
 
 export function filterValues(allowedAttributes: string[] | null, values:any) {
     if (allowedAttributes) {
@@ -164,6 +172,7 @@ export async function processItemActions(context: Context, event: EventType, ite
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
+        system: { exec, awaitExec },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, 
         models: { 
@@ -192,6 +201,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
+        system: { exec, awaitExec },
         buttonText: buttonText, 
         item: makeItemProxy(item), values: values, 
         models: { 
@@ -209,6 +219,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
     const compileError = await processActionsWithLog(mng, [action], { Op: Op, 
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
+        system: { exec, awaitExec },
         item: makeItemProxy(item), values: values, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
@@ -300,6 +311,10 @@ function makeItemProxy(item: any) {
                 return async(...args: any) => {
                     return await target[ property ].apply( target, args )
                 }
+            } else  if ((<string>property) =='set') {
+                return async(...args: any) => {
+                    return await target[ property ].apply( target, args )
+                }
             } else  if ((<string>property) =='id') { return target[ property ]
             } else  if ((<string>property) =='tenantId') { return target[ property ]
             } else  if ((<string>property) =='identifier') { return target[ property ]
@@ -354,6 +369,7 @@ export async function processItemRelationActions(context: Context, event: EventT
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
+        system: { exec, awaitExec },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
@@ -371,6 +387,10 @@ function makeItemRelationProxy(item: any) {
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='destroy') {
+                return async(...args: any) => {
+                    return await target[ property ].apply( target, args )
+                }
+            } else  if ((<string>property) =='set') {
                 return async(...args: any) => {
                     return await target[ property ].apply( target, args )
                 }
@@ -411,12 +431,14 @@ function makeItemRelationProxy(item: any) {
 }
 
 class ActionUtils {
-    private tenantId!: string
+    #context: Context // hard private field to avoid access to it from action (to avoid ability to change tennantId)
 
-    public constructor(context: Context) { this.tenantId = context.getCurrentUser()!.tenantId }
+    public constructor(context: Context) {
+        this.#context = context 
+    }
 
     public getItemAttributes(item: Item) {
-        const mng = ModelsManager.getInstance().getModelManager(this.tenantId)
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
         const attrArr: string[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
@@ -439,7 +461,7 @@ class ActionUtils {
     }
 
     public getRelationAttributes(rel: ItemRelation) {
-        const mng = ModelsManager.getInstance().getModelManager(this.tenantId)
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
         const attrArr: string[] = []
 
         mng.getAttrGroups().forEach(group => {
@@ -452,6 +474,112 @@ class ActionUtils {
             }
         })
         return attrArr
+    }
+
+    public formatDate(date: Date, format: string) {
+        return dateFormat(date, format)
+    }
+
+    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any) {
+        if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+
+        const tst = await Item.applyScope(this.#context).findOne({
+            where: {
+                identifier: identifier
+            }
+        })
+        if (tst) {
+            throw new Error('Identifier: ' + identifier + ' already exists, tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+        const type = mng.getTypeByIdentifier(typeIdentifier)
+        if (!type) {
+            throw new Error('Failed to find type by identifier: ' + typeIdentifier + ', tenant: ' + mng.getTenantId())
+        }
+        const nTypeId = type.getValue()!.id;
+
+        const results:any = await sequelize.query("SELECT nextval('items_id_seq')", { 
+            type: QueryTypes.SELECT
+        });
+        const id = (results[0]).nextval
+        
+        let path:string
+        if (parentIdentifier) {
+            const parentItem = await Item.applyScope(this.#context).findOne({
+                where: {
+                    identifier: parentIdentifier
+                }
+            })
+            if (!parentItem) {
+                throw new Error('Failed to find parent item by identifier: ' + parentIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+            }
+
+            const parentType = mng.getTypeById(parentItem.typeId)!
+            const tstType = parentType.getChildren().find(elem => (elem.getValue().id === nTypeId) || (elem.getValue().link === nTypeId))
+            if (!tstType) {
+                throw new Error('Failed to create item with type: ' + nTypeId + ' under type: ' + parentItem.typeId + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+            }
+
+            parentIdentifier = parentItem.identifier
+            path = parentItem.path + "." + id
+        } else {
+            const tstType = mng.getRoot().getChildren().find(elem => elem.getValue().id === nTypeId)
+            if (!tstType) {
+                throw new Error('Failed to create root item with type: ' + nTypeId + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+            }
+
+            parentIdentifier = ''
+            path = '' + id
+        }
+
+        if (!this.#context.canEditItem2(nTypeId, path)) {
+            throw new Error('User :' + this.#context.getCurrentUser()?.login + ' can not create such item , tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const item = Item.build ({
+            id: id,
+            path: path,
+            identifier: identifier,
+            tenantId: this.#context.getCurrentUser()!.tenantId,
+            createdBy: this.#context.getCurrentUser()!.login,
+            updatedBy: this.#context.getCurrentUser()!.login,
+            name: name,
+            typeId: nTypeId,
+            typeIdentifier: type.getValue().identifier,
+            parentIdentifier: parentIdentifier, 
+            values: null,
+            fileOrigName: '',
+            storagePath: '',
+            mimeType: ''
+        })
+
+        if (!values) values = {}
+
+        await processItemActions(this.#context, EventType.BeforeCreate, item, values, false)
+
+        filterValues(this.#context.getEditItemAttributes2(nTypeId, path), values)
+        checkValues(mng, values)
+
+        item.values = values
+
+        await sequelize.transaction(async (t) => {
+            await item.save({transaction: t})
+        })
+
+        await processItemActions(this.#context, EventType.AfterCreate, item, values, false)
+
+        if (audit.auditEnabled()) {
+            const itemChanges: ItemChanges = {
+                typeIdentifier: item.typeIdentifier,
+                parentIdentifier: item.parentIdentifier,
+                name: item.name,
+                values: values
+            }
+            audit.auditItem(ChangeType.CREATE, item.identifier, {added: itemChanges}, this.#context.getCurrentUser()!.login, item.createdAt)
+        }
+
+        return makeItemProxy(item)
     }
 
 }
