@@ -16,6 +16,17 @@ export class SavedSearch extends Base {
     }
 }
 
+export class SavedColumns extends Base {
+  public identifier!: string
+  public name!: any
+  public public!: boolean
+  public columns!: any
+  public user!: string
+  public static applyScope(context: Context) {
+    return SavedColumns.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
+  }
+}
+
 export function init(sequelize: Sequelize):void {
     SavedSearch.init({
         identifier: {
@@ -68,4 +79,47 @@ export function init(sequelize: Sequelize):void {
           }
         }        
     });    
+    SavedColumns.init({
+      identifier: {
+        type: new DataTypes.STRING(250),
+        allowNull: false,
+        unique: 'uniqueIdentifierColumns'
+      },
+      name: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      public: {
+        type: 'BOOLEAN',
+        allowNull: false
+      },
+      columns: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+      },        
+      user: {
+          type: new DataTypes.STRING(250),
+          allowNull: false
+      },
+      ...BaseColumns,
+      tenantId: { // override base for uniqueIdentifier
+        type: new DataTypes.STRING(50),
+        allowNull: false,
+        unique: 'uniqueIdentifierColumns'
+      }
+    }, {
+      tableName: 'savedColumns',
+      paranoid: true,
+      timestamps: true,
+      sequelize: sequelize, 
+      scopes: {
+        tenant(value) {
+          return {
+            where: {
+              tenantId: value
+            }
+          }
+        }
+      }        
+  });        
 }

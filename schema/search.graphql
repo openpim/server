@@ -2,6 +2,7 @@ type Query {
   search(requests: [SearchRequest]!): SearchResponses!
   getSearchByIdentifier(identifier: String!): SavedSearch
   getSearches(onlyMy: Boolean!): [SavedSearch]!
+  getColumns(onlyMy: Boolean!): [SavedColumns]!
 }
 
 type Mutation {
@@ -25,6 +26,15 @@ type SavedSearch {
   extended: Boolean!
   filters: JSON
   whereClause: JSONObject
+  user: String!
+}
+
+type SavedColumns {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  public: Boolean!
+  columns: JSON
   user: String!
 }
 

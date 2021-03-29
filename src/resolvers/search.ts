@@ -9,7 +9,7 @@ import { ModelsManager } from '../models/manager'
 import { filterValues } from './utils'
 import { User, Role } from '../models/users'
 import { LOV } from '../models/lovs'
-import { SavedSearch } from '../models/search'
+import { SavedColumns, SavedSearch } from '../models/search'
 import { sequelize } from '../models'
 import { Op } from 'sequelize'
 
@@ -280,6 +280,17 @@ export default {
                 where[Op.or] = [{user: context.getCurrentUser()!.login},{public: true}]
             }
             const arr = await SavedSearch.applyScope(context).findAll({ where: where })
+            return arr
+        },
+        getColumns: async (parent: any, { onlyMy }: any, context: Context) => {
+            context.checkAuth()
+            const where:any = {}
+            if (onlyMy) {
+                where.user = context.getCurrentUser()!.login
+            } else {
+                where[Op.or] = [{user: context.getCurrentUser()!.login},{public: true}]
+            }
+            const arr = await SavedColumns.applyScope(context).findAll({ where: where, order: [['user', 'DESC']] })
             return arr
         },
     },
