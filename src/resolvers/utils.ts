@@ -198,7 +198,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
         return false
     })
     const values = {...item.values}
-    await processActions(mng, actions, { Op: Op,
+    const ret = await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
         system: { exec, awaitExec },
@@ -209,14 +209,14 @@ export async function processItemButtonActions(context: Context, buttonText: str
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
         } 
     })
-    return values
+    return {values:values, result: ret[0]}
 }
 
 export async function testAction(context: Context, action: Action, item: Item) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const values = {...item.values}
     let log = ''
-    const compileError = await processActionsWithLog(mng, [action], { Op: Op, 
+    const ret = await processActionsWithLog(mng, [action], { Op: Op, 
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
         system: { exec, awaitExec },
@@ -228,10 +228,9 @@ export async function testAction(context: Context, action: Action, item: Item) {
         { 
             log: ((...args: any) => { log += '' + args + '\n'}),
             error: ((...args: any) => { log += '[ERROR] ' + args + '\n'}),
-        },
-        true
+        }
     )
-    return { values, log, compileError }
+    return { values, log, ...ret[0] }
 }
 
 async function processActions(mng: ModelManager, actions: Action[], sandbox: any) {
@@ -239,11 +238,13 @@ async function processActions(mng: ModelManager, actions: Action[], sandbox: any
         log: ((...args: any) => {logger.info('ACTION: ' + args)}),
         error: ((...args: any) => {logger.error('ACTION: ' + args)})
     }
-    await processActionsWithLog(mng, actions, sandbox, cons , false)
+    return await processActionsWithLog(mng, actions, sandbox, cons)
 }
 
-async function processActionsWithLog(mng: ModelManager, actions: Action[], sandbox: any, console: any, returnCompileError: boolean) {
-        if (actions.length > 0) {
+async function processActionsWithLog(mng: ModelManager, actions: Action[], sandbox: any, console: any): 
+    Promise<{identifier: string, compileError?: string, message?: string, error?:string}[]> {
+    const retArr = []
+    if (actions.length > 0) {
         const vm = new VM({
             timeout: 3000,
             sandbox: sandbox
@@ -252,9 +253,9 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
 
         for (let i = 0; i < actions.length; i++) {
             const action = actions[i]
-            let script:VMScript | string = mng.getActionsCache()[action.identifier]
-            if (script !== 'compile_error') {
-                if (!script) {
+            let script:VMScript | {compileError: boolean, error: string} | undefined = mng.getActionsCache()[action.identifier]
+            if (script instanceof VMScript || script === undefined) {
+                if (script === undefined) {
                     const code = `
                     async () => {
                         ` + action.code + `
@@ -264,19 +265,33 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                     try {
                         script.compile()
                     } catch (err) {
-                        if (returnCompileError) return err.message
+                        retArr.push({identifier: action.identifier, compileError: err.message})
                         logger.error('Failed to compile script.', err);
-                        script = 'compile_error'
+                        script = {compileError: true, error: err.message}
                     }
                     mng.getActionsCache()[action.identifier] = script
                 }
-                if (script !== 'compile_error') {
+                if (script instanceof VMScript) {
                     const funct = vm.run(<VMScript>script)
-                    await funct()
+                    const ret = await funct()
+                    if (ret) {
+                        if (typeof ret === 'object') {
+                            retArr.push({identifier: action.identifier, message: ret.message, error: ret.error})
+                        } else {
+                            retArr.push({identifier: action.identifier, message: ''+ret})
+                        }
+                    } else {
+                        retArr.push({identifier: action.identifier})
+                    }
+                } else {
+                    retArr.push({identifier: action.identifier, compileError: script.error})
                 }
+            } else {
+                retArr.push({identifier: action.identifier, compileError: script.error})
             }
         }
-    }    
+    }
+    return retArr
 }
 
 function makeModelProxy(model: any, itemProxy: any) {

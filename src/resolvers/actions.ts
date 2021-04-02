@@ -111,7 +111,7 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const values = await processItemButtonActions(context, buttonText, item)
+            const { values, result } = await processItemButtonActions(context, buttonText, item)
 
             let itemDiff: AuditItem
             if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
@@ -127,7 +127,7 @@ export default {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }
 
-            return true
+            return result
         },
         testAction: async (parent: any, { itemId, actionId }: any, context: Context) => {
             context.checkAuth()
@@ -153,7 +153,7 @@ export default {
             }
 
             try {
-                const { values, log, compileError } = await testAction(context, act, item)
+                const { values, log, compileError, message, error } = await testAction(context, act, item)
 
                 let itemDiff: AuditItem
                 if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
@@ -169,7 +169,7 @@ export default {
                     if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
                 }
     
-                return {failed: compileError ? true : false, log: log, error: '', compileError:compileError || ''}
+                return {failed: compileError ? true : false, log: log, error: error, message: message, compileError:compileError || ''}
             } catch (error) {
                 return {failed: true, log: '', error: error.message, compileError:''}
             }

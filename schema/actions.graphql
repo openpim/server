@@ -6,7 +6,7 @@ type Mutation {
   createAction(identifier: String!, name: LanguageDependentString!, code: String!, triggers: JSON!): ID!
   updateAction(id: ID!, name: LanguageDependentString, code: String, triggers: JSON) : ID!
   removeAction(id: ID!) : Boolean!
-  executeButtonAction(itemId: ID!, buttonText: String!) : Boolean!
+  executeButtonAction(itemId: ID!, buttonText: String!) : ButtonActionResult!
   testAction(itemId: ID!, actionId: ID!) : ActionTestResult
 }
 
@@ -26,5 +26,12 @@ type ActionTestResult {
   log: String!
   failed: Boolean!
   error: String,
-  compileError: String
+  compileError: String,
+  message: String,
+}
+
+type ButtonActionResult {
+  error: String,
+  compileError: String,
+  message: String,
 }
