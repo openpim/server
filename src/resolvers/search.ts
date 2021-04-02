@@ -310,6 +310,7 @@ export default {
                 if (extended != null) data.extended = extended
                 if (filters) data.filters = filters
                 if (whereClause) data.whereClause = whereClause
+                if (publicSearch != null) data.public = publicSearch
                 data.updatedBy = context.getCurrentUser()!.login
                 await sequelize.transaction(async (t) => {
                     await data.save({transaction: t})
