@@ -14,10 +14,35 @@ import { ItemRelation } from '../models/itemRelations'
 import audit from '../audit'
 import { ChangeType, ItemChanges, AuditItem } from '../audit'
 
+
+function generateOrder(order: string[][]) {
+    let result = ''
+    for (let i = 0; i < order.length; i++) {
+        const arr = order[i]
+        const field = arr[0]
+        const idx = field.indexOf('.')
+        let column
+        if (idx !== -1) {
+            column = field.substring(0, idx)+"->'"+field.substring(idx+1)+"'"
+        } else {
+            column = field
+        }
+        column += " " + arr[1]
+
+        if (i !== order.length-1) column += ', '
+    }
+    if (result.length === 0){
+        result = 'id'
+    }
+    return result
+}
+
 export default {
     Query: {
-        getItems: async (parent: any, { parentId, offset, limit  }: any, context: Context) => {
+        getItems: async (parent: any, { parentId, offset, limit, order  }: any, context: Context) => {
             context.checkAuth()
+            const orderSql = generateOrder(order)
+            console.log(JSON.stringify(order), orderSql)
             let items: Item[]
             let cnt = {count: '0'}
             if (!parentId) {
@@ -29,7 +54,7 @@ export default {
                     raw: true,
                     type: QueryTypes.SELECT
                 })
-                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 order by id limit :limit offset :offset', {
+                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 order by '+orderSql+' DESC limit :limit offset :offset', {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         offset: offset,
@@ -55,7 +80,7 @@ export default {
                     raw: true,
                     type: QueryTypes.SELECT
                 })
-                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery order by id limit :limit offset :offset', {
+                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery order by '+orderSql+' limit :limit offset :offset', {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         lquery: parentItem.path + '.*{1}',

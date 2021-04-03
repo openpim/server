@@ -1,5 +1,5 @@
 type Query {
-  getItems(parentId: ID!, offset: Int!, limit: Int!): ItemsResponse
+  getItems(parentId: ID!, offset: Int!, limit: Int!, order: JSON): ItemsResponse
   getItem(id: ID!): Item
   getItemsByIds(ids: [ID]!): [Item]
   getItemByIdentifier(identifier: String!): Item
