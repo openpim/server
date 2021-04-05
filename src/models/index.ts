@@ -27,6 +27,7 @@ export async function initModels() {
         <string>process.env.DATABASE_USER,
         <string>process.env.DATABASE_PASSWORD, {
         host: process.env.DATABASE_URL,
+        port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT) : 5432,
         dialect: 'postgres',
         logging: logger.debug.bind(logger)
     })
