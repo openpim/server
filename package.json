@@ -52,7 +52,7 @@
     "jimp": "^0.13.0",
     "jsonwebtoken": "^8.5.1",
     "pg": "^7.18.2",
-    "sequelize": "^6.2.3",
+    "sequelize": "^6.6.2",
     "vm2": "^3.9.2",
     "winston": "^3.3.3",
     "xregexp": "^4.3.0"
