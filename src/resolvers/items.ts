@@ -16,6 +16,8 @@ import { ChangeType, ItemChanges, AuditItem } from '../audit'
 
 
 function generateOrder(order: string[][]) {
+    if (!order) return 'id ASC'
+
     let result = ''
     for (let i = 0; i < order.length; i++) {
         const arr = order[i]
@@ -32,7 +34,7 @@ function generateOrder(order: string[][]) {
         if (i !== order.length-1) column += ', '
     }
     if (result.length === 0){
-        result = 'id'
+        result = 'id ASC'
     }
     return result
 }
@@ -42,7 +44,6 @@ export default {
         getItems: async (parent: any, { parentId, offset, limit, order  }: any, context: Context) => {
             context.checkAuth()
             const orderSql = generateOrder(order)
-            console.log(JSON.stringify(order), orderSql)
             let items: Item[]
             let cnt = {count: '0'}
             if (!parentId) {
@@ -54,7 +55,7 @@ export default {
                     raw: true,
                     type: QueryTypes.SELECT
                 })
-                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 order by '+orderSql+' DESC limit :limit offset :offset', {
+                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 order by '+orderSql+' limit :limit offset :offset', {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         offset: offset,
