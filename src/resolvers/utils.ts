@@ -14,6 +14,9 @@ import audit, { ChangeType, ItemChanges } from '../audit'
 const util = require('util');
 const awaitExec = util.promisify(exec);
 
+import fetch from 'node-fetch'
+import { URLSearchParams } from 'url'
+
 import logger from '../logger'
 const dateFormat = require("dateformat")
 
@@ -172,7 +175,7 @@ export async function processItemActions(context: Context, event: EventType, ite
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
-        system: { exec, awaitExec },
+        system: { exec, awaitExec, fetch, URLSearchParams },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, 
         models: { 
@@ -201,7 +204,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     const ret = await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
-        system: { exec, awaitExec },
+        system: { exec, awaitExec, fetch, URLSearchParams },
         buttonText: buttonText, 
         item: makeItemProxy(item), values: values, 
         models: { 
@@ -219,7 +222,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
     const ret = await processActionsWithLog(mng, [action], { Op: Op, 
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
-        system: { exec, awaitExec },
+        system: { exec, awaitExec, fetch, URLSearchParams },
         item: makeItemProxy(item), values: values, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
@@ -384,7 +387,7 @@ export async function processItemRelationActions(context: Context, event: EventT
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
-        system: { exec, awaitExec },
+        system: { exec, awaitExec, fetch, URLSearchParams },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
