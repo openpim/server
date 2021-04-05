@@ -23,15 +23,14 @@ function generateOrder(order: string[][]) {
         const arr = order[i]
         const field = arr[0]
         const idx = field.indexOf('.')
-        let column
         if (idx !== -1) {
-            column = field.substring(0, idx)+"->'"+field.substring(idx+1)+"'"
+            result = field.substring(0, idx)+"->'"+field.substring(idx+1)+"'"
         } else {
-            column = field
+            result = field
         }
-        column += " " + arr[1]
+        result += " " + arr[1]
 
-        if (i !== order.length-1) column += ', '
+        if (i !== order.length-1) result += ', '
     }
     if (result.length === 0){
         result = 'id ASC'
