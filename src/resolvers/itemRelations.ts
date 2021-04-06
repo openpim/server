@@ -260,7 +260,7 @@ export default {
                     targetIdentifier: itemRelation.targetIdentifier,
                     values: values
                 }
-                audit.auditItemRelation(ChangeType.CREATE, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
+                audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
             }
 
             return itemRelation.id
@@ -327,7 +327,7 @@ export default {
             await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, values, false)
 
             if (audit.auditEnabled()) {
-                if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
+                if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
 
             return itemRelation.id
@@ -365,7 +365,7 @@ export default {
                     targetIdentifier: itemRelation.targetIdentifier,
                     values: itemRelation.values
                 }
-                audit.auditItemRelation(ChangeType.DELETE, oldIdentifier, {deleted: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.updatedAt)
+                audit.auditItemRelation(ChangeType.DELETE, itemRelation.id, oldIdentifier, {deleted: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
 
             return true

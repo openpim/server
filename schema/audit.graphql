@@ -1,0 +1,24 @@
+type Query {
+  getHistory(id: ID!, offset: Int!, limit: Int!, order: JSON): HistoryResponse
+}
+
+type HistoryResponse {
+  count: Int
+  rows: [HistoryRecord]
+}
+
+type HistoryRecord {
+  id: ID!
+  identifier: String!
+  operation: Int!
+  user: String!
+  changedAt: UTCDateTime!
+  data: HistoryData!
+}
+
+type HistoryData {
+  added: JSONObject
+  changed: JSONObject
+  old: JSONObject
+  deleted: JSONObject
+}

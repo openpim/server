@@ -97,7 +97,7 @@ export async function processUpload(context: Context, req: Request, res: Respons
                         fileOrigName: fileOld
                     }
                 }
-                audit.auditItem(ChangeType.UPDATE, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
+                audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
             }
 
             res.send('OK')
@@ -208,7 +208,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                         fileOrigName: file.name
                     }
                 }
-                audit.auditItem(ChangeType.CREATE, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
+                audit.auditItem(ChangeType.CREATE, item.id, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
             }
 
 
@@ -272,7 +272,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                     targetIdentifier: itemRelation.targetIdentifier,
                     values: itemRelation.values
                 }
-                audit.auditItemRelation(ChangeType.CREATE, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
+                audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
             }
 
             res.send('OK')

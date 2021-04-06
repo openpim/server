@@ -10,6 +10,7 @@ import searchResolvers from './search'
 import itemrelationsResolvers from './itemRelations'
 import importResolvers from './import'
 import lovResolvers from './lovs'
+import auditResolvers from './audit'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
 import LanguageDependentString from './utils/languageDependentString'
 import { GraphQLDateTime } from 'graphql-iso-date'
@@ -66,7 +67,8 @@ export default {
         ...dashResolvers.Query,
         ...itemrelationsResolvers.Query,
         ...searchResolvers.Query,
-        ...lovResolvers.Query
+        ...lovResolvers.Query,
+        ...auditResolvers.Query
     },
     Mutation: {
         ...resolver.Mutation,

@@ -124,7 +124,7 @@ export default {
             })
 
             if (audit.auditEnabled()) {
-                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }
 
             return result
@@ -166,7 +166,7 @@ export default {
                 })
 
                 if (audit.auditEnabled()) {
-                    if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+                    if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
                 }
     
                 return {failed: compileError ? true : false, log: log, error: error, message: message, compileError:compileError || ''}

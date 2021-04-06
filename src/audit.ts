@@ -15,11 +15,12 @@ class Audit {
         return !! process.env.AUDIT_URL 
     }
 
-    public async auditItem(change: ChangeType, identifier: string, item: AuditItem, login: string, changedAt: Date) {
+    public async auditItem(change: ChangeType, id: number, identifier: string, item: AuditItem, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
         await this.client.index({
             index: "items",
             body: {
+                id: id,
                 identifier: identifier,
                 operation: change,
                 user: login,
@@ -29,11 +30,12 @@ class Audit {
         })
     }
 
-    public async auditItemRelation(change: ChangeType, identifier: string, item: AuditItemRelation, login: string, changedAt: Date) {
+    public async auditItemRelation(change: ChangeType, id: number, identifier: string, item: AuditItemRelation, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
         await this.client.index({
             index: "item_relations",
             body: {
+                id: id,
                 identifier: identifier,
                 operation: change,
                 user: login,

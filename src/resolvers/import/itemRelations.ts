@@ -83,7 +83,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                         targetIdentifier: data.targetIdentifier,
                         values: data.values
                     }
-                    audit.auditItemRelation(ChangeType.DELETE, oldIdentifier, {deleted: itemRelationChanges}, context.getCurrentUser()!.login, data.updatedAt)
+                    audit.auditItemRelation(ChangeType.DELETE, data.id, oldIdentifier, {deleted: itemRelationChanges}, context.getCurrentUser()!.login, data.updatedAt)
                 }
     
                 result.result = ImportResult.DELETED
@@ -188,7 +188,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     targetIdentifier: data.targetIdentifier,
                     values: data.values
                 }
-                audit.auditItemRelation(ChangeType.CREATE, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, data.createdAt)
+                audit.auditItemRelation(ChangeType.CREATE, data.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, data.createdAt)
             }
 
             result.id = ""+data.id
@@ -279,7 +279,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             await processItemRelationActions(context, EventType.AfterUpdate, data, itemRelation.values, true)
 
             if (audit.auditEnabled()) {
-                if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, data.identifier, relDiff, context.getCurrentUser()!.login, data.updatedAt)
+                if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, data.id,, data.identifier, relDiff, context.getCurrentUser()!.login, data.updatedAt)
             }
 
             result.id = ""+data.id

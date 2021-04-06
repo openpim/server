@@ -122,7 +122,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                         name: data.name,
                         values: data.values
                     }
-                    audit.auditItem(ChangeType.DELETE, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)
+                    audit.auditItem(ChangeType.DELETE, data.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)
                 }
     
                 result.result = ImportResult.DELETED
@@ -217,7 +217,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     name: data.name,
                     values: data.values
                 }
-                audit.auditItem(ChangeType.CREATE, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, data.createdAt)
+                audit.auditItem(ChangeType.CREATE, data.id, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, data.createdAt)
             }
 
             result.id = ""+data.id
@@ -324,7 +324,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             await processItemActions(context, EventType.AfterUpdate, data, item.values, true)
 
             if (audit.auditEnabled()) {
-                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)
+                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, data.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)
             }
 
             result.id = ""+data.id

@@ -325,7 +325,7 @@ export default {
                     name: item.name,
                     values: values
                 }
-                audit.auditItem(ChangeType.CREATE, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, item.createdAt)
+                audit.auditItem(ChangeType.CREATE, item.id, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, item.createdAt)
             }
 
             return item.id
@@ -366,7 +366,7 @@ export default {
             await processItemActions(context, EventType.AfterUpdate, item, values, false)
 
             if (audit.auditEnabled()) {
-                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }
 
             return item.id
@@ -422,7 +422,7 @@ export default {
 
                 if (audit.auditEnabled()) {
                     const itemDiff: AuditItem = {changed: {parentIdentifier: parentItem.identifier}, old: {parentIdentifier: old}}
-                    audit.auditItem(ChangeType.UPDATE, item.identifier, itemDiff, context.getCurrentUser()!.login, item.updatedAt)
+                    audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff, context.getCurrentUser()!.login, item.updatedAt)
                 }
             }
 
@@ -488,7 +488,7 @@ export default {
                     name: item.name,
                     values: item.values
                 }
-                audit.auditItem(ChangeType.DELETE, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
+                audit.auditItem(ChangeType.DELETE, item.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
             }
 
             return true
@@ -536,7 +536,7 @@ export default {
                         fileOrigName: fileOld
                     }
                 }
-                audit.auditItem(ChangeType.UPDATE, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
+                audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
             }
 
             return true

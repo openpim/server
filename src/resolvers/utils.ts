@@ -596,7 +596,7 @@ class ActionUtils {
                 name: item.name,
                 values: values
             }
-            audit.auditItem(ChangeType.CREATE, item.identifier, {added: itemChanges}, this.#context.getCurrentUser()!.login, item.createdAt)
+            audit.auditItem(ChangeType.CREATE, item.id, item.identifier, {added: itemChanges}, this.#context.getCurrentUser()!.login, item.createdAt)
         }
 
         return makeItemProxy(item)
