@@ -450,17 +450,20 @@ function makeItemRelationProxy(item: any) {
 
 class ActionUtils {
     #context: Context // hard private field to avoid access to it from action (to avoid ability to change tennantId)
+    #mng: ModelManager
 
     public constructor(context: Context) {
         this.#context = context 
+        this.#mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
     }
 
+    public getCache() { return this.#mng.getCache() }
+
     public getItemAttributes(item: Item) {
-        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
         const attrArr: string[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
-        mng.getAttrGroups().forEach(group => {
+        this.#mng.getAttrGroups().forEach(group => {
             if (group.getGroup().visible) {
                 group.getAttributes().forEach(attr => {
                     if (attr.valid.includes(item.typeId)) {
@@ -479,10 +482,9 @@ class ActionUtils {
     }
 
     public getRelationAttributes(rel: ItemRelation) {
-        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
         const attrArr: string[] = []
 
-        mng.getAttrGroups().forEach(group => {
+        this.#mng.getAttrGroups().forEach(group => {
             if (group.getGroup().visible) {
                 group.getAttributes().forEach(attr => {
                     if (attr.relations.includes(rel.relationId)) {

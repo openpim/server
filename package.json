@@ -51,6 +51,7 @@
     "graphql-type-json": "^0.3.1",
     "jimp": "^0.13.0",
     "jsonwebtoken": "^8.5.1",
+    "node-cache": "^5.1.2",
     "node-fetch": "^2.6.1",
     "pg": "^7.18.2",
     "sequelize": "^6.6.2",

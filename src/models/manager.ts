@@ -9,6 +9,7 @@ import { Dashboard } from './dashboards'
 import { WhereOptions } from 'sequelize/types'
 
 import logger from '../logger'
+import * as NodeCache from 'node-cache'
 
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
@@ -21,6 +22,7 @@ export class ModelManager {
     private actionsCache:any = {}
     private roles: Role[] = []
     private users: UserWrapper[] = []
+    private cache = new NodeCache();
 
     public constructor(tenantId: string) { this.tenantId = tenantId }
 
@@ -30,6 +32,8 @@ export class ModelManager {
 
     public getRoles() { return this.roles }
     public getUsers() { return this.users }
+
+    public getCache() { return this.cache }
 
     public getLanguages(): Language[] {
         return this.languages
