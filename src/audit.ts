@@ -46,7 +46,7 @@ class Audit {
     }
 
     public async getItemHistory(id: number, offset: number, limit: number, order: any) {
-        if (!this.auditEnabled()) return []
+    if (!this.auditEnabled()) return {count: 0, rows: []}
         const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
         const response = await this.client!.search({
             index: "items",
