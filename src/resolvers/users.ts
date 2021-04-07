@@ -6,9 +6,9 @@ import { GraphQLError } from 'graphql';
 import * as bcrypt from 'bcrypt';
 import { ModelsManager, UserWrapper } from '../models/manager';
 import { Op } from 'sequelize'
-import ModelManager from 'sequelize/types/lib/model-manager';
 
 import logger from '../logger'
+import audit from '../audit'
 
 export default {
     Query: {
@@ -171,7 +171,7 @@ export default {
 
                     logger.info("User " + login + " was logged on.")
 
-                    return {token, user}
+                    return {token, user, auditEnabled: audit.auditEnabled()}
                 } else {
                     logger.error("Authentification failed for user '" + login + "' with password '" + password + "'")
                     throw new GraphQLError('Wrong login or password')
@@ -200,7 +200,7 @@ export default {
                 );            
 
                 (<any>user).internalId = user.id
-                return {token, user}
+                return {token, user, auditEnabled: audit.auditEnabled()}
             } else {
                 throw new GraphQLError('No such user')
             }

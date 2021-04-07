@@ -22,6 +22,7 @@ type Mutation {
 type LoginResponse {
   token: String!
   user: User!
+  auditEnabled: Boolean!
 }
 
 type User {
