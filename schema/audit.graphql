@@ -1,13 +1,13 @@
 type Query {
-  getHistory(id: ID!, offset: Int!, limit: Int!, order: JSON): HistoryResponse
+  getItemHistory(id: ID!, offset: Int!, limit: Int!, order: JSON): ItemHistoryResponse
 }
 
-type HistoryResponse {
+type ItemHistoryResponse {
   count: Int
-  rows: [HistoryRecord]
+  rows: [ItemHistoryRecord]
 }
 
-type HistoryRecord {
+type ItemHistoryRecord {
   id: ID!
   identifier: String!
   operation: Int!

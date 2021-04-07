@@ -279,7 +279,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             await processItemRelationActions(context, EventType.AfterUpdate, data, itemRelation.values, true)
 
             if (audit.auditEnabled()) {
-                if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, data.id,, data.identifier, relDiff, context.getCurrentUser()!.login, data.updatedAt)
+                if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, data.id, data.identifier, relDiff, context.getCurrentUser()!.login, data.updatedAt)
             }
 
             result.id = ""+data.id

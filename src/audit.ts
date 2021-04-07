@@ -1,7 +1,7 @@
-const { Client } = require('@elastic/elasticsearch')
+import { Client } from '@elastic/elasticsearch'
 
 class Audit {
-    private client: any
+    private client: Client | null = null
 
     public constructor() {
         if (this.auditEnabled()) {
@@ -17,7 +17,7 @@ class Audit {
 
     public async auditItem(change: ChangeType, id: number, identifier: string, item: AuditItem, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
-        await this.client.index({
+        await this.client!.index({
             index: "items",
             body: {
                 id: id,
@@ -32,7 +32,7 @@ class Audit {
 
     public async auditItemRelation(change: ChangeType, id: number, identifier: string, item: AuditItemRelation, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
-        await this.client.index({
+        await this.client!.index({
             index: "item_relations",
             body: {
                 id: id,
@@ -43,6 +43,25 @@ class Audit {
                 data: item
             }
         })
+    }
+
+    public async getItemHistory(id: number, offset: number, limit: number, order: any) {
+        if (!this.auditEnabled()) return []
+        const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
+        const response = await this.client!.search({
+            index: "items",
+            from: offset,
+            size: limit,
+            body: {
+                query: {
+                  term: {
+                    id: id
+                  }
+                },
+                sort: sort
+            }
+        })
+        return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => elem._source)}
     }
 
 }
