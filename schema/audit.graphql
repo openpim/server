@@ -1,5 +1,6 @@
 type Query {
   getItemHistory(id: ID!, offset: Int!, limit: Int!, order: JSON): ItemHistoryResponse
+  isAuditEnabled: Boolean!
 }
 
 type ItemHistoryResponse {

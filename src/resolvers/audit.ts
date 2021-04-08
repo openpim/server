@@ -9,6 +9,10 @@ export default {
         getItemHistory: async (parent: any, { id, offset, limit, order  }: any, context: Context) => {
             context.checkAuth()
             return audit.getItemHistory(id, offset, limit, order)
+        },
+        isAuditEnabled: async (parent: any, args: any, context: Context) => {
+            context.checkAuth()
+            return audit.auditEnabled()
         }
     }
 }
