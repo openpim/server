@@ -8,8 +8,8 @@ type Mutation {
   createAttributeGroup(identifier: String!, name: LanguageDependentString!, order: Int, visible: Boolean): ID!
   updateAttributeGroup(id: ID!, name: LanguageDependentString, order: Int, visible: Boolean) : ID!
   removeAttributeGroup(id: ID!) : Boolean!
-  createAttribute(groupId: ID!, identifier: String!, name: LanguageDependentString!, order: Int, valid: [ID], visible: [ID], relations: [ID], languageDependent: Boolean, type: Int!, pattern: String, errorMessage: LanguageDependentString, lov: ID, richText: Boolean, multiLine: Boolean): ID!
-  updateAttribute(id: ID!, name: LanguageDependentString, order: Int, valid: [ID], visible: [ID], relations: [ID], languageDependent: Boolean, type: Int, pattern: String, errorMessage: LanguageDependentString, lov: ID, richText: Boolean, multiLine: Boolean) : ID!
+  createAttribute(groupId: ID!, identifier: String!, name: LanguageDependentString!, order: Int, valid: [ID], visible: [ID], relations: [ID], languageDependent: Boolean, type: Int!, pattern: String, errorMessage: LanguageDependentString, lov: ID, richText: Boolean, multiLine: Boolean, options: JSON): ID!
+  updateAttribute(id: ID!, name: LanguageDependentString, order: Int, valid: [ID], visible: [ID], relations: [ID], languageDependent: Boolean, type: Int, pattern: String, errorMessage: LanguageDependentString, lov: ID, richText: Boolean, multiLine: Boolean, options: JSON) : ID!
   removeAttribute(id: ID!) : Boolean!
   assignAttribute(id: ID!, groupId: ID!) : Boolean!
   unassignAttribute(id: ID!, groupId: ID!) : Boolean!
@@ -43,6 +43,7 @@ type Attribute {
   lov: ID
   richText: Boolean!
   multiLine: Boolean!
+  options: JSON!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!
