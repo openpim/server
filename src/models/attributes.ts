@@ -40,6 +40,7 @@ export class Attribute extends Base {
   public lov!: number
   public richText!: boolean
   public multiLine!: boolean
+  public options!: any
   public static applyScope(context: Context) {
     return Attribute.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
@@ -137,6 +138,10 @@ export function init(sequelize: Sequelize):void {
       },
       multiLine: {
         type: 'BOOLEAN',
+        allowNull: false,
+      },
+      options: {
+        type: DataTypes.JSONB,
         allowNull: false,
       },
       ...BaseColumns,

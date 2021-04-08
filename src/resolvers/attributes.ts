@@ -131,7 +131,7 @@ export default {
 
             return true
         },
-        createAttribute: async (parent: any, { groupId, identifier, name, order, valid, visible, relations, languageDependent, type, pattern, errorMessage, lov, richText, multiLine }: any, context: Context) => {
+        createAttribute: async (parent: any, { groupId, identifier, name, order, valid, visible, relations, languageDependent, type, pattern, errorMessage, lov, richText, multiLine, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create attribute, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -176,7 +176,8 @@ export default {
                     errorMessage: errorMessage || {ru:""},
                     lov: lov ? parseInt(lov) : null,
                     richText: richText != null ? richText : false,
-                    multiLine: multiLine != null ? multiLine : false
+                    multiLine: multiLine != null ? multiLine : false,
+                    options: options ? options : []
                 }, {transaction: t})
                 await group.getGroup().addAttribute(attr, {transaction: t})
 
@@ -186,7 +187,7 @@ export default {
             group.getAttributes().push(attr)
             return attr.id
         },
-        updateAttribute: async (parent: any, { id, name, order, valid, visible, relations, languageDependent, type, pattern, errorMessage, lov, richText, multiLine }: any, context: Context) => {
+        updateAttribute: async (parent: any, { id, name, order, valid, visible, relations, languageDependent, type, pattern, errorMessage, lov, richText, multiLine, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update attribute, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -213,6 +214,7 @@ export default {
             if (lov) attr.lov = parseInt(lov)
             if (richText != null) attr.richText = richText
             if (multiLine != null) attr.multiLine = multiLine
+            if (options != null) attr.options = options
             attr.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await attr.save({transaction: t})
