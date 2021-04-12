@@ -20,7 +20,7 @@ class Audit {
         await this.client!.index({
             index: "items",
             body: {
-                id: id,
+                itemId: id,
                 identifier: identifier,
                 operation: change,
                 user: login,
@@ -35,7 +35,7 @@ class Audit {
         await this.client!.index({
             index: "item_relations",
             body: {
-                id: id,
+                itemRelationId: id,
                 identifier: identifier,
                 operation: change,
                 user: login,
@@ -55,13 +55,13 @@ class Audit {
             body: {
                 query: {
                   term: {
-                    id: id
+                    itemId: id
                   }
                 },
                 sort: sort
             }
         })
-        return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => elem._source)}
+        return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
     }
 
 }

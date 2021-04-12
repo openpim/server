@@ -9,7 +9,8 @@ type ItemHistoryResponse {
 }
 
 type ItemHistoryRecord {
-  id: ID!
+  id: String!
+  itemId: ID!
   identifier: String!
   operation: Int!
   user: String!
