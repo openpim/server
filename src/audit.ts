@@ -64,6 +64,25 @@ class Audit {
         return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
     }
 
+    public async getItemRelationHistory(id: number, offset: number, limit: number, order: any) {
+        if (!this.auditEnabled()) return {count: 0, rows: []}
+            const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
+            const response = await this.client!.search({
+                index: "item_relations",
+                from: offset,
+                size: limit,
+                body: {
+                    query: {
+                      term: {
+                        itemRelationId: id
+                      }
+                    },
+                    sort: sort
+                }
+            })
+            return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+        }
+    
 }
 
 export enum ChangeType {

@@ -1,5 +1,6 @@
 type Query {
   getItemHistory(id: ID!, offset: Int!, limit: Int!, order: JSON): ItemHistoryResponse
+  getItemRelationHistory(id: ID!, offset: Int!, limit: Int!, order: JSON): ItemRelationHistoryResponse
   isAuditEnabled: Boolean!
 }
 
@@ -11,6 +12,21 @@ type ItemHistoryResponse {
 type ItemHistoryRecord {
   id: String!
   itemId: ID!
+  identifier: String!
+  operation: Int!
+  user: String!
+  changedAt: UTCDateTime!
+  data: HistoryData!
+}
+
+type ItemRelationHistoryResponse {
+  count: Int
+  rows: [ItemRelationHistoryRecord]
+}
+
+type ItemRelationHistoryRecord {
+  id: String!
+  itemRelationId: ID!
   identifier: String!
   operation: Int!
   user: String!
