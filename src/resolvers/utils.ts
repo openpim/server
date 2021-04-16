@@ -501,7 +501,7 @@ class ActionUtils {
     }
 
     public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any) {
-        if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const tst = await Item.applyScope(this.#context).findOne({
             where: {

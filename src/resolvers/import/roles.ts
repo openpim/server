@@ -39,7 +39,7 @@ mutation { import(
 export async function importRole(context: Context, config: IImportConfig, role: IRoleImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(role.identifier)
 
-    if (!role.identifier || !/^[A-Za-z0-9_]*$/.test(role.identifier)) {
+    if (!role.identifier || !/^[A-Za-z0-9_-]*$/.test(role.identifier)) {
         result.addError(ReturnMessage.WrongIdentifier)
         result.result = ImportResult.REJECTED
         return result

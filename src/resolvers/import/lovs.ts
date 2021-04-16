@@ -10,7 +10,7 @@ import logger from '../../logger'
 export async function importLOV(context: Context, config: IImportConfig, lov: ILOVImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(lov.identifier)
 
-    if (!lov.identifier || !/^[A-Za-z0-9_]*$/.test(lov.identifier)) {
+    if (!lov.identifier || !/^[A-Za-z0-9_-]*$/.test(lov.identifier)) {
         result.addError(ReturnMessage.WrongIdentifier)
         result.result = ImportResult.REJECTED
         return result

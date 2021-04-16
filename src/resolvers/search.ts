@@ -297,7 +297,7 @@ export default {
     Mutation: {
         saveSearch: async (parent: any, { identifier, name, publicSearch, extended, filters, whereClause }: any, context: Context) => {
             context.checkAuth()
-            if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             const data = await SavedSearch.applyScope(context).findOne({
                 where: {

@@ -46,7 +46,7 @@ mutation { import(
 export async function importItem(context: Context, config: IImportConfig, item: IItemImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(item.identifier)
 
-    if (!item.identifier || !/^[A-Za-z0-9_]*$/.test(item.identifier)) {
+    if (!item.identifier || !/^[A-Za-z0-9_-]*$/.test(item.identifier)) {
         result.addError(ReturnMessage.WrongIdentifier)
         result.result = ImportResult.REJECTED
         return result

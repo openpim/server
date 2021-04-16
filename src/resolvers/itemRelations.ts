@@ -173,7 +173,7 @@ export default {
     Mutation: {
         createItemRelation: async (parent: any, { identifier, itemId, relationId, targetId, values }: any, context: Context) => {
             context.checkAuth()
-            if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nRelationId = parseInt(relationId)
             if (!context.canEditItemRelation(nRelationId)) {

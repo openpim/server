@@ -40,7 +40,7 @@ export default {
             if (!context.canEditConfig(ConfigAccess.TYPES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create type, tenant: ' + context.getCurrentUser()!.tenantId)
 
-            if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             if (mng.getTypeByIdentifier(identifier) !== null) {

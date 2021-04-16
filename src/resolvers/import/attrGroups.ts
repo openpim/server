@@ -33,7 +33,7 @@ mutation { import(
 export async function importAttrGroup(context: Context, config: IImportConfig, group: IAttrGroupImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(group.identifier)
 
-    if (!group.identifier || !/^[A-Za-z0-9_]*$/.test(group.identifier)) {
+    if (!group.identifier || !/^[A-Za-z0-9_-]*$/.test(group.identifier)) {
         result.addError(ReturnMessage.WrongIdentifier)
         result.result = ImportResult.REJECTED
         return result

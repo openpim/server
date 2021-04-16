@@ -232,7 +232,7 @@ export default {
     Mutation: {
         createItem: async (parent: any, { parentId, identifier, name, typeId, values }: any, context: Context) => {
             context.checkAuth()
-            if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             const tst = await Item.applyScope(context).findOne({
                 where: {

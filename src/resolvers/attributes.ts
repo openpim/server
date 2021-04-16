@@ -42,7 +42,7 @@ export default {
             if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create attr group, tenant: ' + context.getCurrentUser()!.tenantId)
 
-            if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             const results:any = await sequelize.query("SELECT nextval('\"attrGroups_id_seq\"')", { 
                 type: QueryTypes.SELECT
@@ -136,7 +136,7 @@ export default {
             if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create attribute, tenant: ' + context.getCurrentUser()!.tenantId)
 
-            if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nGroupId = parseInt(groupId)
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
