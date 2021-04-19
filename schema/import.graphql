@@ -125,6 +125,7 @@ input AttributeImportRequest {
   lov: String
   richText: Boolean
   multiLine: Boolean
+  options: JSON
 }
 
 input UserImportRequest {

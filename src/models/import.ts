@@ -194,6 +194,7 @@ export interface IAttributeImportRequest {
   lov: string
   richText: boolean
   multiLine: boolean
+  options: any
 }
 
 export interface IRoleImportRequest {

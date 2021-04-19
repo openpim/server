@@ -127,7 +127,8 @@ export async function importAttribute(context: Context, config: IImportConfig, a
                     errorMessage: attr.errorMessage || {ru:""},
                     lov: lov,
                     richText: attr.richText != null ? attr.richText : false,
-                    multiLine: attr.multiLine != null ? attr.multiLine : false
+                    multiLine: attr.multiLine != null ? attr.multiLine : false,
+                    options: attr.options ?  attr.options : []
                 }, {transaction: t})
 
                 for (let i = 0; i < groups.length; i++) {
@@ -175,6 +176,7 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             }
             if (attr.richText != null) data.richText = attr.richText
             if (attr.multiLine != null) data.multiLine = attr.multiLine
+            if (attr.options != null) data.options = attr.options
 
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
