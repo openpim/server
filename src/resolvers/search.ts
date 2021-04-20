@@ -282,6 +282,15 @@ export default {
             const arr = await SavedSearch.applyScope(context).findAll({ where: where })
             return arr
         },
+        getColumnsByIdentifier: async (parent: any, { identifier }: any, context: Context) => {
+            context.checkAuth()
+            const data = await SavedColumns.applyScope(context).findOne({
+                where: {
+                    identifier: identifier
+                }
+            })
+            return data
+        },
         getColumns: async (parent: any, { onlyMy }: any, context: Context) => {
             context.checkAuth()
             const where:any = {}
@@ -306,6 +315,9 @@ export default {
             })
 
             if (data) {
+                if (data.user !== context.getCurrentUser()?.login) {
+                    throw new Error('Failed to update search that belogs to another user by identifier: ' + identifier + ', tenant: ' + context.getCurrentUser()?.tenantId)
+                }
                 if (name) data.name = name
                 if (extended != null) data.extended = extended
                 if (filters) data.filters = filters
@@ -359,6 +371,70 @@ export default {
             } else {
                 throw new Error('Failed to find search by identifier: ' + identifier + ', tenant: ' + context.getCurrentUser()?.tenantId)
             }
-        }
+        },
+        saveColumns: async (parent: any, { identifier, name, publicAccess, columns }: any, context: Context) => {
+            context.checkAuth()
+            if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+
+            const data = await SavedColumns.applyScope(context).findOne({
+                where: {
+                    identifier: identifier
+                }
+            })
+
+            if (data) {
+                if (data.user !== context.getCurrentUser()?.login) {
+                    throw new Error('Failed to update columns configuration that belogs to another user by identifier: ' + identifier + ', tenant: ' + context.getCurrentUser()?.tenantId)
+                }
+                if (name) data.name = name
+                if (publicAccess != null) data.public = publicAccess
+                if (columns) data.columns = columns
+                data.updatedBy = context.getCurrentUser()!.login
+                await sequelize.transaction(async (t) => {
+                    await data.save({transaction: t})
+                })
+                return data.id
+            } else {
+                const data = await sequelize.transaction(async (t) => {
+                    return await SavedColumns.create ({
+                        identifier: identifier,
+                        tenantId: context.getCurrentUser()!.tenantId,
+                        createdBy: context.getCurrentUser()!.login,
+                        updatedBy: context.getCurrentUser()!.login,
+                        name: name,
+                        public: publicAccess != null ? publicAccess : false,
+                        columns: columns || [],
+                        user: context.getCurrentUser()!.login
+                    }, {transaction: t})
+                })
+    
+                return data.id
+            }
+        },
+        removeColumns: async (parent: any, { identifier }: any, context: Context) => {
+            context.checkAuth()
+
+            const data = await SavedColumns.applyScope(context).findOne({
+                where: {
+                    identifier: identifier
+                }
+            })
+
+            if (data) {
+                if (data.user === context.getCurrentUser()?.login) {
+                    data.updatedBy = context.getCurrentUser()!.login
+                    data.identifier = data.identifier + '_d_' + Date.now() 
+                    await sequelize.transaction(async (t) => {
+                        await data.save({transaction: t})
+                        await data.destroy({transaction: t})
+                    }) 
+                    return true
+                } else {
+                    throw new Error('Failed to remove columns configuration that belogs to another user by identifier: ' + identifier + ', tenant: ' + context.getCurrentUser()?.tenantId)
+                }
+            } else {
+                throw new Error('Failed to find columns configuration by identifier: ' + identifier + ', tenant: ' + context.getCurrentUser()?.tenantId)
+            }
+        }        
     }
 }
