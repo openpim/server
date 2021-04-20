@@ -39,7 +39,7 @@ mutation { import(
 export async function importAttribute(context: Context, config: IImportConfig, attr: IAttributeImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(attr.identifier)
 
-    if (!attr.identifier || !/^[A-Za-z0-9_-]*$/.test(attr.identifier)) {
+    if (!attr.identifier || !/^[A-Za-z0-9_]*$/.test(attr.identifier)) {
         result.addError(ReturnMessage.WrongIdentifier)
         result.result = ImportResult.REJECTED
         return result
