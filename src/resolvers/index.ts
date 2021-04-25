@@ -87,5 +87,8 @@ export default {
     },
     SearchResponse: {
         ...searchResolvers.SearchResponse
+    },
+    ItemsSearchResponse: {
+        ...searchResolvers.ItemsSearchResponse
     }
 }

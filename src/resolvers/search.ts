@@ -127,16 +127,12 @@ export default {
                         if (replaceResult.targetRelation) arr.push({model: ItemRelation, as: 'targetRelation'})
                         params.include = arr
                     }
-                    res = await Item.applyScope(context).findAndCountAll(params)
 
-                    res.rows = res.rows.filter( (item: Item) => context.canViewItem(item))
-                    for (let i = 0; i < res.rows.length; i++) {
-                        const item = res.rows[i];
-                        const allowedAttributes = context.getViewItemAttributes(item)
-                        filterValues(allowedAttributes, item.values)
-                    }
-
-                    res.type = 'ItemsResponse'
+                    // queries are processed in ItemsResponse resolvers
+                    res = {}
+                    res.type = 'ItemsSearchResponse'
+                    res.params = params
+                    res.context = context
                 } else if (request.entity === 'TYPE') {
                     if (!context.canViewConfig(ConfigAccess.TYPES)) 
                         throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to view types, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -302,6 +298,22 @@ export default {
             const arr = await SavedColumns.applyScope(context).findAll({ where: where, order: [['user', 'DESC']] })
             return arr
         },
+    },
+    ItemsSearchResponse: {
+        count: async ({context, params}: any) => {
+            return await Item.applyScope(context).count(params)
+        },
+        rows: async ({context, params}: any) => {
+            const arr = await Item.applyScope(context).findAll(params)
+
+            const rows = arr.filter( (item: Item) => context.canViewItem(item))
+            for (let i = 0; i < arr.length; i++) {
+                const item = arr[i];
+                const allowedAttributes = context.getViewItemAttributes(item)
+                filterValues(allowedAttributes, item.values)
+            }
+            return rows
+        }
     },
     Mutation: {
         saveSearch: async (parent: any, { identifier, name, publicSearch, extended, filters, whereClause }: any, context: Context) => {

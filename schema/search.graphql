@@ -44,7 +44,7 @@ type SavedColumns {
 type SearchResponses {
   responses: [SearchResponse]
 }
-union SearchResponse = ItemsResponse | TypesResponse | AttributesResponse | AttrGroupsResponse | RelationsResponse | SearchItemRelationResponse | UsersResponse | RolesResponse | LOVsResponse
+union SearchResponse = ItemsSearchResponse | TypesResponse | AttributesResponse | AttrGroupsResponse | RelationsResponse | SearchItemRelationResponse | UsersResponse | RolesResponse | LOVsResponse
 
 enum EntityEnum {
   ITEM
@@ -57,6 +57,12 @@ enum EntityEnum {
   ROLE
   LOV
 }
+
+type ItemsSearchResponse {
+  count: Int
+  rows: [Item]
+}
+
 
 type TypesResponse {
   count: Int
