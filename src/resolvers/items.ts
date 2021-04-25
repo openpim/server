@@ -39,11 +39,8 @@ function generateOrder(order: string[][]) {
 }
 
 export default {
-    Query: {
-        getItems: async (parent: any, { parentId, offset, limit, order  }: any, context: Context) => {
-            context.checkAuth()
-            const orderSql = generateOrder(order)
-            let items: Item[]
+    ItemsResponse: {
+        count: async ({ parentId, context, parentItem }: any) => {
             let cnt = {count: '0'}
             if (!parentId) {
                 cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1', {
@@ -54,6 +51,22 @@ export default {
                     raw: true,
                     type: QueryTypes.SELECT
                 })
+            } else {
+                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                    replacements: { 
+                        tenant: context.getCurrentUser()!.tenantId,
+                        lquery: parentItem.path + '.*{1}',
+                    },
+                    plain: true,
+                    raw: true,
+                    type: QueryTypes.SELECT
+                })
+            }
+            return parseInt(cnt.count)
+        },
+        rows: async ({ parentId, offset, limit, orderSql, context, parentItem }: any) => {
+            let items: Item[]
+            if (!parentId) {
                 items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 order by '+orderSql+' limit :limit offset :offset', {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
@@ -64,22 +77,6 @@ export default {
                     mapToModel: true
                 })
             } else {
-                const pId = parseInt(parentId)
-
-                const parentItem = await Item.applyScope(context).findByPk(pId)
-                if (!parentItem) {
-                    throw new Error('Failed to find parent item by id: ' + parentId + ', tenant: ' + context.getCurrentUser()!.tenantId)
-                }
-                
-                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
-                    replacements: { 
-                        tenant: context.getCurrentUser()!.tenantId,
-                        lquery: parentItem.path + '.*{1}',
-                    },
-                    plain: true,
-                    raw: true,
-                    type: QueryTypes.SELECT
-                })
                 items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery order by '+orderSql+' limit :limit offset :offset', {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
@@ -98,8 +95,27 @@ export default {
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
             })
+            return items || []
+        }
+    },
+    Query: {
+        getItems: async (parent: any, params: any, context: Context) => {
+            context.checkAuth()
+            params.orderSql = generateOrder(params.order)
+            params.context = context
 
-            return { count: parseInt(cnt.count), rows: (items || []) }
+            if (params.parentId) {
+                const pId = parseInt(params.parentId)
+
+                const parentItem = await Item.applyScope(context).findByPk(pId)
+                if (!parentItem) {
+                    throw new Error('Failed to find parent item by id: ' + params.parentId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+                }
+
+                params.parentItem = parentItem
+            }
+
+            return params
         },
         getItem: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()

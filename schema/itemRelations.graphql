@@ -3,7 +3,7 @@ type Query {
   getTargetRelations(itemId: ID!, relationId: ID!, offset: Int!, limit: Int!): ItemRelationsResponse
   getItemRelation(id: ID!): ItemRelation
   getItemRelationByIdentifier(identifier: String!): ItemRelation
-  getItemRelationsChildren(itemId: ID!, offset: Int!, limit: Int!): ItemsResponse
+  getItemRelationsChildren(itemId: ID!, offset: Int!, limit: Int!): ItemRelationsChildrenResponse
 }
 
 type Mutation {
@@ -23,6 +23,11 @@ type ItemRelation {
   createdAt: UTCDateTime!
   updatedBy: String!
   updatedAt: UTCDateTime!
+}
+
+type ItemRelationsChildrenResponse {
+  count: Int
+  rows: [Item]
 }
 
 type ItemRelationsResponse {

@@ -90,5 +90,8 @@ export default {
     },
     ItemsSearchResponse: {
         ...searchResolvers.ItemsSearchResponse
+    },
+    ItemsResponse: {
+        ...itemResolvers.ItemsResponse
     }
 }
