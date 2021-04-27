@@ -10,10 +10,6 @@
     "docker": "docker build --tag openpim:server -f docker/Dockerfile .",
     "build": "tsc -p ."
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://vpedak@bitbucket.org/vpedak/previo.git"
-  },
   "keywords": [],
   "author": "",
   "license": "",
