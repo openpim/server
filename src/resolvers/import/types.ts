@@ -75,8 +75,10 @@ export async function importType(context: Context, config: IImportConfig, type: 
                     const tst2 = await Attribute.applyScope(context).findOne({where: {valid: { [Op.contains]: nId}}})
                     // check Items
                     const tst1 = await Item.applyScope(context).findOne({where: {typeId: nId}})
+                    // check Linked types
+                    const tst5 = mng.getTypeByLinkId(nId)
 
-                    if (tst1 || tst2 || tst3 || tst4) {
+                    if (tst1 || tst2 || tst3 || tst4 || tst5) {
                         result.addError(ReturnMessage.TypeCanNotDelete)
                         result.result = ImportResult.REJECTED
                         return result

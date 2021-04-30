@@ -137,6 +137,9 @@ export default {
                 throw new Error('Failed to remove type with children id: ' + id + ', tenant: ' + mng.getTenantId())
             }
 
+            // check Links
+            const tst5 = mng.getTypeByLinkId(nId)
+            if (tst5) throw new Error('Can not remove this type because there are other types linked to it.');
             // check Roles
             const tst4 = mng.getRoles().find(role => role.itemAccess.valid.includes(nId))
             if (tst4) throw new Error('Can not remove this type because there are roles linked to it.');

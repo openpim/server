@@ -117,6 +117,11 @@ export class ModelManager {
         return res
     }
 
+    public getTypeByLinkId(id: number): TreeNode<any> | null {
+        const res =  this.findNode(id, this.typeRoot.getChildren(), (id, item) => item.getValue().link === id)
+        return res
+    }
+
     public getTypeByIdentifier(identifier: string): TreeNode<any> | null {
         return this.findNode(identifier, this.typeRoot.getChildren(), (id, item) => item.getValue().identifier === identifier)
     }
