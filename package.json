@@ -9,7 +9,7 @@
     "debug": "concurrently \"tsc -w\" \"nodemon --inspect dist/index.js\"",
     "docker": "docker build --tag openpim:server -f docker/Dockerfile .",
     "deploy": "docker tag openpim:server openpim/server:1.2 && docker push openpim/server:1.2",
-    "build": "tsc -p ."
+    "build": "node generate-buildno.js && tsc -p ."
   },
   "keywords": [],
   "author": "",
@@ -25,6 +25,7 @@
     "@types/jsonwebtoken": "^8.3.8",
     "@types/node": "^13.7.7",
     "@types/validator": "^12.0.1",
+    "build-number-generator": "^1.0.0",
     "concurrently": "^5.1.0",
     "nodemon": "^2.0.2",
     "typescript": "^3.8.3"

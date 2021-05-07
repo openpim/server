@@ -5,6 +5,7 @@ COPY ./schema /server/schema
 COPY ./package.json /server
 COPY ./package-lock.json /server
 COPY ./tsconfig.json /server
+COPY ./generate-buildno.js /server
 COPY ./docker/server_env /server/.env
 COPY ./docker/start.sh /server/start.sh
 	

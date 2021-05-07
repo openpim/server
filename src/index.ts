@@ -28,8 +28,11 @@ import { initModels } from './models'
 import { ModelsManager } from './models/manager'
 import { processUpload, processCreateUpload, processDownload } from './media';
 
+import version from './version'
+
 // Construct a schema, using GraphQL schema language
 async function start() { 
+  logger.info('Server version: ' + version.buildMajor + '.' + version.buildMinor + "." + version.buildRevision)
   logger.info('Arguments: ' + process.argv)
   
   const typeDefs = await importSchema('./schema/index.graphql'); 
