@@ -23,6 +23,7 @@ type LOV {
 type LOVitem {
   id: Int!
   value: LanguageDependentString!
+  filter: Int
 }
 
 input LOVitemInput {
