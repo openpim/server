@@ -28,4 +28,5 @@ type LOVitem {
 input LOVitemInput {
   id: Int!
   value: LanguageDependentString!
+  filter: Int
 }
