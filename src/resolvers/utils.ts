@@ -459,12 +459,12 @@ class ActionUtils {
 
     public getCache() { return this.#mng.getCache() }
 
-    public getItemAttributes(item: Item) {
+    public getItemAttributes(item: Item, groupIdentifier?: string) {
         const attrArr: string[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
         this.#mng.getAttrGroups().forEach(group => {
-            if (group.getGroup().visible) {
+            if (group.getGroup().visible && (!groupIdentifier || group.getGroup().identifier === groupIdentifier)) {
                 group.getAttributes().forEach(attr => {
                     if (attr.valid.includes(item.typeId)) {
                         for (let i=0; i<attr.visible.length; i++ ) {
@@ -481,11 +481,11 @@ class ActionUtils {
         return attrArr
     }
 
-    public getRelationAttributes(rel: ItemRelation) {
+    public getRelationAttributes(rel: ItemRelation, groupIdentifier?: string) {
         const attrArr: string[] = []
 
         this.#mng.getAttrGroups().forEach(group => {
-            if (group.getGroup().visible) {
+            if (group.getGroup().visible && (!groupIdentifier || group.getGroup().identifier === groupIdentifier)) {
                 group.getAttributes().forEach(attr => {
                     if (attr.relations.includes(rel.relationId)) {
                         if (!attrArr.find(tst => tst === attr.identifier)) attrArr.push(attr.identifier)
