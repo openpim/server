@@ -13,6 +13,7 @@ import * as lovs from './lovs'
 import * as search from './search'
 import * as actions from './actions'
 import * as dashboards from './dashboards'
+import * as channels from './channels'
 
 import logger from '../logger'
 
@@ -43,6 +44,7 @@ export async function initModels() {
     itemRelations.init(sequelize)
     actions.init(sequelize)
     dashboards.init(sequelize)
+    channels.init(sequelize)
 
     items.Item.belongsTo(itemRelations.ItemRelation, {targetKey: 'itemId', as: 'sourceRelation', foreignKey: 'id'})
     itemRelations.ItemRelation.hasOne(items.Item,{sourceKey: 'itemId', as: 'sourceRelation', foreignKey: 'id'}) 

@@ -14,6 +14,7 @@ scalar UTCDateTime
 # import Query.*, Mutation.* from "search.graphql"
 # import Query.*, Mutation.* from "actions.graphql"
 # import Query.*, Mutation.* from "dashboards.graphql"
+# import Query.*, Mutation.* from "channels.graphql"
 # import Mutation.* from "import.graphql"
 # import Query.* from "audit.graphql"
 

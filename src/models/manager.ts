@@ -7,6 +7,7 @@ import { Role, User } from './users'
 import { Action } from './actions'
 import { Dashboard } from './dashboards'
 import { WhereOptions } from 'sequelize/types'
+import { Channel } from './channels'
 
 import logger from '../logger'
 import * as NodeCache from 'node-cache'
@@ -17,6 +18,7 @@ export class ModelManager {
     private attrGroups: AttrGroupWrapper[] = []
     private relations: Relation[] = []
     private languages: Language[] = []
+    private channels: Channel[] = []
     private actions: Action[] = []
     private dashboards: Dashboard[] = []
     private actionsCache:any = {}
@@ -37,6 +39,10 @@ export class ModelManager {
 
     public getLanguages(): Language[] {
         return this.languages
+    }
+
+    public getChannels(): Channel[] {
+        return this.channels
     }
 
     public getActions(): Action[] {
@@ -291,6 +297,7 @@ export class ModelsManager {
         await this.initRoles(where)
         await this.initActions(where)
         await this.initDashboards(where)
+        await this.initChannels(where)
 
         logger.info('Data models were loaded')
     }
@@ -395,6 +402,22 @@ export class ModelsManager {
                 mng = this.tenantMap[dashboard.tenantId]
             }
             mng.getDashboards().push(dashboard)
+        }
+    }
+
+    public async initChannels(where: WhereOptions | undefined) {
+        const items = await Channel.findAll({
+            where: where,
+            order: [['tenantId', 'DESC']]})
+        if (!items) return
+
+        let mng: ModelManager | null = null
+        for (var i = 0; i < items.length; i++) {
+            const chan = items[i];
+            if (!mng || mng.getTenantId() !== chan.tenantId) {
+                mng = this.tenantMap[chan.tenantId]
+            }
+            mng.getChannels().push(chan)
         }
     }
 

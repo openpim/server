@@ -75,6 +75,8 @@ export default class Context {
                     if (role.configAccess && role.configAccess.languages === 2) return true
                 case ConfigAccess.LOVS:
                     if (role.configAccess && role.configAccess.lovs === 2) return true
+                case ConfigAccess.CHANNELS:
+                    if (role.configAccess && role.configAccess.channels === 2) return true
                 case ConfigAccess.ACTIONS:
                     if (role.configAccess && role.configAccess.actions === 2) return true
                 case ConfigAccess.DASHBOARDS:
@@ -105,6 +107,8 @@ export default class Context {
                     if (role.configAccess && (role.configAccess.languages === 1 || role.configAccess.languages === 2)) return true
                 case ConfigAccess.LOVS:
                     if (role.configAccess && (role.configAccess.lovs === 1 || role.configAccess.lovs === 2)) return true
+                case ConfigAccess.CHANNELS:
+                    if (role.configAccess && (role.configAccess.channels === 1 || role.configAccess.channels === 2)) return true
                 case ConfigAccess.ACTIONS:
                     if (role.configAccess && (role.configAccess.actions === 1 || role.configAccess.actions === 2)) return true
                 case ConfigAccess.DASHBOARDS:
@@ -306,6 +310,7 @@ export enum ConfigAccess {
     ROLES,
     LANGUAGES,
     LOVS,
+    CHANNELS,
     ACTIONS,
     DASHBOARDS
 }
