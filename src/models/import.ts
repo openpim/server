@@ -10,6 +10,7 @@ export interface IItemImportRequest {
   parentIdentifier: string
   name: any
   values: any
+  channels: any
 }
 
 export class ImportResponse {

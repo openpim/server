@@ -3,7 +3,7 @@ import { sequelize } from '../models'
 import { QueryTypes, Utils } from 'sequelize'
 import { Item } from '../models/items'
 import {  ModelsManager } from '../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty } from './utils'
+import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
@@ -94,6 +94,7 @@ export default {
             items.forEach(item => {   
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
             })
             return items || []
         }
@@ -124,6 +125,7 @@ export default {
             if (item && context.canViewItem(item)) {
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
                 return item
             } else {
                 return null
@@ -148,6 +150,7 @@ export default {
             items.forEach(item => {   
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
             })
 
             // DB can return data in different order then we send to it, so we need to order it
@@ -167,6 +170,7 @@ export default {
             if (item && context.canViewItem(item)) {
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
                 return item
             } else {
                 return null
@@ -246,7 +250,7 @@ export default {
         }        
     },
     Mutation: {
-        createItem: async (parent: any, { parentId, identifier, name, typeId, values }: any, context: Context) => {
+        createItem: async (parent: any, { parentId, identifier, name, typeId, values, channels}: any, context: Context) => {
             context.checkAuth()
             if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
@@ -314,6 +318,7 @@ export default {
                 typeIdentifier: type.getValue().identifier,
                 parentIdentifier: parentIdentifier, 
                 values: null,
+                channels: null,
                 fileOrigName: '',
                 storagePath: '',
                 mimeType: ''
@@ -323,10 +328,12 @@ export default {
 
             await processItemActions(context, EventType.BeforeCreate, item, values, false)
 
+            filterChannels(context, item.channels)
             filterValues(context.getEditItemAttributes2(nTypeId, path), values)
             checkValues(mng, values)
 
             item.values = values
+            item.channels = channels
 
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
@@ -346,7 +353,7 @@ export default {
 
             return item.id
         },
-        updateItem: async (parent: any, { id, name, values }: any, context: Context) => {
+        updateItem: async (parent: any, { id, name, values, channels }: any, context: Context) => {
             context.checkAuth()
             const nId = parseInt(id)
 
@@ -365,6 +372,10 @@ export default {
             await processItemActions(context, EventType.BeforeUpdate, item, values, false)
 
             let itemDiff: AuditItem
+            if (channels) {
+                filterChannels(context, channels)
+                item.values = mergeValues(channels, item.channels)
+            }
             if (values) {
                 filterValues(context.getEditItemAttributes(item), values)
                 checkValues(mng, values)

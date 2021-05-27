@@ -12,6 +12,7 @@ export class Item extends Base {
     public parentIdentifier!: string
     public name!: any
     public values: any
+    public channels: any
     public fileOrigName!: string
     public storagePath!: string
     public mimeType!: string
@@ -49,6 +50,10 @@ export function init(sequelize: Sequelize):void {
           allowNull: false
         },
         values: {
+          type: DataTypes.JSONB,
+          allowNull: true,
+        },
+        channels: {
           type: DataTypes.JSONB,
           allowNull: true,
         },

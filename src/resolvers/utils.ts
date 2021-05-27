@@ -20,6 +20,14 @@ import { URLSearchParams } from 'url'
 import logger from '../logger'
 const dateFormat = require("dateformat")
 
+export function filterChannels(context: Context, channels:any) {
+    for (const prop in channels) {
+        if (!context.canViewChannel(prop)) {
+            delete channels[prop]
+        }
+    }
+}
+
 export function filterValues(allowedAttributes: string[] | null, values:any) {
     if (allowedAttributes) {
         for (const prop in values) {

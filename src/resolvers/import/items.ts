@@ -4,7 +4,7 @@ import { Item } from '../../models/items'
 import { sequelize } from '../../models'
 import { QueryTypes } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty } from '../utils'
+import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels } from '../utils'
 import { Attribute } from '../../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
@@ -193,6 +193,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             if (!item.values) item.values = {}
             await processItemActions(context, EventType.BeforeCreate, data, item.values, true)
 
+            filterChannels(context, item.channels)
             filterValues(context.getEditItemAttributes2(type!.getValue().id, path), item.values)
             try {
                 checkValues(mng, item.values)
@@ -203,6 +204,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             data.values = item.values
+            data.channels = item.channels
 
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})
@@ -298,6 +300,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             if (!item.values) item.values = {}
             await processItemActions(context, EventType.BeforeUpdate, data, item.values, true)
 
+            filterChannels(context, item.channels)
             filterValues(context.getEditItemAttributes(data), item.values)
             try {
                 checkValues(mng, item.values)
@@ -315,6 +318,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             data.values = mergeValues(item.values, data.values)
+            data.channels = mergeValues(item.channels, data.channels)
 
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {

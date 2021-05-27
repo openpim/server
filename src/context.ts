@@ -188,6 +188,23 @@ export default class Context {
         }
     }
 
+    public canViewChannel(channelIdentifier: string): boolean {
+        if (!this.user) return false
+        const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId)
+        const chan = mng.getChannels().find(chan => chan.identifier === channelIdentifier)
+        if (!chan) return false
+
+        let access = 2
+        for (let i = 0; i < this.user.getRoles().length; i++) {
+            const role = this.user.getRoles()[i]
+            const tst = role.channelAccess.find((data : { channelId: number; access: number }) => data.channelId === chan.id)
+            if(tst) {
+                if (tst.access < access) access = tst.access
+            }
+        }
+        return access > 0
+    }
+
     public canViewItem(item: Item): boolean {
         if (!this.user) return false
         let access = -1
@@ -299,7 +316,6 @@ export default class Context {
         }
         return res    
     }
-
 }
 
 export enum ConfigAccess {
