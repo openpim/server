@@ -23,6 +23,7 @@ export class Role extends Base {
   public relAccess!: any
   public itemAccess!: any
   public otherAccess!: any
+  public channelAccess!: any
   public static applyScope(context: Context) {
     return Role.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
@@ -100,6 +101,10 @@ export function init(sequelize: Sequelize):void {
         allowNull: false,
       },
       otherAccess: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      channelAccess: {
         type: DataTypes.JSONB,
         allowNull: false,
       },
