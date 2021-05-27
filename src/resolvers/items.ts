@@ -3,7 +3,7 @@ import { sequelize } from '../models'
 import { QueryTypes, Utils } from 'sequelize'
 import { Item } from '../models/items'
 import {  ModelsManager } from '../models/manager'
-import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty } from './utils'
+import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterEditChannels } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
@@ -328,7 +328,7 @@ export default {
 
             await processItemActions(context, EventType.BeforeCreate, item, values, false)
 
-            filterChannels(context, item.channels)
+            filterEditChannels(context, channels)
             filterValues(context.getEditItemAttributes2(nTypeId, path), values)
             checkValues(mng, values)
 
@@ -373,7 +373,7 @@ export default {
 
             let itemDiff: AuditItem
             if (channels) {
-                filterChannels(context, channels)
+                filterEditChannels(context, channels)
                 item.values = mergeValues(channels, item.channels)
             }
             if (values) {

@@ -28,6 +28,14 @@ export function filterChannels(context: Context, channels:any) {
     }
 }
 
+export function filterEditChannels(context: Context, channels:any) {
+    for (const prop in channels) {
+        if (!context.canEditChannel(prop)) {
+            delete channels[prop]
+        }
+    }
+}
+
 export function filterValues(allowedAttributes: string[] | null, values:any) {
     if (allowedAttributes) {
         for (const prop in values) {
