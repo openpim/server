@@ -29,9 +29,21 @@ export function filterChannels(context: Context, channels:any) {
 }
 
 export function filterEditChannels(context: Context, channels:any) {
+    if (!channels) return
     for (const prop in channels) {
         if (!context.canEditChannel(prop)) {
             delete channels[prop]
+        }
+    }
+}
+
+export function checkSubmit(context: Context, channels: any) {
+    if (channels) {
+        for (const prop in channels) {
+            if (channels[prop].status === 1) {
+                channels[prop].submittedAt = Date.now()
+                channels[prop].submittedBy = context.getCurrentUser()?.login
+            }
         }
     }
 }
@@ -173,7 +185,7 @@ export function checkValues(mng: ModelManager, values: any) {
     }
 }
 
-export async function processItemActions(context: Context, event: EventType, item: Item, newValues: any, isImport: boolean) {
+export async function processItemActions(context: Context, event: EventType, item: Item, newValues: any, newChannels:any, isImport: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -193,7 +205,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams },
         isImport: isImport, 
-        item: makeItemProxy(item), values: newValues, 
+        item: makeItemProxy(item), values: newValues, channels: newChannels,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -217,12 +229,13 @@ export async function processItemButtonActions(context: Context, buttonText: str
         return false
     })
     const values = {...item.values}
+    const channels = {...item.channels}
     const ret = await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams },
         buttonText: buttonText, 
-        item: makeItemProxy(item), values: values, 
+        item: makeItemProxy(item), values: values, channels:channels,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -234,12 +247,13 @@ export async function processItemButtonActions(context: Context, buttonText: str
 export async function testAction(context: Context, action: Action, item: Item) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const values = {...item.values}
+    const channels = {...item.channels}
     let log = ''
     const ret = await processActionsWithLog(mng, [action], { Op: Op, 
         user: context.getCurrentUser()?.login,
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams },
-        item: makeItemProxy(item), values: values, 
+        item: makeItemProxy(item), values: values, channels:channels, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -592,7 +606,7 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        await processItemActions(this.#context, EventType.BeforeCreate, item, values, false)
+        await processItemActions(this.#context, EventType.BeforeCreate, item, values, {}, false)
 
         filterValues(this.#context.getEditItemAttributes2(nTypeId, path), values)
         checkValues(mng, values)
@@ -603,7 +617,7 @@ class ActionUtils {
             await item.save({transaction: t})
         })
 
-        await processItemActions(this.#context, EventType.AfterCreate, item, values, false)
+        await processItemActions(this.#context, EventType.AfterCreate, item, values, {}, false)
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
