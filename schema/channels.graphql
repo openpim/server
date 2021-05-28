@@ -3,8 +3,8 @@ type Query {
 }
 
 type Mutation {
-  createChannel(identifier: String!, name: LanguageDependentString!, active: Boolean!, type: Int!, config: JSONObject, mappings: JSONObject): ID!
-  updateChannel(id: ID!, name: LanguageDependentString, active: Boolean, type: Int, config: JSONObject, mappings: JSONObject) : ID!
+  createChannel(identifier: String!, name: LanguageDependentString!, active: Boolean!, type: Int!, valid: [ID], visible: [ID], config: JSONObject, mappings: JSONObject, runtime: JSONObject): ID!
+  updateChannel(id: ID!, name: LanguageDependentString, active: Boolean, type: Int, valid: [ID], visible: [ID], config: JSONObject, mappings: JSONObject, runtime: JSONObject) : ID!
   removeChannel(id: ID!) : Boolean!
 }
 
@@ -14,8 +14,11 @@ type Channel {
   name: LanguageDependentString!
   active: Boolean!
   type: Int!
+  valid: [ID]!
+  visible: [ID]!
   config: JSONObject!
   mappings: JSONObject!
+  runtime: JSONObject!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!

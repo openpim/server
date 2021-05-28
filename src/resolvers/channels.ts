@@ -13,7 +13,7 @@ export default {
         }
     },
     Mutation: {
-        createChannel: async (parent: any, {identifier, name, active, type, config, mappings}: any, context: Context) => {
+        createChannel: async (parent: any, {identifier, name, active, type, valid, visible, config, mappings, runtime}: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.LANGUAGES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create channel, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -36,8 +36,11 @@ export default {
                     name: name,
                     active: active,
                     type: type,
+                    valid: valid ? valid : [],
+                    visible: visible ? visible : [],
                     config: config ? config : {},
-                    mappings: mappings ? mappings : {}
+                    mappings: mappings ? mappings : {},
+                    runtime: runtime ? runtime : {}
                 }, {transaction: t})
                 return chan
             })
@@ -45,7 +48,7 @@ export default {
             mng.getChannels().push(chan)
             return chan.id
         },
-        updateChannel: async (parent: any, { id, name, active, type, config, mappings }: any, context: Context) => {
+        updateChannel: async (parent: any, { id, name, active, type, valid, visible, config, mappings, runtime }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.CHANNELS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update channel, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -62,8 +65,11 @@ export default {
             if (name) chan.name = name
             if (active != null) chan.active = active
             if (type != null) chan.type = type
+            if (valid) chan.valid = valid
+            if (visible) chan.visible = visible
             if (config) chan.config = config
             if (mappings) chan.mappings = mappings
+            if (runtime) chan.runtime = runtime
             chan.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await chan!.save({transaction: t})

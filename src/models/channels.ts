@@ -7,8 +7,11 @@ export class Channel extends Base {
   public name!: any
   public active!: boolean
   public type!: number
+  public valid!: any
+  public visible!: any
   public config!: any
   public mappings!: any
+  public runtime!: any
 }
 
 export function init(sequelize: Sequelize):void {
@@ -30,11 +33,23 @@ export function init(sequelize: Sequelize):void {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      valid: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+      },
+      visible: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+      },
       config: {
         type: DataTypes.JSONB,
         allowNull: false,
       },
       mappings: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      runtime: {
         type: DataTypes.JSONB,
         allowNull: false,
       },
