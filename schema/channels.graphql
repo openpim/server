@@ -1,5 +1,6 @@
 type Query {
   getChannels: [Channel]
+  getChannelStatus(id: ID!) : [ChannelStatus]
 }
 
 type Mutation {
@@ -23,4 +24,9 @@ type Channel {
   createdAt: UTCDateTime!
   updatedBy: String!
   updatedAt: UTCDateTime!
+}
+
+type ChannelStatus {
+  status: Int!
+  count: Int!
 }

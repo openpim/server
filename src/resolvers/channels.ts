@@ -2,6 +2,9 @@ import Context, { ConfigAccess } from '../context'
 import { ModelManager, ModelsManager } from '../models/manager'
 import { sequelize } from '../models'
 import { Channel } from '../models/channels'
+import { Item } from '../models/items'
+import { group } from 'console'
+import { fn, literal, Op } from 'sequelize'
 
 export default {
     Query: {
@@ -10,12 +13,40 @@ export default {
             
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             return mng.getChannels()
+        },
+        getChannelStatus: async (parent: any, { id }: any, context: Context) => {
+            context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const nId = parseInt(id)
+            const chan = mng.getChannels().find( chan => chan.id === nId)
+            if (!chan) {
+                throw new Error('Failed to find channel by id: ' + id + ', tenant: ' + mng.getTenantId())
+            }
+            if (!context.canViewChannel(chan.identifier)) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to view channel, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            
+            const groupExpression = fn('jsonb_extract_path', literal('channels'), chan.identifier, 'status')
+            const whereExpression: any = {channels: {}}
+            whereExpression.channels[chan.identifier] =  { [Op.ne]: null}
+            const result: any = await Item.applyScope(context).findAll({
+                attributes: [
+                    [fn('count', '*'), 'count'],
+                    [groupExpression, 'status']
+                ],
+                where: {...whereExpression},
+                group: [groupExpression]
+            })
+
+            const res = result.map((record: any) => { return {status: record.getDataValue('status'), count: record.getDataValue('count')} })
+            return res
         }
     },
     Mutation: {
         createChannel: async (parent: any, {identifier, name, active, type, valid, visible, config, mappings, runtime}: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.LANGUAGES)) 
+            if (!context.canEditConfig(ConfigAccess.CHANNELS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create channel, tenant: ' + context.getCurrentUser()!.tenantId)
 
             if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
