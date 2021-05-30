@@ -5,6 +5,7 @@ import { Channel } from '../models/channels'
 import { Item } from '../models/items'
 import { group } from 'console'
 import { fn, literal, Op } from 'sequelize'
+import { ChannelsManagerFactory } from '../channels'
 
 export default {
     Query: {
@@ -35,7 +36,7 @@ export default {
                     [fn('count', '*'), 'count'],
                     [groupExpression, 'status']
                 ],
-                where: {...whereExpression},
+                where: whereExpression,
                 group: [groupExpression]
             })
 
@@ -44,6 +45,21 @@ export default {
         }
     },
     Mutation: {
+        triggerChannel: async (parent: any, { id }: any, context: Context) => {
+            context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const nId = parseInt(id)
+            const chan = mng.getChannels().find( chan => chan.id === nId)
+            if (!chan) {
+                throw new Error('Failed to find channel by id: ' + id + ', tenant: ' + mng.getTenantId())
+            }
+            if (!context.canEditChannel(chan.identifier)) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to triger channel, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
+            channelMng.triggerChannel(chan)
+        },
         createChannel: async (parent: any, {identifier, name, active, type, valid, visible, config, mappings, runtime}: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.CHANNELS)) 
@@ -77,6 +93,8 @@ export default {
             })
 
             mng.getChannels().push(chan)
+            const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
+            channelMng.startChannel(chan)
             return chan.id
         },
         updateChannel: async (parent: any, { id, name, active, type, valid, visible, config, mappings, runtime }: any, context: Context) => {
@@ -105,6 +123,13 @@ export default {
             await sequelize.transaction(async (t) => {
                 await chan!.save({transaction: t})
             })
+
+            const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
+            if (chan.active) {
+                channelMng.startChannel(chan)
+            } else {
+                channelMng.stopChannel(chan)
+            }
             return chan.id
         },
         removeChannel: async (parent: any, { id }: any, context: Context) => {
@@ -131,6 +156,9 @@ export default {
             })
 
             mng.getChannels().splice(idx, 1)
+
+            const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
+            channelMng.stopChannel(chan)
 
             return true
         }

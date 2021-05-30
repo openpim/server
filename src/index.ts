@@ -29,6 +29,7 @@ import { ModelsManager } from './models/manager'
 import { processUpload, processCreateUpload, processDownload } from './media';
 
 import version from './version'
+import { ChannelsManagerFactory } from './channels'
 
 // Construct a schema, using GraphQL schema language
 async function start() { 
@@ -40,6 +41,7 @@ async function start() {
 
   await initModels();
   ModelsManager.getInstance().init()
+  ChannelsManagerFactory.getInstance().init()
 
   let app = express();
   app.use(bodyParser.json({limit: '100mb'}));
