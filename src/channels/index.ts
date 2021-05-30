@@ -26,7 +26,6 @@ export class ChannelsManager {
         logger.info("Channel " + channel.identifier + " was triggered, tenant: " + this.tenantId)
 
         const jobDetails = this.jobMap[channel.identifier]
-        console.log(jobDetails)
         if (jobDetails[1]) {
             logger.warn("Channel " + channel.identifier + " is already running, skip it, tenant: " + this.tenantId)
         }
