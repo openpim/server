@@ -24,6 +24,7 @@
     "@types/graphql-iso-date": "^3.3.3",
     "@types/jsonwebtoken": "^8.3.8",
     "@types/node": "^13.7.7",
+    "@types/temp": "^0.9.0",
     "@types/validator": "^12.0.1",
     "build-number-generator": "^1.0.0",
     "concurrently": "^5.1.0",
@@ -57,6 +58,7 @@
     "node-schedule": "^2.0.0",
     "pg": "^7.18.2",
     "sequelize": "^6.6.2",
+    "temp": "^0.9.4",
     "vm2": "^3.9.2",
     "winston": "^3.3.3",
     "xregexp": "^4.3.0"

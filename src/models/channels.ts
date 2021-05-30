@@ -14,6 +14,17 @@ export class Channel extends Base {
   public runtime!: any
 }
 
+export class ChannelExecution extends Base {
+  public channelId!: number
+  public status!: number
+  public startTime!: Date
+  public finishTime: Date | null = null
+  public fileOrigName: string = ''
+  public storagePath: string = ''
+  public message: string = ''
+  public log: string = ''
+}
+
 export function init(sequelize: Sequelize):void {
   Channel.init({
       identifier: {
@@ -64,5 +75,45 @@ export function init(sequelize: Sequelize):void {
       paranoid: true,
       timestamps: true,
       sequelize: sequelize
-  });    
+  });
+  ChannelExecution.init({
+    channelId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+    },
+    status: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    startTime: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    finishTime: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    fileOrigName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    storagePath: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    message: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    log: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
+    ...BaseColumns
+  }, {
+    tableName: 'channels_exec',
+    paranoid: true,
+    timestamps: true,
+    sequelize: sequelize
+});      
 }

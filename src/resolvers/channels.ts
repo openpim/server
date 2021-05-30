@@ -54,7 +54,7 @@ export default {
             if (!chan) {
                 throw new Error('Failed to find channel by id: ' + id + ', tenant: ' + mng.getTenantId())
             }
-            if (!context.canEditChannel(chan.identifier)) {
+            if (!context.canEditChannel(chan.identifier) || chan.tenantId !== context.getCurrentUser()?.tenantId) {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to triger channel, tenant: ' + context.getCurrentUser()!.tenantId)
             }
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
