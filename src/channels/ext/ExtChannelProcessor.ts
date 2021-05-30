@@ -3,6 +3,7 @@ import logger from "../../logger";
 import { Channel, ChannelExecution } from "../../models/channels";
 import { sequelize } from '../../models'
 import * as temp from 'temp'
+import * as fs from 'fs'
 
 function asyncExec (cmd: string) {
     return new Promise(async (resolve) => {
@@ -31,9 +32,13 @@ export async function extChannelProcessor(tenantId: string, channel: Channel): P
 
         const tempName = temp.path({prefix: 'openpim'});
         const cmd = channel.config.extCmd.replace('{channelIdentifier}', channel.identifier).replace('{outputFile}', tempName)
-        logger.debug('Starting program :' + channel.config.extCmd + 'channel: ' + channel.identifier + ', tenant: ' + tenantId)
-        const result: any = await asyncExec(channel.config.extCmd)
+        logger.info('Starting program :' + cmd + ' channel: ' + channel.identifier + ', tenant: ' + tenantId)
+        const result: any = await asyncExec(cmd)
         logger.debug('exec finished for channel: ' + channel.identifier + ', tenant: ' + tenantId)
+
+        if (fs.existsSync(tempName)) {
+            // TODO save file
+        }
 
         chanExec.status = result.code === 0 ? 2 : 3
         chanExec.finishTime = new Date()
