@@ -1,6 +1,7 @@
 import { Base } from './base'
 import BaseColumns from './base'
 import { Sequelize, DataTypes } from 'sequelize'
+import Context from '../context'
 
 export class Channel extends Base {
   public identifier!: string
@@ -18,11 +19,12 @@ export class ChannelExecution extends Base {
   public channelId!: number
   public status!: number
   public startTime!: Date
-  public finishTime: Date | null = null
-  public fileOrigName: string = ''
-  public storagePath: string = ''
-  public message: string = ''
-  public log: string = ''
+  public finishTime!: any
+  public storagePath!: string
+  public log!: string
+  public static applyScope(context: Context) {
+    return ChannelExecution.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
+  }
 }
 
 export function init(sequelize: Sequelize):void {
@@ -93,15 +95,7 @@ export function init(sequelize: Sequelize):void {
       type: DataTypes.DATE,
       allowNull: true,
     },
-    fileOrigName: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     storagePath: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    message: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -114,6 +108,15 @@ export function init(sequelize: Sequelize):void {
     tableName: 'channels_exec',
     paranoid: true,
     timestamps: true,
-    sequelize: sequelize
+    sequelize: sequelize,
+    scopes: {
+      tenant(value) {
+        return {
+          where: {
+            tenantId: value
+          }
+        }
+      }
+    }        
 });      
 }

@@ -11,6 +11,45 @@ import logger from '../logger'
 import { Type } from '../models/types'
 import { ItemRelation } from '../models/itemRelations'
 import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
+import { ChannelExecution } from '../models/channels'
+
+export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
+    const idStr = req.params.id
+    const id = parseInt(idStr)
+    if (!id) throw new Error('Wrong "id" parameter')
+
+    const exec = await ChannelExecution.applyScope(context).findByPk(id)
+    if (!exec) {
+        logger.error('Failed to find execution by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find image')
+        return
+    }
+
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const chan = mng.getChannels().find( chan => chan.id === exec.channelId)
+    if (!chan) {
+        logger.error('Failed to find channel by id: ' + exec.channelId + ', tenant: ' + mng.getTenantId())
+        res.status(400).send('Failed to find image')
+        return
+    }
+    if (!context.canEditChannel(chan.identifier) || chan.tenantId !== context.getCurrentUser()?.tenantId) {
+        logger.error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to download the file ' + id + ' from channel, tenant: ' + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find image')
+        return
+    }
+
+    if (!exec.storagePath) {
+        logger.error('Failed to find image for item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find image')
+        return
+    }
+
+    const hdrs:any = {
+        'Content-Type': chan.config.extMime ? chan.config.extMime : "application/octet-stream"
+    }
+    hdrs['Content-Disposition'] = 'attachment; filename="' + (chan.config.extFile ? chan.config.extFile : 'result.bin') + '"'
+    res.sendFile(process.env.FILES_ROOT! + exec.storagePath, {headers: hdrs})
+}
 
 export async function processDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id

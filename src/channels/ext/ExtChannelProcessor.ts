@@ -4,6 +4,7 @@ import { Channel, ChannelExecution } from "../../models/channels";
 import { sequelize } from '../../models'
 import * as temp from 'temp'
 import * as fs from 'fs'
+import { FileManager } from "../../media/FileManager";
 
 function asyncExec (cmd: string) {
     return new Promise(async (resolve) => {
@@ -12,6 +13,7 @@ function asyncExec (cmd: string) {
                 resolve({ code: error ? error.code : 0, stdout:stdout, stderr: stderr } )
             })
         } catch (err) {
+            logger.error('External channel error: ', err)
             resolve({ code: -1, stdout: '', stderr: err.message } )
         }
     })
@@ -25,6 +27,9 @@ export async function extChannelProcessor(tenantId: string, channel: Channel): P
                 channelId: channel.id,
                 status: 1,
                 startTime: new Date(),
+                finishTime: null,
+                storagePath: '',
+                log: '',
                 createdBy: 'system',
                 updatedBy: 'system',
             }, { transaction: t })
@@ -37,12 +42,12 @@ export async function extChannelProcessor(tenantId: string, channel: Channel): P
         logger.debug('exec finished for channel: ' + channel.identifier + ', tenant: ' + tenantId)
 
         if (fs.existsSync(tempName)) {
-            // TODO save file
+            const fm = FileManager.getInstance()
+            await fm.saveChannelFile(tenantId, channel.id, chanExec, tempName)
         }
 
         chanExec.status = result.code === 0 ? 2 : 3
         chanExec.finishTime = new Date()
-        chanExec.message = result.code === -1 ? result.stderr : ''
         chanExec.log = result.stdout + (result.stderr ? "/nERRORS:/n" + result.stderr : "") 
         await sequelize.transaction(async (t) => {
             await chanExec!.save({transaction: t})

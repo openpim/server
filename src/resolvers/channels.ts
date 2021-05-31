@@ -1,7 +1,7 @@
 import Context, { ConfigAccess } from '../context'
 import { ModelManager, ModelsManager } from '../models/manager'
 import { sequelize } from '../models'
-import { Channel } from '../models/channels'
+import { Channel, ChannelExecution } from '../models/channels'
 import { Item } from '../models/items'
 import { group } from 'console'
 import { fn, literal, Op } from 'sequelize'
@@ -41,6 +41,30 @@ export default {
             })
 
             const res = result.map((record: any) => { return {status: record.getDataValue('status'), count: record.getDataValue('count')} })
+            return res
+        },
+        getExecutions: async (parent: any, {channelId, offset, limit, order}: any, context: Context) => {
+            context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const nId = parseInt(channelId)
+            const chan = mng.getChannels().find( chan => chan.id === nId)
+            if (!chan) {
+                throw new Error('Failed to find channel by id: ' + nId + ', tenant: ' + mng.getTenantId())
+            }
+            if (!context.canViewChannel(chan.identifier)) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to view channel, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            const res = await ChannelExecution.applyScope(context).findAndCountAll({
+                where: {
+                    channelId: nId
+                },
+                order: order,
+                offset: offset,
+                limit: limit === -1 ? null : limit
+            })
+
             return res
         }
     },
