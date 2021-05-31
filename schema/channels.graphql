@@ -17,8 +17,8 @@ type Channel {
   name: LanguageDependentString!
   active: Boolean!
   type: Int!
-  valid: [ID]!
-  visible: [ID]!
+  valid: [String]!
+  visible: [String]!
   config: JSONObject!
   mappings: JSONObject!
   runtime: JSONObject!

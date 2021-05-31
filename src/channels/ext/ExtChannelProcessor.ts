@@ -21,7 +21,11 @@ function asyncExec (cmd: string) {
 
 export async function extChannelProcessor(tenantId: string, channel: Channel): Promise<void> {
     if (channel.config.extCmd) {
+        const startTime = new Date()
+        channel.runtime.lastStart = startTime
+
         const chanExec = await sequelize.transaction(async (t) => {
+            await channel.save({transaction: t})
             return await ChannelExecution.create({
                 tenantId: tenantId,
                 channelId: channel.id,
@@ -49,7 +53,10 @@ export async function extChannelProcessor(tenantId: string, channel: Channel): P
         chanExec.status = result.code === 0 ? 2 : 3
         chanExec.finishTime = new Date()
         chanExec.log = result.stdout + (result.stderr ? "/nERRORS:/n" + result.stderr : "") 
+
+        channel.runtime.duration = chanExec.finishTime.getTime() - chanExec.startTime.getTime()
         await sequelize.transaction(async (t) => {
+            await channel.save({transaction: t})
             await chanExec!.save({transaction: t})
         })
 

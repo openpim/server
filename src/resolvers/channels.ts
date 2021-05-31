@@ -98,6 +98,8 @@ export default {
                 throw new Error('Identifier already exists: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
+            const val = valid ? valid.map((elem: string) => parseInt(elem)) : []
+            const vis = visible ? visible.map((elem: string) => parseInt(elem)) : []
             const chan = await sequelize.transaction(async (t) => {
                 const chan = await Channel.create ({
                     identifier: identifier,
@@ -107,8 +109,8 @@ export default {
                     name: name,
                     active: active,
                     type: type,
-                    valid: valid ? valid : [],
-                    visible: visible ? visible : [],
+                    valid: val,
+                    visible: vis,
                     config: config ? config : {},
                     mappings: mappings ? mappings : {},
                     runtime: runtime ? runtime : {}
@@ -138,8 +140,8 @@ export default {
             if (name) chan.name = name
             if (active != null) chan.active = active
             if (type != null) chan.type = type
-            if (valid) chan.valid = valid
-            if (visible) chan.visible = visible
+            if (valid) chan.valid = valid.map((elem: string) => parseInt(elem))
+            if (visible) chan.visible = visible.map((elem: string) => parseInt(elem))
             if (config) chan.config = config
             if (mappings) chan.mappings = mappings
             if (runtime) chan.runtime = runtime
