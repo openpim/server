@@ -45,9 +45,9 @@ export async function processChannelDownload(context: Context, req: Request, res
     }
 
     const hdrs:any = {
-        'Content-Type': chan.config.extMime ? chan.config.extMime : "application/octet-stream"
+        'Content-Type': chan.config.mime ? chan.config.mime : "application/octet-stream"
     }
-    hdrs['Content-Disposition'] = 'attachment; filename="' + (chan.config.extFile ? chan.config.extFile : 'result.bin') + '"'
+    hdrs['Content-Disposition'] = 'attachment; filename="' + (chan.config.file ? chan.config.file : 'result.bin') + '"'
     res.sendFile(process.env.FILES_ROOT! + exec.storagePath, {headers: hdrs})
 }
 
