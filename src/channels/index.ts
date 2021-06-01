@@ -2,9 +2,11 @@ import logger from "../logger"
 import { WhereOptions } from 'sequelize/types'
 import { Channel } from "../models/channels"
 import { scheduleJob, Range, Job } from 'node-schedule'
-import { extChannelProcessor } from "./ext/ExtChannelProcessor"
 import { Item } from "../models/items"
 import { fn } from 'sequelize'
+import { ChannelHandler } from "./ChannelHandler"
+import { ExtChannelHandler } from "./ext/ExtChannelHandler"
+import { WBChannelHandler } from "./wb/WBChannelHandler"
 
 export class ChannelsManager {
     private tenantId: string
@@ -43,8 +45,8 @@ export class ChannelsManager {
             const count = result[0].getDataValue('count')
             if (count > 0) {
                 logger.info("Found " + count + " submitted items for channel " + channel.identifier + ", tenant: " + this.tenantId)
-                const processor = this.getProcessor(channel)
-                processor(this.tenantId, channel)
+                const handler = this.getHandler(channel)
+                handler.processChannel(channel)
             } else {
                 logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
             }
@@ -82,9 +84,12 @@ export class ChannelsManager {
         }
     }
 
-    private getProcessor(channel: Channel): ChannelProcessor {
-        if (channel.type === 1) return extChannelProcessor
-        return (tenantId: string, channel: Channel) => { logger.error("Empty processor was started for channel: " + channel.identifier) }
+    private extChannelHandler = new ExtChannelHandler()
+    private wbChannelHandler = new WBChannelHandler()
+    public getHandler(channel: Channel): ChannelHandler {
+        if (channel.type === 1) return this.extChannelHandler
+        if (channel.type === 2) return this.wbChannelHandler
+        throw new Error('Failed to find handler for channel type: ' + channel.type)
     }
 }
 
@@ -135,8 +140,3 @@ export class ChannelsManagerFactory {
         }
     }
 }
-
-export interface ChannelProcessor
-{
-    (tenantId: string, channel: Channel): void
-};

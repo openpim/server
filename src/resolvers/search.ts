@@ -25,7 +25,7 @@ query { search(
         }]
     ) {
     responses {
-        ... on ItemsResponse {
+        ... on ItemsSearchResponse {
             count
             rows {
                 id

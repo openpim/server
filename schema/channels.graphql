@@ -2,6 +2,7 @@ type Query {
   getChannels: [Channel]
   getChannelStatus(id: ID!) : [ChannelStatus]
   getExecutions(channelId: ID!, offset: Int!, limit: Int!, order: JSON): ExecutionsResponse
+  getChannelCategories(id: ID!) : [ChannelCategory]
 }
 
 type Mutation {
@@ -48,4 +49,9 @@ type Execution {
   log: String
   createdAt: UTCDateTime!
   updatedAt: UTCDateTime!
+}
+
+type ChannelCategory {
+  id: String!
+  name: String!
 }

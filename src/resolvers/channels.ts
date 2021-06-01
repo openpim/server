@@ -66,6 +66,21 @@ export default {
             })
 
             return res
+        },
+        getChannelCategories: async (parent: any, { id }: any, context: Context) => {
+            context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const nId = parseInt(id)
+            const chan = mng.getChannels().find( chan => chan.id === nId)
+            if (!chan) {
+                throw new Error('Failed to find channel by id: ' + id + ', tenant: ' + mng.getTenantId())
+            }
+            if (!context.canViewChannel(chan.identifier)) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to view channel, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
+            return channelMng.getHandler(chan).getCategories(chan)
         }
     },
     Mutation: {
