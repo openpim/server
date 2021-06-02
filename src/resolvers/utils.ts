@@ -205,6 +205,7 @@ export async function processItemActions(context: Context, event: EventType, ite
     })
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams },
         isImport: isImport, 
@@ -235,6 +236,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     const channels = {...item.channels}
     const ret = await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams },
         buttonText: buttonText, 
@@ -254,6 +256,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
     let log = ''
     const ret = await processActionsWithLog(mng, [action], { Op: Op, 
         user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams },
         item: makeItemProxy(item), values: values, channels:channels, 
@@ -419,6 +422,7 @@ export async function processItemRelationActions(context: Context, event: EventT
     })
     await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams },
         isImport: isImport, 
