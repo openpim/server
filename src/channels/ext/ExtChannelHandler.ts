@@ -1,5 +1,5 @@
 import { Channel, ChannelExecution } from "../../models/channels";
-import { ChannelHandler } from "../ChannelHandler";
+import { ChannelAttribute, ChannelCategory, ChannelHandler } from "../ChannelHandler";
 import { exec } from "child_process";
 import logger from "../../logger";
 import { sequelize } from '../../models'
@@ -67,7 +67,11 @@ export class ExtChannelHandler extends ChannelHandler {
         }    
     }
 
-    public async getCategories(channel: Channel): Promise<{ id: string; name: string; }[]> {
+    public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
+        return []
+    }
+
+    public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
         return []
     }
 }
