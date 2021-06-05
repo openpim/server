@@ -43,6 +43,54 @@ export default {
             const res = result.map((record: any) => { return {status: record.getDataValue('status'), count: record.getDataValue('count')} })
             return res
         },
+        getChannelStatusByCategories: async (parent: any, { id }: any, context: Context) => {
+            context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const nId = parseInt(id)
+            const chan = mng.getChannels().find( chan => chan.id === nId)
+            if (!chan) {
+                throw new Error('Failed to find channel by id: ' + id + ', tenant: ' + mng.getTenantId())
+            }
+            if (!context.canViewChannel(chan.identifier)) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to view channel, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            
+            const groupExpression = fn('jsonb_extract_path', literal('channels'), chan.identifier, 'category')
+            const groupExpression2 = fn('jsonb_extract_path', literal('channels'), chan.identifier, 'status')
+            const whereExpression: any = {channels: {}}
+            whereExpression.channels[chan.identifier] =  { [Op.ne]: null}
+            const result: any = await Item.applyScope(context).findAll({
+                attributes: [
+                    [fn('count', '*'), 'count'],
+                    [groupExpression, 'category'],
+                    [groupExpression2, 'status']
+                ],
+                where: whereExpression,
+                group: [groupExpression, groupExpression2]
+            })
+
+            const res:any[] = []
+            result.forEach((record:any) => {
+                const category = record.getDataValue('category')
+                let data = res.find(elem => elem.id === category)
+                if (!data) {
+                    let name = null
+                    if (category) {
+                        for(const prop in chan.mappings) {
+                            const catMap = chan.mappings[prop]
+                            if (catMap.id === category) name = catMap.name
+                        }
+                    }
+                    data = {id: category, name: name, statuses: [{status: 1, count: 0},{status: 2, count: 0},{status: 3, count: 0}]}
+                    res.push(data)
+                }
+                const status = record.getDataValue('status')
+                const statData = data.statuses.find((elem:any) => elem.status === status)
+                statData.count = record.getDataValue('count')
+            })
+            return res
+        },
         getExecutions: async (parent: any, {channelId, offset, limit, order}: any, context: Context) => {
             context.checkAuth()
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)

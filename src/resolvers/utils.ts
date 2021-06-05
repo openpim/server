@@ -43,6 +43,7 @@ export function checkSubmit(context: Context, channels: any) {
             if (channels[prop].status === 1) {
                 channels[prop].submittedAt = Date.now()
                 channels[prop].submittedBy = context.getCurrentUser()?.login
+                channels[prop].message = ''
             }
             if (channels[prop].status === 2) {
                 channels[prop].syncedAt = Date.now()

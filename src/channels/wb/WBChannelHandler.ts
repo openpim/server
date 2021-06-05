@@ -1,12 +1,69 @@
 import { Channel } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch from 'node-fetch'
-import NodeCache = require('node-cache');
+import NodeCache = require('node-cache')
+import { Item } from '../../models/items';
+import logger from "../../logger"
+import { sequelize } from '../../models'
+import { mergeValues } from '../../resolvers/utils';
+
 
 export class WBChannelHandler extends ChannelHandler {
     private cache = new NodeCache();
 
     public async processChannel(channel: Channel): Promise<void> {
+        channel.runtime.lastStart = new Date()
+
+        const query:any = {}
+        query[channel.identifier] = {status: 1}
+        let items = await Item.findAll({ 
+            where: { tenantId: channel.tenantId, channels: query} 
+        })
+        items.forEach(item => {
+            this.processItem(channel, item)
+        })
+        // TODO add record to channel executions
+        channel.runtime.duration = Date.now() - channel.runtime.lastStart.getTime()
+        await sequelize.transaction(async (t) => {
+            await channel.save({transaction: t})
+        })
+    }
+
+    async processItem(channel: Channel, item: Item) {
+        let processed = false
+        for (const categoryId in channel.mappings) {
+            const categoryConfig = channel.mappings[categoryId]
+            if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
+                const pathArr = item.path.split('.')
+                const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                if (tst) {
+                    this.processItemInCategory(channel, item, categoryConfig)
+                    processed = true
+                }
+            } else {
+                logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
+            }
+        }
+        if (!processed) {
+            const data = item.channels[channel.identifier]
+            data.status = 3
+            data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
+
+            item.changed('channels', true)
+        }
+        await sequelize.transaction(async (t) => {
+            await item.save({transaction: t})
+        })
+}
+
+    processItemInCategory(channel: Channel, item: Item, categoryConfig: any) {
+        const data = item.channels[channel.identifier]
+        data.category = categoryConfig.id
+        // TODO
+        data.status = 2
+        data.message = ''
+        data.syncedAt = Date.now()
+        item.changed('channels', true)
     }
 
     public async getCategories(channel: Channel): Promise<ChannelCategory[]> {

@@ -1,11 +1,11 @@
-import { Channel, ChannelExecution } from "../../models/channels";
-import { ChannelAttribute, ChannelCategory, ChannelHandler } from "../ChannelHandler";
-import { exec } from "child_process";
-import logger from "../../logger";
+import { Channel, ChannelExecution } from "../../models/channels"
+import { ChannelAttribute, ChannelCategory, ChannelHandler } from "../ChannelHandler"
+import { exec } from "child_process"
+import logger from "../../logger"
 import { sequelize } from '../../models'
 import * as temp from 'temp'
 import * as fs from 'fs'
-import { FileManager } from "../../media/FileManager";
+import { FileManager } from "../../media/FileManager"
 
 export class ExtChannelHandler extends ChannelHandler {
     private asyncExec (cmd: string) {

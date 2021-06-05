@@ -27,11 +27,17 @@ export class ChannelsManager {
     public async triggerChannel(channel: Channel) {
         logger.info("Channel " + channel.identifier + " was triggered, tenant: " + this.tenantId)
 
-        const jobDetails = this.jobMap[channel.identifier]
-        if (jobDetails[1]) {
-            logger.warn("Channel " + channel.identifier + " is already running, skip it, tenant: " + this.tenantId)
+        let jobDetails = this.jobMap[channel.identifier]
+        if (jobDetails) {
+            if (jobDetails[1]) {
+                logger.warn("Channel " + channel.identifier + " is already running, skip it, tenant: " + this.tenantId)
+                return
+            }
+            jobDetails[1] = true
+        } else {
+            jobDetails = [null, true]
+            this.jobMap[channel.identifier] = jobDetails
         }
-        jobDetails[1] = true
 
         try {
             const whereExpression: any = { tenantId: this.tenantId, channels: {} }
