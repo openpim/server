@@ -327,7 +327,7 @@ export default class Context {
 
         for (const attrIdentifier in attrMap) {
             const groupIds = attrMap[attrIdentifier]
-            if (!groupIds.find((id:number) => forbiddenGroups.includes(id))) {
+            if (groupIds.find((id:number) => !forbiddenGroups.includes(id))) {
                 res.push(attrIdentifier)
             }
         }
