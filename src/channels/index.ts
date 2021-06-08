@@ -117,6 +117,8 @@ export class ChannelsManagerFactory {
         let tst = this.tenantMap[tenant]
         if (!tst) {
             logger.warn('Can not find channels manager for tenant: ' + tenant);
+            tst = new ChannelsManager(tenant)
+            this.tenantMap[tenant] = tst
         }
         return tst
     }

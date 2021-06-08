@@ -2,11 +2,10 @@ import { Channel } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch from 'node-fetch'
 import NodeCache = require('node-cache')
-import { Item } from '../../models/items';
+import { Item } from '../../models/items'
 import logger from "../../logger"
 import { sequelize } from '../../models'
-import { mergeValues } from '../../resolvers/utils';
-
+import * as uuid from "uuid"
 
 export class WBChannelHandler extends ChannelHandler {
     private cache = new NodeCache();
@@ -19,9 +18,10 @@ export class WBChannelHandler extends ChannelHandler {
         let items = await Item.findAll({ 
             where: { tenantId: channel.tenantId, channels: query} 
         })
-        items.forEach(item => {
-            this.processItem(channel, item)
-        })
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            await this.processItem(channel, item)
+        }
         // TODO add record to channel executions
         channel.runtime.duration = Date.now() - channel.runtime.lastStart.getTime()
         await sequelize.transaction(async (t) => {
@@ -30,40 +30,94 @@ export class WBChannelHandler extends ChannelHandler {
     }
 
     async processItem(channel: Channel, item: Item) {
-        let processed = false
         for (const categoryId in channel.mappings) {
             const categoryConfig = channel.mappings[categoryId]
             if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
                 const pathArr = item.path.split('.')
                 const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                 if (tst) {
-                    this.processItemInCategory(channel, item, categoryConfig)
-                    processed = true
+                    await this.processItemInCategory(channel, item, categoryConfig)
+                    await sequelize.transaction(async (t) => {
+                        await item.save({transaction: t})
+                    })
+                    return
                 }
             } else {
                 logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
             }
         }
-        if (!processed) {
-            const data = item.channels[channel.identifier]
-            data.status = 3
-            data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
 
-            item.changed('channels', true)
-        }
+        const data = item.channels[channel.identifier]
+        data.status = 3
+        data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
+        item.changed('channels', true)
         await sequelize.transaction(async (t) => {
             await item.save({transaction: t})
         })
-}
+    }
 
-    processItemInCategory(channel: Channel, item: Item, categoryConfig: any) {
+    async processItemInCategory(channel: Channel, item: Item, categoryConfig: any) {
+        if (!channel.config.wbToken) {
+            this.reportError(channel, item, 'Не введен API token в конфигурации канала')
+            return
+        }
+        if (!channel.config.wbSupplierID) {
+            this.reportError(channel, item, 'Не введен идентификатор поставщика в конфигурации канала')
+            return
+        }
+
         const data = item.channels[channel.identifier]
         data.category = categoryConfig.id
-        // TODO
+        
+        // request to WB
+        const request:any = {id: uuid.v4(), jsonrpc: '2.0', params: { supplierID: channel.config.wbSupplierID, card: {}}}
+
+        const prodCountryConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#prodCountry')
+        request.params.card.countryProduction = await this.getValueByMapping(prodCountryConfig, item)
+        if (!request.params.card.countryProduction) {
+            this.reportError(channel, item, 'Не введена конфигурауция для "Страны производства" для категории: ' + categoryConfig.name)
+            return
+        }
+
+        const supplierCodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#supplierCode')
+        request.params.card.supplierVendorCode = await this.getValueByMapping(supplierCodeConfig, item)
+        if (!request.params.card.supplierVendorCode) {
+            this.reportError(channel, item, 'Не введена конфигурауция для "Артикула поставщика" для категории: ' + categoryConfig.name)
+            return
+        }
+
+        request.params.card.object = categoryConfig.name
+
+        console.log(request)
+
         data.status = 2
         data.message = ''
         data.syncedAt = Date.now()
+        // item.changed('channels', true)
+    }
+
+    async getValueByMapping(mapping:any, item: Item): Promise<any> {
+        if (mapping.expr) {
+
+        } else if (mapping.attrIdent) {
+            const tst = mapping.attrIdent.indexOf('#')
+            if (tst === -1) {
+                return item.values[mapping.attrIdent]
+            } else {
+                const attr = mapping.attrIdent.substring(0, tst)
+                const lang = mapping.attrIdent.substring(tst+1)
+                return item.values[attr][lang]
+            }
+        }
+        return null
+    }
+
+    reportError(channel: Channel, item: Item, error: string) {
+        const data = item.channels[channel.identifier]
+        data.status = 3
+        data.message = error
         item.changed('channels', true)
+        return
     }
 
     public async getCategories(channel: Channel): Promise<ChannelCategory[]> {

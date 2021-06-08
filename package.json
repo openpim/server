@@ -25,6 +25,7 @@
     "@types/jsonwebtoken": "^8.3.8",
     "@types/node": "^13.7.7",
     "@types/temp": "^0.9.0",
+    "@types/uuid": "^8.3.0",
     "@types/validator": "^12.0.1",
     "build-number-generator": "^1.0.0",
     "concurrently": "^5.1.0",
@@ -59,6 +60,7 @@
     "pg": "^8.6.0",
     "sequelize": "^6.6.2",
     "temp": "^0.9.4",
+    "uuid": "^3.4.0",
     "vm2": "^3.9.2",
     "winston": "^3.3.3",
     "xregexp": "^4.3.0"
