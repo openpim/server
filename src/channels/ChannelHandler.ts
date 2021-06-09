@@ -15,7 +15,8 @@ export abstract class ChannelHandler {
 
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
     if (mapping.expr) {
-
+      const func = new Function('item', '"use strict"; return (' + mapping.expr + ')')
+      return func(item)
     } else if (mapping.attrIdent) {
       const tst = mapping.attrIdent.indexOf('#')
       if (tst === -1) {
@@ -23,13 +24,16 @@ export abstract class ChannelHandler {
       } else {
         const attr = mapping.attrIdent.substring(0, tst)
         const lang = mapping.attrIdent.substring(tst + 1)
-        return await this.checkLOV(channel, attr, item.values[attr][lang], language)
+        const attrValue = item.values[attr] ? item.values[attr][lang] : null
+        return await this.checkLOV(channel, attr, attrValue, language)
       }
     }
     return null
   }
 
   private async checkLOV(channel: Channel, attrIdent: string, attrValue: any, language: string) {
+    if (!attrValue) return attrValue
+
     const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
     const attrNode = mng.getAttributeByIdentifier(attrIdent)
     if (attrNode) {
@@ -42,7 +46,7 @@ export abstract class ChannelHandler {
         }
         if (lov) {
           const value = lov.values.find((elem:any) => elem.id === attrValue)
-          return value[channel.identifier][language] || value.value[language]
+          return value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
         }
       }
     }
