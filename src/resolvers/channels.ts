@@ -147,7 +147,7 @@ export default {
         }
     },
     Mutation: {
-        triggerChannel: async (parent: any, { id }: any, context: Context) => {
+        triggerChannel: async (parent: any, { id, language }: any, context: Context) => {
             context.checkAuth()
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
@@ -160,7 +160,7 @@ export default {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to triger channel, tenant: ' + context.getCurrentUser()!.tenantId)
             }
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
-            channelMng.triggerChannel(chan)
+            channelMng.triggerChannel(chan, language)
         },
         createChannel: async (parent: any, {identifier, name, active, type, valid, visible, config, mappings, runtime}: any, context: Context) => {
             context.checkAuth()

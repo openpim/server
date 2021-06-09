@@ -10,7 +10,7 @@ import * as uuid from "uuid"
 export class WBChannelHandler extends ChannelHandler {
     private cache = new NodeCache();
 
-    public async processChannel(channel: Channel): Promise<void> {
+    public async processChannel(channel: Channel, language: string): Promise<void> {
         channel.runtime.lastStart = new Date()
 
         const query:any = {}
@@ -20,7 +20,7 @@ export class WBChannelHandler extends ChannelHandler {
         })
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            await this.processItem(channel, item)
+            await this.processItem(channel, item, language)
         }
         // TODO add record to channel executions
         channel.runtime.duration = Date.now() - channel.runtime.lastStart.getTime()
@@ -29,14 +29,14 @@ export class WBChannelHandler extends ChannelHandler {
         })
     }
 
-    async processItem(channel: Channel, item: Item) {
+    async processItem(channel: Channel, item: Item, language: string) {
         for (const categoryId in channel.mappings) {
             const categoryConfig = channel.mappings[categoryId]
             if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
                 const pathArr = item.path.split('.')
                 const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                 if (tst) {
-                    await this.processItemInCategory(channel, item, categoryConfig)
+                    await this.processItemInCategory(channel, item, categoryConfig, language)
                     await sequelize.transaction(async (t) => {
                         await item.save({transaction: t})
                     })
@@ -56,7 +56,7 @@ export class WBChannelHandler extends ChannelHandler {
         })
     }
 
-    async processItemInCategory(channel: Channel, item: Item, categoryConfig: any) {
+    async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string) {
         if (!channel.config.wbToken) {
             this.reportError(channel, item, 'Не введен API token в конфигурации канала')
             return
@@ -73,14 +73,14 @@ export class WBChannelHandler extends ChannelHandler {
         const request:any = {id: uuid.v4(), jsonrpc: '2.0', params: { supplierID: channel.config.wbSupplierID, card: {}}}
 
         const prodCountryConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#prodCountry')
-        request.params.card.countryProduction = await this.getValueByMapping(prodCountryConfig, item)
+        request.params.card.countryProduction = await this.getValueByMapping(channel, prodCountryConfig, item, language)
         if (!request.params.card.countryProduction) {
             this.reportError(channel, item, 'Не введена конфигурауция для "Страны производства" для категории: ' + categoryConfig.name)
             return
         }
 
         const supplierCodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#supplierCode')
-        request.params.card.supplierVendorCode = await this.getValueByMapping(supplierCodeConfig, item)
+        request.params.card.supplierVendorCode = await this.getValueByMapping(channel, supplierCodeConfig, item, language)
         if (!request.params.card.supplierVendorCode) {
             this.reportError(channel, item, 'Не введена конфигурауция для "Артикула поставщика" для категории: ' + categoryConfig.name)
             return
@@ -94,30 +94,6 @@ export class WBChannelHandler extends ChannelHandler {
         data.message = ''
         data.syncedAt = Date.now()
         // item.changed('channels', true)
-    }
-
-    async getValueByMapping(mapping:any, item: Item): Promise<any> {
-        if (mapping.expr) {
-
-        } else if (mapping.attrIdent) {
-            const tst = mapping.attrIdent.indexOf('#')
-            if (tst === -1) {
-                return item.values[mapping.attrIdent]
-            } else {
-                const attr = mapping.attrIdent.substring(0, tst)
-                const lang = mapping.attrIdent.substring(tst+1)
-                return item.values[attr][lang]
-            }
-        }
-        return null
-    }
-
-    reportError(channel: Channel, item: Item, error: string) {
-        const data = item.channels[channel.identifier]
-        data.status = 3
-        data.message = error
-        item.changed('channels', true)
-        return
     }
 
     public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
@@ -166,12 +142,5 @@ export class WBChannelHandler extends ChannelHandler {
             this.cache.set('attr_'+categoryId, data, 3600)
         }
         return <ChannelAttribute[]>data
-    }
-
-    private a:any = {"(": "_", ")": "_", "\"":"_","'":"_"," ": "_","Ё":"YO","Й":"I","Ц":"TS","У":"U","К":"K","Е":"E","Н":"N","Г":"G","Ш":"SH","Щ":"SCH","З":"Z","Х":"H","Ъ":"'","ё":"yo","й":"i","ц":"ts","у":"u","к":"k","е":"e","н":"n","г":"g","ш":"sh","щ":"sch","з":"z","х":"h","ъ":"'","Ф":"F","Ы":"I","В":"V","А":"a","П":"P","Р":"R","О":"O","Л":"L","Д":"D","Ж":"ZH","Э":"E","ф":"f","ы":"i","в":"v","а":"a","п":"p","р":"r","о":"o","л":"l","д":"d","ж":"zh","э":"e","Я":"Ya","Ч":"CH","С":"S","М":"M","И":"I","Т":"T","Ь":"'","Б":"B","Ю":"YU","я":"ya","ч":"ch","с":"s","м":"m","и":"i","т":"t","ь":"_","б":"b","ю":"yu"};
-    private transliterate (word: string) {
-      return word.split('').map( (char) => { 
-        return this.a[char] || char; 
-      }).join("")
     }
 }
