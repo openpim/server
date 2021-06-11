@@ -23,23 +23,7 @@ export class ExtChannelHandler extends ChannelHandler {
     
     public async processChannel(channel: Channel, language: string): Promise<void> {
         if (channel.config.extCmd) {
-            const startTime = new Date()
-            channel.runtime.lastStart = startTime
-    
-            const chanExec = await sequelize.transaction(async (t) => {
-                await channel.save({transaction: t})
-                return await ChannelExecution.create({
-                    tenantId: channel.tenantId,
-                    channelId: channel.id,
-                    status: 1,
-                    startTime: new Date(),
-                    finishTime: null,
-                    storagePath: '',
-                    log: '',
-                    createdBy: 'system',
-                    updatedBy: 'system',
-                }, { transaction: t })
-            })
+            const chanExec = await this.createExecution(channel)
     
             const tempName = temp.path({prefix: 'openpim'});
             const cmd = channel.config.extCmd.replace('{channelIdentifier}', channel.identifier).replace('{outputFile}', tempName).replace('{language}', language)
@@ -52,16 +36,8 @@ export class ExtChannelHandler extends ChannelHandler {
                 await fm.saveChannelFile(channel.tenantId, channel.id, chanExec, tempName)
             }
     
-            chanExec.status = result.code === 0 ? 2 : 3
-            chanExec.finishTime = new Date()
-            chanExec.log = result.stdout + (result.stderr ? "/nERRORS:/n" + result.stderr : "") 
-    
-            channel.runtime.duration = chanExec.finishTime.getTime() - chanExec.startTime.getTime()
-            await sequelize.transaction(async (t) => {
-                await channel.save({transaction: t})
-                await chanExec!.save({transaction: t})
-            })
-    
+            const log = result.stdout + (result.stderr ? "/nERRORS:/n" + result.stderr : "") 
+            await this.finishExecution(channel, chanExec, result.code === 0 ? 2 : 3, log)
         } else {
             logger.warn('Command is not defined for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
         }    

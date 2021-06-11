@@ -7,42 +7,60 @@ import logger from "../../logger"
 import { sequelize } from '../../models'
 import * as uuid from "uuid"
 
+interface JobContext {
+    log: string
+}
+
 export class WBChannelHandler extends ChannelHandler {
     private cache = new NodeCache();
 
     public async processChannel(channel: Channel, language: string): Promise<void> {
-        channel.runtime.lastStart = new Date()
+        const chanExec = await this.createExecution(channel)
+       
+        const context: JobContext = {log: ''}
+
+        if (!channel.config.wbToken) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен API token в конфигурации канала')
+            return
+        }
+        if (!channel.config.wbSupplierID) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен идентификатор поставщика в конфигурации канала')
+            return
+        }
+
 
         const query:any = {}
         query[channel.identifier] = {status: 1}
-        let items = await Item.findAll({ 
+        let items = await Item.findAndCountAll({ 
             where: { tenantId: channel.tenantId, channels: query} 
         })
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            await this.processItem(channel, item, language)
+        context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
+        for (let i = 0; i < items.rows.length; i++) {
+            const item = items.rows[i];
+            await this.processItem(channel, item, language, context)
+            context.log += '\n\n'
         }
-        // TODO add record to channel executions
-        channel.runtime.duration = Date.now() - channel.runtime.lastStart.getTime()
-        await sequelize.transaction(async (t) => {
-            await channel.save({transaction: t})
-        })
+
+        await this.finishExecution(channel, chanExec, 2, context.log)
     }
 
-    async processItem(channel: Channel, item: Item, language: string) {
+    async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
+        context.log += 'Обрабатывается запись с идентификатором: ' + item.identifier +'\n'
+
         for (const categoryId in channel.mappings) {
             const categoryConfig = channel.mappings[categoryId]
             if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
                 const pathArr = item.path.split('.')
                 const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                 if (tst) {
-                    await this.processItemInCategory(channel, item, categoryConfig, language)
+                    await this.processItemInCategory(channel, item, categoryConfig, language, context)
                     await sequelize.transaction(async (t) => {
                         await item.save({transaction: t})
                     })
                     return
                 }
             } else {
+                context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
                 logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
             }
         }
@@ -50,22 +68,15 @@ export class WBChannelHandler extends ChannelHandler {
         const data = item.channels[channel.identifier]
         data.status = 3
         data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
+        context.log += 'Запись с идентификатором:' + item.identifier + ' не подходит ни под одну категорию из этого канала.\n'
         item.changed('channels', true)
         await sequelize.transaction(async (t) => {
             await item.save({transaction: t})
         })
     }
 
-    async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string) {
-        if (!channel.config.wbToken) {
-            this.reportError(channel, item, 'Не введен API token в конфигурации канала')
-            return
-        }
-        if (!channel.config.wbSupplierID) {
-            this.reportError(channel, item, 'Не введен идентификатор поставщика в конфигурации канала')
-            return
-        }
-
+    async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext) {
+        context.log += 'Найдена категория "' + categoryConfig.name +'" для записи с идентификатором: ' + item.identifier + '\n'
         const data = item.channels[channel.identifier]
         data.category = categoryConfig.id
         
@@ -75,7 +86,9 @@ export class WBChannelHandler extends ChannelHandler {
         const prodCountryConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#prodCountry')
         request.params.card.countryProduction = await this.getValueByMapping(channel, prodCountryConfig, item, language)
         if (!request.params.card.countryProduction) {
-            this.reportError(channel, item, 'Не введена конфигурауция для "Страны производства" для категории: ' + categoryConfig.name)
+            const msg = 'Не введена конфигурауция для "Страны производства" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
             return
         }
 
@@ -83,21 +96,27 @@ export class WBChannelHandler extends ChannelHandler {
         const vendorCode = await this.getValueByMapping(channel, supplierCodeConfig, item, language)
         request.params.card.supplierVendorCode = vendorCode
         if (!request.params.card.supplierVendorCode) {
-            this.reportError(channel, item, 'Не введена конфигурауция для "Артикула поставщика" для категории: ' + categoryConfig.name)
+            const msg = 'Не введена конфигурауция для "Артикула поставщика" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
             return
         }
 
         const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
         const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
         if (!barcode) {
-            this.reportError(channel, item, 'Не введена конфигурауция для "Баркода" для категории: ' + categoryConfig.name)
+            const msg = 'Не введена конфигурауция для "Баркода" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
             return
         }
 
         const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
         const price = await this.getValueByMapping(channel, priceConfig, item, language)
         if (!price) {
-            this.reportError(channel, item, 'Не введена конфигурауция для "Цены" для категории: ' + categoryConfig.name)
+            const msg = 'Не введена конфигурауция для "Цены" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
             return
         }
         const tmp = {
@@ -136,12 +155,16 @@ export class WBChannelHandler extends ChannelHandler {
                             request.params.card.addin.push({type: attr.name, params: [{value: value}]})
                         }
                     } else if (attr.required) {
-                        this.reportError(channel, item, 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name)
+                        const msg = 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                        context.log += msg                      
+                        this.reportError(channel, item, msg)
                         return
                     }
                 } catch (err) {
-                    logger.error('Ошибка вычисления атрибута "' + attr.name + '" для категории: ' + categoryConfig.name, err)
-                    this.reportError(channel, item, 'Ошибка вычисления атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ': ' + err.message)
+                    const msg = 'Ошибка вычисления атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                    logger.error(msg, err)
+                    context.log += msg + ': ' + err.message        
+                    this.reportError(channel, item, msg + ': ' + err.message)
                     return
                   }
             }
@@ -150,6 +173,7 @@ export class WBChannelHandler extends ChannelHandler {
         const create = item.values.wbId ? false : true
         if (!create) request.params.card.id = item.values.wbId
 
+        /*
         const url = create ? 'https://suppliers-api.wildberries.ru/card/create' : 'https://suppliers-api.wildberries.ru/card/update'
         console.log(url, JSON.stringify(request, null, 2))       
         logger.debug("Sending request Windberries: " + url + " => " + JSON.stringify(request))
@@ -160,13 +184,17 @@ export class WBChannelHandler extends ChannelHandler {
         })
         logger.debug("Response status from Windberries: " + res.status)
         if (res.status !== 200) {
-            this.reportError(channel, item, 'Ошибка запроса на Wildberries: ' + res.statusText)
+            const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+            context.log += msg                      
+            this.reportError(channel, item, msg)
             return
         } else {
             const json = await res.json()
             console.log(222, json)
             if (json.error) {
-                this.reportError(channel, item, 'Ошибка запроса на Wildberries: ' + json.error.message)
+                const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
+                this.reportError(channel, item, msg)
+                context.log += msg                      
                 logger.debug("Error from Windberries: " + JSON.stringify(json))
                 return
             }
@@ -199,25 +227,32 @@ export class WBChannelHandler extends ChannelHandler {
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             if (res.status !== 200) {
-                this.reportError(channel, item, 'Ошибка запроса проверки на Wildberries: ' + res.statusText)
+                const msg = 'Ошибка запроса проверки на Wildberries: ' + res.statusText
+                context.log += msg                      
+                this.reportError(channel, item, msg)
                 return
             } else {
                 const json = await res.json()
                 if (json.error) {
-                    this.reportError(channel, item, 'Ошибка запроса проверки на Wildberries: ' + json.error.message)
+                    const msg = 'Ошибка запроса проверки на Wildberries: ' + json.error.message
+                    context.log += msg                      
+                    this.reportError(channel, item, msg)
                     logger.debug("Check error from Windberries: " + JSON.stringify(json))
                     return
                 }
 
                 if (json.result.cursor.total === 0) {
-                    this.reportError(channel, item, 'Wildberries не вернул ошибку, но карточка не создана.')
+                    const msg = 'Wildberries не вернул ошибку, но карточка не создана.'
+                    context.log += msg                      
+                    this.reportError(channel, item, msg)
                     return
                 }
                 item.values.wbId = json.result.cards[0].id
                 item.changed('values', true)
             }
-        }
+        } */
 
+        context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
         data.status = 2
         data.message = ''
         data.syncedAt = Date.now()

@@ -1,8 +1,10 @@
-import NodeCache = require("node-cache");
-import { Channel } from "../models/channels";
-import { Item } from "../models/items";
-import { LOV } from "../models/lovs";
-import { ModelsManager } from "../models/manager";
+import NodeCache = require("node-cache")
+import { Channel, ChannelExecution } from "../models/channels"
+import { Item } from "../models/items"
+import { LOV } from "../models/lovs"
+import { ModelsManager } from "../models/manager"
+import { sequelize } from '../models'
+
 
 export abstract class ChannelHandler {
   private lovCache = new NodeCache();
@@ -12,6 +14,39 @@ export abstract class ChannelHandler {
   abstract getCategories(channel: Channel): Promise<ChannelCategory[]>
 
   abstract getAttributes(channel: Channel, categoryId: string): Promise<{ id: string; name: string; required: boolean; dictionary: boolean, dictionaryLink?: string }[]>
+
+  async createExecution(channel: Channel) {
+    channel.runtime.lastStart = new Date()
+
+    const chanExec = await sequelize.transaction(async (t:any) => {
+        await channel.save({transaction: t})
+        return await ChannelExecution.create({
+            tenantId: channel.tenantId,
+            channelId: channel.id,
+            status: 1,
+            startTime: new Date(),
+            finishTime: null,
+            storagePath: '',
+            log: '',
+            createdBy: 'system',
+            updatedBy: 'system',
+        }, { transaction: t })
+    })
+    return chanExec
+  }
+
+  async finishExecution(channel: Channel, chanExec: ChannelExecution, status: number, log?: string) {
+    chanExec.status = status
+    chanExec.finishTime = new Date()
+    chanExec.log = log || ''
+
+    channel.runtime.duration = chanExec.finishTime.getTime() - chanExec.startTime.getTime()
+    await sequelize.transaction(async (t: any) => {
+        await channel.save({transaction: t})
+        await chanExec!.save({transaction: t})
+    })
+
+  }
 
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
     if (mapping.expr) {
