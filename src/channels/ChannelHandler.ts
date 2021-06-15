@@ -9,7 +9,7 @@ import { sequelize } from '../models'
 export abstract class ChannelHandler {
   private lovCache = new NodeCache();
 
-  abstract processChannel(channel: Channel, language: string): Promise<void>
+  abstract processChannel(channel: Channel, language: string, data: any): Promise<void>
 
   abstract getCategories(channel: Channel): Promise<ChannelCategory[]>
 

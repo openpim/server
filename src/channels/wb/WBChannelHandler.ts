@@ -14,7 +14,7 @@ interface JobContext {
 export class WBChannelHandler extends ChannelHandler {
     private cache = new NodeCache();
 
-    public async processChannel(channel: Channel, language: string): Promise<void> {
+    public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
         const chanExec = await this.createExecution(channel)
        
         const context: JobContext = {log: ''}
@@ -28,17 +28,22 @@ export class WBChannelHandler extends ChannelHandler {
             return
         }
 
+        if (!data) {
+            const query:any = {}
+            query[channel.identifier] = {status: 1}
+            let items = await Item.findAndCountAll({ 
+                where: { tenantId: channel.tenantId, channels: query} 
+            })
+            context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
+            for (let i = 0; i < items.rows.length; i++) {
+                const item = items.rows[i];
+                await this.processItem(channel, item, language, context)
+                context.log += '\n\n'
+            }
+        } else if (data.sync) {
+            context.log += 'Запущена синхронизация с Wildberries\n'
 
-        const query:any = {}
-        query[channel.identifier] = {status: 1}
-        let items = await Item.findAndCountAll({ 
-            where: { tenantId: channel.tenantId, channels: query} 
-        })
-        context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
-        for (let i = 0; i < items.rows.length; i++) {
-            const item = items.rows[i];
-            await this.processItem(channel, item, language, context)
-            context.log += '\n\n'
+            context.log += 'Cинхронизация закончена'
         }
 
         await this.finishExecution(channel, chanExec, 2, context.log)
@@ -173,7 +178,6 @@ export class WBChannelHandler extends ChannelHandler {
         const create = item.values.wbId ? false : true
         if (!create) request.params.card.id = item.values.wbId
 
-        /*
         const url = create ? 'https://suppliers-api.wildberries.ru/card/create' : 'https://suppliers-api.wildberries.ru/card/update'
         console.log(url, JSON.stringify(request, null, 2))       
         logger.debug("Sending request Windberries: " + url + " => " + JSON.stringify(request))
@@ -250,7 +254,7 @@ export class WBChannelHandler extends ChannelHandler {
                 item.values.wbId = json.result.cards[0].id
                 item.changed('values', true)
             }
-        } */
+        }
 
         context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
         data.status = 2

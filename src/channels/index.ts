@@ -24,7 +24,7 @@ export class ChannelsManager {
         if (tst && tst[0]) tst[0].cancel()
     }
 
-    public async triggerChannel(channel: Channel,language: string) {
+    public async triggerChannel(channel: Channel,language: string, data: any) {
         logger.info("Channel " + channel.identifier + " was triggered, tenant: " + this.tenantId)
 
         let jobDetails = this.jobMap[channel.identifier]
@@ -52,7 +52,7 @@ export class ChannelsManager {
             if (count > 0) {
                 logger.info("Found " + count + " submitted items for channel " + channel.identifier + ", tenant: " + this.tenantId)
                 const handler = this.getHandler(channel)
-                handler.processChannel(channel, language)
+                handler.processChannel(channel, language, data)
             } else {
                 logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
             }
@@ -70,7 +70,7 @@ export class ChannelsManager {
                 if(channel.config.interval) {
                     const range = new Range(0, 60, parseInt(channel.config.interval))
                     const job = scheduleJob({minute: range}, () => {
-                        this.triggerChannel(channel, channel.config.language)
+                        this.triggerChannel(channel, channel.config.language, null)
                     })  
                     this.jobMap[channel.identifier] = [job, false]
                 } else {
@@ -80,7 +80,7 @@ export class ChannelsManager {
                 if(channel.config.time) {
                     const arr = channel.config.time.split(':')
                     const job = scheduleJob({hour: parseInt(arr[0]), minute: parseInt(arr[1])}, () => {
-                        this.triggerChannel(channel, channel.config.language)
+                        this.triggerChannel(channel, channel.config.language, null)
                     })  
                     this.jobMap[channel.identifier] = [job, false]
                 } else {
