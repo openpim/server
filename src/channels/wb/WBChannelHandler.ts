@@ -1,11 +1,13 @@
 import { Channel } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch from 'node-fetch'
+import * as FormData from 'form-data'
 import NodeCache = require('node-cache')
 import { Item } from '../../models/items'
 import logger from "../../logger"
 import { sequelize } from '../../models'
 import * as uuid from "uuid"
+import * as fs from 'fs'
 
 interface JobContext {
     log: string
@@ -65,7 +67,7 @@ export class WBChannelHandler extends ChannelHandler {
         }
 
         do {
-            logger.debug("Sending request Windberries: " + url + " => " + JSON.stringify(request))
+            logger.info("Sending request Windberries: " + url + " => " + JSON.stringify(request))
             const res = await fetch(url, {
                 method: 'post',
                 body:    JSON.stringify(request),
@@ -78,11 +80,10 @@ export class WBChannelHandler extends ChannelHandler {
                 return
             } else {
                 const json = await res.json()
-                console.log(333, json)
                 if (json.error) {
                     const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
                     context.log += msg                      
-                    logger.debug("Error from Windberries: " + JSON.stringify(json))
+                    logger.info("Error from Windberries: " + JSON.stringify(json))
                     return
                 }
 
@@ -170,6 +171,7 @@ export class WBChannelHandler extends ChannelHandler {
 
     async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext) {
         context.log += 'Найдена категория "' + categoryConfig.name +'" для записи с идентификатором: ' + item.identifier + '\n'
+
         const data = item.channels[channel.identifier]
         data.category = categoryConfig.id
         
@@ -272,18 +274,24 @@ export class WBChannelHandler extends ChannelHandler {
             }
         }
 
+        //images
+        const images = await this.processItemImages(channel, item, context)
+        if (images && images.length>0 ) {
+            if (!request.params.card.nomenclatures[0].addin) request.params.card.nomenclatures[0].addin = []
+            request.params.card.nomenclatures[0].addin.push({type: "Фото", params: images})
+        }
+
         const create = item.values.wbId ? false : true
-        if (!create) request.params.card.id = item.values.wbId
+        if (!create) request.params.card.imtId = item.values.wbId
 
         const url = create ? 'https://suppliers-api.wildberries.ru/card/create' : 'https://suppliers-api.wildberries.ru/card/update'
-        console.log(url, JSON.stringify(request, null, 2))       
-        logger.debug("Sending request Windberries: " + url + " => " + JSON.stringify(request))
+        logger.info("Sending request Windberries: " + url + " => " + JSON.stringify(request))
         const res = await fetch(url, {
             method: 'post',
             body:    JSON.stringify(request),
             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
         })
-        logger.debug("Response status from Windberries: " + res.status)
+        logger.info("Response status from Windberries: " + res.status)
         if (res.status !== 200) {
             const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
             context.log += msg                      
@@ -291,12 +299,11 @@ export class WBChannelHandler extends ChannelHandler {
             return
         } else {
             const json = await res.json()
-            console.log(222, json)
             if (json.error) {
                 const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
                 this.reportError(channel, item, msg)
                 context.log += msg                      
-                logger.debug("Error from Windberries: " + JSON.stringify(json))
+                logger.info("Error from Windberries: " + JSON.stringify(json))
                 return
             }
         }
@@ -338,11 +345,9 @@ export class WBChannelHandler extends ChannelHandler {
                     const msg = 'Ошибка запроса проверки на Wildberries: ' + json.error.message
                     context.log += msg                      
                     this.reportError(channel, item, msg)
-                    logger.debug("Check error from Windberries: " + JSON.stringify(json))
+                    logger.info("Check error from Windberries: " + JSON.stringify(json))
                     return
                 }
-
-                console.log(555, JSON.stringify(query, null, 2), json)
 
                 if (json.result.cursor.total === 0) {
                     const msg = 'Wildberries не вернул ошибку, но карточка не создана.'
@@ -359,8 +364,66 @@ export class WBChannelHandler extends ChannelHandler {
         data.status = 2
         data.message = ''
         data.syncedAt = Date.now()
-        item.changed('channels', true)
+        item.changed('channels', true) 
     }
+
+    async processItemImages(channel: Channel, item: Item, context: JobContext) {
+        const data:{value: string, units:string}[] = [] 
+        if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
+            const images: Item[] = await sequelize.query(
+                `SELECT a.*
+                    FROM "items" a, "itemRelations" ir, "types" t where 
+                    a."tenantId"=:tenant and 
+                    ir."itemId"=:itemId and
+                    a."id"=ir."targetId" and
+                    a."typeId"=t."id" and
+                    t."file"=true and
+                    coalesce(a."storagePath", '') != '' and
+                    ir."deletedAt" is null and
+                    a."deletedAt" is null and
+                    ir."relationId" in (:relations)
+                    order by a.id`, {
+                model: Item,
+                mapToModel: true,                     
+                replacements: { 
+                    tenant: channel.tenantId,
+                    itemId: item.id,
+                    relations: channel.config.imgRelations
+                }
+            })
+            if (images) {
+                for (let i = 0; i < images.length; i++) {
+                    const image = images[i];
+                    const form = new FormData()
+                    form.append('uploadfile', fs.createReadStream(process.env.FILES_ROOT + image.storagePath), {
+                        contentType: image.mimeType,
+                        filename: image.fileOrigName,
+                    })
+                    const headers = form.getHeaders()
+                    headers.Authorization = channel.config.wbToken
+                    const fileId = uuid.v4()
+                    headers['X-File-Id'] = fileId 
+                    context.log += 'Загружаю файл '+image.identifier+'\n'
+                    logger.info('Загружаю файл '+image.identifier)                
+                    const res = await fetch('https://suppliers-api.wildberries.ru/card/upload/file/multipart', {
+                        method: 'post',
+                        body:    form,
+                        headers: headers
+                    })
+                    if (res.status !== 200) {
+                        const msg = 'Ошибка загрузки файла на Wildberries: ' + res.statusText
+                        context.log += msg                      
+                        this.reportError(channel, item, msg)
+                        return
+                    } else {
+                        data.push({value: fileId, units:image.mimeType})
+                    }                                        
+                }
+            }
+        }
+        return data
+    }
+
 
     public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
         let data = this.cache.get('categories')
