@@ -178,6 +178,42 @@ export class WBChannelHandler extends ChannelHandler {
         // request to WB
         const request:any = {id: uuid.v4(), jsonrpc: '2.0', params: { supplierID: channel.config.wbSupplierID, card: {}}}
 
+        const create = item.values.wbId ? false : true
+        if (!create) {
+            // load card from WB
+            const loadUrl = 'https://suppliers-api.wildberries.ru/card/cardByImtID'
+            const loadRequest = {
+                id: uuid.v4(),
+                jsonrpc: "2.0",
+                params: {
+                    imtID: item.values.wbId
+                }
+            }
+            logger.info("Sending request Windberries: " + loadUrl + " => " + JSON.stringify(loadRequest))
+            const res = await fetch(loadUrl, {
+                method: 'post',
+                body:    JSON.stringify(loadRequest),
+                headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+            })
+            logger.info("Response status from Windberries: " + res.status)
+            if (res.status !== 200) {
+                const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+                context.log += msg                      
+                this.reportError(channel, item, msg)
+                return
+            } else {
+                const json = await res.json()
+                if (json.error) {
+                    const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
+                    this.reportError(channel, item, msg)
+                    context.log += msg                      
+                    logger.info("Error from Windberries: " + JSON.stringify(json))
+                    return
+                }
+                request.params.card = json.result.card
+            }
+        }
+
         const prodCountryConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#prodCountry')
         request.params.card.countryProduction = await this.getValueByMapping(channel, prodCountryConfig, item, language)
         if (!request.params.card.countryProduction) {
@@ -222,7 +258,8 @@ export class WBChannelHandler extends ChannelHandler {
               }
             ]
           }
-        request.params.card.nomenclatures = [{vendorCode: request.params.card.supplierVendorCode, variations:[{barcode: barcode, addin:[tmp]}]}]
+        request.params.card.nomenclatures = [{vendorCode: request.params.card.supplierVendorCode, variations:[{addin:[tmp]}]}]
+        if (create) request.params.card.nomenclatures[0].variations[0].barcode = barcode
 
         request.params.card.object = categoryConfig.name
 
@@ -281,7 +318,6 @@ export class WBChannelHandler extends ChannelHandler {
             request.params.card.nomenclatures[0].addin.push({type: "Фото", params: images})
         }
 
-        const create = item.values.wbId ? false : true
         if (!create) request.params.card.imtId = item.values.wbId
 
         const url = create ? 'https://suppliers-api.wildberries.ru/card/create' : 'https://suppliers-api.wildberries.ru/card/update'
