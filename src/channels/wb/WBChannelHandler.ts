@@ -41,12 +41,100 @@ export class WBChannelHandler extends ChannelHandler {
                 context.log += '\n\n'
             }
         } else if (data.sync) {
-            context.log += 'Запущена синхронизация с Wildberries\n'
-
-            context.log += 'Cинхронизация закончена'
+            await this.syncJob(channel, context, data)
         }
 
         await this.finishExecution(channel, chanExec, 2, context.log)
+    }
+
+    async syncJob(channel: Channel, context: JobContext, data: any) {
+        context.log += 'Запущена синхронизация с Wildberries\n'
+
+        let total = 0
+        let current = 0
+        const url = 'https://suppliers-api.wildberries.ru/card/list'
+        const request = {
+            "id": uuid.v4(),
+            "jsonrpc": "2.0",
+            "params": {
+              "query": {
+                "limit": 1000,
+                "offset": 0
+              }
+            }
+        }
+
+        do {
+            logger.debug("Sending request Windberries: " + url + " => " + JSON.stringify(request))
+            const res = await fetch(url, {
+                method: 'post',
+                body:    JSON.stringify(request),
+                headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+            })
+
+            if (res.status !== 200) {
+                const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+                context.log += msg                      
+                return
+            } else {
+                const json = await res.json()
+                console.log(333, json)
+                if (json.error) {
+                    const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
+                    context.log += msg                      
+                    logger.debug("Error from Windberries: " + JSON.stringify(json))
+                    return
+                }
+
+                total = json.result.cursor.total
+                context.log += 'Найдено '+ total + ' товаров, выбрано ' + request.params.query.limit + ' со смещением ' + request.params.query.offset + '\n'
+                current = request.params.query.offset + request.params.query.limit + 1
+                request.params.query.offset = current
+
+                for (let i = 0; i < json.result.cards.length; i++) {
+                    const card = json.result.cards[i];
+                    await this.syncCard(channel, card, context, data.attr)
+                }
+    
+            }
+        } while (total >= current)
+
+        context.log += 'Cинхронизация закончена'
+    }
+
+    async syncCard(channel: Channel, card: any, context: JobContext, attr:string) {
+        const sku = card.nomenclatures[0].vendorCode
+        context.log += 'Обрабатывается товар: ['+ sku + ']\n'
+
+        const filter:any = {}
+        filter[attr] = sku
+        const item = await Item.findOne({
+            where: {
+                values: filter,
+                tenantId: channel.tenantId
+            }
+        })
+        
+        if(!item) {
+            context.log += '   такой товар не найден\n'
+            return
+        }
+
+        if (card.id !== item.values.wbId) {
+            item.values.wbId = card.id
+            item.changed('values', true)
+            if (item.channels[channel.identifier] && item.channels[channel.identifier].status === 3 && item.channels[channel.identifier].message.startsWith('Wildberries не вернул ошибку')) {
+                item.channels[channel.identifier].status = 2
+                item.channels[channel.identifier].message = ''
+                item.changed('channels', true)
+            }
+            await sequelize.transaction(async (t) => {
+                await item.save({transaction: t})
+            })    
+            context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
+        } else {
+            context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
+        }
     }
 
     async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
@@ -149,15 +237,24 @@ export class WBChannelHandler extends ChannelHandler {
                 try {
                     const value = await this.getValueByMapping(channel, attrConfig, item, language)
                     if (value) {
+                        const data = {type: attr.name, params: <any[]>[]}
+                        if (Array.isArray(value)) {
+                            value.forEach((elem:any) => {
+                                data.params.push({ value: elem })
+                            })
+                        } else {
+                            data.params.push({ value: value })
+                        }
+
                         if (attrConfig.id.startsWith('nom#')) {
                             if (!request.params.card.nomenclatures[0].addin) request.params.card.nomenclatures[0].addin = []
-                            request.params.card.nomenclatures[0].addin.push({type: attr.name, params: [{value: value}]})
+                            request.params.card.nomenclatures[0].addin.push(data)
                         } else if (attrConfig.id.startsWith('var#')) {
                             if (!request.params.card.nomenclatures[0].variations[0].addin) request.params.card.nomenclatures[0].variations[0].addin = []
-                            request.params.card.nomenclatures[0].variations[0].addin.push({type: attr.name, params: [{value: value}]})
+                            request.params.card.nomenclatures[0].variations[0].addin.push(data)
                         } else {
                             if (!request.params.card.addin) request.params.card.addin = []
-                            request.params.card.addin.push({type: attr.name, params: [{value: value}]})
+                            request.params.card.addin.push(data)
                         }
                     } else if (attr.required) {
                         const msg = 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
@@ -325,7 +422,6 @@ export class WBChannelHandler extends ChannelHandler {
         return <ChannelAttribute[]>data
     }
 }
-
         /*
         const tstReq = {
             "params": {
