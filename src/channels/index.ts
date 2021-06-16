@@ -61,8 +61,12 @@ export class ChannelsManager {
                 jobDetails[1] = false
             }
         } else {
-            const handler = this.getHandler(channel)
-            handler.processChannel(channel, language, data)
+            try {
+                const handler = this.getHandler(channel)
+                handler.processChannel(channel, language, data)
+            } finally {
+                jobDetails[1] = false
+            }
         }
     }
 

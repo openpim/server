@@ -120,8 +120,8 @@ export class WBChannelHandler extends ChannelHandler {
             return
         }
 
-        if (card.id !== item.values.wbId) {
-            item.values.wbId = card.id
+        if (card.imtId !== item.values.wbId) {
+            item.values.wbId = card.imtId
             item.changed('values', true)
             if (item.channels[channel.identifier] && item.channels[channel.identifier].status === 3 && item.channels[channel.identifier].message.startsWith('Wildberries не вернул ошибку')) {
                 item.channels[channel.identifier].status = 2
@@ -303,7 +303,7 @@ export class WBChannelHandler extends ChannelHandler {
 
         if (create) {
             // check that card was created and take id
-            await new Promise(resolve => setTimeout(resolve, 1000)) // wait a second
+            await new Promise(resolve => setTimeout(resolve, 3000)) // wait 3 seconds
             const query = {
                 "id": "11",
                 "jsonrpc": "2.0",
@@ -324,7 +324,7 @@ export class WBChannelHandler extends ChannelHandler {
             }
             const res = await fetch('https://suppliers-api.wildberries.ru/card/list', {
                 method: 'post',
-                body:    JSON.stringify(request),
+                body:    JSON.stringify(query),
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             if (res.status !== 200) {
@@ -342,13 +342,15 @@ export class WBChannelHandler extends ChannelHandler {
                     return
                 }
 
+                console.log(555, JSON.stringify(query, null, 2), json)
+
                 if (json.result.cursor.total === 0) {
                     const msg = 'Wildberries не вернул ошибку, но карточка не создана.'
                     context.log += msg                      
                     this.reportError(channel, item, msg)
                     return
                 }
-                item.values.wbId = json.result.cards[0].id
+                item.values.wbId = json.result.cards[0].imtId
                 item.changed('values', true)
             }
         }
