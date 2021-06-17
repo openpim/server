@@ -258,8 +258,7 @@ export class WBChannelHandler extends ChannelHandler {
               }
             ]
           }
-        request.params.card.nomenclatures = [{vendorCode: request.params.card.supplierVendorCode, variations:[{addin:[tmp]}]}]
-        if (create) request.params.card.nomenclatures[0].variations[0].barcode = barcode
+        request.params.card.nomenclatures = [{vendorCode: request.params.card.supplierVendorCode, variations:[{barcode: barcode, addin:[tmp]}]}]
 
         request.params.card.object = categoryConfig.name
 

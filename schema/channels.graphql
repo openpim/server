@@ -69,5 +69,7 @@ type ChannelAttribute {
   name: String!
   required: Boolean!
   dictionary: Boolean!
+  description: String
   dictionaryLink: String
+  dictionaryLinkPost: JSONObject
 }
