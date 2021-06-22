@@ -47,8 +47,15 @@ export async function processChannelDownload(context: Context, req: Request, res
     const hdrs:any = {
         'Content-Type': chan.config.mime ? chan.config.mime : "application/octet-stream"
     }
-    hdrs['Content-Disposition'] = 'attachment; filename="' + (chan.config.file ? chan.config.file : 'result.bin') + '"'
+    hdrs['Content-Disposition'] = 'attachment; filename="' + (chan.config.file ? transliterate(chan.config.file) : 'result.bin') + '"'
     res.sendFile(process.env.FILES_ROOT! + exec.storagePath, {headers: hdrs})
+}
+
+const a:any = {"(": "_", ")": "_", "\"":"_","'":"_"," ": "_","Ё":"YO","Й":"I","Ц":"TS","У":"U","К":"K","Е":"E","Н":"N","Г":"G","Ш":"SH","Щ":"SCH","З":"Z","Х":"H","Ъ":"'","ё":"yo","й":"i","ц":"ts","у":"u","к":"k","е":"e","н":"n","г":"g","ш":"sh","щ":"sch","з":"z","х":"h","ъ":"'","Ф":"F","Ы":"I","В":"V","А":"a","П":"P","Р":"R","О":"O","Л":"L","Д":"D","Ж":"ZH","Э":"E","ф":"f","ы":"i","в":"v","а":"a","п":"p","р":"r","о":"o","л":"l","д":"d","ж":"zh","э":"e","Я":"Ya","Ч":"CH","С":"S","М":"M","И":"I","Т":"T","Ь":"'","Б":"B","Ю":"YU","я":"ya","ч":"ch","с":"s","м":"m","и":"i","т":"t","ь":"_","б":"b","ю":"yu"};
+function transliterate (word: string) {
+  return word.split('').map( (char) => { 
+    return a[char] || char; 
+  }).join("")
 }
 
 export async function processDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
@@ -79,7 +86,7 @@ export async function processDownload(context: Context, req: Request, res: Respo
         'Content-Type': item.mimeType
     }
     if (!thumbnail) {
-        hdrs['Content-Disposition'] = 'attachment; filename="' + item.fileOrigName + '"'
+        hdrs['Content-Disposition'] = 'attachment; filename="' + transliterate(item.fileOrigName) + '"'
 
     }
     res.sendFile(process.env.FILES_ROOT! + item.storagePath + (thumbnail ? '_thumb.jpg': ''), {headers: hdrs})
