@@ -10,6 +10,7 @@ export class Relation extends Base {
   public targets!: any
   public child!:boolean
   public multi!:boolean
+  public order!: number
   public static applyScope(context: Context) {
     return Relation.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
@@ -40,6 +41,10 @@ export function init(sequelize: Sequelize):void {
       },
       multi: {
         type: 'BOOLEAN',
+        allowNull: false,
+      },
+      order: {
+        type: new DataTypes.INTEGER,
         allowNull: false,
       },
       ...BaseColumns,

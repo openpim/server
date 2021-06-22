@@ -189,16 +189,18 @@ export default {
 
                 const data: any[] = await sequelize.query(
                     `SELECT a."id", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName"
-                        FROM "items" a, "itemRelations" ir, "types" t where 
+                        FROM "items" a, "itemRelations" ir, "types" t, "relations" r where 
                         a."tenantId"=:tenant and 
                         ir."itemId"=:itemId and
                         a."id"=ir."targetId" and
                         a."typeId"=t."id" and
                         t."file"=true and
+                        ir."relationId"=r."id" and
                         coalesce(a."storagePath", '') != '' and
                         ir."deletedAt" is null and
-                        a."deletedAt" is null
-                        order by a.id`, {
+                        a."deletedAt" is null and 
+                        r."deletedAt" is null
+                        order by r.order, a.id`, {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         itemId: item.id

@@ -4,8 +4,8 @@ type Query {
 }
 
 type Mutation {
-  createRelation(identifier: String!, name: LanguageDependentString!, sources: [ID], targets: [ID], child: Boolean, multi: Boolean): ID!
-  updateRelation(id: ID!, name: LanguageDependentString, sources: [ID], targets: [ID], child: Boolean, multi: Boolean) : ID!
+  createRelation(identifier: String!, name: LanguageDependentString!, sources: [ID], targets: [ID], child: Boolean, multi: Boolean, order: Int): ID!
+  updateRelation(id: ID!, name: LanguageDependentString, sources: [ID], targets: [ID], child: Boolean, multi: Boolean, order: Int) : ID!
   removeRelation(id: ID!) : Boolean!
 }
 
@@ -17,6 +17,7 @@ type Relation {
   multi: Boolean!
   sources: [String]
   targets: [String]
+  order: Int!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!
