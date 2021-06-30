@@ -4,8 +4,8 @@ type Query {
 }
 
 type Mutation {
-  createLOV(identifier: String!, name: LanguageDependentString!, values: [LOVitemInput]): ID!
-  updateLOV(id: ID!, name: LanguageDependentString, values: [LOVitemInput]) : ID!
+  createLOV(identifier: String!, name: LanguageDependentString!, values: [JSONObject]): ID!
+  updateLOV(id: ID!, name: LanguageDependentString, values: [JSONObject]) : ID!
   removeLOV(id: ID!) : Boolean!
 }
 
@@ -13,23 +13,9 @@ type LOV {
   id: ID!
   identifier: String!
   name: LanguageDependentString!
-  values: [LOVitem]
+  values: [JSONObject]
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!
   updatedAt: UTCDateTime!
-}
-
-type LOVitem {
-  id: Int!
-  value: LanguageDependentString!
-  filter: Int
-  level: [String]
-}
-
-input LOVitemInput {
-  id: Int!
-  value: LanguageDependentString!
-  filter: Int
-  level: [String]
 }

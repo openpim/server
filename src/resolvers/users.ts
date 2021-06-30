@@ -53,7 +53,7 @@ export default {
         }
     },
     Mutation: {
-        createRole: async (parent: any, { identifier, name, configAccess, relAccess, itemAccess, otherAccess }: any, context: Context) => {
+        createRole: async (parent: any, { identifier, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ROLES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create roles, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -77,6 +77,7 @@ export default {
                     configAccess: configAccess || { types: 0, attributes: 0, relations: 0, users: 0, roles: 0, languages: 0 },
                     relAccess: relAccess || { relations: [], access: 0, groups: [] },
                     itemAccess: itemAccess || { valid: [], fromItems: [], access: 0, groups: [] },
+                    channelAccess: channelAccess || [],
                     otherAccess: otherAccess || { audit: false, search: false, exportXLS: false, exportCSV: false, importXLS: false }
                 }, {transaction: t})
             })
@@ -87,7 +88,7 @@ export default {
             
             return role.id
         },
-        updateRole: async (parent: any, { id, name, configAccess, relAccess, itemAccess, otherAccess }: any, context: Context) => {
+        updateRole: async (parent: any, { id, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ROLES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit roles, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -109,6 +110,7 @@ export default {
             if (relAccess) role.relAccess = relAccess
             if (itemAccess) role.itemAccess = itemAccess
             if (otherAccess) role.otherAccess = otherAccess
+            if (channelAccess) role.channelAccess = channelAccess
             role.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await role.save({transaction: t})

@@ -1,0 +1,75 @@
+type Query {
+  getChannels: [Channel]
+  getChannelStatus(id: ID!) : [ChannelStatus]
+  getChannelStatusByCategories(id: ID!) : [ChannelCategoryStatus]
+  getExecutions(channelId: ID!, offset: Int!, limit: Int!, order: JSON): ExecutionsResponse
+  getChannelCategories(id: ID!) : [ChannelCategory]
+  getChannelAttributes(channelId: ID!, categoryId: ID!) : [ChannelAttribute]
+}
+
+type Mutation {
+  createChannel(identifier: String!, name: LanguageDependentString!, active: Boolean!, type: Int!, valid: [ID], visible: [ID], config: JSONObject, mappings: JSONObject, runtime: JSONObject): ID!
+  updateChannel(id: ID!, name: LanguageDependentString, active: Boolean, type: Int, valid: [ID], visible: [ID], config: JSONObject, mappings: JSONObject, runtime: JSONObject) : ID!
+  removeChannel(id: ID!) : Boolean!
+  triggerChannel(id: ID!, language: String!, data: JSONObject) : Boolean
+}
+
+type Channel {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  active: Boolean!
+  type: Int!
+  valid: [String]!
+  visible: [String]!
+  config: JSONObject!
+  mappings: JSONObject!
+  runtime: JSONObject!
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}
+
+type ChannelCategoryStatus {
+  id: ID
+  name: String
+  statuses: [ChannelStatus]
+}
+
+type ChannelStatus {
+  status: Int!
+  count: Int!
+}
+
+type ExecutionsResponse {
+  count: Int
+  rows: [Execution]
+}
+
+type Execution {
+  id: ID!
+  channelId: ID!
+  status: Int!
+  startTime: UTCDateTime!
+  finishTime: UTCDateTime
+  storagePath: String
+  log: String
+  createdAt: UTCDateTime!
+  updatedAt: UTCDateTime!
+}
+
+type ChannelCategory {
+  id: String!
+  name: String!
+}
+
+type ChannelAttribute {
+  id: ID!
+  name: String!
+  required: Boolean!
+  dictionary: Boolean!
+  description: String
+  dictionaryLink: String
+  dictionaryLinkPost: JSONObject
+}

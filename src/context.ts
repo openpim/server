@@ -75,6 +75,8 @@ export default class Context {
                     if (role.configAccess && role.configAccess.languages === 2) return true
                 case ConfigAccess.LOVS:
                     if (role.configAccess && role.configAccess.lovs === 2) return true
+                case ConfigAccess.CHANNELS:
+                    if (role.configAccess && role.configAccess.channels === 2) return true
                 case ConfigAccess.ACTIONS:
                     if (role.configAccess && role.configAccess.actions === 2) return true
                 case ConfigAccess.DASHBOARDS:
@@ -105,6 +107,8 @@ export default class Context {
                     if (role.configAccess && (role.configAccess.languages === 1 || role.configAccess.languages === 2)) return true
                 case ConfigAccess.LOVS:
                     if (role.configAccess && (role.configAccess.lovs === 1 || role.configAccess.lovs === 2)) return true
+                case ConfigAccess.CHANNELS:
+                    if (role.configAccess && (role.configAccess.channels === 1 || role.configAccess.channels === 2)) return true
                 case ConfigAccess.ACTIONS:
                     if (role.configAccess && (role.configAccess.actions === 1 || role.configAccess.actions === 2)) return true
                 case ConfigAccess.DASHBOARDS:
@@ -182,6 +186,40 @@ export default class Context {
         } else {
             return this.filterGroups(forbiddenGroups)
         }
+    }
+
+    public canViewChannel(channelIdentifier: string): boolean {
+        if (!this.user) return false
+        const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId)
+        const chan = mng.getChannels().find(chan => chan.identifier === channelIdentifier)
+        if (!chan) return false
+
+        let access = 2
+        for (let i = 0; i < this.user.getRoles().length; i++) {
+            const role = this.user.getRoles()[i]
+            const tst = role.channelAccess.find((data : { channelId: number; access: number }) => data.channelId === chan.id)
+            if(tst) {
+                if (tst.access < access) access = tst.access
+            }
+        }
+        return access > 0
+    }
+
+    public canEditChannel(channelIdentifier: string): boolean {
+        if (!this.user) return false
+        const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId)
+        const chan = mng.getChannels().find(chan => chan.identifier === channelIdentifier)
+        if (!chan) return false
+
+        let access = 2
+        for (let i = 0; i < this.user.getRoles().length; i++) {
+            const role = this.user.getRoles()[i]
+            const tst = role.channelAccess.find((data : { channelId: number; access: number }) => data.channelId === chan.id)
+            if(tst) {
+                if (tst.access < access) access = tst.access
+            }
+        }
+        return access === 2
     }
 
     public canViewItem(item: Item): boolean {
@@ -289,13 +327,12 @@ export default class Context {
 
         for (const attrIdentifier in attrMap) {
             const groupIds = attrMap[attrIdentifier]
-            if (!groupIds.find((id:number) => forbiddenGroups.includes(id))) {
+            if (groupIds.find((id:number) => !forbiddenGroups.includes(id))) {
                 res.push(attrIdentifier)
             }
         }
         return res    
     }
-
 }
 
 export enum ConfigAccess {
@@ -306,6 +343,7 @@ export enum ConfigAccess {
     ROLES,
     LANGUAGES,
     LOVS,
+    CHANNELS,
     ACTIONS,
     DASHBOARDS
 }

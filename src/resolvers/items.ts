@@ -3,7 +3,7 @@ import { sequelize } from '../models'
 import { QueryTypes, Utils } from 'sequelize'
 import { Item } from '../models/items'
 import {  ModelsManager } from '../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty } from './utils'
+import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
@@ -94,6 +94,7 @@ export default {
             items.forEach(item => {   
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
             })
             return items || []
         }
@@ -124,6 +125,7 @@ export default {
             if (item && context.canViewItem(item)) {
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
                 return item
             } else {
                 return null
@@ -148,6 +150,7 @@ export default {
             items.forEach(item => {   
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
             })
 
             // DB can return data in different order then we send to it, so we need to order it
@@ -167,6 +170,7 @@ export default {
             if (item && context.canViewItem(item)) {
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
                 return item
             } else {
                 return null
@@ -185,16 +189,18 @@ export default {
 
                 const data: any[] = await sequelize.query(
                     `SELECT a."id", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName"
-                        FROM "items" a, "itemRelations" ir, "types" t where 
+                        FROM "items" a, "itemRelations" ir, "types" t, "relations" r where 
                         a."tenantId"=:tenant and 
                         ir."itemId"=:itemId and
                         a."id"=ir."targetId" and
                         a."typeId"=t."id" and
                         t."file"=true and
+                        ir."relationId"=r."id" and
                         coalesce(a."storagePath", '') != '' and
                         ir."deletedAt" is null and
-                        a."deletedAt" is null
-                        order by a.id`, {
+                        a."deletedAt" is null and 
+                        r."deletedAt" is null
+                        order by r.order, a.id`, {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         itemId: item.id
@@ -246,7 +252,7 @@ export default {
         }        
     },
     Mutation: {
-        createItem: async (parent: any, { parentId, identifier, name, typeId, values }: any, context: Context) => {
+        createItem: async (parent: any, { parentId, identifier, name, typeId, values, channels}: any, context: Context) => {
             context.checkAuth()
             if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
@@ -314,6 +320,7 @@ export default {
                 typeIdentifier: type.getValue().identifier,
                 parentIdentifier: parentIdentifier, 
                 values: null,
+                channels: null,
                 fileOrigName: '',
                 storagePath: '',
                 mimeType: ''
@@ -321,18 +328,22 @@ export default {
 
             if (!values) values = {}
 
-            await processItemActions(context, EventType.BeforeCreate, item, values, false)
+            await processItemActions(context, EventType.BeforeCreate, item, values, channels, false)
+
+            filterEditChannels(context, channels)
+            checkSubmit(context, channels)
 
             filterValues(context.getEditItemAttributes2(nTypeId, path), values)
             checkValues(mng, values)
 
             item.values = values
+            item.channels = channels
 
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
 
-            await processItemActions(context, EventType.AfterCreate, item, values, false)
+            await processItemActions(context, EventType.AfterCreate, item, values, channels, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -346,7 +357,7 @@ export default {
 
             return item.id
         },
-        updateItem: async (parent: any, { id, name, values }: any, context: Context) => {
+        updateItem: async (parent: any, { id, name, values, channels }: any, context: Context) => {
             context.checkAuth()
             const nId = parseInt(id)
 
@@ -355,16 +366,21 @@ export default {
                 throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            if (!context.canEditItem(item)) {
+            if ((name || values) && !context.canEditItem(item)) {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             item.updatedBy = context.getCurrentUser()!.login
 
-            await processItemActions(context, EventType.BeforeUpdate, item, values, false)
+            await processItemActions(context, EventType.BeforeUpdate, item, values, channels, false)
 
             let itemDiff: AuditItem
+            if (channels) {
+                filterEditChannels(context, channels)
+                checkSubmit(context, channels)
+                item.channels = mergeValues(channels, item.channels)
+            }
             if (values) {
                 filterValues(context.getEditItemAttributes(item), values)
                 checkValues(mng, values)
@@ -379,7 +395,7 @@ export default {
                 await item.save({transaction: t})
             })
 
-            await processItemActions(context, EventType.AfterUpdate, item, values, false)
+            await processItemActions(context, EventType.AfterUpdate, item, values, channels, false)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
@@ -483,7 +499,7 @@ export default {
             })
             if (num > 0) throw new Error('Can not remove item that has relations, remove them first.');
 
-            await processItemActions(context, EventType.BeforeDelete, item, null, false)
+            await processItemActions(context, EventType.BeforeDelete, item, null, null, false)
 
             item.updatedBy = context.getCurrentUser()!.login
 
@@ -495,7 +511,7 @@ export default {
                 await item.destroy({transaction: t})
             })
 
-            await processItemActions(context, EventType.AfterDelete, item, null, false)
+            await processItemActions(context, EventType.AfterDelete, item, null, null,false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {

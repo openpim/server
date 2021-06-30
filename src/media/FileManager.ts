@@ -5,6 +5,7 @@ import { mergeValues } from '../resolvers/utils'
 import { FragmentsOnCompositeTypes } from 'graphql/validation/rules/FragmentsOnCompositeTypes'
 import {File} from 'formidable'
 import logger from '../logger'
+import { ChannelExecution } from '../models/channels'
 
 export class FileManager {
     private static instance: FileManager
@@ -48,6 +49,27 @@ export class FileManager {
         }
         item.values = mergeValues(values, item.values)        
         item.storagePath = ''
+    }
+
+    public async saveChannelFile(tenantId: string, channelId: number, exec: ChannelExecution, file: string) {
+        const tst = '/' + tenantId
+        if (!fs.existsSync(this.filesRoot + tst)) fs.mkdirSync(this.filesRoot + tst)
+
+        const filesPath = '/' + tenantId + '/channels/' + channelId
+        if (!fs.existsSync(this.filesRoot + filesPath)) fs.mkdirSync(this.filesRoot + filesPath, {recursive: true})
+
+        const relativePath = filesPath + '/' + exec.id
+        const fullPath = this.filesRoot + relativePath
+        try {
+            fs.renameSync(file, fullPath)
+        } catch (e) { 
+            logger.error('Failed to rename file (will use copy instead): ', file, fullPath)
+            logger.error(e)
+            fs.copyFileSync(file, fullPath)
+            fs.unlinkSync(file)
+        }
+
+        exec.storagePath = relativePath
     }
 
     public async saveFile(tenantId: string, item: Item, file: File) {

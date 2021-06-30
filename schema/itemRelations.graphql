@@ -39,4 +39,5 @@ type ItemInfo {
   id: ID!
   identifier: String!
   name: LanguageDependentString!
+  updatedAt: UTCDateTime!
 }

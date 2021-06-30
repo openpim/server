@@ -26,9 +26,10 @@ import Context from './context'
 import { IncomingMessage } from 'http';
 import { initModels } from './models'
 import { ModelsManager } from './models/manager'
-import { processUpload, processCreateUpload, processDownload } from './media';
+import { processUpload, processCreateUpload, processDownload, processChannelDownload } from './media';
 
 import version from './version'
+import { ChannelsManagerFactory } from './channels'
 
 // Construct a schema, using GraphQL schema language
 async function start() { 
@@ -40,6 +41,7 @@ async function start() {
 
   await initModels();
   ModelsManager.getInstance().init()
+  ChannelsManagerFactory.getInstance().init()
 
   let app = express();
   app.use(bodyParser.json({limit: '100mb'}));
@@ -96,6 +98,16 @@ async function start() {
       const context = await Context.create(req)
       context.checkAuth()
       await processDownload(context, req, res, true)
+    } catch (error) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.get('/asset-channel/:id', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+      await processChannelDownload(context, req, res, false)
     } catch (error) {
       res.status(400).send(error.message)
     }

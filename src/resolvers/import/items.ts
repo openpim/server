@@ -4,7 +4,7 @@ import { Item } from '../../models/items'
 import { sequelize } from '../../models'
 import { QueryTypes } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty } from '../utils'
+import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit } from '../utils'
 import { Attribute } from '../../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
@@ -104,7 +104,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 data.updatedBy = context.getCurrentUser()!.login
 
-                await processItemActions(context, EventType.BeforeDelete, data, null, true)
+                await processItemActions(context, EventType.BeforeDelete, data, null, null, true)
 
                 const oldIdentifier = item.identifier
                 data.identifier = item.identifier + '_d_' + Date.now() 
@@ -113,7 +113,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     await data.destroy({transaction: t})
                 })
 
-                await processItemActions(context, EventType.AfterDelete, data, null, true)
+                await processItemActions(context, EventType.AfterDelete, data, null, null, true)
 
                 if (audit.auditEnabled()) {
                     const itemChanges: ItemChanges = {
@@ -191,7 +191,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             })
 
             if (!item.values) item.values = {}
-            await processItemActions(context, EventType.BeforeCreate, data, item.values, true)
+            await processItemActions(context, EventType.BeforeCreate, data, item.values, item.channels, true)
+
+            filterEditChannels(context, item.channels)
+            checkSubmit(context, item.channels)
 
             filterValues(context.getEditItemAttributes2(type!.getValue().id, path), item.values)
             try {
@@ -203,12 +206,13 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             data.values = item.values
+            data.channels = item.channels
 
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})
             })
 
-            await processItemActions(context, EventType.AfterCreate, data, item.values, true)
+            await processItemActions(context, EventType.AfterCreate, data, item.values, item.channels, true)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -224,7 +228,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             result.result = ImportResult.CREATED
         } else {
             // update
-            if (!context.canEditItem(data)) {
+            if ((item.name || item.values) && !context.canEditItem(data)) {
                 result.addError(ReturnMessage.ItemNoAccess)
                 result.result = ImportResult.REJECTED
                 return result
@@ -296,8 +300,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             if (!item.values) item.values = {}
-            await processItemActions(context, EventType.BeforeUpdate, data, item.values, true)
+            await processItemActions(context, EventType.BeforeUpdate, data, item.values, item.channels, true)
 
+            filterEditChannels(context, item.channels)
+            checkSubmit(context, item.channels)
             filterValues(context.getEditItemAttributes(data), item.values)
             try {
                 checkValues(mng, item.values)
@@ -315,13 +321,14 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             data.values = mergeValues(item.values, data.values)
+            data.channels = mergeValues(item.channels, data.channels)
 
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await data!.save({transaction: t})
             })
 
-            await processItemActions(context, EventType.AfterUpdate, data, item.values, true)
+            await processItemActions(context, EventType.AfterUpdate, data, item.values, item.channels, true)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, data.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)

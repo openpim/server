@@ -11,6 +11,52 @@ import logger from '../logger'
 import { Type } from '../models/types'
 import { ItemRelation } from '../models/itemRelations'
 import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
+import { ChannelExecution } from '../models/channels'
+
+export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
+    const idStr = req.params.id
+    const id = parseInt(idStr)
+    if (!id) throw new Error('Wrong "id" parameter')
+
+    const exec = await ChannelExecution.applyScope(context).findByPk(id)
+    if (!exec) {
+        logger.error('Failed to find execution by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find image')
+        return
+    }
+
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const chan = mng.getChannels().find( chan => chan.id === exec.channelId)
+    if (!chan) {
+        logger.error('Failed to find channel by id: ' + exec.channelId + ', tenant: ' + mng.getTenantId())
+        res.status(400).send('Failed to find image')
+        return
+    }
+    if (!context.canEditChannel(chan.identifier) || chan.tenantId !== context.getCurrentUser()?.tenantId) {
+        logger.error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to download the file ' + id + ' from channel, tenant: ' + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find image')
+        return
+    }
+
+    if (!exec.storagePath) {
+        logger.error('Failed to find image for item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find image')
+        return
+    }
+
+    const hdrs:any = {
+        'Content-Type': chan.config.mime ? chan.config.mime : "application/octet-stream"
+    }
+    hdrs['Content-Disposition'] = 'attachment; filename="' + (chan.config.file ? transliterate(chan.config.file) : 'result.bin') + '"'
+    res.sendFile(process.env.FILES_ROOT! + exec.storagePath, {headers: hdrs})
+}
+
+const a:any = {"(": "_", ")": "_", "\"":"_","'":"_"," ": "_","Ё":"YO","Й":"I","Ц":"TS","У":"U","К":"K","Е":"E","Н":"N","Г":"G","Ш":"SH","Щ":"SCH","З":"Z","Х":"H","Ъ":"'","ё":"yo","й":"i","ц":"ts","у":"u","к":"k","е":"e","н":"n","г":"g","ш":"sh","щ":"sch","з":"z","х":"h","ъ":"'","Ф":"F","Ы":"I","В":"V","А":"a","П":"P","Р":"R","О":"O","Л":"L","Д":"D","Ж":"ZH","Э":"E","ф":"f","ы":"i","в":"v","а":"a","п":"p","р":"r","о":"o","л":"l","д":"d","ж":"zh","э":"e","Я":"Ya","Ч":"CH","С":"S","М":"M","И":"I","Т":"T","Ь":"'","Б":"B","Ю":"YU","я":"ya","ч":"ch","с":"s","м":"m","и":"i","т":"t","ь":"_","б":"b","ю":"yu"};
+function transliterate (word: string) {
+  return word.split('').map( (char) => { 
+    return a[char] || char; 
+  }).join("")
+}
 
 export async function processDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -40,7 +86,7 @@ export async function processDownload(context: Context, req: Request, res: Respo
         'Content-Type': item.mimeType
     }
     if (!thumbnail) {
-        hdrs['Content-Disposition'] = 'attachment; filename="' + item.fileOrigName + '"'
+        hdrs['Content-Disposition'] = 'attachment; filename="' + transliterate(item.fileOrigName) + '"'
 
     }
     res.sendFile(process.env.FILES_ROOT! + item.storagePath + (thumbnail ? '_thumb.jpg': ''), {headers: hdrs})

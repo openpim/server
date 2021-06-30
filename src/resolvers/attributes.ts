@@ -37,7 +37,7 @@ export default {
         }
     },
     Mutation: {
-        createAttributeGroup: async (parent: any, { identifier, name, order, visible }: any, context: Context) => {
+        createAttributeGroup: async (parent: any, { identifier, name, order, visible, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create attr group, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -65,14 +65,15 @@ export default {
                     updatedBy: context.getCurrentUser()!.login,
                     name: name,
                     order: order != null? order : null,
-                    visible: visible || false
+                    visible: visible || false,
+                    options: options ? options : []
                 }, {transaction: t})
             })
 
             mng.getAttrGroups().push(new AttrGroupWrapper(grp))
             return grp.id
         },
-        updateAttributeGroup: async (parent: any, { id, name, order, visible }: any, context: Context) => {
+        updateAttributeGroup: async (parent: any, { id, name, order, visible, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update attr group, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -90,6 +91,7 @@ export default {
             if (name) group.name = name
             if (order != null) group.order = order
             if (visible != null) group.visible = visible
+            if (options != null) group.options = options
             group.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await group.save({transaction: t})

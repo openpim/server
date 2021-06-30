@@ -14,6 +14,7 @@ export class AttrGroup extends Base {
     public name!: any
     public visible!: boolean
     public order!:number
+    public options!: any
 
     public getAttributes!: HasManyGetAssociationsMixin<Attribute>
     public addAttribute!: HasManyAddAssociationMixin<Attribute, number>;
@@ -65,7 +66,11 @@ export function init(sequelize: Sequelize):void {
           type: 'BOOLEAN',
           allowNull: false,
         },
-          ...BaseColumns,
+        options: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+        },
+        ...BaseColumns,
         tenantId: { // override base for uniqueIdentifier
           type: new DataTypes.STRING(50),
           allowNull: false,

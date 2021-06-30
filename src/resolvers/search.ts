@@ -6,7 +6,7 @@ import { Attribute, AttrGroup } from '../models/attributes'
 import { Relation } from '../models/relations'
 import { ItemRelation } from '../models/itemRelations'
 import { ModelsManager } from '../models/manager'
-import { filterValues } from './utils'
+import { filterChannels, filterValues } from './utils'
 import { User, Role } from '../models/users'
 import { LOV } from '../models/lovs'
 import { SavedColumns, SavedSearch } from '../models/search'
@@ -25,7 +25,7 @@ query { search(
         }]
     ) {
     responses {
-        ... on ItemsResponse {
+        ... on ItemsSearchResponse {
             count
             rows {
                 id
@@ -311,6 +311,7 @@ export default {
                 const item = arr[i];
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
+                filterChannels(context, item.channels)
             }
             return rows
         }

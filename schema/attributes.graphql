@@ -5,8 +5,8 @@ type Query {
 }
 
 type Mutation {
-  createAttributeGroup(identifier: String!, name: LanguageDependentString!, order: Int, visible: Boolean): ID!
-  updateAttributeGroup(id: ID!, name: LanguageDependentString, order: Int, visible: Boolean) : ID!
+  createAttributeGroup(identifier: String!, name: LanguageDependentString!, order: Int, visible: Boolean, options: JSON): ID!
+  updateAttributeGroup(id: ID!, name: LanguageDependentString, order: Int, visible: Boolean, options: JSON) : ID!
   removeAttributeGroup(id: ID!) : Boolean!
   createAttribute(groupId: ID!, identifier: String!, name: LanguageDependentString!, order: Int, valid: [ID], visible: [ID], relations: [ID], languageDependent: Boolean, type: Int!, pattern: String, errorMessage: LanguageDependentString, lov: ID, richText: Boolean, multiLine: Boolean, options: JSON): ID!
   updateAttribute(id: ID!, name: LanguageDependentString, order: Int, valid: [ID], visible: [ID], relations: [ID], languageDependent: Boolean, type: Int, pattern: String, errorMessage: LanguageDependentString, lov: ID, richText: Boolean, multiLine: Boolean, options: JSON) : ID!
@@ -21,6 +21,7 @@ type AttrGroup {
   name: LanguageDependentString!
   order: Int!
   visible: Boolean!
+  options: JSON!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!
