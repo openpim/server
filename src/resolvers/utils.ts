@@ -68,7 +68,7 @@ export function mergeValues(newValues: any, oldValues: any): any {
             for (const prop in oldValues) {
                 const obj = oldValues[prop]
                 const newobj = newValues[prop]
-                if (obj !== null && typeof obj === 'object' && typeof newobj === 'object') {
+                if (obj !== null && typeof obj === 'object' && typeof newobj === 'object' && !Array.isArray(newobj)) {
                     newValues[prop] = {...oldValues[prop], ...newValues[prop]}
                 }
             }
