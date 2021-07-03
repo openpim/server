@@ -178,11 +178,11 @@ export function checkValues(mng: ModelManager, values: any) {
             const regex = XRegExp(attr.pattern, 'g')
             if (attr.languageDependent) {
                 for(const lang in values[prop]) {
-                    const value = '' + values[prop][lang]
+                    const value = values[prop][lang] ? '' + values[prop][lang] : ''
                     if (!regex.test(value)) throw new Error(attr.errorMessage || 'Wrong value: ' + value + ' for pattern: ' + attr.pattern)    
                 }
             } else {
-                const value = '' + values[prop]
+                const value = values[prop] ? '' + values[prop] : ''
                 if (!regex.test(value)) throw new Error(attr.errorMessage || 'Wrong value: ' + value + ' for pattern: ' + attr.pattern)
             }
         }
