@@ -26,12 +26,25 @@ export class FileManager {
     public async removeFile(item: Item) {
         const folder = ~~(item.id/1000)
 
-        const filesPath = '/' +folder
+        const filesPath = '/' +item.tenantId + '/' + folder
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
 
-        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath)
-        if (fs.existsSync(fullPath + '_thumb.jpg')) fs.unlinkSync(fullPath + '_thumb.jpg')
+        if (fs.existsSync(fullPath)) { 
+            fs.unlink(fullPath, (err) => {
+                if (err) logger.error('Error deleting file:' + fullPath, err)
+            })
+        } else {
+            logger.error(fullPath + ' no such file found for item id: ' + item.id);
+        }
+        const thumb = fullPath + '_thumb.jpg'
+        if (fs.existsSync(thumb)) {
+            fs.unlink(thumb, (err) => {
+                if (err) logger.error('Error deleting file:' + thumb, err)
+            })
+        } else {
+            logger.error(thumb + ' no such file found for item id: ' + item.id);
+        } 
 
         let values
         if (this.isImage(item.mimeType)) {

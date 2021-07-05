@@ -511,6 +511,11 @@ export default {
                 await item.destroy({transaction: t})
             })
 
+            if (item.storagePath) {
+                const fm = FileManager.getInstance()
+                await fm.removeFile(item)
+            }
+
             await processItemActions(context, EventType.AfterDelete, item, null, null,false)
 
             if (audit.auditEnabled()) {
