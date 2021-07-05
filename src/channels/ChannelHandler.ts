@@ -48,6 +48,14 @@ export abstract class ChannelHandler {
 
   }
 
+  isVariant(channel: Channel, item: Item): boolean {
+    if (channel.config.variantsSupport && channel.config.variantExpr) {
+      const func = new Function('item', '"use strict"; return (' + channel.config.variantExpr + ')')
+      return !!func(item)
+    }
+    return false
+  }
+
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
     if (mapping.expr) {
       const func = new Function('item', '"use strict"; return (' + mapping.expr + ')')

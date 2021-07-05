@@ -11,6 +11,9 @@ import * as fs from 'fs'
 
 interface JobContext {
     log: string
+    variantParent?: string
+    variantRequest?: any
+    variantItems?: [Item]
 }
 
 export class WBChannelHandler extends ChannelHandler {
@@ -34,13 +37,17 @@ export class WBChannelHandler extends ChannelHandler {
             const query:any = {}
             query[channel.identifier] = {status: 1}
             let items = await Item.findAndCountAll({ 
-                where: { tenantId: channel.tenantId, channels: query} 
+                where: { tenantId: channel.tenantId, channels: query},
+                order: [['parentIdentifier', 'ASC'], ['id', 'ASC']]
             })
             context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
             for (let i = 0; i < items.rows.length; i++) {
                 const item = items.rows[i];
                 await this.processItem(channel, item, language, context)
                 context.log += '\n\n'
+            }
+            if (context.variantRequest) { // send last variant request that was not processed
+                await this.sendVariantsRequest(channel, context)
             }
         } else if (data.sync) {
             await this.syncJob(channel, context, data)
@@ -147,10 +154,14 @@ export class WBChannelHandler extends ChannelHandler {
                 const pathArr = item.path.split('.')
                 const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                 if (tst) {
-                    await this.processItemInCategory(channel, item, categoryConfig, language, context)
-                    await sequelize.transaction(async (t) => {
-                        await item.save({transaction: t})
-                    })
+                    try {
+                        await this.processItemInCategory(channel, item, categoryConfig, language, context)
+                        await sequelize.transaction(async (t) => {
+                            await item.save({transaction: t})
+                        })
+                    } catch (err) {
+                        logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+                    }
                     return
                 }
             } else {
@@ -169,6 +180,22 @@ export class WBChannelHandler extends ChannelHandler {
         })
     }
 
+    async sendVariantsRequest(channel: Channel, context: JobContext) {
+        const varItem = context.variantItems![0]
+        await this.sendRequest(channel, varItem, context.variantRequest, context)
+        const data = varItem.channels[channel.identifier]
+        for (let i = 0; i < context.variantItems!.length; i++) {
+            const item = context.variantItems![i]
+            item.channels[channel.identifier] = data
+            item.changed('channels', true)
+            item.values.wbId = varItem.values.wbId
+            item.changed('values', true)
+            await sequelize.transaction(async (t) => {
+                await varItem.save({transaction: t})
+            })
+        }
+    }
+
     async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext) {
         context.log += 'Найдена категория "' + categoryConfig.name +'" для записи с идентификатором: ' + item.identifier + '\n'
 
@@ -176,10 +203,31 @@ export class WBChannelHandler extends ChannelHandler {
         data.category = categoryConfig.id
         
         // request to WB
-        const request:any = {id: uuid.v4(), jsonrpc: '2.0', params: { supplierID: channel.config.wbSupplierID, card: {}}}
+        let request:any = {id: uuid.v4(), jsonrpc: '2.0', params: { supplierID: channel.config.wbSupplierID, card: {}}}
 
         const create = item.values.wbId ? false : true
-        if (!create) {
+
+        // check for variant
+        const variant = this.isVariant(channel, item)
+        if (variant) {
+            if (item.parentIdentifier != context.variantParent) {
+                if (context.variantRequest) {
+                    await this.sendVariantsRequest(channel, context)
+                }
+                context.variantParent = item.parentIdentifier
+                context.variantRequest = request
+                context.variantItems = [item]
+            } else {
+                request = context.variantRequest
+                context.variantItems!.push(item)
+            }
+        } else {
+            if (context.variantParent) delete context.variantParent
+            if (context.variantRequest) delete context.variantRequest
+            if (context.variantItems) delete context.variantItems
+        }
+
+        if (!create && !variant) {
             // load card from WB
             const loadUrl = 'https://suppliers-api.wildberries.ru/card/cardByImtID'
             const loadRequest = {
@@ -217,7 +265,7 @@ export class WBChannelHandler extends ChannelHandler {
         const prodCountryConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#prodCountry')
         request.params.card.countryProduction = await this.getValueByMapping(channel, prodCountryConfig, item, language)
         if (!request.params.card.countryProduction) {
-            const msg = 'Не введена конфигурауция для "Страны производства" для категории: ' + categoryConfig.name
+            const msg = 'Не введена конфигурация для "Страны производства" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
@@ -227,7 +275,16 @@ export class WBChannelHandler extends ChannelHandler {
         const vendorCode = await this.getValueByMapping(channel, supplierCodeConfig, item, language)
         request.params.card.supplierVendorCode = vendorCode
         if (!request.params.card.supplierVendorCode) {
-            const msg = 'Не введена конфигурауция для "Артикула поставщика" для категории: ' + categoryConfig.name
+            const msg = 'Не введена конфигурация для "Артикула поставщика" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
+        const productCodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#productCode')
+        const productCode = await this.getValueByMapping(channel, productCodeConfig, item, language)
+        if (!productCode) {
+            const msg = 'Не введена конфигурация для "Артикула товара" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
@@ -236,7 +293,7 @@ export class WBChannelHandler extends ChannelHandler {
         const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
         const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
         if (!barcode) {
-            const msg = 'Не введена конфигурауция для "Баркода" для категории: ' + categoryConfig.name
+            const msg = 'Не введена конфигурация для "Баркода" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
@@ -245,7 +302,7 @@ export class WBChannelHandler extends ChannelHandler {
         const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
         const price = await this.getValueByMapping(channel, priceConfig, item, language)
         if (!price) {
-            const msg = 'Не введена конфигурауция для "Цены" для категории: ' + categoryConfig.name
+            const msg = 'Не введена конфигурация для "Цены" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
@@ -258,7 +315,8 @@ export class WBChannelHandler extends ChannelHandler {
               }
             ]
           }
-        request.params.card.nomenclatures = [{vendorCode: request.params.card.supplierVendorCode, variations:[{barcode: barcode, addin:[tmp]}]}]
+        if (!request.params.card.nomenclatures) request.params.card.nomenclatures = []
+        let idx = request.params.card.nomenclatures.push({vendorCode: productCode, variations:[{barcode: barcode, addin:[tmp]}]}) - 1
 
         request.params.card.object = categoryConfig.name
 
@@ -285,11 +343,11 @@ export class WBChannelHandler extends ChannelHandler {
                         }
 
                         if (attrConfig.id.startsWith('nom#')) {
-                            if (!request.params.card.nomenclatures[0].addin) request.params.card.nomenclatures[0].addin = []
-                            request.params.card.nomenclatures[0].addin.push(data)
+                            if (!request.params.card.nomenclatures[idx].addin) request.params.card.nomenclatures[idx].addin = []
+                            request.params.card.nomenclatures[idx].addin.push(data)
                         } else if (attrConfig.id.startsWith('var#')) {
-                            if (!request.params.card.nomenclatures[0].variations[0].addin) request.params.card.nomenclatures[0].variations[0].addin = []
-                            request.params.card.nomenclatures[0].variations[0].addin.push(data)
+                            if (!request.params.card.nomenclatures[idx].variations[0].addin) request.params.card.nomenclatures[idx].variations[0].addin = []
+                            request.params.card.nomenclatures[idx].variations[0].addin.push(data)
                         } else {
                             if (!request.params.card.addin) request.params.card.addin = []
                             request.params.card.addin.push(data)
@@ -313,14 +371,20 @@ export class WBChannelHandler extends ChannelHandler {
         //images
         const images = await this.processItemImages(channel, item, context)
         if (images && images.length>0 ) {
-            if (!request.params.card.nomenclatures[0].addin) request.params.card.nomenclatures[0].addin = []
-            request.params.card.nomenclatures[0].addin.push({type: "Фото", params: images})
+            if (!request.params.card.nomenclatures[idx].addin) request.params.card.nomenclatures[idx].addin = []
+            request.params.card.nomenclatures[idx].addin.push({type: "Фото", params: images})
         }
 
-        if (!create) request.params.card.imtId = item.values.wbId
+        if (!variant) await this.sendRequest(channel, item, request, context)
+    }
 
+    async sendRequest(channel: Channel, item: Item, request: any, context: JobContext) {
+        const create = item.values.wbId ? false : true
+
+        if (!create) request.params.card.imtId = item.values.wbId
         const url = create ? 'https://suppliers-api.wildberries.ru/card/create' : 'https://suppliers-api.wildberries.ru/card/update'
         logger.info("Sending request Windberries: " + url + " => " + JSON.stringify(request))
+
         const res = await fetch(url, {
             method: 'post',
             body:    JSON.stringify(request),
@@ -354,7 +418,7 @@ export class WBChannelHandler extends ChannelHandler {
                       "find": [
                           {
                               "column": "nomenclatures.vendorCode",
-                              "search": vendorCode
+                              "search": request.params.card.supplierVendorCode
                           }
                       ]
                   },
@@ -396,10 +460,11 @@ export class WBChannelHandler extends ChannelHandler {
         }
 
         context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
+        const data = item.channels[channel.identifier]
         data.status = 2
         data.message = ''
         data.syncedAt = Date.now()
-        item.changed('channels', true) 
+        item.changed('channels', true)
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext) {
