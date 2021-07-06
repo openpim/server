@@ -21,18 +21,18 @@ export class YMChannelHandler extends ChannelHandler {
         const context: JobContext = {log: '', result: 2}
         let fileName = temp.path({prefix: 'openpim'})
 
-        if (channel.config.shopAttributes) {
-            const name = this.getValueByExpression(channel.config.shopAttributes.find((elem:any) => elem.id === 'name'))
-            const company = this.getValueByExpression(channel.config.shopAttributes.find((elem:any) => elem.id === 'company'))
-            const url = this.getValueByExpression(channel.config.shopAttributes.find((elem:any) => elem.id === 'url'))
-            const currency1 = this.getValueByExpression(channel.config.shopAttributes.find((elem:any) => elem.id === 'currency1'))
+        if (channel.config.ymShopAttributes) {
+            const name = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'name'))
+            const company = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'company'))
+            const url = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'url'))
+            const currency1 = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'currency1'))
 
             if (name && company && url && currency1) {
                 const yml:any = {yml_catalog : {$: {date: new Date().toISOString()}, shop: {name: name, company: company, url: url, currencies: []}}}
 
-                channel.config.shopAttributes.forEach((attrConfig:any) => {
+                channel.config.ymShopAttributes.forEach((attrConfig:any) => {
                     if (attrConfig.id !== 'name' && attrConfig.id !== 'company' && attrConfig.id !== 'url') {
-                        const attr = this.getValueByExpression(channel.config.shopAttributes.find((elem:any) => elem.id === attrConfig.id))
+                        const attr = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === attrConfig.id))
                         if (attr != null) {
                             if (attrConfig.id.startsWith('currency')) {
                                 const arr = attr.split(',')
