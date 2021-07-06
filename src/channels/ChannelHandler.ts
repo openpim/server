@@ -81,8 +81,12 @@ export abstract class ChannelHandler {
       } else {
         const attr = mapping.attrIdent.substring(0, tst)
         const lang = mapping.attrIdent.substring(tst + 1)
-        const attrValue = item.values[attr] ? item.values[attr][lang] : null
-        return await this.checkLOV(channel, attr, attrValue, language)
+        if (attr === '$name') {
+          return item.name[lang]
+        } else {
+          const attrValue = item.values[attr] ? item.values[attr][lang] : null
+          return await this.checkLOV(channel, attr, attrValue, language)
+        }
       }
     }
     return null
