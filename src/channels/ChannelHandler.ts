@@ -4,7 +4,8 @@ import { Item } from "../models/items"
 import { LOV } from "../models/lovs"
 import { ModelsManager } from "../models/manager"
 import { sequelize } from '../models'
-
+import logger from "../logger"
+import { exec } from "child_process"
 
 export abstract class ChannelHandler {
   private lovCache = new NodeCache();
@@ -14,6 +15,19 @@ export abstract class ChannelHandler {
   abstract getCategories(channel: Channel): Promise<ChannelCategory[]>
 
   abstract getAttributes(channel: Channel, categoryId: string): Promise<{ id: string; name: string; required: boolean; dictionary: boolean, dictionaryLink?: string }[]>
+
+  asyncExec (cmd: string) {
+    return new Promise(async (resolve) => {
+        try {
+            exec(cmd, function (error: any, stdout: string, stderr: string) {
+                resolve({ code: error ? error.code : 0, stdout:stdout, stderr: stderr } )
+            })
+        } catch (err) {
+            logger.error('External channel error: ', err)
+            resolve({ code: -1, stdout: '', stderr: err.message } )
+        }
+    })
+}
 
   async createExecution(channel: Channel) {
     channel.runtime.lastStart = new Date()
@@ -70,6 +84,14 @@ export abstract class ChannelHandler {
         const attrValue = item.values[attr] ? item.values[attr][lang] : null
         return await this.checkLOV(channel, attr, attrValue, language)
       }
+    }
+    return null
+  }
+
+  getValueByExpression(mapping: any): any {
+    if (mapping.expr) {
+      const func = new Function('"use strict"; return (' + mapping.expr + ')')
+      return func()
     }
     return null
   }

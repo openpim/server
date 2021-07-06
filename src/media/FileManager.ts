@@ -83,6 +83,8 @@ export class FileManager {
         }
 
         exec.storagePath = relativePath
+
+        return fullPath
     }
 
     public async saveFile(tenantId: string, item: Item, file: File) {

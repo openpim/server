@@ -8,6 +8,7 @@ import { ChannelHandler } from "./ChannelHandler"
 import { ExtChannelHandler } from "./ext/ExtChannelHandler"
 import { WBChannelHandler } from "./wb/WBChannelHandler"
 import { OzonChannelHandler } from "./ozon/OzonChannelHandler"
+import { YMChannelHandler } from "./ym/YMChannelHandler"
 
 export class ChannelsManager {
     private tenantId: string
@@ -103,10 +104,12 @@ export class ChannelsManager {
     private extChannelHandler = new ExtChannelHandler()
     private wbChannelHandler = new WBChannelHandler()
     private ozonChannelHandler = new OzonChannelHandler()
+    private ymChannelHandler = new YMChannelHandler()
     public getHandler(channel: Channel): ChannelHandler {
         if (channel.type === 1) return this.extChannelHandler
         if (channel.type === 2) return this.wbChannelHandler
         if (channel.type === 3) return this.ozonChannelHandler
+        if (channel.type === 4) return this.ymChannelHandler
         throw new Error('Failed to find handler for channel type: ' + channel.type)
     }
 }
