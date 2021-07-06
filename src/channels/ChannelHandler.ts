@@ -89,7 +89,7 @@ export abstract class ChannelHandler {
   }
 
   getValueByExpression(mapping: any): any {
-    if (mapping.expr) {
+    if (mapping && mapping.expr) {
       const func = new Function('"use strict"; return (' + mapping.expr + ')')
       return func()
     }

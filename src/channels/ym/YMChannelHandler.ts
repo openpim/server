@@ -28,8 +28,27 @@ export class YMChannelHandler extends ChannelHandler {
             const currency1 = this.getValueByExpression(channel.config.shopAttributes.find((elem:any) => elem.id === 'currency1'))
 
             if (name && company && url && currency1) {
-                const yml = {yml_catalog : {$: {date: new Date().toISOString()}, shop: {name: name, company: company, url: url}}}
+                const yml:any = {yml_catalog : {$: {date: new Date().toISOString()}, shop: {name: name, company: company, url: url, currencies: []}}}
 
+                channel.config.shopAttributes.forEach((attrConfig:any) => {
+                    if (attrConfig.id !== 'name' && attrConfig.id !== 'company' && attrConfig.id !== 'url') {
+                        const attr = this.getValueByExpression(channel.config.shopAttributes.find((elem:any) => elem.id === attrConfig.id))
+                        if (attr != null) {
+                            if (attrConfig.id.startsWith('currency')) {
+                                const arr = attr.split(',')
+                                yml.yml_catalog.shop.currencies.push({currency: {$: {id: arr[0], rate: arr[1]}}})
+                            } else if (attrConfig.id.startsWith('delivery-option')) {
+                                const arr = attr.split(',')
+                                if (!yml.yml_catalog.shop['delivery-options']) yml.yml_catalog.shop['delivery-options'] = []
+                                const option:any = {option: {$: {cost: arr[0], days: arr[1]}}}
+                                if (arr.length > 2) option.option.$['order-before'] = arr[2]
+                                yml.yml_catalog.shop['delivery-options'].push(option)
+                            } else { 
+                                yml.yml_catalog.shop[attrConfig.id] = attr
+                            }
+                        }
+                    }                    
+                })
 
                 const builder = new xml2js.Builder()
                 const str = builder.buildObject(yml)
