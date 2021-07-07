@@ -114,7 +114,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     dictionary: elem.dictionary_id !== 0,
                     dictionaryLinkPost: elem.dictionary_id !== 0 ? { body: {
                         attribute_id: elem.id,
-                        category_id: categoryId,
+                        category_id: categoryId.substring(4),
                         language: "DEFAULT",
                         last_value_id: 0,
                         limit: 1000
