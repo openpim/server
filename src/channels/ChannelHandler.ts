@@ -77,7 +77,12 @@ export abstract class ChannelHandler {
     } else if (mapping.attrIdent) {
       const tst = mapping.attrIdent.indexOf('#')
       if (tst === -1) {
-        return await this.checkLOV(channel, mapping.attrIdent, item.values[mapping.attrIdent], language)
+        if (mapping.attrIdent === '$parentId$') {
+          const arr = item.path.split('.')
+          return parseInt(arr[arr.length-2])
+        } else {
+          return await this.checkLOV(channel, mapping.attrIdent, item.values[mapping.attrIdent], language)
+        }
       } else {
         const attr = mapping.attrIdent.substring(0, tst)
         const lang = mapping.attrIdent.substring(tst + 1)
