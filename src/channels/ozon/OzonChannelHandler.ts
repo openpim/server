@@ -83,7 +83,7 @@ export class OzonChannelHandler extends ChannelHandler {
               if (elem.children.length > 0) {
                 this.collectAllLeafs(elem.children, data)
               } else {
-                data.push({id: elem.category_id, name: elem.title})
+                data.push({id: 'cat_' + elem.category_id, name: elem.title})
               }
           }  
         })
@@ -95,7 +95,7 @@ export class OzonChannelHandler extends ChannelHandler {
         if (! data) {
             const query = {
                 attribute_type: "ALL",
-                category_id: categoryId,
+                category_id: categoryId.substring(4),
                 language: "DEFAULT"
               }
             const res = await fetch('https://api-seller.ozon.ru/v2/category/attribute', {
@@ -107,7 +107,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
             data = json.result.map((elem:any) => { 
                 return { 
-                    id: elem.id, 
+                    id: 'attr_' + elem.id, 
                     name: elem.name,
                     required: elem.is_required,
                     description: elem.description,
