@@ -5,7 +5,8 @@ import * as temp from 'temp'
 import * as xml2js from 'xml2js'
 import { Item } from "../../models/items"
 import { sequelize } from '../../models'
-
+import { FileManager } from "../../media/FileManager"
+import * as fs from 'fs'
 
 const fsAsync = require('fs').promises
 
@@ -77,7 +78,7 @@ export class YMChannelHandler extends ChannelHandler {
                             context.result = 3
                             context.log += '\nОшибка запуска: ' + result.code
                         }
-                    }*/
+                    } */
                 } else {
                     context.result = 3
                     if (!name) context.log += 'Не задан name в заголовоке YML файла'
@@ -146,14 +147,21 @@ export class YMChannelHandler extends ChannelHandler {
             mapToModel: true
         })
 
-        let parent = itemFrom
-        let previousItem = itemFrom
+        let parents = [itemFrom]
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             if (item.id === itemFrom.id) continue
 
+            let parent = parents[parents.length-1]
             if (parent.identifier !== item.parentIdentifier) {
-                parent = previousItem
+                const idx = parents.findIndex(elem => elem.identifier === item.parentIdentifier)
+                if (idx === -1) {
+                    parent = items[i-1]
+                    parents.push(parent)
+                } else {
+                    parents.splice(idx+1)
+                    parent = parents[parents.length-1]
+                }
             }
 
             if (!channel.config.ymCategoryTypes.includes(item.typeId)) continue
@@ -174,11 +182,10 @@ export class YMChannelHandler extends ChannelHandler {
 
             const category: any ={$: {id: id}, _: name }
             if (parent.identifier !== itemFrom.identifier) {
-                category.$.parentId = parent.id
+                const parentId = await this.getValueByMapping(channel, idConfig, parent, language)
+                category.$.parentId = parentId
             }
             categories.push(category)
-
-            previousItem = item
         }
     }
 
