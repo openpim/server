@@ -27,7 +27,7 @@ export abstract class ChannelHandler {
             resolve({ code: -1, stdout: '', stderr: err.message } )
         }
     })
-}
+  }
 
   async createExecution(channel: Channel) {
     channel.runtime.lastStart = new Date()
@@ -72,8 +72,50 @@ export abstract class ChannelHandler {
 
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
     if (mapping.expr) {
-      const func = new Function('item', '"use strict"; return (' + mapping.expr + ')')
-      return func(item)
+      const utils = {
+        getTargetObject: async (relationIdentifier: string) => {
+          const items: Item[] = await sequelize.query(
+            `SELECT i.* FROM "items" i, "itemRelations" r where 
+                i.""deletedAt" IS NULL and 
+                r.""deletedAt" IS NULL and 
+                i."tenantId"=:tenant and 
+                i."id"=r."targetId" and 
+                r."relationIdentifier" = :relationIdentifier and 
+                r."itemId"=:itemId 
+                order by i.id limit 1 offset 0`, {
+            replacements: { 
+                tenant: channel.tenantId,
+                relationIdentifier: relationIdentifier,
+                itemId: item.id
+            },
+            model: Item,
+            mapToModel: true
+          })
+          return items && items.length > 0 ? items[0] : null
+        },
+        getSourceObject: async (relationIdentifier: string) => {
+          const items: Item[] = await sequelize.query(
+            `SELECT i.* FROM "items" i, "itemRelations" r where 
+                i.""deletedAt" IS NULL and 
+                r.""deletedAt" IS NULL and 
+                i."tenantId"=:tenant and 
+                i."id"=r."itemId" and 
+                r."relationIdentifier" = :relationIdentifier and 
+                r."targetId"=:itemId 
+                order by i.id limit 1 offset 0`, {
+            replacements: { 
+                tenant: channel.tenantId,
+                relationIdentifier: relationIdentifier,
+                itemId: item.id
+            },
+            model: Item,
+            mapToModel: true
+          })
+          return items && items.length > 0 ? items[0] : null
+        }
+      }
+      const func = Object.getPrototypeOf(async function() {}).constructor('item', 'utils', '"use strict"; (' + mapping.expr + ')')
+      return await func(item, utils)
     } else if (mapping.attrIdent) {
       const tst = mapping.attrIdent.indexOf('#')
       if (tst === -1) {

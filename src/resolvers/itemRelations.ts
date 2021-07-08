@@ -134,10 +134,12 @@ export default {
 
             let cnt = {count: '0'}
             cnt = await sequelize.query(
-                `SELECT Count(i.*) FROM "items" i, "itemRelations" r where 
+                `SELECT Count(i.*) FROM "items" i, "itemRelations" r where
+                    i.""deletedAt" IS NULL and 
+                    r.""deletedAt" IS NULL and 
                     i."tenantId"=:tenant and 
-                    i."id"=r."targetId" and
-                    r."relationId" in (:relations) and
+                    i."id"=r."targetId" and 
+                    r."relationId" in (:relations) and 
                     r."itemId"=:itemId`, { 
                 replacements: { 
                     tenant: context.getCurrentUser()!.tenantId,
@@ -150,11 +152,13 @@ export default {
             })
             const items: Item[] = await sequelize.query(
                 `SELECT i.* FROM "items" i, "itemRelations" r where 
+                    i.""deletedAt" IS NULL and 
+                    r.""deletedAt" IS NULL and 
                     i."tenantId"=:tenant and 
-                    i."id"=r."targetId" and
-                    r."relationId" in (:relations) and
+                    i."id"=r."targetId" and 
+                    r."relationId" in (:relations) and 
                     r."itemId"=:itemId 
-                    order by i.id
+                    order by i.id 
                     limit :limit offset :offset`, {
                 replacements: { 
                     tenant: context.getCurrentUser()!.tenantId,
