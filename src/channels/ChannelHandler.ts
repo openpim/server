@@ -115,7 +115,12 @@ export abstract class ChannelHandler {
         }
       }
       const func = Object.getPrototypeOf(async function() {}).constructor('item', 'utils', '"use strict"; (' + mapping.expr + ')')
-      return await func(item, utils)
+      try {
+        return await func(item, utils)
+      } catch (err) {
+        logger.error('Failed to execute expression :[' + mapping.expr + '] for item with id: ' + item.id + ' with error', err)
+        return null
+      }
     } else if (mapping.attrIdent) {
       const tst = mapping.attrIdent.indexOf('#')
       if (tst === -1) {
