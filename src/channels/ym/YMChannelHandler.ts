@@ -55,6 +55,8 @@ export class YMChannelHandler extends ChannelHandler {
 
                     await this.processCategories(channel, yml, language, context)
 
+                    await this.processItems(channel, yml, language, context)
+                    
                     const builder = new xml2js.Builder()
                     const str = builder.buildObject(yml)
                     logger.debug('YML file created. \n ' + str)
@@ -96,6 +98,91 @@ export class YMChannelHandler extends ChannelHandler {
         } finally {
             await this.finishExecution(channel, chanExec, context.result, context.log)
         }
+    }
+
+    private async processItems(channel: Channel, yml: any, language: string, context: JobContext) {
+        const offers:any[] = []
+        yml.yml_catalog.shop.offers = { offer: offers }
+
+        const query:any = {}
+        query[channel.identifier] = {status: 1}
+        let items = await Item.findAndCountAll({ 
+            where: { tenantId: channel.tenantId, channels: query},
+            order: [['parentIdentifier', 'ASC'], ['id', 'ASC']]
+        })
+        context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
+        for (let i = 0; i < items.rows.length; i++) {
+            const item = items.rows[i];
+            await this.processItem(channel, item, offers, language, context)
+            context.log += '\n\n'
+        }
+    }
+
+    private async processItem(channel: Channel, item: Item, offers: any[], language: string, context: JobContext) {
+        context.log += 'Обрабатывается запись с идентификатором: ' + item.identifier +'\n'
+
+        for (const categoryId in channel.mappings) {
+            const categoryConfig = channel.mappings[categoryId]
+            if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
+                const pathArr = item.path.split('.')
+                const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                if (tst) {
+                    try {
+                        await this.processItemInCategory(channel, item, offers, categoryConfig, language, context)
+                        await sequelize.transaction(async (t) => {
+                            await item.save({transaction: t})
+                        })
+                    } catch (err) {
+                        logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+                    }
+                    return
+                }
+            }
+        }
+
+        await this.processItemInCategory(channel, item, offers, channel.mappings._default, language, context)
+        await sequelize.transaction(async (t) => {
+            await item.save({transaction: t})
+        })
+    }
+
+    async processItemInCategory(channel: Channel, item: Item, offers: any[], categoryConfig: any, language: string, context: JobContext) {
+        context.log += 'Найдена категория "' + categoryConfig.name +'" для записи с идентификатором: ' + item.identifier + '\n'
+
+        const data = item.channels[channel.identifier]
+        data.category = categoryConfig.id
+
+        // const category: any ={$: {id: id}, _: name }
+        const idConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'id')
+        const id = await this.getValueByMapping(channel, idConfig, item, language)
+        if (!id) {
+            const msg = 'Не введена конфигурация для "id" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+        const offer: any = {$: {id: id}}
+
+        if (categoryConfig.type === 'vendor.model') offer.$.type = 'vendor.model'
+
+        // atributes
+        for (let i = 0; i < categoryConfig.attributes.length; i++) {
+            const attrConfig = categoryConfig.attributes[i];
+            
+            if (attrConfig.id != 'id') {
+                const value = await this.getValueByMapping(channel, attrConfig, item, language)
+                if (value) {
+                    offer[attrConfig.id] = value
+                }
+            }
+        }
+
+        offers.push(offer)
+        context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
+        data.status = 2
+        data.message = ''
+        data.syncedAt = Date.now()
+        item.changed('channels', true)
     }
 
     private async processCategories(channel: Channel, yml: any, language: string, context: JobContext) {
