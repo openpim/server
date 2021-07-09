@@ -76,8 +76,8 @@ export abstract class ChannelHandler {
         getTargetObject: async (relationIdentifier: string) => {
           const items: Item[] = await sequelize.query(
             `SELECT i.* FROM "items" i, "itemRelations" r where 
-                i.""deletedAt" IS NULL and 
-                r.""deletedAt" IS NULL and 
+                i."deletedAt" IS NULL and 
+                r."deletedAt" IS NULL and 
                 i."tenantId"=:tenant and 
                 i."id"=r."targetId" and 
                 r."relationIdentifier" = :relationIdentifier and 
@@ -96,8 +96,8 @@ export abstract class ChannelHandler {
         getSourceObject: async (relationIdentifier: string) => {
           const items: Item[] = await sequelize.query(
             `SELECT i.* FROM "items" i, "itemRelations" r where 
-                i.""deletedAt" IS NULL and 
-                r.""deletedAt" IS NULL and 
+                i."deletedAt" IS NULL and 
+                r."deletedAt" IS NULL and 
                 i."tenantId"=:tenant and 
                 i."id"=r."itemId" and 
                 r."relationIdentifier" = :relationIdentifier and 
