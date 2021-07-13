@@ -62,7 +62,6 @@ export class YMChannelHandler extends ChannelHandler {
                     logger.debug('YML file created. \n ' + str)
                     console.log(str)
                     
-                    /*
                     await fsAsync.writeFile(fileName, str)
                     if (fs.existsSync(fileName)) {
                         const fm = FileManager.getInstance()
@@ -80,7 +79,7 @@ export class YMChannelHandler extends ChannelHandler {
                             context.result = 3
                             context.log += '\nОшибка запуска: ' + result.code
                         }
-                    } */
+                    }
                 } else {
                     context.result = 3
                     if (!name) context.log += 'Не задан name в заголовоке YML файла'
