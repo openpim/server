@@ -164,16 +164,29 @@ export class YMChannelHandler extends ChannelHandler {
         const offer: any = {$: {id: id}}
 
         if (categoryConfig.type === 'vendor.model') offer.$.type = 'vendor.model'
+        if (categoryConfig.type === 'medicine') offer.$.type = 'medicine'
+        if (categoryConfig.type === 'books') offer.$.type = 'books'
 
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
-            const attrConfig = categoryConfig.attributes[i];
+            const attrConfig = categoryConfig.attributes[i]
             
             if (attrConfig.id != 'id') {
                 const value = await this.getValueByMapping(channel, attrConfig, item, language)
                 if (value) {
                     offer[attrConfig.id] = value
                 }
+            }
+        }
+
+        // addition params
+        for (let i = 0; i < categoryConfig.params.length; i++) {
+            const paramConfig = categoryConfig.params[i]
+            const value = await this.getValueByMapping(channel, paramConfig, item, language)
+            console.log(paramConfig, value)
+            if (value) {
+                if (!offer.param) offer.param =[]
+                offer.param.push({$:{name: paramConfig.id}, _: value})
             }
         }
 
