@@ -115,8 +115,8 @@ export abstract class ChannelHandler {
         }
       }
       try {
-        const func = Object.getPrototypeOf(async function() {}).constructor('item', 'utils', '"use strict"; return (' + mapping.expr + ')')
-        return func(item, utils)
+        const func = new Function('item', 'utils', '"use strict"; return (async () => { return (' + mapping.expr + ')})()')
+        return await func(item, utils)
       } catch (err) {
         logger.error('Failed to execute expression :[' + mapping.expr + '] for item with id: ' + item.id + ' with error: ' + err.message)
         return null
