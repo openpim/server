@@ -11,7 +11,7 @@ import { User, Role } from '../models/users'
 import { LOV } from '../models/lovs'
 import { SavedColumns, SavedSearch } from '../models/search'
 import { sequelize } from '../models'
-import { Op } from 'sequelize'
+import { Op, literal } from 'sequelize'
 
 /* sample search request
 query { search(
@@ -47,7 +47,12 @@ function replaceOperations(obj: any) {
     let sourceRelation = false
     let targetRelation = false
     for (const prop in obj) {
-        const value = obj[prop];
+        let value = obj[prop]
+
+        if (typeof value === 'string' && value.startsWith('###:')) {
+            value = literal(value.substring(4))
+        }
+
         if (prop.startsWith('OP_')) {
             const operation = prop.substr(3)
             delete obj[prop]
