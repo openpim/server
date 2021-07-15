@@ -60,7 +60,6 @@ export class YMChannelHandler extends ChannelHandler {
                     const builder = new xml2js.Builder()
                     const str = builder.buildObject(yml)
                     logger.debug('YML file created. \n ' + str)
-                    console.log(str)
                     
                     await fsAsync.writeFile(fileName, str)
                     if (fs.existsSync(fileName)) {
