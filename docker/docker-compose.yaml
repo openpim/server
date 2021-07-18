@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:13
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: sa
+    volumes:
+      - ./docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
+  openpim:
+    image: openpim/production:1.3
+    environment:
+      OPENPIM_DATABASE_ADDRESS: postgres
+      OPENPIM_DATABASE_PASSWORD: sa
+    depends_on:
+      postgres:
+        condition: service_started
+    ports:
+      - 8080:80
