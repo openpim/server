@@ -11,3 +11,5 @@
 ```
 4. console will be available by visiting [http://localhost:8080](http://localhost:8080)
 5. Login with Username as `admin` Password as `admin` for an administrator view.
+
+There is no other user, you can create a user called `demo` with password as `demo` from the admin console.
