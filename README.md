@@ -10,3 +10,4 @@
     docker-compose -f docker-compose.yaml up --remove-orphans -d
 ```
 4. console will be available by visiting [http://localhost:8080](http://localhost:8080)
+5. Login with Username as `admin` Password as `admin` for an administrator view.
