@@ -316,7 +316,13 @@ export class WBChannelHandler extends ChannelHandler {
             ]
           }
         if (!request.params.card.nomenclatures) request.params.card.nomenclatures = []
-        let idx = request.params.card.nomenclatures.push({vendorCode: productCode, variations:[{barcode: barcode, addin:[tmp]}]}) - 1
+        let idx
+        if (create) {
+            idx = request.params.card.nomenclatures.push({vendorCode: productCode, variations:[{barcode: barcode, addin:[tmp]}]}) - 1
+        } else {
+            idx = request.params.card.nomenclatures.findIndex((elem:any) => elem.vendorCode === productCode)
+            if (idx === -1) idx = request.params.card.nomenclatures.push({vendorCode: productCode, variations:[{barcode: barcode, addin:[tmp]}]}) - 1
+        }
 
         request.params.card.object = categoryConfig.name
 
@@ -324,7 +330,7 @@ export class WBChannelHandler extends ChannelHandler {
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i];
             
-            if (attrConfig.id != '#prodCountry' && attrConfig.id != '#supplierCode' && attrConfig.id != '#barcode' && attrConfig.id != '#price') {
+            if (attrConfig.id != '#prodCountry' && attrConfig.id != '#supplierCode' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && attrConfig.id != '#productCode') {
                 const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
                 if (!attr) {
                     logger.warn('Failed to find attribute in channel for attribute with id: ' + attrConfig.id)
@@ -344,12 +350,15 @@ export class WBChannelHandler extends ChannelHandler {
 
                         if (attrConfig.id.startsWith('nom#')) {
                             if (!request.params.card.nomenclatures[idx].addin) request.params.card.nomenclatures[idx].addin = []
+                            if (!create) this.clearPreviousValue(request.params.card.nomenclatures[idx].addin, data.type)
                             request.params.card.nomenclatures[idx].addin.push(data)
                         } else if (attrConfig.id.startsWith('var#')) {
                             if (!request.params.card.nomenclatures[idx].variations[0].addin) request.params.card.nomenclatures[idx].variations[0].addin = []
+                            if (!create) this.clearPreviousValue(request.params.card.nomenclatures[idx].variations[0].addin, data.type)
                             request.params.card.nomenclatures[idx].variations[0].addin.push(data)
                         } else {
                             if (!request.params.card.addin) request.params.card.addin = []
+                            if (!create) this.clearPreviousValue(request.params.card.addin, data.type)
                             request.params.card.addin.push(data)
                         }
                     } else if (attr.required) {
@@ -375,7 +384,13 @@ export class WBChannelHandler extends ChannelHandler {
             request.params.card.nomenclatures[idx].addin.push({type: "Фото", params: images})
         }
 
+        // console.log(JSON.stringify(request))
         if (!variant) await this.sendRequest(channel, item, request, context)
+    }
+
+    private clearPreviousValue(arr: any[], type: string) {
+        const tst = arr.findIndex((elem:any) => elem.type === type)
+        if (tst != -1) arr.splice(tst, 1)
     }
 
     async sendRequest(channel: Channel, item: Item, request: any, context: JobContext) {
