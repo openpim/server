@@ -165,6 +165,8 @@ export class YMChannelHandler extends ChannelHandler {
         if (categoryConfig.type === 'medicine') offer.$.type = 'medicine'
         if (categoryConfig.type === 'books') offer.$.type = 'books'
 
+        const variant = this.isVariant(channel, item)
+
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i]
@@ -172,7 +174,9 @@ export class YMChannelHandler extends ChannelHandler {
             if (attrConfig.id != 'id') {
                 const value = await this.getValueByMapping(channel, attrConfig, item, language)
                 if (value) {
-                    offer[attrConfig.id] = value
+                    if (attrConfig.id != 'group_id' || variant) {
+                        offer[attrConfig.id] = value
+                    }
                 }
             }
         }
