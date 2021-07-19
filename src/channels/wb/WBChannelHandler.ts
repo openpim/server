@@ -381,6 +381,7 @@ export class WBChannelHandler extends ChannelHandler {
         const images = await this.processItemImages(channel, item, context)
         if (images && images.length>0 ) {
             if (!request.params.card.nomenclatures[idx].addin) request.params.card.nomenclatures[idx].addin = []
+            if (!create) this.clearPreviousValue(request.params.card.nomenclatures[idx].addin, "Фото")
             request.params.card.nomenclatures[idx].addin.push({type: "Фото", params: images})
         }
 
