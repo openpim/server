@@ -241,7 +241,13 @@ export default {
                     ir."deletedAt" is null and
                     asset."deletedAt" is null and
                     item."deletedAt" is null
-                    order by asset.id`, {
+                UNION SELECT item."id" as "itemId", item."id", item."identifier" FROM "items" item where 
+                    item."id" in (:ids) and
+                    item."storagePath" is not null and
+                    item."storagePath" != '' and
+                    item."mimeType" like 'image/%' and
+                    item."deletedAt" is null
+                    `, {
                 replacements: { 
                     tenant: context.getCurrentUser()!.tenantId,
                     ids: ids
