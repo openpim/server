@@ -260,23 +260,6 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     itemDiff.old!.parentIdentifier = data.parentIdentifier
                 }
 
-                // check children
-                const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
-                    replacements: {
-                        tenant: context.getCurrentUser()!.tenantId,
-                        lquery: data.path + '.*{1}',
-                    },
-                    plain: true,
-                    raw: true,
-                    type: QueryTypes.SELECT
-                })
-                const childrenNumber = parseInt(cnt.count)
-                if (childrenNumber > 0) {
-                    result.addError(ReturnMessage.ItemMoveFailedChildren)
-                    result.result = ImportResult.REJECTED
-                    return result
-                }
-
                 let newPath: string
                 if (parent) {
                     newPath = parent.path+"."+data.id
@@ -284,7 +267,32 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     newPath = ""+data.id
                 }
                 if (newPath !== data.path) {
-                    data.path = newPath
+                    // check children
+                    const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                        replacements: {
+                            tenant: context.getCurrentUser()!.tenantId,
+                            lquery: data.path + '.*{1}',
+                        },
+                        plain: true,
+                        raw: true,
+                        type: QueryTypes.SELECT
+                    })
+                    const childrenNumber = parseInt(cnt.count)
+                    if (childrenNumber > 0) { //move subtree
+                        await sequelize.query('update items set path = text2ltree(:parentPath) || subpath(path,:level) where path <@ :oldPath and "tenantId"=:tenant', {
+                            replacements: { 
+                                tenant: context.getCurrentUser()!.tenantId,
+                                oldPath: data.path,
+                                parentPath: parent ? parent.path : '',
+                                level: data.path.split('.').length - 1
+                            },
+                            plain: true,
+                            raw: true,
+                            type: QueryTypes.UPDATE
+                        })
+                    } else { // move leaf
+                        data.path = newPath
+                    }
                     data.parentIdentifier = parent ? parent.identifier : ""
                 }
             }

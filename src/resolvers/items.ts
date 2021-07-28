@@ -428,19 +428,6 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            // check children
-            const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
-                replacements: { 
-                    tenant: context.getCurrentUser()!.tenantId,
-                    lquery: item.path + '.*{1}',
-                },
-                plain: true,
-                raw: true,
-                type: QueryTypes.SELECT
-            })
-            const childrenNumber = parseInt(cnt.count)
-            if (childrenNumber > 0) throw new Error('Can not move item with children, remove children first.');
-
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             const parentType = mng.getTypeById(parentItem.typeId)!
             const itemType = mng.getTypeByIdentifier(item.typeIdentifier)!
@@ -450,10 +437,35 @@ export default {
 
             let newPath = parentItem.path+"."+item.id
             if (newPath !== item.path) {
-                item.path = newPath
                 const old = item.parentIdentifier
-                item.parentIdentifier = parentItem.identifier;
+                // check children
+                const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                    replacements: { 
+                        tenant: context.getCurrentUser()!.tenantId,
+                        lquery: item.path + '.*{1}',
+                    },
+                    plain: true,
+                    raw: true,
+                    type: QueryTypes.SELECT
+                })
+                const childrenNumber = parseInt(cnt.count)
+                if (childrenNumber > 0) { // move subtree
+                    await sequelize.query('update items set path = text2ltree(:parentPath) || subpath(path,:level) where path <@ :oldPath and "tenantId"=:tenant', {
+                        replacements: { 
+                            tenant: context.getCurrentUser()!.tenantId,
+                            oldPath: item.path,
+                            parentPath: parentItem.path,
+                            level: item.path.split('.').length - 1
+                        },
+                        plain: true,
+                        raw: true,
+                        type: QueryTypes.UPDATE
+                    })
+                } else { // move leaf
+                    item.path = newPath
+                }
 
+                item.parentIdentifier = parentItem.identifier;
                 await sequelize.transaction(async (t) => {
                     await item.save({transaction: t})
                 })
