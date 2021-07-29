@@ -21,7 +21,7 @@ export default {
                     itemId: parseInt(itemId),
                     relationId: relId,
                 },
-                order: [['values.order', 'ASC'],['id', 'ASC']],
+                order: [['values._itemRelationOrder', 'ASC'],['id', 'ASC']],
                 offset: offset,
                 limit: limit === -1 ? null : limit
             })
@@ -55,7 +55,7 @@ export default {
                     targetId: parseInt(itemId),
                     relationId: relId,
                 },
-                order: [['values.order', 'ASC'],['id', 'ASC']],
+                order: [['values._itemRelationOrder', 'ASC'],['id', 'ASC']],
                 offset: offset,
                 limit: limit === -1 ? null : limit
             })
