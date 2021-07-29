@@ -200,7 +200,7 @@ export default {
                         ir."deletedAt" is null and
                         a."deletedAt" is null and 
                         r."deletedAt" is null
-                        order by r.order, a.id`, {
+                        order by r.order, ir.values->'order', a.id`, {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         itemId: item.id
