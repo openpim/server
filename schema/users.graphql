@@ -11,11 +11,11 @@ type Mutation {
   signInAs(id: ID!): LoginResponse!
   signIn(login: String!, password: String!): LoginResponse!
   reloadModel(tenantId: ID!): Boolean!
-  createUser(login: String!, name: String!, password: String!, email: String, roles: JSON, props: JSONObject): ID!
-  updateUser(id: ID!, name: String, password: String, email: String, roles: JSON, props: JSONObject): ID!
+  createUser(login: String!, name: String!, password: String!, email: String, roles: JSON, props: JSONObject, options: JSON): ID!
+  updateUser(id: ID!, name: String, password: String, email: String, roles: JSON, props: JSONObject, options: JSON): ID!
   removeUser(id: ID!) : Boolean!
-  createRole(identifier: String!, name: String!, configAccess: JSONObject, relAccess: JSONObject, itemAccess: JSONObject, channelAccess: JSON, otherAccess: JSONObject): ID!
-  updateRole(id: ID!, name: String, configAccess: JSONObject, relAccess: JSONObject, itemAccess: JSONObject, channelAccess: JSON, otherAccess: JSONObject) : ID!
+  createRole(identifier: String!, name: String!, configAccess: JSONObject, relAccess: JSONObject, itemAccess: JSONObject, channelAccess: JSON, otherAccess: JSONObject, options: JSON): ID!
+  updateRole(id: ID!, name: String, configAccess: JSONObject, relAccess: JSONObject, itemAccess: JSONObject, channelAccess: JSON, otherAccess: JSONObject, options: JSON) : ID!
   removeRole(id: ID!) : Boolean!
 }
 
@@ -34,6 +34,7 @@ type User {
   roles: [ID]!
   email: String
   props: JSONObject
+  options: JSON!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!
@@ -50,6 +51,7 @@ type Role {
   itemAccess: JSONObject
   otherAccess: JSONObject
   channelAccess: JSON
+  options: JSON!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!

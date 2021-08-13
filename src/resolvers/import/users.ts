@@ -88,7 +88,8 @@ export async function importUser(context: Context, config: IImportConfig, user: 
                     password: await bcrypt.hash("password", 10),
                     email: user.email,
                     roles: roleIds,
-                    props: user.props || {}
+                    props: user.props || {},
+                    options: user.options ?  user.options : []
                   }, {transaction: t});
             })
 
@@ -115,6 +116,7 @@ export async function importUser(context: Context, config: IImportConfig, user: 
                 wrapper.setRoles(userRoles)
             }
 
+            if (user.options != null) data.options = user.options
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})

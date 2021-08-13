@@ -53,7 +53,7 @@ export default {
         }
     },
     Mutation: {
-        createRole: async (parent: any, { identifier, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess }: any, context: Context) => {
+        createRole: async (parent: any, { identifier, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ROLES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create roles, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -78,7 +78,8 @@ export default {
                     relAccess: relAccess || { relations: [], access: 0, groups: [] },
                     itemAccess: itemAccess || { valid: [], fromItems: [], access: 0, groups: [] },
                     channelAccess: channelAccess || [],
-                    otherAccess: otherAccess || { audit: false, search: false, exportXLS: false, exportCSV: false, importXLS: false }
+                    otherAccess: otherAccess || { audit: false, search: false, exportXLS: false, exportCSV: false, importXLS: false },
+                    options: options ? options : []
                 }, {transaction: t})
             })
 
@@ -88,7 +89,7 @@ export default {
             
             return role.id
         },
-        updateRole: async (parent: any, { id, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess }: any, context: Context) => {
+        updateRole: async (parent: any, { id, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ROLES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit roles, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -111,6 +112,7 @@ export default {
             if (itemAccess) role.itemAccess = itemAccess
             if (otherAccess) role.otherAccess = otherAccess
             if (channelAccess) role.channelAccess = channelAccess
+            if (options != null) role.options = options
             role.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await role.save({transaction: t})
@@ -221,7 +223,7 @@ export default {
         },        
         // hash for "test" - "$2b$10$LcF/gaMHx4V8dlKvKgjcvuTb./OQwzBZlIr18rO9sXQRp0JwiKt2a"
         // "admin" - "$2b$10$WtKEm5gspljprGVuHAj4QeO.QwzWiDmdEFN9VzXRbxyrSpQi9m4Fq"
-        createUser: async (parent: any, { login, name, password, email, roles, props }: any, context: Context) => {
+        createUser: async (parent: any, { login, name, password, email, roles, props, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.USERS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create user, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -245,7 +247,8 @@ export default {
                     password: await bcrypt.hash(password, 10),
                     email: email,
                     roles: roles || [],
-                    props: props || {}
+                    props: props || {},
+                    options: options ? options : []
                   }, {transaction: t});
                 return user
             })
@@ -257,7 +260,7 @@ export default {
 
             return user.id
         },
-        updateUser: async (parent: any, { id, name, password, email, roles }: any, context: Context) => {
+        updateUser: async (parent: any, { id, name, password, email, roles, options }: any, context: Context) => {
             context.checkAuth()
             const nId = parseInt(id)
             if (context.getCurrentUser()?.id !== nId && !context.canEditConfig(ConfigAccess.USERS)) 
@@ -307,6 +310,7 @@ export default {
 
                 wrapper.setRoles(userRoles)
             }
+            if (options != null) user.options = options
             user.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await user.save({transaction: t})

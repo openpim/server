@@ -10,7 +10,7 @@ export class User extends Base {
     public email!: string
     public props!: any
     public roles!: any
-
+    public options!: any
     public static applyScope(context: Context) {
       return User.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
     }
@@ -24,6 +24,7 @@ export class Role extends Base {
   public itemAccess!: any
   public otherAccess!: any
   public channelAccess!: any
+  public options!: any
   public static applyScope(context: Context) {
     return Role.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
@@ -59,6 +60,10 @@ export function init(sequelize: Sequelize):void {
           allowNull: true,
         },
         roles: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+        },
+        options: {
           type: DataTypes.JSONB,
           allowNull: false,
         },
@@ -108,7 +113,11 @@ export function init(sequelize: Sequelize):void {
         type: DataTypes.JSONB,
         allowNull: false,
       },
-    ...BaseColumns,
+      options: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+      },
+  ...BaseColumns,
       tenantId: { // override base for uniqueIdentifier
         type: new DataTypes.STRING(50),
         allowNull: false,

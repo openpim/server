@@ -208,6 +208,7 @@ export interface IRoleImportRequest {
   relAccess: IRelAccessRequest
   itemAccess: IItemAccessRequest 
   otherAccess: IOtherAccessRequest 
+  options: any
 }
 
 export interface IConfigAccessRequest {
@@ -245,6 +246,7 @@ export interface IUserImportRequest {
   roles: [string]
   email: string
   props: any
+  options: any
 }
 
 export interface IOtherAccessRequest {
