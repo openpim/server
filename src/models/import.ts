@@ -159,6 +159,7 @@ export interface ITypeImportRequest {
   file: boolean
   mainImage: string
   images: [string]
+  options: any
 }
 
 export interface IRelationImportRequest {
