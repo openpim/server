@@ -196,7 +196,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 try {
                     const value = await this.getValueByMapping(channel, attrConfig, item, language)
                     if (value) {
-                        const data = {id: attrConfig.id.substring(5), values: <any[]>[]}
+                        const data = {complex_id:0, id: attrConfig.id.substring(5), values: <any[]>[]}
                         if (Array.isArray(value)) {
                             value.forEach((elem:any) => {
                                 data.values.push({ value: elem })
