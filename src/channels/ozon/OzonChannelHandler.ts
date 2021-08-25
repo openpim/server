@@ -21,12 +21,12 @@ export class OzonChannelHandler extends ChannelHandler {
        
         const context: JobContext = {log: ''}
 
-        if (!channel.config.wbToken) {
-            await this.finishExecution(channel, chanExec, 3, 'Не введен API token в конфигурации канала')
+        if (!channel.config.ozonClientId) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен Client Id в конфигурации канала')
             return
         }
-        if (!channel.config.wbSupplierID) {
-            await this.finishExecution(channel, chanExec, 3, 'Не введен идентификатор поставщика в конфигурации канала')
+        if (!channel.config.ozonApiKey) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен API key в конфигурации канала')
             return
         }
 
@@ -59,6 +59,116 @@ export class OzonChannelHandler extends ChannelHandler {
     async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
         context.log += 'Обрабатывается запись с идентификатором: ' + item.identifier +'\n'
 
+        for (const categoryId in channel.mappings) {
+            const categoryConfig = channel.mappings[categoryId]
+            if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
+                const pathArr = item.path.split('.')
+                const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                if (tst) {
+                    try {
+                        await this.processItemInCategory(channel, item, categoryConfig, language, context)
+                        await sequelize.transaction(async (t) => {
+                            await item.save({transaction: t})
+                        })
+                    } catch (err) {
+                        logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+                    }
+                    return
+                }
+            } else {
+                context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
+                logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
+            }
+        }
+
+        const data = item.channels[channel.identifier]
+        data.status = 3
+        data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
+        context.log += 'Запись с идентификатором:' + item.identifier + ' не подходит ни под одну категорию из этого канала.\n'
+        item.changed('channels', true)
+        await sequelize.transaction(async (t) => {
+            await item.save({transaction: t})
+        })
+    }
+
+    async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext) {
+        context.log += 'Найдена категория "' + categoryConfig.name +'" для записи с идентификатором: ' + item.identifier + '\n'
+
+        const data = item.channels[channel.identifier]
+        data.category = categoryConfig.id
+
+        // request to Ozon
+        const product:any = {attributes:[]}
+        const request:any = {items:[product]}
+
+        const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
+        const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
+        if (!barcode) {
+            const msg = 'Не введена конфигурация для "Баркода" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
+        product.barcode = barcode
+
+        // atributes
+        for (let i = 0; i < categoryConfig.attributes.length; i++) {
+            const attrConfig = categoryConfig.attributes[i];
+            
+            if (attrConfig.id != '#barcode') {
+                const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
+                if (!attr) {
+                    logger.warn('Failed to find attribute in channel for attribute with id: ' + attrConfig.id)
+                    continue
+                }
+                try {
+                    const value = await this.getValueByMapping(channel, attrConfig, item, language)
+                    if (value) {
+                        const data = {id: attrConfig.id.substring(5), values: <any[]>[]}
+                        if (Array.isArray(value)) {
+                            value.forEach((elem:any) => {
+                                data.values.push({ value: elem })
+                            })
+                        } else {
+                            data.values.push({ value: value })
+                        }
+                        product.attributes.push(data)
+                    } else if (attr.required) {
+                        const msg = 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                        context.log += msg                      
+                        this.reportError(channel, item, msg)
+                        return
+                    }
+                } catch (err) {
+                    const msg = 'Ошибка вычисления атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                    logger.error(msg, err)
+                    context.log += msg + ': ' + err.message        
+                    this.reportError(channel, item, msg + ': ' + err.message)
+                    return
+                  }
+            }
+        }        
+        const url = 'https://api-seller.ozon.ru/v2/product/import'
+        logger.info("Sending request to Ozon: " + url + " => " + JSON.stringify(request))
+
+        const res = await fetch(url, {
+            method: 'post',
+            body:    JSON.stringify(request),
+            headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+        })
+        logger.info("Response status from Ozon: " + res.status)
+        if (res.status !== 200) {
+            const text = await res.text()
+            const msg = 'Ошибка запроса на Ozon: ' + res.statusText + "   " + text
+            context.log += msg                      
+            this.reportError(channel, item, msg)
+            logger.error(msg)
+            return
+        } else {
+            const json = await res.json()
+            console.log(555, JSON.stringify(json, null, 3))
+        }
     }
 
     public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
