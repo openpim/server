@@ -101,6 +101,18 @@ export class OzonChannelHandler extends ChannelHandler {
         const product:any = {attributes:[]}
         const request:any = {items:[product]}
 
+        const productCodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#productCode')
+        const productCode = await this.getValueByMapping(channel, productCodeConfig, item, language)
+        if (!productCode) {
+            const msg = 'Не введена конфигурация для "Артикула товара" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
+        const nameConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#name')
+        const name = await this.getValueByMapping(channel, nameConfig, item, language)
+
         const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
         const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
         if (!barcode) {
@@ -110,13 +122,72 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }
 
+        const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
+        const price = await this.getValueByMapping(channel, priceConfig, item, language)
+        if (!price) {
+            const msg = 'Не введена конфигурация для "Цены" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
+        const depthConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#depth')
+        const depth = await this.getValueByMapping(channel, depthConfig, item, language)
+        if (!depth) {
+            const msg = 'Не введена конфигурация для "Длина упаковки" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
+        const widthConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#width')
+        const width = await this.getValueByMapping(channel, widthConfig, item, language)
+        if (!width) {
+            const msg = 'Не введена конфигурация для "Ширина упаковки" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
+        const heightConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#height')
+        const height = await this.getValueByMapping(channel, heightConfig, item, language)
+        if (!height) {
+            const msg = 'Не введена конфигурация для "Высота упаковки" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
+        const weightConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#weight')
+        const weight = await this.getValueByMapping(channel, weightConfig, item, language)
+        if (!weight) {
+            const msg = 'Не введена конфигурация для "Вес с упаковкой" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
+        product.offer_id = productCode
+        if (name) product.name = name
         product.barcode = barcode
+        product.price = price
+        product.category_id = categoryConfig.id.substring(4)
+        product.weight = weight
+        product.weight_unit = 'g'
+        product.depth = depth
+        product.height = height
+        product.width = width
+        product.dimension_unit = 'мм'
+        product.vat = '0'
 
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i];
             
-            if (attrConfig.id != '#barcode') {
+            if (
+                attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && 
+                attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width'
+            ) {
                 const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
                 if (!attr) {
                     logger.warn('Failed to find attribute in channel for attribute with id: ' + attrConfig.id)
