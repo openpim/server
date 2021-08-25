@@ -131,7 +131,7 @@ export class WBChannelHandler extends ChannelHandler {
         if (card.imtId !== item.values.wbId) {
             item.values.wbId = card.imtId
             item.changed('values', true)
-            if (item.channels[channel.identifier] && item.channels[channel.identifier].status === 3 && item.channels[channel.identifier].message.startsWith('Wildberries не вернул ошибку')) {
+            if (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4) {
                 item.channels[channel.identifier].status = 2
                 item.channels[channel.identifier].message = ''
                 item.changed('channels', true)
@@ -465,9 +465,12 @@ export class WBChannelHandler extends ChannelHandler {
                 }
 
                 if (json.result.cursor.total === 0) {
-                    const msg = 'Wildberries не вернул ошибку, но карточка не создана.'
+                    const msg = 'Wildberries не вернул ошибку, статус выставлен в ожидание.'
                     context.log += msg                      
-                    this.reportError(channel, item, msg)
+                    const data = item.channels[channel.identifier]
+                    data.status = 4
+                    data.message = ''
+                    item.changed('channels', true)
                     return
                 }
                 item.values.wbId = json.result.cards[0].imtId
