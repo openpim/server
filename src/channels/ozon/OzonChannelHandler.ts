@@ -110,8 +110,8 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }
 
-        const nameConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#name')
-        const name = await this.getValueByMapping(channel, nameConfig, item, language)
+        const vatConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#vat')
+        const vat = await this.getValueByMapping(channel, vatConfig, item, language)
 
         const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
         const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
@@ -167,18 +167,18 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }
 
+        const ozonCategoryId = parseInt(categoryConfig.id.substring(4))
+        product.category_id = ozonCategoryId
         product.offer_id = productCode
-        if (name) product.name = name
         product.barcode = barcode
         product.price = price
-        product.category_id = categoryConfig.id.substring(4)
         product.weight = weight
         product.weight_unit = 'g'
         product.depth = depth
         product.height = height
         product.width = width
         product.dimension_unit = 'мм'
-        product.vat = '0'
+        product.vat = vat
 
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
@@ -196,13 +196,31 @@ export class OzonChannelHandler extends ChannelHandler {
                 try {
                     const value = await this.getValueByMapping(channel, attrConfig, item, language)
                     if (value) {
-                        const data = {complex_id:0, id: attrConfig.id.substring(5), values: <any[]>[]}
+                        const ozonAttrId = parseInt(attrConfig.id.substring(5))
+                        const data = {complex_id:0, id: ozonAttrId, values: <any[]>[]}
                         if (Array.isArray(value)) {
-                            value.forEach((elem:any) => {
-                                data.values.push({ value: elem })
-                            })
+                            for (let j = 0; j < value.length; j++) {
+                                const elem = value[j];
+                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, elem)
+                                if (!ozonValue) {
+                                    const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                                    context.log += msg                      
+                                    this.reportError(channel, item, msg)
+                                    return
+                                }
+                                    data.values.push(ozonValue)
+                            }
+                        } if (typeof value === 'object') {
+                            data.values.push(value)
                         } else {
-                            data.values.push({ value: value })
+                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, value)
+                            if (!ozonValue) {
+                                const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                                context.log += msg                      
+                                this.reportError(channel, item, msg)
+                                return
+                            }
+                            data.values.push(ozonValue)
                         }
                         product.attributes.push(data)
                     } else if (attr.required) {
@@ -238,7 +256,88 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         } else {
             const json = await res.json()
-            console.log(555, JSON.stringify(json, null, 3))
+            logger.info("Response from Ozon: " + JSON.stringify(json))
+
+            this.sleep(2000)
+            
+            const taskId = json.result.task_id
+            logger.info("Sending request to Ozon to check task id: " + taskId)
+            const res2 = await fetch('https://api-seller.ozon.ru/v1/product/import/info', {
+                method: 'post',
+                body:    JSON.stringify({task_id: taskId}),
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+            if (res2.status !== 200) {
+                const text = await res2.text()
+                const msg = 'Ошибка запроса на Ozon: ' + res2.statusText + "   " + text
+                context.log += msg                      
+                this.reportError(channel, item, msg)
+                logger.error(msg)
+                return
+            } else {
+                const json2 = await res2.json()
+                logger.info("Response 2 from Ozon: " + JSON.stringify(json2))
+    
+                const status = json2.result.items[0].status
+                const data = item.channels[channel.identifier]
+                if (status === 'imported') {
+                    context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
+                    data.status = 2
+                    data.message = ''
+                    data.syncedAt = Date.now()
+                    item.changed('channels', true)            
+                    item.values.ozonId = json2.result.items[0].product_id
+                    item.changed('values', true)
+                } else if (status === 'failed') {
+                    context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана с ошибкой.\n'
+                    data.status = 3
+                    data.message = ''
+                    item.changed('channels', true)            
+                } else {
+                    context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана со статусом: ' + status + ' \n'
+                    data.status = 4
+                    data.message = ''
+                    item.changed('channels', true)            
+                }
+            }
+        }
+    }
+
+    private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any) {
+        if (dictionary) {
+            let dict: any[] | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId)
+            if (!dict) {
+                dict = []
+                let next = false
+                let last = 0
+                do {
+                    const res = await fetch('https://api-seller.ozon.ru/v2/category/attribute/values', {
+                        method: 'post',
+                        body:    JSON.stringify({
+                            "attribute_id": ozonAttrId,
+                            "category_id": ozonCategoryId,
+                            "language": "DEFAULT",
+                            "last_value_id": last,
+                            "limit": 1000
+                            }),
+                        headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                    })
+                    const json = await res.json()
+                    dict = dict.concat(json.result)
+                    next = json.hasNext
+                    last = dict[dict.length-1].id
+                } while (next)
+    
+                this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, dict, 3600)
+            }
+            const entry = dict!.find((elem:any) => elem.value === value)
+            if (!entry) {
+                return null
+            } else {
+                return {dictionary_value_id: entry.id, value: value}
+            }
+        } else {
+            return { value: value }
         }
     }
 
