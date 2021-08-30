@@ -6,8 +6,8 @@ import NodeCache = require('node-cache')
 import { Item } from '../../models/items'
 import logger from "../../logger"
 import { sequelize } from '../../models'
-import * as uuid from "uuid"
-import * as fs from 'fs'
+import { ModelsManager } from '../../models/manager'
+import { Type } from '../../models/types'
 
 interface JobContext {
     log: string
@@ -237,7 +237,11 @@ export class OzonChannelHandler extends ChannelHandler {
                     return
                   }
             }
-        }        
+        }
+        
+        const images = await this.processItemImages(channel, item, context)
+        if (images && images.length>0 ) request.images = images
+
         const url = 'https://api-seller.ozon.ru/v2/product/import'
         logger.info("Sending request to Ozon: " + url + " => " + JSON.stringify(request))
 
@@ -258,7 +262,7 @@ export class OzonChannelHandler extends ChannelHandler {
             const json = await res.json()
             logger.info("Response from Ozon: " + JSON.stringify(json))
 
-            this.sleep(2000)
+            await this.sleep(2000)
             
             const taskId = json.result.task_id
             logger.info("Sending request to Ozon to check task id: " + taskId)
@@ -303,6 +307,79 @@ export class OzonChannelHandler extends ChannelHandler {
         }
     }
 
+    async processItemImages(channel: Channel, item: Item, context: JobContext) {
+        const data:string[] = [] 
+        if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
+            const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
+            const typeNode = mng.getTypeById(item.typeId)
+            if (!typeNode) {
+                throw new Error('Failed to find type by id: ' + item.typeId + ', tenant: ' + mng.getTenantId())
+            }
+            const type:Type = typeNode.getValue()
+
+            if (type.mainImage && channel.config.imgRelations.includes(type.mainImage)) {
+                const images: Item[] = await sequelize.query(
+                    `SELECT a.*
+                        FROM "items" a, "itemRelations" ir, "types" t where 
+                        a."tenantId"=:tenant and 
+                        ir."itemId"=:itemId and
+                        a."id"=ir."targetId" and
+                        a."typeId"=t."id" and
+                        t."file"=true and
+                        coalesce(a."storagePath", '') != '' and
+                        ir."deletedAt" is null and
+                        a."deletedAt" is null and
+                        ir."relationId" = :relation
+                        order by a.id`, {
+                    model: Item,
+                    mapToModel: true,                     
+                    replacements: { 
+                        tenant: channel.tenantId,
+                        itemId: item.id,
+                        relation: type.mainImage
+                    }
+                })
+                if (images) {
+                    for (let i = 0; i < images.length; i++) {
+                        const image = images[i];
+                        if (image.values.ozonImageUrl) data.push(image.values.ozonImageUrl)
+                    }
+                }
+            }
+
+            const rels = channel.config.imgRelations.filter((elem:any) => elem !== type.mainImage)
+            if (rels.length > 0) {
+                const images: Item[] = await sequelize.query(
+                    `SELECT a.*
+                        FROM "items" a, "itemRelations" ir, "types" t where 
+                        a."tenantId"=:tenant and 
+                        ir."itemId"=:itemId and
+                        a."id"=ir."targetId" and
+                        a."typeId"=t."id" and
+                        t."file"=true and
+                        coalesce(a."storagePath", '') != '' and
+                        ir."deletedAt" is null and
+                        a."deletedAt" is null and
+                        ir."relationId" in (:relations)
+                        order by a.id`, {
+                    model: Item,
+                    mapToModel: true,                     
+                    replacements: { 
+                        tenant: channel.tenantId,
+                        itemId: item.id,
+                        relations: rels
+                    }
+                })
+                if (images) {
+                    for (let i = 0; i < images.length; i++) {
+                        const image = images[i];
+                        if (image.values.ozonImageUrl) data.push(image.values.ozonImageUrl)
+                    }
+                }
+            }
+        }
+        return data
+    }    
     private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any) {
         if (dictionary) {
             let dict: any[] | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId)
