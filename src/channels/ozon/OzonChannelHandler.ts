@@ -50,10 +50,86 @@ export class OzonChannelHandler extends ChannelHandler {
     }
 
     async syncJob(channel: Channel, context: JobContext, data: any) {
-        context.log += 'Запущена синхронизация с Wildberries\n'
+        context.log += 'Запущена синхронизация с Ozon\n'
 
+        let total = 0
+        let current = 0
+        const url = 'https://api-seller.ozon.ru/v1/product/list'
+        const request = {
+            "page": 1,
+            "page_size": 1000
+        }
+
+        do {
+            logger.info("Sending request Ozon: " + url + " => " + JSON.stringify(request))
+            const res = await fetch(url, {
+                method: 'post',
+                body:    JSON.stringify(request),
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+
+            if (res.status !== 200) {
+                const msg = 'Ошибка запроса на Ozon: ' + res.statusText
+                context.log += msg                      
+                return
+            } else {
+                const json = await res.json()
+                if (json.error) {
+                    const msg = 'Ошибка запроса на Ozon: ' + json.error.message
+                    context.log += msg                      
+                    logger.info("Error from Ozon: " + JSON.stringify(json))
+                    return
+                }
+
+                total = json.result.total
+                context.log += 'Найдено '+ total + ' товаров, выбрано ' + request.page_size + ' страница ' + request.page + '\n'
+                current = request.page * request.page_size + 1
+                request.page = request.page + 1
+
+                for (let i = 0; i < json.result.items.length; i++) {
+                    const card = json.result.items[i];
+                    await this.syncCard(channel, card, context, data.attr)
+                }
+    
+            }
+        } while (total >= current)        
 
         context.log += 'Cинхронизация закончена'
+    }
+
+    async syncCard(channel: Channel, card: any, context: JobContext, attr:string) {
+        const sku = card.offer_id
+        context.log += 'Обрабатывается товар: ['+ sku + ']\n'
+
+        const filter:any = {}
+        filter[attr] = sku
+        const item = await Item.findOne({
+            where: {
+                values: filter,
+                tenantId: channel.tenantId
+            }
+        })
+
+        if(!item) {
+            context.log += '   такой товар не найден\n'
+            return
+        }
+
+        if (card.product_id !== item.values.ozonId || (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4)) {
+            item.values.ozonId = card.product_id
+            item.changed('values', true)
+            if (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4) {
+                item.channels[channel.identifier].status = 2
+                item.channels[channel.identifier].message = ''
+                item.changed('channels', true)
+            }
+            await sequelize.transaction(async (t) => {
+                await item.save({transaction: t})
+            })    
+            context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
+        } else {
+            context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
+        }
     }
 
     async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
