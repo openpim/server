@@ -24,7 +24,7 @@ export class ModelManager {
     private actionsCache:any = {}
     private roles: Role[] = []
     private users: UserWrapper[] = []
-    private cache = new NodeCache();
+    private cache = new NodeCache()
 
     public constructor(tenantId: string) { this.tenantId = tenantId }
 
@@ -211,9 +211,10 @@ export class ModelManager {
 export class ModelsManager {
     private static instance: ModelsManager
     private tenantMap: Record<string, ModelManager> = {}
+    private channelTypes: number[] = [1]
     
     private constructor() { }
-
+   
     public static getInstance(): ModelsManager {
         if (!ModelsManager.instance) {
             ModelsManager.instance = new ModelsManager()
@@ -236,7 +237,10 @@ export class ModelsManager {
         return tst
     }
 
-    public async init() {
+    public getChannelTypes() { return this.channelTypes }
+
+    public async init(channelTypes?: number[]) {
+        if (channelTypes) this.channelTypes = channelTypes
         let where: WhereOptions | undefined = undefined
         if (process.argv.length > 3) {
             where = {tenantId: process.argv.splice(3)}

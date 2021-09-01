@@ -1,4 +1,5 @@
 type Query {
+  getChannelTypes: [Int]!
   getChannels: [Channel]
   getChannelStatus(id: ID!) : [ChannelStatus]
   getChannelStatusByCategories(id: ID!) : [ChannelCategoryStatus]

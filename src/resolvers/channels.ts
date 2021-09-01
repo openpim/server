@@ -9,6 +9,11 @@ import { ChannelsManagerFactory } from '../channels'
 
 export default {
     Query: {
+        getChannelTypes: async (parent: any, args: any, context: Context) => {
+            context.checkAuth()
+            
+            return ModelsManager.getInstance().getChannelTypes()
+        },
         getChannels: async (parent: any, args: any, context: Context) => {
             context.checkAuth()
             

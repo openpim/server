@@ -9,6 +9,8 @@ import logger from './logger'
 
 import * as dotenv from "dotenv";
 
+import * as crypto from "crypto"
+import { Buffer } from 'buffer'
 
 const env = process.argv.length > 2 ? '.'+process.argv[2] : ''
 logger.info("Using environment: [" + env + "]")
@@ -40,7 +42,32 @@ async function start() {
   let schema = await makeExecutableSchema({ typeDefs, resolvers })
 
   await initModels();
-  ModelsManager.getInstance().init()
+
+  let channelTypes = undefined
+  if (process.env.OPENPIM_KEY) {
+    const keyData = 
+`-----BEGIN RSA PUBLIC KEY-----
+MEgCQQDG0oEGhlYcN12BqBeMn9aRwfrPElOol7prVUQNAggZjurOQ5DyjbPh9uOW
+XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
+-----END RSA PUBLIC KEY-----
+`
+    const publicKey: crypto.KeyObject = crypto.createPublicKey({key: keyData, type: 'pkcs1', format: 'pem'})
+    const str = Buffer.from(process.env.OPENPIM_KEY, 'base64').toString('ascii')
+    const idx = str.lastIndexOf('|')
+    const sign = str.substring(idx+1)
+    const data = str.substring(0, idx)
+    const split = data.split('|')
+    const options: crypto.VerifyKeyWithOptions = { key: publicKey, padding: crypto.constants.RSA_PKCS1_PSS_PADDING }
+    const isVerified = crypto.verify( "sha256", Buffer.from(data), options, Buffer.from(sign, 'base64'))
+    if (isVerified) {
+      channelTypes = JSON.parse("[" + split[0] + "]")
+      logger.info('Found key for company: ' + split[1]+' with data: '+channelTypes)
+    } else {
+      logger.error('Wrong key')
+      channelTypes = []
+    }
+  }
+  ModelsManager.getInstance().init(channelTypes)
   ChannelsManagerFactory.getInstance().init()
 
   let app = express();
