@@ -379,6 +379,8 @@ export default {
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             item.updatedBy = context.getCurrentUser()!.login
 
+            if (name) item.name = name
+
             await processItemActions(context, EventType.BeforeUpdate, item, values, channels, false)
 
             let itemDiff: AuditItem
@@ -396,7 +398,6 @@ export default {
                 if (audit.auditEnabled()) itemDiff = diff({name: item.name}, {name: name})
             }
 
-            if (name) item.name = name
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
