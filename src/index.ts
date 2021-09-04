@@ -1,5 +1,5 @@
 import * as express from 'express'
-import * as graphqlHTTP from 'express-graphql' 
+import { graphqlHTTP } from 'express-graphql' 
 import { importSchema } from 'graphql-import'
 import { makeExecutableSchema } from 'graphql-tools'
 import { GraphQLError } from 'graphql'
@@ -44,7 +44,7 @@ async function start() {
   await initModels();
 
   let channelTypes = undefined
-  /*
+  
   if (process.env.OPENPIM_KEY) {
     const keyData = 
 `-----BEGIN RSA PUBLIC KEY-----
@@ -58,7 +58,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     const sign = str.substring(idx+1)
     const data = str.substring(0, idx)
     const split = data.split('|')
-    const options: crypto.VerifyKeyWithOptions = { key: publicKey, padding: crypto.constants.RSA_PKCS1_PSS_PADDING }
+    const options: any = { key: publicKey, padding: crypto.constants.RSA_PKCS1_PSS_PADDING }
     const isVerified = crypto.verify( "sha256", Buffer.from(data), options, Buffer.from(sign, 'base64'))
     if (isVerified) {
       channelTypes = JSON.parse("[" + split[0] + "]")
@@ -67,13 +67,15 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       logger.error('Wrong key')
       channelTypes = []
     }
-  }*/
+  }
+
   ModelsManager.getInstance().init(channelTypes)
   ChannelsManagerFactory.getInstance().init()
 
   let app = express();
   app.use(bodyParser.json({limit: '100mb'}));
   app.use(cors())
+  
   app.use('/graphql', graphqlHTTP(async (request: IncomingMessage ) => ({
     schema: schema,
     graphiql: false,
