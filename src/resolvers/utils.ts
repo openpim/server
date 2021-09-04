@@ -365,6 +365,8 @@ function makeItemProxy(item: any) {
                 }
             } else  if ((<string>property) =='destroy') {
                 return async(...args: any) => {
+                    target.set('identifier', target.identifier + "_d"+Date.now())
+                    target.save()            
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='set') {
@@ -445,6 +447,8 @@ function makeItemRelationProxy(item: any) {
                 }
             } else  if ((<string>property) =='destroy') {
                 return async(...args: any) => {
+                    target.set('identifier', target.identifier + "_d"+Date.now())
+                    target.save()            
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='set') {
