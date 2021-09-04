@@ -44,6 +44,7 @@ async function start() {
   await initModels();
 
   let channelTypes = undefined
+  /*
   if (process.env.OPENPIM_KEY) {
     const keyData = 
 `-----BEGIN RSA PUBLIC KEY-----
@@ -66,7 +67,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       logger.error('Wrong key')
       channelTypes = []
     }
-  }
+  }*/
   ModelsManager.getInstance().init(channelTypes)
   ChannelsManagerFactory.getInstance().init()
 

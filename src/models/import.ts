@@ -6,6 +6,7 @@ import Context from '../context';
 export interface IItemImportRequest {
   identifier: string
   delete: boolean
+  skipActions: boolean
   typeIdentifier: string
   parentIdentifier: string
   name: any
@@ -142,6 +143,7 @@ export class ImportResponses {
 export interface IItemRelationImportRequest {
   identifier: string
   delete: boolean
+  skipActions: boolean
   relationIdentifier: string
   itemIdentifier: string
   targetIdentifier: string
