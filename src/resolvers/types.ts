@@ -215,7 +215,8 @@ export default {
                     link: nId,
                     file: false,
                     mainImage: 0,
-                    images: []
+                    images: [],
+                    options: []
                 }, {transaction: t})
                 return type
             })
