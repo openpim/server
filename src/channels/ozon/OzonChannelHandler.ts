@@ -528,17 +528,22 @@ export class OzonChannelHandler extends ChannelHandler {
         if (! data) {
             const query = {
                 attribute_type: "ALL",
-                category_id: categoryId.substring(4),
+                category_id: [categoryId.substring(4)],
                 language: "DEFAULT"
               }
-            const res = await fetch('https://api-seller.ozon.ru/v2/category/attribute', {
+              logger.info("Sending request to Ozon: https://api-seller.ozon.ru/v3/category/attribute => " + JSON.stringify(query))
+              const res = await fetch('https://api-seller.ozon.ru/v3/category/attribute', {
                 method: 'post',
                 body:    JSON.stringify(query),
                 headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
             })
+            if (res.status !== 200) {
+                const text = await res.text()
+                throw new Error("Failed to query attributes with error: " + res.statusText+", text: " + text)
+            }
             const json = await res.json()
 
-            data = json.result.map((elem:any) => { 
+            data = json.result[0].attributes.map((elem:any) => { 
                 return { 
                     id: 'attr_' + elem.id, 
                     name: elem.name,
