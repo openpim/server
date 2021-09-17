@@ -6,6 +6,7 @@ import Context from '../context';
 export interface IItemImportRequest {
   identifier: string
   delete: boolean
+  skipActions: boolean
   typeIdentifier: string
   parentIdentifier: string
   name: any
@@ -142,6 +143,7 @@ export class ImportResponses {
 export interface IItemRelationImportRequest {
   identifier: string
   delete: boolean
+  skipActions: boolean
   relationIdentifier: string
   itemIdentifier: string
   targetIdentifier: string
@@ -159,6 +161,7 @@ export interface ITypeImportRequest {
   file: boolean
   mainImage: string
   images: [string]
+  options: any
 }
 
 export interface IRelationImportRequest {
@@ -169,6 +172,7 @@ export interface IRelationImportRequest {
   targets: string[]
   child: boolean
   multi: boolean
+  options: any
 }
 
 export interface IAttrGroupImportRequest {
@@ -206,6 +210,7 @@ export interface IRoleImportRequest {
   relAccess: IRelAccessRequest
   itemAccess: IItemAccessRequest 
   otherAccess: IOtherAccessRequest 
+  options: any
 }
 
 export interface IConfigAccessRequest {
@@ -243,6 +248,7 @@ export interface IUserImportRequest {
   roles: [string]
   email: string
   props: any
+  options: any
 }
 
 export interface IOtherAccessRequest {

@@ -35,7 +35,7 @@ export default {
         }
     },
     Mutation: {
-        createType: async (parent: any, { parentId, identifier, name, icon, iconColor, file, mainImage, images }: any, context: Context) => {
+        createType: async (parent: any, { parentId, identifier, name, icon, iconColor, file, mainImage, images, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.TYPES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create type, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -83,7 +83,8 @@ export default {
                     link: 0,
                     file: file != null ? file : false,
                     mainImage: mainImage ? parseInt(mainImage) : 0,
-                    images: imgs
+                    images: imgs,
+                    options: options ? options : []
                 }, {transaction: t})
                 return type
             })
@@ -91,7 +92,7 @@ export default {
             mng.addType(pId, type)
             return type.id
         },
-        updateType: async (parent: any, { id, name, icon, iconColor, file, mainImage, images  }: any, context: Context) => {
+        updateType: async (parent: any, { id, name, icon, iconColor, file, mainImage, images, options  }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.TYPES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update type, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -112,6 +113,7 @@ export default {
             if (file != null) type.file = file
             if (mainImage != null) type.mainImage = mainImage
             if (images) type.images = images.map((elem: string) => parseInt(elem))
+            if (options != null) type.options = options
 
             type.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
@@ -213,7 +215,8 @@ export default {
                     link: nId,
                     file: false,
                     mainImage: 0,
-                    images: []
+                    images: [],
+                    options: []
                 }, {transaction: t})
                 return type
             })

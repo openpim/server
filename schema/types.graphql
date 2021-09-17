@@ -4,8 +4,8 @@ type Query {
 }
 
 type Mutation {
-  createType(parentId: ID, identifier: String!, name: LanguageDependentString!, icon: String, iconColor: String, file: Boolean, mainImage: ID, images:[ID]): ID!
-  updateType(id: ID!, name: LanguageDependentString, icon: String, iconColor: String, file: Boolean, mainImage: ID, images:[ID]) : ID!
+  createType(parentId: ID, identifier: String!, name: LanguageDependentString!, icon: String, iconColor: String, file: Boolean, mainImage: ID, images:[ID], options: JSON): ID!
+  updateType(id: ID!, name: LanguageDependentString, icon: String, iconColor: String, file: Boolean, mainImage: ID, images:[ID], options: JSON) : ID!
   removeType(id: ID!) : Boolean!
   linkType(id: ID!, parentId: ID!) : ID!
 }
@@ -23,6 +23,7 @@ type Type {
   file: Boolean!
   mainImage: ID
   images: [ID]
+  options: JSON!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!

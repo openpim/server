@@ -9,7 +9,7 @@ import { exec } from 'child_process'
 const { Op } = require("sequelize");
 import { sequelize } from '../models'
 import { QueryTypes } from 'sequelize'
-import audit, { ChangeType, ItemChanges } from '../audit'
+import audit, { ChangeType, ItemChanges, ItemRelationChanges } from '../audit'
 
 const util = require('util');
 const awaitExec = util.promisify(exec);
@@ -339,7 +339,8 @@ function makeModelProxy(model: any, itemProxy: any) {
         get: function( target, property, receiver ) {
             if ((<string>property) =='findOne') {
                 return async(...args: any) => {
-                    return itemProxy(await target[ property ].apply( target, args ))
+                    const tst = await target[ property ].apply( target, args )
+                    return tst? itemProxy(tst) : undefined
                 }
             } else if ((<string>property) =='create') {
                 return async(...args: any) => {
@@ -364,6 +365,8 @@ function makeItemProxy(item: any) {
                 }
             } else  if ((<string>property) =='destroy') {
                 return async(...args: any) => {
+                    target.set('identifier', target.identifier + "_d"+Date.now())
+                    target.save()            
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='set') {
@@ -444,6 +447,8 @@ function makeItemRelationProxy(item: any) {
                 }
             } else  if ((<string>property) =='destroy') {
                 return async(...args: any) => {
+                    target.set('identifier', target.identifier + "_d"+Date.now())
+                    target.save()            
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='set') {
@@ -639,5 +644,96 @@ class ActionUtils {
 
         return makeItemProxy(item)
     }
+
+    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any) {
+        if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+        const rel = mng.getRelationByIdentifier(relationIdentifier)
+        if (!rel) {
+            throw new Error('Failed to find relation by identifier: ' + relationIdentifier + ', tenant: ' + mng.getTenantId())
+        }
+
+        if (!this.#context.canEditItemRelation(rel.id)) {
+            throw new Error('User :' + this.#context.getCurrentUser()?.login + ' can not edit item relation:' + rel.identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const tst = await ItemRelation.applyScope(this.#context).findOne({
+            where: {
+                identifier: identifier
+            }
+        })
+        if (tst) {
+            throw new Error('Identifier: ' + identifier + ' already exists, tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const item = await Item.applyScope(this.#context).findOne({where: {identifier: itemIdentifier}})
+        if (!item) {
+            throw new Error('Failed to find item by id: ' + itemIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const targetItem = await Item.applyScope(this.#context).findOne({where: {identifier: targetIdentifier}})
+        if (!targetItem) {
+            throw new Error('Failed to find target item by id: ' + targetIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const tst3 = rel.targets.find((typeId: number) => typeId === targetItem.typeId)
+        if (!tst3) {
+            throw new Error('Relation with id: ' + relationIdentifier + ' can not have target with type: ' + targetItem.typeId + ', tenant: ' + mng.getTenantId())
+        }
+
+        if (!rel.multi) {
+            const count = await ItemRelation.applyScope(this.#context).count( {
+                where: {
+                    itemIdentifier: itemIdentifier,
+                    relationId: rel.id
+                }
+            })
+
+            if (count > 0) {
+                throw new Error('Relation with id: ' + itemIdentifier + ' can not have more then one target, tenant: ' + mng.getTenantId())
+            }
+        }
+
+        const itemRelation = await ItemRelation.build ({
+            identifier: identifier,
+            tenantId: this.#context.getCurrentUser()!.tenantId,
+            createdBy: this.#context.getCurrentUser()!.login,
+            updatedBy: this.#context.getCurrentUser()!.login,
+            relationId: rel.id,
+            relationIdentifier: rel.identifier,
+            itemId: item.id,
+            itemIdentifier: item.identifier,
+            targetId: targetItem.id,
+            targetIdentifier: targetItem.identifier,
+            values: null
+        })
+
+        if (!values) values = {}
+        await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, values, false)
+
+        filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
+        checkValues(mng, values)
+
+        itemRelation.values = values
+
+        await sequelize.transaction(async (t) => {
+            await itemRelation.save({transaction: t})
+        })
+
+        await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, values, false)
+
+        if (audit.auditEnabled()) {
+            const itemRelationChanges: ItemRelationChanges = {
+                relationIdentifier: itemRelation.relationIdentifier,
+                itemIdentifier: itemRelation.itemIdentifier,
+                targetIdentifier: itemRelation.targetIdentifier,
+                values: values
+            }
+            audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, this.#context.getCurrentUser()!.login, itemRelation.createdAt)
+        }
+
+        return makeItemRelationProxy(itemRelation)
+    }    
 
 }

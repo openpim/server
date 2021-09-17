@@ -176,7 +176,8 @@ export async function importType(context: Context, config: IImportConfig, type: 
                     link: link ? link.id : 0,
                     file: type.file != null ? type.file : false,
                     mainImage: mainImageId,
-                    images: images
+                    images: images,
+                    options: type.options ?  type.options : []
                 }, {transaction: t})
             })
             mng.addType(parentId, data)
@@ -220,7 +221,7 @@ export async function importType(context: Context, config: IImportConfig, type: 
                     data.mainImage = tst.id;
                 }
             }
-
+            if (type.options != null) data.options = type.options
 
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {

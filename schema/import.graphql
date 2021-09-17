@@ -62,6 +62,7 @@ type ImportResponse {
 
 input ItemImportRequest {
   delete: Boolean
+  skipActions: Boolean
   identifier: String!
   typeIdentifier: String
   parentIdentifier: String
@@ -72,6 +73,7 @@ input ItemImportRequest {
 
 input ItemRelationImportRequest {
   delete: Boolean
+  skipActions: Boolean
   identifier: String!
   relationIdentifier: String
   itemIdentifier: String

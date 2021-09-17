@@ -31,7 +31,7 @@ export default {
         }
     },
     Mutation: {
-        createRelation: async (parent: any, {identifier, name, sources, targets, child, multi, order}: any, context: Context) => {
+        createRelation: async (parent: any, {identifier, name, sources, targets, child, multi, order, options}: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.RELATIONS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create relation, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -57,7 +57,8 @@ export default {
                     targets: tgt,
                     child: child || false,
                     multi: multi || false,
-                    order: order || 0
+                    order: order || 0,
+                    options: options ? options : []
                 }, {transaction: t})
                 return rel
             })
@@ -65,7 +66,7 @@ export default {
             mng.getRelations().push(rel)
             return rel.id
         },
-        updateRelation: async (parent: any, { id, name, sources, targets, child, multi, order}: any, context: Context) => {
+        updateRelation: async (parent: any, { id, name, sources, targets, child, multi, order, options}: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.RELATIONS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update relation, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -83,6 +84,7 @@ export default {
             if (child != null) rel.child = child
             if (multi != null) rel.multi = multi
             if (order != null) rel.order = order
+            if (options != null) rel.options = options
             if (sources) rel.sources = sources.map((elem: string) => parseInt(elem))
             if (targets) rel.targets = targets.map((elem: string) => parseInt(elem))
             rel.updatedBy = context.getCurrentUser()!.login

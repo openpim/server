@@ -9,6 +9,11 @@ import { ChannelsManagerFactory } from '../channels'
 
 export default {
     Query: {
+        getChannelTypes: async (parent: any, args: any, context: Context) => {
+            context.checkAuth()
+            
+            return ModelsManager.getInstance().getChannelTypes()
+        },
         getChannels: async (parent: any, args: any, context: Context) => {
             context.checkAuth()
             
@@ -82,7 +87,7 @@ export default {
                             if (catMap.id === category) name = catMap.name
                         }
                     }
-                    data = {id: category, name: name, statuses: [{status: 1, count: 0},{status: 2, count: 0},{status: 3, count: 0}]}
+                    data = {id: category, name: name, statuses: [{status: 1, count: 0},{status: 2, count: 0},{status: 3, count: 0},{status: 4, count: 0}]}
                     res.push(data)
                 }
                 const status = record.getDataValue('status')

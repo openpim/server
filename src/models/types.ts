@@ -13,6 +13,7 @@ export class Type extends Base {
     public file!: boolean
     public mainImage!: number
     public images!: any
+    public options!: any
     public static applyScope(context: Context) {
       return Type.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
     }
@@ -58,6 +59,10 @@ export function init(sequelize: Sequelize):void {
           type: DataTypes.JSONB,
           allowNull: false,
         },        
+        options: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+        },
         ...BaseColumns,
         tenantId: { // override base for uniqueIdentifier
           type: new DataTypes.STRING(50),

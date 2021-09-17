@@ -146,6 +146,10 @@ export abstract class ChannelHandler {
     return null
   }
 
+  async sleep(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) )
+}
+
   getValueByExpression(mapping: any): any {
     if (mapping && mapping.expr) {
       const func = new Function('"use strict"; return (' + mapping.expr + ')')

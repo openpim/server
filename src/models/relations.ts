@@ -11,6 +11,7 @@ export class Relation extends Base {
   public child!:boolean
   public multi!:boolean
   public order!: number
+  public options!: any
   public static applyScope(context: Context) {
     return Relation.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
@@ -45,6 +46,10 @@ export function init(sequelize: Sequelize):void {
       },
       order: {
         type: new DataTypes.INTEGER,
+        allowNull: false,
+      },
+      options: {
+        type: DataTypes.JSONB,
         allowNull: false,
       },
       ...BaseColumns,

@@ -112,7 +112,8 @@ export async function importRelation(context: Context, config: IImportConfig, re
                     sources: {data: sources},
                     targets: {data: targets},
                     child: relation.child || false,
-                    multi: relation.multi || false
+                    multi: relation.multi || false,
+                    options: relation.options ?  relation.options : []
                 }, {transaction: t})
             })
             mng.getRelations().push(data)
@@ -130,6 +131,7 @@ export async function importRelation(context: Context, config: IImportConfig, re
             if (relation.name) data.name = relation.name
             if (relation.child != null) data.child = relation.child
             if (relation.multi != null) data.multi = relation.multi
+            if (relation.options != null) data.options = relation.options
             if (relation.sources) data.sources = {data: sources}
             if (relation.targets) data.targets = {data: targets}
             data.updatedBy = context.getCurrentUser()!.login
