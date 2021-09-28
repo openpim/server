@@ -18,6 +18,7 @@ import fetch from 'node-fetch'
 import { URLSearchParams } from 'url'
 
 import logger from '../logger'
+import { LOV } from "../models/lovs"
 const dateFormat = require("dateformat")
 
 export function filterChannels(context: Context, channels:any) {
@@ -214,6 +215,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
         } 
     })
 }
@@ -245,6 +247,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
         } 
     })
     return {values:values, result: ret[0]}
@@ -264,6 +267,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
         }},
         { 
             log: ((...args: any) => { log += '' + args + '\n'}),
@@ -373,6 +377,10 @@ function makeItemProxy(item: any) {
                 return async(...args: any) => {
                     return await target[ property ].apply( target, args )
                 }
+            } else  if ((<string>property) =='changed') {
+                return async(...args: any) => {
+                    return await target[ property ].apply( target, args )
+                }
             } else  if ((<string>property) =='id') { return target[ property ]
             } else  if ((<string>property) =='tenantId') { return target[ property ]
             } else  if ((<string>property) =='identifier') { return target[ property ]
@@ -434,6 +442,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
         } 
     })
 }
@@ -452,6 +461,10 @@ function makeItemRelationProxy(item: any) {
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='set') {
+                return async(...args: any) => {
+                    return await target[ property ].apply( target, args )
+                }
+            } else  if ((<string>property) =='changed') {
                 return async(...args: any) => {
                     return await target[ property ].apply( target, args )
                 }
@@ -482,6 +495,62 @@ function makeItemRelationProxy(item: any) {
                 prop === 'values' ||
                 prop === 'updatedBy'
                 ) {
+                target[prop] = value
+                return true
+            } else {
+                return false
+            }
+        }
+    })
+}
+
+function makeLOVProxy(item: any) {
+    return new Proxy(item, {
+        get: function (target, property, receiver) {
+            if ((<string>property) == 'save') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
+                }
+            } else if ((<string>property) == 'destroy') {
+                return async (...args: any) => {
+                    target.set('identifier', target.identifier + "_d" + Date.now())
+                    target.save()
+                    return await target[property].apply(target, args)
+                }
+            } else if ((<string>property) == 'set') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
+                }
+            } else  if ((<string>property) =='changed') {
+                return async(...args: any) => {
+                    return await target[ property ].apply( target, args )
+                }
+            } else if ((<string>property) == 'id') {
+                return target[property]
+            } else if ((<string>property) == 'tenantId') {
+                return target[property]
+            } else if ((<string>property) == 'identifier') {
+                return target[property]
+            } else if ((<string>property) == 'name') {
+                return target[property]
+            } else if ((<string>property) == 'values') {
+                return target[property]
+            } else if ((<string>property) == 'createdBy') {
+                return target[property]
+            } else if ((<string>property) == 'updatedBy') {
+                return target[property]
+            } else if ((<string>property) == 'createdAt') {
+                return target[property]
+            } else if ((<string>property) == 'updatedAt') {
+                return target[property]
+            }
+        },
+        set: function (target, prop, value, receiver) {
+            if (
+                prop === 'name' ||
+                prop === 'values' ||
+                prop === 'updatedBy'
+            ) {
                 target[prop] = value
                 return true
             } else {
@@ -542,6 +611,14 @@ class ActionUtils {
     public formatDate(date: Date, format: string) {
         return dateFormat(date, format)
     }
+
+    private a:any = {"(": "_", ")": "_", "\"":"_","'":"_"," ": "_","Ё":"YO","Й":"I","Ц":"TS","У":"U","К":"K","Е":"E","Н":"N","Г":"G","Ш":"SH","Щ":"SCH","З":"Z","Х":"H","Ъ":"'","ё":"yo","й":"i","ц":"ts","у":"u","к":"k","е":"e","н":"n","г":"g","ш":"sh","щ":"sch","з":"z","х":"h","ъ":"'","Ф":"F","Ы":"I","В":"V","А":"a","П":"P","Р":"R","О":"O","Л":"L","Д":"D","Ж":"ZH","Э":"E","ф":"f","ы":"i","в":"v","а":"a","п":"p","р":"r","о":"o","л":"l","д":"d","ж":"zh","э":"e","Я":"Ya","Ч":"CH","С":"S","М":"M","И":"I","Т":"T","Ь":"'","Б":"B","Ю":"YU","я":"ya","ч":"ch","с":"s","м":"m","и":"i","т":"t","ь":"_","б":"b","ю":"yu"};
+    public transliterate (word: string) {
+      return word.split('').map( (char) => { 
+        return this.a[char] || char; 
+      }).join("")
+    }
+  
 
     public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
