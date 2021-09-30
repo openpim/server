@@ -350,6 +350,10 @@ function makeModelProxy(model: any, itemProxy: any) {
                 return async(...args: any) => {
                     return itemProxy(await target[ property ].apply( target, args ))
                 }
+            } else if ((<string>property) =='count') {
+                return async(...args: any) => {
+                    return await target[ property ].apply( target, args )
+                }
             } else if ((<string>property) =='findAll') {
                 return async(...args: any) => {
                     const arr = await target[ property ].apply( target, args )
@@ -570,6 +574,16 @@ class ActionUtils {
     }
 
     public getCache() { return this.#mng.getCache() }
+
+    public getAttrGroups() {
+        // TODO maybe we need to return copy of the data to avoid changing?
+        return this.#mng.getAttrGroups()
+    }
+
+    public getRelations() {
+        // TODO maybe we need to return copy of the data to avoid changing?
+        return this.#mng.getRelations()
+    }
 
     public getItemAttributes(item: Item, groupIdentifier?: string) {
         const attrArr: string[] = []
