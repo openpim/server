@@ -16,6 +16,7 @@ const awaitExec = util.promisify(exec);
 
 import fetch from 'node-fetch'
 import { URLSearchParams } from 'url'
+import * as mailer from 'nodemailer'
 
 import logger from '../logger'
 import { LOV } from "../models/lovs"
@@ -209,7 +210,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams },
+        system: { exec, awaitExec, fetch, URLSearchParams, mailer },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, channels: newChannels,
         models: { 
@@ -241,7 +242,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams },
+        system: { exec, awaitExec, fetch, URLSearchParams, mailer },
         buttonText: buttonText, 
         item: makeItemProxy(item), values: values, channels:channels,
         models: { 
@@ -262,7 +263,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams },
+        system: { exec, awaitExec, fetch, URLSearchParams, mailer },
         item: makeItemProxy(item), values: values, channels:channels, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
@@ -440,7 +441,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams },
+        system: { exec, awaitExec, fetch, URLSearchParams, mailer },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
