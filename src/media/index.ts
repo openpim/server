@@ -57,21 +57,28 @@ export async function processDownload(context: Context, req: Request, res: Respo
     const id = parseInt(idStr)
     if (!id) throw new Error('Wrong "id" parameter')
 
-    const item = await Item.applyScope(context).findByPk(id)
+    const item = await Item.findByPk(id)
     if (!item) {
-        logger.error('Failed to find item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        logger.error('Failed to find item by id: ' + id + ', user: ' + context.getCurrentUser()?.login + ", tenant: " + context.getCurrentUser()?.tenantId)
         res.status(400).send('Failed to find image')
         return
     }
 
-    if (!context.canViewItem(item)) {
-        logger.error('User :' + context.getCurrentUser()?.login + ' can not view item (asset download) :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
-        res.status(400).send('You do not have permissions to view this item')
-        return
+    const mng = ModelsManager.getInstance().getModelManager(item.tenantId)
+    const type:Type = mng.getTypeById(item.typeId)?.getValue()
+    const skipAuth = type.options.some((elem:any) => elem.name === 'directUrl' && elem.value === 'true')
+
+    if (!skipAuth) {
+        context.checkAuth()
+          if (!context.canViewItem(item)) {
+            logger.error('User :' + context.getCurrentUser()?.login + ' can not view item (asset download) :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            res.status(400).send('You do not have permissions to view this item')
+            return
+        }
     }
 
     if (!item.storagePath) {
-        logger.error('Failed to find image for item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        logger.error('Failed to find image for item by id: ' + id + ', user: ' + context.getCurrentUser()?.login + ", tenant: " + context.getCurrentUser()?.tenantId)
         res.status(400).send('Failed to find image')
         return
     }

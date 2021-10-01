@@ -116,7 +116,6 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   app.get('/asset/:id', async (req, res) => {
     try {
       const context = await Context.create(req)
-      context.checkAuth()
       await processDownload(context, req, res, false)
     } catch (error) {
       res.status(400).send(error.message)
