@@ -150,7 +150,7 @@ export default {
                 raw: true,
                 type: QueryTypes.SELECT
             })
-            const items: Item[] = await sequelize.query(
+            let items: Item[] = await sequelize.query(
                 `SELECT i.* FROM "items" i, "itemRelations" r where 
                     i."deletedAt" IS NULL and 
                     r."deletedAt" IS NULL and 
@@ -170,6 +170,8 @@ export default {
                 model: Item,
                 mapToModel: true
             })
+
+            items = items.filter(item => context.canViewItem(item))
 
             return { count: parseInt(cnt.count), rows: (items || []) }
         }
