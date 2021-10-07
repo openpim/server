@@ -206,7 +206,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         }
         return false
     })
-    await processActions(mng, actions, { Op: Op,
+    return await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
@@ -321,7 +321,7 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                     const ret = await funct()
                     if (ret) {
                         if (typeof ret === 'object') {
-                            retArr.push({identifier: action.identifier, message: ret.message, error: ret.error})
+                            retArr.push({identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data})
                         } else {
                             retArr.push({identifier: action.identifier, message: ''+ret})
                         }
@@ -437,7 +437,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         }
         return false
     })
-    await processActions(mng, actions, { Op: Op,
+    return await processActions(mng, actions, { Op: Op,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),

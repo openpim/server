@@ -518,19 +518,21 @@ export default {
             })
             if (num > 0) throw new Error('Can not remove item that has relations, remove them first.');
 
-            await processItemActions(context, EventType.BeforeDelete, item, null, null, false)
+            const retArr:any = await processItemActions(context, EventType.BeforeDelete, item, null, null, false)
+            const ret = retArr.length > 0 ? retArr[0] : null
+            const del:boolean = !ret || ret.data === undefined || ret.data === true
 
             item.updatedBy = context.getCurrentUser()!.login
 
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
             const oldIdentifier = item.identifier
-            item.identifier = item.identifier + '_d_' + Date.now() 
+            if (del) item.identifier = item.identifier + '_d_' + Date.now() 
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
-                await item.destroy({transaction: t})
+                if (del) await item.destroy({transaction: t})
             })
 
-            if (item.storagePath) {
+            if (del && item.storagePath) {
                 const fm = FileManager.getInstance()
                 await fm.removeFile(item)
             }
@@ -538,16 +540,18 @@ export default {
             await processItemActions(context, EventType.AfterDelete, item, null, null,false)
 
             if (audit.auditEnabled()) {
-                const itemChanges: ItemChanges = {
-                    typeIdentifier: item.typeIdentifier,
-                    parentIdentifier: item.parentIdentifier,
-                    name: item.name,
-                    values: item.values
+                if (del) {
+                    const itemChanges: ItemChanges = {
+                        typeIdentifier: item.typeIdentifier,
+                        parentIdentifier: item.parentIdentifier,
+                        name: item.name,
+                        values: item.values
+                    }
+                    audit.auditItem(ChangeType.DELETE, item.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
                 }
-                audit.auditItem(ChangeType.DELETE, item.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
             }
 
-            return true
+            return del
         },
         removeFile: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
