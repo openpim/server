@@ -223,12 +223,15 @@ export default class Context {
     }
 
     public canViewItem(item: Item): boolean {
+        return this.canViewItem2(item.typeId, item.path)
+    }
+    public canViewItem2(typeId: number, path: string): boolean {
         if (!this.user) return false
         let access = -1
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i]
-            if(role.itemAccess.valid.find((typeId:number) => typeId === item.typeId)) {
-                const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
+            if(role.itemAccess.valid.find((typeId:number) => typeId === typeId)) {
+                const pathArr = path.split('.').map((elem:string) => parseInt(elem))
                 const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
                 if (tst && role.itemAccess.access > access) access = role.itemAccess.access
             }
