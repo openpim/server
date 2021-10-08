@@ -207,6 +207,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         return false
     })
     return await processActions(mng, actions, { Op: Op,
+        event: EventType[event],
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
@@ -239,6 +240,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     const values = {...item.values}
     const channels = {...item.channels}
     const ret = await processActions(mng, actions, { Op: Op,
+        event: 'Button:'+buttonText,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
@@ -259,7 +261,8 @@ export async function testAction(context: Context, action: Action, item: Item) {
     const values = {...item.values}
     const channels = {...item.channels}
     let log = ''
-    const ret = await processActionsWithLog(mng, [action], { Op: Op, 
+    const ret = await processActionsWithLog(mng, [action], { Op: Op,
+        event: 'Test', 
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
@@ -438,6 +441,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         return false
     })
     return await processActions(mng, actions, { Op: Op,
+        event: EventType[event],
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
