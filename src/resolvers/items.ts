@@ -493,36 +493,38 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-            // check Roles
-            const tst1 = mng.getRoles().find(role => role.itemAccess.fromItems.includes(nId))
-            if (tst1) throw new Error('Can not remove this item because there are roles linked to it.');
-            // check Attributes
-            const tst2 = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: nId}}})
-            if (tst2) throw new Error('Can not remove this item because there are attributes linked to it.');
-            // check children
-            const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
-                replacements: { 
-                    tenant: context.getCurrentUser()!.tenantId,
-                    lquery: item.path + '.*{1}',
-                },
-                plain: true,
-                raw: true,
-                type: QueryTypes.SELECT
-            })
-            const childrenNumber = parseInt(cnt.count)
-            if (childrenNumber > 0) throw new Error('Can not remove item with children, remove children first.');
-            // check relations
-            const num = await ItemRelation.applyScope(context).count({
-                where: {
-                    [Op.or]: [{itemId: item.id}, {targetId: item.id}]
-                },
-            })
-            if (num > 0) throw new Error('Can not remove item that has relations, remove them first.');
-
             const retArr:any = await processItemActions(context, EventType.BeforeDelete, item, null, null, false)
             const ret = retArr.length > 0 ? retArr[0] : null
             const del:boolean = !ret || ret.data === undefined || ret.data === true
+
+            if (del) {
+                const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+                // check Roles
+                const tst1 = mng.getRoles().find(role => role.itemAccess.fromItems.includes(nId))
+                if (tst1) throw new Error('Can not remove this item because there are roles linked to it.');
+                // check Attributes
+                const tst2 = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: nId}}})
+                if (tst2) throw new Error('Can not remove this item because there are attributes linked to it.');
+                // check children
+                const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                    replacements: { 
+                        tenant: context.getCurrentUser()!.tenantId,
+                        lquery: item.path + '.*{1}',
+                    },
+                    plain: true,
+                    raw: true,
+                    type: QueryTypes.SELECT
+                })
+                const childrenNumber = parseInt(cnt.count)
+                if (childrenNumber > 0) throw new Error('Can not remove item with children, remove children first.');
+                // check relations
+                const num = await ItemRelation.applyScope(context).count({
+                    where: {
+                        [Op.or]: [{itemId: item.id}, {targetId: item.id}]
+                    },
+                })
+                if (num > 0) throw new Error('Can not remove item that has relations, remove them first.');
+            }
 
             item.updatedBy = context.getCurrentUser()!.login
 
@@ -553,7 +555,7 @@ export default {
                 }
             }
 
-            return del
+            return ret ? (ret.result === false ? false : true) : true
         },
         removeFile: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()

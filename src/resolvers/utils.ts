@@ -290,7 +290,7 @@ async function processActions(mng: ModelManager, actions: Action[], sandbox: any
 }
 
 async function processActionsWithLog(mng: ModelManager, actions: Action[], sandbox: any, console: any): 
-    Promise<{identifier: string, compileError?: string, message?: string, error?:string, data?: any}[]> {
+    Promise<{identifier: string, compileError?: string, message?: string, error?:string, data?: any, result?: any}[]> {
     const retArr = []
     if (actions.length > 0) {
         const vm = new VM({
@@ -324,7 +324,7 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                     const ret = await funct()
                     if (ret) {
                         if (typeof ret === 'object') {
-                            retArr.push({identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data})
+                            retArr.push({identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data, result: ret.result})
                         } else {
                             retArr.push({identifier: action.identifier, message: ''+ret})
                         }
