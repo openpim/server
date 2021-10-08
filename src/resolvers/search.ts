@@ -133,7 +133,7 @@ export default {
                         params.include = arr
                     }
 
-                    // queries are processed in ItemsResponse resolvers
+                    // queries are processed in ItemsSearchResponse resolvers
                     res = {}
                     res.type = 'ItemsSearchResponse'
                     res.params = params
@@ -311,7 +311,9 @@ export default {
         rows: async ({context, params}: any) => {
             const arr = await Item.applyScope(context).findAll(params)
 
-            const rows = arr.filter( (item: Item) => context.canViewItem(item))
+            let rows = arr.filter( (item: Item) => context.canViewItem(item))
+            rows = await context.checkRelationsBasedAccess(rows)
+
             for (let i = 0; i < arr.length; i++) {
                 const item = arr[i];
                 const allowedAttributes = context.getViewItemAttributes(item)

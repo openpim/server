@@ -13,7 +13,6 @@ import { ItemRelation } from '../models/itemRelations'
 
 import audit from '../audit'
 import { ChangeType, ItemChanges, AuditItem } from '../audit'
-import relations from './relations'
 
 
 function generateOrder(order: string[][]) {
@@ -92,41 +91,7 @@ export default {
 
             items = items.filter(item => context.canViewItem(item))
 
-            /* TODO
-            if (items.length > 0) {
-                console.log('start', items.map(item => item.typeId))
-                const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-                const relationsToCheck = mng.getRelations().filter(relation => 
-                    items.some(item => relation.targets.includes(item.typeId)) &&
-                    relation.options && 
-                    relation.options.some((option:any) => option.name === 'participatesInAccess' && option.value === 'true'))
-                if (relationsToCheck.length > 0) {
-                    // need to check item access through relations also
-                    // object is visible if it has corresponding relations as a target and user can see any source object
-                    // or object does not has such links defined
-                    const relationIds = relationsToCheck.map(relation => relation.id)
-                    const itemIds = items.filter(item => relationsToCheck.some(relation => relation.targets.includes(item.typeId))).map(item => item.id)
-                    const data = await sequelize.query('SELECT ir."relationId", ir."targetId", source.id as "sourceId", source."typeId", source.path FROM "itemRelations" ir, items source '+
-                        'where source."deletedAt" IS NULL and ir."deletedAt" IS NULL and source."tenantId"=:tenant and ir."targetId" in (:itemIds) and ir."relationId" in (:relationIds) and ir."itemId" = source.id', {
-                        replacements: { 
-                            tenant: context.getCurrentUser()!.tenantId,
-                            itemIds: itemIds,
-                            relationIds: relationIds
-                        },
-                        mapToModel: false
-                    })
-                    const arr = data[0]
-                    console.log('data', arr)
-                    items = items.filter(item => {
-                        if (arr.some((record:any) =>  item.id === record.targetId)) {
-                            return arr.some((record:any) =>  item.id === record.targetId && context.canViewItem2(record.typeId, record.path))
-                        } else {
-                            return false
-                        }
-                    })
-                }
-                console.log('finish', items.map(item => item.typeId))
-            }*/
+            items = await context.checkRelationsBasedAccess(items)
 
             items.forEach(item => {   
                 const allowedAttributes = context.getViewItemAttributes(item)

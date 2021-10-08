@@ -173,6 +173,8 @@ export default {
 
             items = items.filter(item => context.canViewItem(item))
 
+            items = await context.checkRelationsBasedAccess(items)
+
             return { count: parseInt(cnt.count), rows: (items || []) }
         }
     },
