@@ -263,7 +263,7 @@ export default class Context {
         const forbiddenGroups: number[] = []
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i]
-            if(role.itemAccess.valid.find((typeId:number) => typeId === item.typeId)) {
+            if(role.itemAccess.valid.some((tId:number) => tId === item.typeId)) {
                 const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
                 const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
                 if (tst && (role.itemAccess.access === 1 || role.itemAccess.access === 2)) {
@@ -292,7 +292,7 @@ export default class Context {
         const forbiddenGroups: number[] = []
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i]
-            if(role.itemAccess.valid.find((typeId:number) => typeId === typeId)) {
+            if(role.itemAccess.valid.some((tId:number) => tId === typeId)) {
                 const pathArr = path.split('.').map((elem:string) => parseInt(elem))
                 const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
                 if (tst && (role.itemAccess.access === 1 || role.itemAccess.access === 2)) {
