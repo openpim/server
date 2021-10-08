@@ -248,7 +248,7 @@ export default class Context {
         let access = -1
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i]
-            if(role.itemAccess.valid.find((typeId:number) => typeId === typeId)) {
+            if(role.itemAccess.valid.some((tId:number) => tId === typeId)) {
                 const pathArr = path.split('.').map((elem:string) => parseInt(elem))
                 const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
                 if (tst && role.itemAccess.access > access) access = role.itemAccess.access
