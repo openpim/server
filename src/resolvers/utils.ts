@@ -287,7 +287,7 @@ async function processActions(mng: ModelManager, actions: Action[], sandbox: any
 }
 
 async function processActionsWithLog(mng: ModelManager, actions: Action[], sandbox: any, console: any): 
-    Promise<{identifier: string, compileError?: string, message?: string, error?:string}[]> {
+    Promise<{identifier: string, compileError?: string, message?: string, error?:string, data?: any}[]> {
     const retArr = []
     if (actions.length > 0) {
         const vm = new VM({
