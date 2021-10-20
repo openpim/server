@@ -273,7 +273,7 @@ export default {
 
             return itemRelation.id
         },
-        updateItemRelation: async (parent: any, { id, targetId, values }: any, context: Context) => {
+        updateItemRelation: async (parent: any, { id, itemId, targetId, values }: any, context: Context) => {
             context.checkAuth()
             const nId = parseInt(id)
 
@@ -290,6 +290,29 @@ export default {
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             const rel = mng.getRelationById(itemRelation.relationId)
+
+            if (itemId) {
+                const nItemId = parseInt(itemId)
+                if (itemRelation.itemId !== nItemId) {
+                    const item = await Item.applyScope(context).findByPk(nItemId)
+                    if (!item) {
+                        throw new Error('Failed to find item by id: ' + itemId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+                    }
+                    const tst3 = rel!.sources.find((typeId: number) => typeId === item.typeId)
+                    if (!tst3) {
+                        throw new Error('Relation with id: ' + itemRelation.relationId + ' can not have source with type: ' + item.typeId + ', tenant: ' + mng.getTenantId())
+                    }
+
+                    if (audit.auditEnabled()) {
+                        relDiff.changed!.itemIdentifier = item.identifier
+                        relDiff.old!.itemIdentifier = itemRelation.itemIdentifier
+                    }
+
+                    itemRelation.itemId = nItemId
+                    itemRelation.itemIdentifier = item.identifier
+                }
+            }
+
             if (targetId) {
                 const nTargetId = parseInt(targetId)
                 if (itemRelation.targetId !== nTargetId) {
