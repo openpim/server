@@ -191,7 +191,7 @@ export function checkValues(mng: ModelManager, values: any) {
     }
 }
 
-export async function processItemActions(context: Context, event: EventType, item: Item, newValues: any, newChannels:any, isImport: boolean) {
+export async function processItemActions(context: Context, event: EventType, item: Item, newName: string, newValues: any, newChannels:any, isImport: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -213,7 +213,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams, mailer },
         isImport: isImport, 
-        item: makeItemProxy(item), values: newValues, channels: newChannels,
+        item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -398,6 +398,7 @@ function makeItemProxy(item: any) {
             } else  if ((<string>property) =='parentIdentifier') { return target[ property ]
             } else  if ((<string>property) =='name') { return target[ property ]
             } else  if ((<string>property) =='values') { return target[ property ]
+            } else  if ((<string>property) =='channels') { return target[ property ]
             } else  if ((<string>property) =='fileOrigName') { return target[ property ]
             } else  if ((<string>property) =='storagePath') { return target[ property ]
             } else  if ((<string>property) =='mimeType') { return target[ property ]
@@ -415,6 +416,7 @@ function makeItemProxy(item: any) {
                 prop === 'parentIdentifier' ||
                 prop === 'name' ||
                 prop === 'values' ||
+                prop === 'channels' ||
                 prop === 'fileOrigName' ||
                 prop === 'mimeType' ||
                 prop === 'updatedBy'
@@ -715,7 +717,7 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        await processItemActions(this.#context, EventType.BeforeCreate, item, values, {}, false)
+        await processItemActions(this.#context, EventType.BeforeCreate, item, name, values, {}, false)
 
         filterValues(this.#context.getEditItemAttributes2(nTypeId, path), values)
         checkValues(mng, values)
@@ -726,7 +728,7 @@ class ActionUtils {
             await item.save({transaction: t})
         })
 
-        await processItemActions(this.#context, EventType.AfterCreate, item, values, {}, false)
+        await processItemActions(this.#context, EventType.AfterCreate, item, name, values, {}, false)
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
