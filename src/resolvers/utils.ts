@@ -237,8 +237,8 @@ export async function processItemButtonActions(context: Context, buttonText: str
         }
         return false
     })
-    const values = {...item.values}
-    const channels = {...item.channels}
+    const valuesCopy = {...item.values}
+    const channelsCopy = {...item.channels}
     const ret = await processActions(mng, actions, { Op: Op,
         event: 'Button:'+buttonText,
         user: context.getCurrentUser()?.login,
@@ -246,14 +246,14 @@ export async function processItemButtonActions(context: Context, buttonText: str
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams, mailer },
         buttonText: buttonText, 
-        item: makeItemProxy(item), values: values, channels:channels,
+        item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
         } 
     })
-    return {values:values, result: ret[0]}
+    return {channels:channelsCopy, values:valuesCopy, result: ret[0]}
 }
 
 export async function testAction(context: Context, action: Action, item: Item) {

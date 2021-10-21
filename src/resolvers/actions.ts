@@ -111,12 +111,13 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const { values, result } = await processItemButtonActions(context, buttonText, item)
+            const { channels, values, result } = await processItemButtonActions(context, buttonText, item)
 
             let itemDiff: AuditItem
             if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
 
             item.values = values
+            item.channels = channels
 
             item.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {

@@ -381,6 +381,8 @@ export default {
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             item.updatedBy = context.getCurrentUser()!.login
 
+            if (!channels) channels = {}
+
             await processItemActions(context, EventType.BeforeUpdate, item, name, values, channels, false)
 
             if (name) item.name = name
