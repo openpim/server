@@ -6,12 +6,10 @@ import { Item } from './models/items';
 import { sequelize } from './models'
 
 export default class Context {
-    private req: IncomingMessage
     private currentUser: LoggedUser | null = null
     private user: UserWrapper | undefined = undefined
 
-    private constructor(req: IncomingMessage) {
-        this.req = req
+    private constructor() {
     }
 
     public getCurrentUser() {
@@ -27,10 +25,8 @@ export default class Context {
     }
 
     public static create = async (req: IncomingMessage)  => {
-
-        const ctx = new Context(req)
-
-        let token = ctx.req.headers['x-token']?.toString();
+        const ctx = new Context()
+        let token = req.headers['x-token']?.toString();
         if (!token) {
             const idx = req.url?.indexOf('token=')
             if (idx && idx !== -1) token = req.url?.substr(idx + 6)
@@ -50,6 +46,25 @@ export default class Context {
 
         return ctx
     }
+
+    public static createAs = (login: string, tenantId: string)  => {
+        const ctx = new Context()
+        const mng = ModelsManager.getInstance().getModelManager(tenantId)
+        if (!mng) {
+            throw new jwt.JsonWebTokenError('Failed to find Manager by tenantId: ' + tenantId);
+        }
+        ctx.user = mng!.getUsers().find(user => user.getUser().login === login)
+        if (!ctx.user) {
+            throw new jwt.JsonWebTokenError('Failed to find User by login: ' + login);
+        }
+        ctx.currentUser = {
+            id: ctx.user!.getUser().id,
+            tenantId: tenantId,
+            login: login
+        }
+        return ctx
+    }
+
 
     public isAdmin(): boolean {
         return !!this.user!.getRoles().find(role => role.identifier === 'admin')

@@ -640,6 +640,10 @@ class ActionUtils {
       }).join("")
     }
   
+    public runAs(login: string) {
+        const ctx = Context.createAs(login, this.#context.getCurrentUser()!.tenantId)
+        this.#context = ctx
+    }
 
     public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
