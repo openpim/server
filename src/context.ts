@@ -380,7 +380,7 @@ export default class Context {
                 // console.log('data', arr)
                 items = items.filter(item => {
                     if (arr.some((record:any) =>  item.id === record.targetId)) {
-                        return arr.some((record:any) =>  item.id === record.targetId && this.canViewItem2(record.typeId, record.path))
+                        return !arr.some((record:any) =>  item.id === record.targetId && !this.canViewItem2(record.typeId, record.path))
                     } else {
                         return true
                     }
