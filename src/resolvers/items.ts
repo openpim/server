@@ -385,8 +385,6 @@ export default {
 
             await processItemActions(context, EventType.BeforeUpdate, item, name, values, channels, false)
 
-            if (name) item.name = name
-
             let itemDiff: AuditItem
             if (channels) {
                 filterEditChannels(context, channels)
@@ -401,6 +399,8 @@ export default {
             } else {
                 if (audit.auditEnabled()) itemDiff = diff({name: item.name}, {name: name})
             }
+
+            if (name) item.name = name
 
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
