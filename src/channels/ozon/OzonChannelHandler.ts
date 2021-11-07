@@ -29,6 +29,10 @@ export class OzonChannelHandler extends ChannelHandler {
             await this.finishExecution(channel, chanExec, 3, 'Не введен API key в конфигурации канала')
             return
         }
+        if (!channel.config.ozonIdAttr) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить Ozon ID')
+            return
+        }
 
         if (!data) {
             const query:any = {}
@@ -115,8 +119,8 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }
 
-        if (card.product_id !== item.values.ozonId || (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4)) {
-            item.values.ozonId = card.product_id
+        if (card.product_id !== item.values[channel.config.ozonIdAttr] || (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4)) {
+            item.values[channel.config.ozonIdAttr] = card.product_id
             item.changed('values', true)
             if (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4) {
                 item.channels[channel.identifier].status = 2
@@ -139,7 +143,7 @@ export class OzonChannelHandler extends ChannelHandler {
             const categoryConfig = channel.mappings[categoryId]
             if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
                 const pathArr = item.path.split('.')
-                const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                const tst = categoryConfig.valid.includes(item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                 if (tst) {
                     try {
                         await this.processItemInCategory(channel, item, categoryConfig, language, context)
@@ -366,7 +370,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.message = ''
                     data.syncedAt = Date.now()
                     item.changed('channels', true)            
-                    item.values.ozonId = json2.result.items[0].product_id
+                    item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                     item.changed('values', true)
                 } else if (status === 'failed') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана с ошибкой.\n'
@@ -418,7 +422,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (images) {
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
-                        if (image.values.ozonImageUrl) data.push(image.values.ozonImageUrl)
+                        if (image.values[channel.config.ozonImageAttr]) data.push(image.values[channel.config.ozonImageAttr])
                     }
                 }
             }
@@ -449,7 +453,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (images) {
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
-                        if (image.values.ozonImageUrl) data.push(image.values.ozonImageUrl)
+                        if (image.values[channel.config.ozonImageAttr]) data.push(image.values[channel.config.ozonImageAttr])
                     }
                 }
             }
