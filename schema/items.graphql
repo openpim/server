@@ -18,6 +18,7 @@ type Mutation {
 
 type Asset {
   id: ID!
+  typeId: ID!
   identifier: String!
   name: LanguageDependentString!
   image: Boolean!

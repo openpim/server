@@ -190,7 +190,7 @@ export default {
                 // if (type.mainImage) relIds.push(type.mainImage)
 
                 const data: any[] = await sequelize.query(
-                    `SELECT a."id", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName"
+                    `SELECT a."id", a."typeId", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName"
                         FROM "items" a, "itemRelations" ir, "types" t, "relations" r where 
                         a."tenantId"=:tenant and 
                         ir."itemId"=:itemId and
@@ -212,6 +212,7 @@ export default {
                 const res = data.map(elem => { 
                     return {
                         id: elem.id, 
+                        typeId: elem.typeId, 
                         identifier: elem.identifier,
                         name: elem.name,
                         mimeType: elem.mimeType,
