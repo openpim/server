@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import { Item } from '../models/items'
+import * as JPEG from 'jpeg-js'
 import * as Jimp from 'jimp'
 import { mergeValues } from '../resolvers/utils'
 import { FragmentsOnCompositeTypes } from 'graphql/validation/rules/FragmentsOnCompositeTypes'
@@ -13,6 +14,7 @@ export class FileManager {
 
     private constructor() {
         this.filesRoot = process.env.FILES_ROOT!
+        Jimp.decoders['image/jpeg'] = (data: Buffer) => JPEG.decode(data, { maxMemoryUsageInMB: 1024 })
     }
 
     public static getInstance(): FileManager {
