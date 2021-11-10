@@ -481,7 +481,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     })
                     const json = await res.json()
                     dict = dict.concat(json.result)
-                    next = json.hasNext
+                    next = json.has_next
                     last = dict[dict.length-1].id
                 } while (next)
     
