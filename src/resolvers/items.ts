@@ -337,7 +337,7 @@ export default {
 
             if (!values) values = {}
 
-            await processItemActions(context, EventType.BeforeCreate, item, name, values, channels, false)
+            await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, channels, false)
 
             filterEditChannels(context, channels)
             checkSubmit(context, channels)
@@ -352,7 +352,7 @@ export default {
                 await item.save({transaction: t})
             })
 
-            await processItemActions(context, EventType.AfterCreate, item, name, values, channels, false)
+            await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -384,7 +384,7 @@ export default {
 
             if (!channels) channels = {}
 
-            await processItemActions(context, EventType.BeforeUpdate, item, name, values, channels, false)
+            await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false)
 
             let itemDiff: AuditItem
             if (channels) {
@@ -407,7 +407,7 @@ export default {
                 await item.save({transaction: t})
             })
 
-            await processItemActions(context, EventType.AfterUpdate, item, name, values, channels, false)
+            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
@@ -440,6 +440,8 @@ export default {
     
             const tstType = parentType.getChildren().find(elem => (elem.getValue().identifier === item.typeIdentifier) || (elem.getValue().link === itemType.getValue().id))
             if (!tstType) throw new Error('Can not move this item to this parent because this is not allowed by data model.');
+
+            await processItemActions(context, EventType.BeforeUpdate, item, parentItem.identifier, item.name, item.values, item.channels, false)
 
             let newPath = parentItem.path+"."+item.id
             if (newPath !== item.path) {
@@ -480,6 +482,7 @@ export default {
                     const itemDiff: AuditItem = {changed: {parentIdentifier: parentItem.identifier}, old: {parentIdentifier: old}}
                     audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff, context.getCurrentUser()!.login, item.updatedAt)
                 }
+                await processItemActions(context, EventType.AfterUpdate, item, parentItem.identifier, item.name, item.values, item.channels, false)
             }
 
             return item
@@ -496,7 +499,7 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const retArr:any = await processItemActions(context, EventType.BeforeDelete, item, "", null, null, false)
+            const retArr:any = await processItemActions(context, EventType.BeforeDelete, item, "",  "", null, null, false)
             const ret = retArr.length > 0 ? retArr[0] : null
             const del:boolean = !ret || ret.data === undefined || ret.data === true
 
@@ -544,7 +547,7 @@ export default {
                 await fm.removeFile(item)
             }
 
-            await processItemActions(context, EventType.AfterDelete, item, "", null, null,false)
+            await processItemActions(context, EventType.AfterDelete, item, "",  "", null, null,false)
 
             if (audit.auditEnabled()) {
                 if (del) {

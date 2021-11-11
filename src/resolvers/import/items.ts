@@ -104,7 +104,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 data.updatedBy = context.getCurrentUser()!.login
 
-                if (!item.skipActions) await processItemActions(context, EventType.BeforeDelete, data, "", null, null, true)
+                if (!item.skipActions) await processItemActions(context, EventType.BeforeDelete, data, "", "", null, null, true)
 
                 const oldIdentifier = item.identifier
                 data.identifier = item.identifier + '_d_' + Date.now() 
@@ -113,7 +113,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     await data.destroy({transaction: t})
                 })
 
-                if (!item.skipActions) await processItemActions(context, EventType.AfterDelete, data, "", null, null, true)
+                if (!item.skipActions) await processItemActions(context, EventType.AfterDelete, data, "", "", null, null, true)
 
                 if (audit.auditEnabled()) {
                     const itemChanges: ItemChanges = {
@@ -191,7 +191,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             })
 
             if (!item.values) item.values = {}
-            if (!item.skipActions) await processItemActions(context, EventType.BeforeCreate, data, item.name, item.values, item.channels, true)
+            if (!item.skipActions) await processItemActions(context, EventType.BeforeCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true)
 
             filterEditChannels(context, item.channels)
             checkSubmit(context, item.channels)
@@ -212,7 +212,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 await data.save({transaction: t})
             })
 
-            if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.name, item.values, item.channels, true)
+            if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -250,6 +250,9 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             } else {
                 item.typeIdentifier = data.typeIdentifier
             }
+
+            if (!item.values) item.values = {}
+            if (!item.skipActions) await processItemActions(context, EventType.BeforeUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true)
 
             if (item.parentIdentifier && data.parentIdentifier !== item.parentIdentifier) {
                 let parent = await checkParent(item, result, mng, context)
@@ -297,9 +300,6 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 }
             }
 
-            if (!item.values) item.values = {}
-            if (!item.skipActions) await processItemActions(context, EventType.BeforeUpdate, data, item.name, item.values, item.channels, true)
-
             if (item.name) {
                 if (audit.auditEnabled()) {
                     const nameDiff: AuditItem = diff({name:data.name}, {name:item.name})
@@ -336,7 +336,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 await data!.save({transaction: t})
             })
 
-            if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.name, item.values, item.channels, true)
+            if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, data.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)
