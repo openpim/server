@@ -475,7 +475,7 @@ export class OzonChannelHandler extends ChannelHandler {
                             "category_id": ozonCategoryId,
                             "language": "DEFAULT",
                             "last_value_id": last,
-                            "limit": 1000
+                            "limit": 5000
                             }),
                         headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
                     })
