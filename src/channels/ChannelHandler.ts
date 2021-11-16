@@ -70,57 +70,60 @@ export abstract class ChannelHandler {
     return false
   }
 
+  async evaluateExpression (channel: Channel, item: Item, expr: string): Promise<any> {
+    const utils = {
+      getTargetObject: async (relationIdentifier: string) => {
+        const items: Item[] = await sequelize.query(
+          `SELECT i.* FROM "items" i, "itemRelations" r where 
+              i."deletedAt" IS NULL and 
+              r."deletedAt" IS NULL and 
+              i."tenantId"=:tenant and 
+              i."id"=r."targetId" and 
+              r."relationIdentifier" = :relationIdentifier and 
+              r."itemId"=:itemId 
+              order by i.id limit 1 offset 0`, {
+          replacements: { 
+              tenant: channel.tenantId,
+              relationIdentifier: relationIdentifier,
+              itemId: item.id
+          },
+          model: Item,
+          mapToModel: true
+        })
+        return items && items.length > 0 ? items[0] : null
+      },
+      getSourceObject: async (relationIdentifier: string) => {
+        const items: Item[] = await sequelize.query(
+          `SELECT i.* FROM "items" i, "itemRelations" r where 
+              i."deletedAt" IS NULL and 
+              r."deletedAt" IS NULL and 
+              i."tenantId"=:tenant and 
+              i."id"=r."itemId" and 
+              r."relationIdentifier" = :relationIdentifier and 
+              r."targetId"=:itemId 
+              order by i.id limit 1 offset 0`, {
+          replacements: { 
+              tenant: channel.tenantId,
+              relationIdentifier: relationIdentifier,
+              itemId: item.id
+          },
+          model: Item,
+          mapToModel: true
+        })
+        return items && items.length > 0 ? items[0] : null
+      }
+    }
+    try {
+      const func = new Function('item', 'utils', '"use strict"; return (async () => { return (' + expr + ')})()')
+      return await func(item, utils)
+    } catch (err) {
+      logger.error('Failed to execute expression :[' + expr + '] for item with id: ' + item.id + ' with error: ' + err.message)
+      return null
+    }
+  }
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
     if (mapping.expr) {
-      const utils = {
-        getTargetObject: async (relationIdentifier: string) => {
-          const items: Item[] = await sequelize.query(
-            `SELECT i.* FROM "items" i, "itemRelations" r where 
-                i."deletedAt" IS NULL and 
-                r."deletedAt" IS NULL and 
-                i."tenantId"=:tenant and 
-                i."id"=r."targetId" and 
-                r."relationIdentifier" = :relationIdentifier and 
-                r."itemId"=:itemId 
-                order by i.id limit 1 offset 0`, {
-            replacements: { 
-                tenant: channel.tenantId,
-                relationIdentifier: relationIdentifier,
-                itemId: item.id
-            },
-            model: Item,
-            mapToModel: true
-          })
-          return items && items.length > 0 ? items[0] : null
-        },
-        getSourceObject: async (relationIdentifier: string) => {
-          const items: Item[] = await sequelize.query(
-            `SELECT i.* FROM "items" i, "itemRelations" r where 
-                i."deletedAt" IS NULL and 
-                r."deletedAt" IS NULL and 
-                i."tenantId"=:tenant and 
-                i."id"=r."itemId" and 
-                r."relationIdentifier" = :relationIdentifier and 
-                r."targetId"=:itemId 
-                order by i.id limit 1 offset 0`, {
-            replacements: { 
-                tenant: channel.tenantId,
-                relationIdentifier: relationIdentifier,
-                itemId: item.id
-            },
-            model: Item,
-            mapToModel: true
-          })
-          return items && items.length > 0 ? items[0] : null
-        }
-      }
-      try {
-        const func = new Function('item', 'utils', '"use strict"; return (async () => { return (' + mapping.expr + ')})()')
-        return await func(item, utils)
-      } catch (err) {
-        logger.error('Failed to execute expression :[' + mapping.expr + '] for item with id: ' + item.id + ' with error: ' + err.message)
-        return null
-      }
+      return await this.evaluateExpression(channel, item, mapping.expr)
     } else if (mapping.attrIdent) {
       const tst = mapping.attrIdent.indexOf('#')
       if (tst === -1) {

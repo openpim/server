@@ -141,19 +141,23 @@ export class OzonChannelHandler extends ChannelHandler {
 
         for (const categoryId in channel.mappings) {
             const categoryConfig = channel.mappings[categoryId]
-            if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
+
+            if (categoryConfig.valid && categoryConfig.valid.length > 0 && ( (categoryConfig.visible && categoryConfig.visible.length > 0) || categoryConfig.categoryExpr) ) {
                 const pathArr = item.path.split('.')
-                const tst = categoryConfig.valid.includes(item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
-                if (tst) {
-                    try {
-                        await this.processItemInCategory(channel, item, categoryConfig, language, context)
-                        await sequelize.transaction(async (t) => {
-                            await item.save({transaction: t})
-                        })
-                    } catch (err) {
-                        logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+                const tstType = categoryConfig.valid.includes(item.typeId) 
+                if (tstType) {
+                    const tst = categoryConfig.categoryExpr ? await this.evaluateExpression(channel, item, categoryConfig.categoryExpr) : categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                    if (tst) {
+                        try {
+                            await this.processItemInCategory(channel, item, categoryConfig, language, context)
+                            await sequelize.transaction(async (t) => {
+                                await item.save({transaction: t})
+                            })
+                        } catch (err) {
+                            logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+                        }
+                        return
                     }
-                    return
                 }
             } else {
                 context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
