@@ -324,7 +324,7 @@ export class OzonChannelHandler extends ChannelHandler {
         }
         
         const images = await this.processItemImages(channel, item, context)
-        if (images && images.length>0 ) request.images = images
+        if (images && images.length>0 ) product.images = images
 
         const url = 'https://api-seller.ozon.ru/v2/product/import'
         logger.info("Sending request to Ozon: " + url + " => " + JSON.stringify(request))
