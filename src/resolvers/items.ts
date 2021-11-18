@@ -40,10 +40,10 @@ function generateOrder(order: string[][]) {
 
 export default {
     ItemsResponse: {
-        count: async ({ parentId, context, parentItem }: any) => {
+        count: async ({ restrictSql, parentId, context, parentItem }: any) => {
             let cnt = {count: '0'}
             if (!parentId) {
-                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1', {
+                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 '+restrictSql, {
                     replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                     },
@@ -52,7 +52,7 @@ export default {
                     type: QueryTypes.SELECT
                 })
             } else {
-                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery '+restrictSql, {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         lquery: parentItem.path + '.*{1}',
@@ -64,10 +64,10 @@ export default {
             }
             return parseInt(cnt.count)
         },
-        rows: async ({ parentId, offset, limit, orderSql, context, parentItem }: any) => {
+        rows: async ({ restrictSql, parentId, offset, limit, orderSql, context, parentItem }: any) => {
             let items: Item[]
             if (!parentId) {
-                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 order by '+orderSql+' limit :limit offset :offset', {
+                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 '+restrictSql+' order by '+orderSql+' limit :limit offset :offset', {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         offset: offset,
@@ -77,7 +77,7 @@ export default {
                     mapToModel: true
                 })
             } else {
-                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery order by '+orderSql+' limit :limit offset :offset', {
+                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery '+restrictSql+' order by '+orderSql+' limit :limit offset :offset', {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
                         lquery: parentItem.path + '.*{1}',
@@ -88,8 +88,6 @@ export default {
                     mapToModel: true
                 })
             }
-
-            items = items.filter(item => context.canViewItem(item))
 
             items = await context.checkRelationsBasedAccess(items)
 
@@ -104,6 +102,8 @@ export default {
     Query: {
         getItems: async (parent: any, params: any, context: Context) => {
             context.checkAuth()
+
+            params.restrictSql = context.generateRestrictionsInSQL('', true)
             params.orderSql = generateOrder(params.order)
             params.context = context
 

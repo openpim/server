@@ -390,6 +390,31 @@ export default class Context {
         }
         return items
     }
+
+    public generateRestrictionsInSQL(prefix: string, putAnd: boolean) {
+        if (!this.user) throw new Error('No user')
+
+        let sql = ''
+        for (let i = 0; i < this.user.getRoles().length; i++) {
+            const role = this.user.getRoles()[i];
+            
+            if (role.identifier === 'admin') return ''
+
+            if (role.itemAccess.access === 0 && role.itemAccess.valid.length > 0 && role.itemAccess.fromItems.length > 0) {
+                // we have restrictions
+                if (putAnd || sql.length !== 0) sql += ' and '
+
+                const validArr = role.itemAccess.valid.join(',')
+                sql += ' not (' + prefix + '"typeId" in (' + validArr + ') and ('
+                role.itemAccess.fromItems.forEach((fromItem:any, idx:any, arr:any) => {
+                    sql += prefix + "path ~ '*." + fromItem + ".*' "
+                    if (idx != arr.length-1) sql += ' or '
+                })
+                sql += '))'
+            }
+        }
+        return sql
+    }
 }
 
 export enum ConfigAccess {

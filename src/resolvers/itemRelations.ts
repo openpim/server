@@ -132,6 +132,8 @@ export default {
 
             if (relationsWithChildren.length === 0) return { count: 0, rows: [] }
 
+            const restrictSql = context.generateRestrictionsInSQL('i.', true)
+
             let cnt = {count: '0'}
             cnt = await sequelize.query(
                 `SELECT Count(i.*) FROM "items" i, "itemRelations" r where
@@ -140,7 +142,7 @@ export default {
                     i."tenantId"=:tenant and
                     i."id"=r."targetId" and
                     r."relationId" in (:relations) and
-                    r."itemId"=:itemId`, { 
+                    r."itemId"=:itemId`+restrictSql, { 
                 replacements: { 
                     tenant: context.getCurrentUser()!.tenantId,
                     relations: relationsWithChildren,
@@ -157,7 +159,8 @@ export default {
                     i."tenantId"=:tenant and 
                     i."id"=r."targetId" and 
                     r."relationId" in (:relations) and 
-                    r."itemId"=:itemId 
+                    r."itemId"=:itemId
+                    `+restrictSql+` 
                     order by i.id 
                     limit :limit offset :offset`, {
                 replacements: { 
@@ -170,8 +173,6 @@ export default {
                 model: Item,
                 mapToModel: true
             })
-
-            items = items.filter(item => context.canViewItem(item))
 
             items = await context.checkRelationsBasedAccess(items)
 

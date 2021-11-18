@@ -134,6 +134,15 @@ export default {
                     }
 
                     // queries are processed in ItemsSearchResponse resolvers
+                    const restrictSql = context.generateRestrictionsInSQL('"Item".', false)
+                    if (restrictSql.length > 0) {
+                        const andExpr = {[Op.and] : [
+                            params.where,
+                            literal(restrictSql)
+                        ]}
+                        params.where = andExpr
+                    }
+
                     res = {}
                     res.type = 'ItemsSearchResponse'
                     res.params = params
@@ -309,13 +318,12 @@ export default {
             return await Item.applyScope(context).count(params)
         },
         rows: async ({context, params}: any) => {
-            const arr = await Item.applyScope(context).findAll(params)
+            let rows = await Item.applyScope(context).findAll(params)
 
-            let rows = arr.filter( (item: Item) => context.canViewItem(item))
             rows = await context.checkRelationsBasedAccess(rows)
 
-            for (let i = 0; i < arr.length; i++) {
-                const item = arr[i];
+            for (let i = 0; i < rows.length; i++) {
+                const item = rows[i];
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
                 filterChannels(context, item.channels)
