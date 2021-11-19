@@ -174,8 +174,6 @@ export default {
                 mapToModel: true
             })
 
-            items = await context.checkRelationsBasedAccess(items)
-
             return { count: parseInt(cnt.count), rows: (items || []) }
         }
     },

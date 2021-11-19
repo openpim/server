@@ -320,8 +320,6 @@ export default {
         rows: async ({context, params}: any) => {
             let rows = await Item.applyScope(context).findAll(params)
 
-            rows = await context.checkRelationsBasedAccess(rows)
-
             for (let i = 0; i < rows.length; i++) {
                 const item = rows[i];
                 const allowedAttributes = context.getViewItemAttributes(item)

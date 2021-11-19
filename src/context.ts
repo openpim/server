@@ -4,6 +4,7 @@ import { LoggedUser, User } from './models/users'
 import { ModelsManager, UserWrapper } from './models/manager';
 import { Item } from './models/items';
 import { sequelize } from './models'
+import relations from './resolvers/relations';
 
 export default class Context {
     private currentUser: LoggedUser | null = null
@@ -353,45 +354,7 @@ export default class Context {
         return res    
     }
 
-    public async checkRelationsBasedAccess(items: Item[]) : Promise<Item[]> {
-        if (items.length > 0) {
-            // console.log('start', items.map(item => item.id))
-            const mng = ModelsManager.getInstance().getModelManager(this.getCurrentUser()!.tenantId)
-            const relationsToCheck = mng.getRelations().filter(relation => 
-                items.some(item => relation.targets.includes(item.typeId)) &&
-                relation.options && 
-                relation.options.some((option:any) => option.name === 'participatesInAccess' && option.value === 'true'))
-            if (relationsToCheck.length > 0) {
-                // need to check item access through relations also
-                // object is visible if it has corresponding relations as a target and user can see any source object
-                // or object does not has such links defined
-                const relationIds = relationsToCheck.map(relation => relation.id)
-                const itemIds = items.map(item => item.id)
-                const data = await sequelize.query('SELECT ir."relationId", ir."targetId", source.id as "sourceId", source."typeId", source.path FROM "itemRelations" ir, items source '+
-                    'where source."deletedAt" IS NULL and ir."deletedAt" IS NULL and source."tenantId"=:tenant and ir."targetId" in (:itemIds) and ir."relationId" in (:relationIds) and ir."itemId" = source.id', {
-                    replacements: { 
-                        tenant: this.getCurrentUser()!.tenantId,
-                        itemIds: itemIds,
-                        relationIds: relationIds
-                    },
-                    mapToModel: false
-                })
-                const arr = data[0]
-                // console.log('data', arr)
-                items = items.filter(item => {
-                    if (arr.some((record:any) =>  item.id === record.targetId)) {
-                        return !arr.some((record:any) =>  item.id === record.targetId && !this.canViewItem2(record.typeId, record.path))
-                    } else {
-                        return true
-                    }
-                })
-            }
-            // console.log('finish', items.map(item => item.id))
-        }
-        return items
-    }
-
-    public generateRestrictionsInSQL(prefix: string, putAnd: boolean) {
+    public generateRestrictionsInSQL(prefix: string, putAnd: boolean, processRelations = true) {
         if (!this.user) throw new Error('No user')
 
         let sql = putAnd ? ' and (' : ' ('
@@ -406,8 +369,12 @@ export default class Context {
                 // we have restrictions
                 restrictedTypes = restrictedTypes.concat(role.itemAccess.valid)
 
-                if (!start) sql += ' and '
-                    else start = false
+                if (start) {
+                    sql += '('
+                    start = false
+                } else {
+                    sql += ' and '
+                }
 
                 const validArr = role.itemAccess.valid.join(',')
                 sql += ' not (' + prefix + '"typeId" in (' + validArr + ') and ('
@@ -433,6 +400,36 @@ export default class Context {
                     sql += '))'
     
                 }
+            }
+        }
+
+        if (!start) sql += ')'
+
+        if (processRelations) {
+            const mng = ModelsManager.getInstance().getModelManager(this.getCurrentUser()!.tenantId)
+            const relationsToCheck = mng.getRelations().filter(relation => 
+                relation.options && 
+                relation.options.some((option:any) => option.name === 'participatesInAccess' && option.value === 'true'))
+            if (relationsToCheck.length > 0) {
+                // need to check item access through relations also
+                // object is visible if it has corresponding relations as a target and user can see any source object
+                // or object does not has such links defined
+                const relationIds = relationsToCheck.map(relation => relation.id).join(',')
+                let targetTypes: any[] = []
+                relationsToCheck.forEach(relation => {
+                    targetTypes = targetTypes.concat(relation.targets)
+                })
+                const targetTypeIds = targetTypes.join(',')
+                
+                if (!start) sql += ' and '
+                const restrict = this.generateRestrictionsInSQL('check_item.', false, false)
+                console.log('['+restrict+']')
+                sql += 
+                ` ( not `+prefix+`"typeId" in (`+targetTypeIds+`) or exists ( select check_item.id from items check_item, "itemRelations" check_item_relations 
+                    where check_item_relations."relationId" in (`+relationIds+`) and ` + (prefix?prefix: 'items.') + `id = check_item_relations."targetId" 
+                    and check_item."deletedAt" is null and check_item_relations."deletedAt" is null
+                    and check_item_relations."itemId" = check_item.id ` + (!restrict.includes('()')?' and '+restrict : '') + ` 
+                )) `
             }
         }
 
