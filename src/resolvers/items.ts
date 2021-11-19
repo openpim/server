@@ -102,7 +102,6 @@ export default {
             context.checkAuth()
 
             params.restrictSql = context.generateRestrictionsInSQL('', true)
-            console.log(555, params.restrictSql)
             params.orderSql = generateOrder(params.order)
             params.context = context
 
