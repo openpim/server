@@ -394,7 +394,9 @@ export default class Context {
     public generateRestrictionsInSQL(prefix: string, putAnd: boolean) {
         if (!this.user) throw new Error('No user')
 
-        let sql = ''
+        let sql = putAnd ? ' and (' : ' ('
+        let start = true
+        let restrictedTypes:any[] = []
         for (let i = 0; i < this.user.getRoles().length; i++) {
             const role = this.user.getRoles()[i];
             
@@ -402,7 +404,10 @@ export default class Context {
 
             if (role.itemAccess.access === 0 && role.itemAccess.valid.length > 0 && role.itemAccess.fromItems.length > 0) {
                 // we have restrictions
-                if (putAnd || sql.length !== 0) sql += ' and '
+                restrictedTypes = restrictedTypes.concat(role.itemAccess.valid)
+
+                if (!start) sql += ' and '
+                    else start = false
 
                 const validArr = role.itemAccess.valid.join(',')
                 sql += ' not (' + prefix + '"typeId" in (' + validArr + ') and ('
@@ -413,6 +418,25 @@ export default class Context {
                 sql += '))'
             }
         }
+
+        if (restrictedTypes.length > 0) {
+            // add allowed levels for restricted types
+            for (let i = 0; i < this.user.getRoles().length; i++) {
+                const role = this.user.getRoles()[i];
+                if (role.itemAccess.access > 0 && role.itemAccess.valid.length > 0 && role.itemAccess.fromItems.length > 0 &&  role.itemAccess.valid.some((typeId:any) => restrictedTypes.includes(typeId))) {
+                    const validArr = role.itemAccess.valid.join(',')
+                    sql += ' or (' + prefix + '"typeId" in (' + validArr + ') and ('
+                    role.itemAccess.fromItems.forEach((fromItem:any, idx:any, arr:any) => {
+                        sql += prefix + "path ~ '*." + fromItem + ".*' "
+                        if (idx != arr.length-1) sql += ' or '
+                    })
+                    sql += '))'
+    
+                }
+            }
+        }
+
+        sql += ')'
         return sql
     }
 }
