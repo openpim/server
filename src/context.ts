@@ -413,7 +413,6 @@ export default class Context {
             if (relationsToCheck.length > 0) {
                 // need to check item access through relations also
                 // object is visible if it has corresponding relations as a target and user can see any source object
-                // or object does not has such links defined
                 const relationIds = relationsToCheck.map(relation => relation.id).join(',')
                 let targetTypes: any[] = []
                 relationsToCheck.forEach(relation => {
