@@ -122,8 +122,8 @@ export class FileManager {
                 image_rgba: image._rgba
             }
 
-            const w = image.bitmap.width > image.bitmap.height ? 200 : Jimp.AUTO
-            const h = image.bitmap.width > image.bitmap.height ? Jimp.AUTO: 200
+            const w = image.bitmap.width > image.bitmap.height ? 300 : Jimp.AUTO
+            const h = image.bitmap.width > image.bitmap.height ? Jimp.AUTO: 300
             image.resize(w, h).quality(70).background(0xffffffff)
             image.write(fullPath + '_thumb.jpg')    
         } else {
