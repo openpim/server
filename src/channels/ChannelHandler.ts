@@ -72,7 +72,7 @@ export abstract class ChannelHandler {
 
   async evaluateExpression (channel: Channel, item: Item, expr: string): Promise<any> {
     const utils = {
-      getTargetObject: async (relationIdentifier: string) => {
+      getTargetObject: async (relationIdentifier: string, full: false) => {
         const items: Item[] = await sequelize.query(
           `SELECT i.* FROM "items" i, "itemRelations" r where 
               i."deletedAt" IS NULL and 
@@ -90,9 +90,13 @@ export abstract class ChannelHandler {
           model: Item,
           mapToModel: true
         })
-        return items && items.length > 0 ? items[0] : null
+        if (!full) {
+          return items && items.length > 0 ? items[0] : null
+        } else {
+          return items && items.length > 0 ? items : []
+        }
       },
-      getSourceObject: async (relationIdentifier: string) => {
+      getSourceObject: async (relationIdentifier: string, full: false) => {
         const items: Item[] = await sequelize.query(
           `SELECT i.* FROM "items" i, "itemRelations" r where 
               i."deletedAt" IS NULL and 
@@ -110,7 +114,11 @@ export abstract class ChannelHandler {
           model: Item,
           mapToModel: true
         })
-        return items && items.length > 0 ? items[0] : null
+        if (!full) {
+          return items && items.length > 0 ? items[0] : null
+        } else {
+          return items && items.length > 0 ? items : []
+        }
       }
     }
     try {

@@ -175,7 +175,15 @@ export class YMChannelHandler extends ChannelHandler {
                 const value = await this.getValueByMapping(channel, attrConfig, item, language)
                 if (value) {
                     if (attrConfig.id != 'group_id' || variant) {
-                        offer[attrConfig.id] = value
+                        if (Array.isArray(value)) {
+                            if (offer[attrConfig.id]) offer[attrConfig.id] = [offer[attrConfig.id]]
+                                else offer[attrConfig.id] = []
+                            value.forEach(elem => {
+                                offer[attrConfig.id].push(elem)
+                            })
+                        } else {
+                            offer[attrConfig.id] = value
+                        }
                     }
                 }
             }
@@ -188,7 +196,22 @@ export class YMChannelHandler extends ChannelHandler {
             console.log(paramConfig, value)
             if (value) {
                 if (!offer.param) offer.param =[]
-                offer.param.push({$:{name: paramConfig.id}, _: value})
+                if (Array.isArray(value)) {
+                        if (paramConfig.id === 'picture') {
+                            if (offer.picture && !Array.isArray(offer.picture)) offer.picture = [offer.picture]
+                                else if (!offer.picture) offer.picture = []
+                        }
+                        value.forEach(elem => {
+                        if (paramConfig.id === 'picture') {
+                            offer.picture.push(elem)
+                        } else {
+                            offer.param.push({$:{name: paramConfig.id}, _: elem})
+                        }
+                    })
+                } else {
+                    if (paramConfig.id === 'picture') offer.picture = value 
+                        else offer.param.push({$:{name: paramConfig.id}, _: value})
+                }
             }
         }
 
