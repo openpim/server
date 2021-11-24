@@ -332,7 +332,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             }
 
             res.send('OK')
-        } catch (error: any) {
+        } catch (error) {
             logger.error(error)
             res.status(400).send(error.message)
         }
