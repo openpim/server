@@ -99,26 +99,27 @@ export class FileManager {
 
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
+        const uploadedFile = file.filepath
         try {
-            fs.renameSync(file.path, fullPath)
+            fs.renameSync(uploadedFile, fullPath)
         } catch (e) { 
-            logger.error('Failed to rename file (will use copy instead): ', file.path, fullPath)
+            logger.error('Failed to rename file (will use copy instead): ', uploadedFile, fullPath)
             logger.error(e)
-            fs.copyFileSync(file.path, fullPath)
-            fs.unlinkSync(file.path)
+            fs.copyFileSync(uploadedFile, fullPath)
+            fs.unlinkSync(uploadedFile)
         }
 
         item.storagePath = relativePath
 
         let values
-        if (this.isImage(file.type)) {
+        if (this.isImage(file.mimetype||'')) {
             const image = await Jimp.read(fullPath)
             values = {
                 image_width: image.bitmap.width,
                 image_height: image.bitmap.height,
                 image_type: image.getExtension(),
                 file_type: image.getMIME(),
-                file_name: file.name,
+                file_name: file.originalFilename||'',
                 image_rgba: image._rgba
             }
 
@@ -128,8 +129,8 @@ export class FileManager {
             image.write(fullPath + '_thumb.jpg')    
         } else {
             values = {
-                file_name: file.name,
-                file_type: file.type
+                file_name: file.originalFilename||'',
+                file_type: file.mimetype||''
             }
         }
         item.values = mergeValues(values, item.values)

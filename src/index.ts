@@ -73,7 +73,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   ChannelsManagerFactory.getInstance().init()
 
   let app = express();
-  app.use(bodyParser.json({limit: '300mb'}));
+  app.use(bodyParser.json({limit: '500mb'}));
   app.use(cors())
   
   app.use('/graphql', graphqlHTTP(async (request: IncomingMessage ) => ({

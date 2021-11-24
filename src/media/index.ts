@@ -1,6 +1,6 @@
 import {Request, Response} from 'express'
 import Context from '../context'
-import { IncomingForm } from 'formidable'
+import { IncomingForm, File } from 'formidable'
 import { Item } from '../models/items'
 import { ModelsManager } from '../models/manager'
 import { FileManager } from './FileManager'
@@ -94,15 +94,20 @@ export async function processDownload(context: Context, req: Request, res: Respo
 }
 
 export async function processUpload(context: Context, req: Request, res: Response) {
-    const form = new IncomingForm()
-    form.keepExtensions = true
+    const form = new IncomingForm({maxFileSize: 500*1024*1024, keepExtensions: true})
  
     form.parse(req, async (err, fields, files) => {
         try {
+            if (err) {
+                logger.error(err)
+                res.status(400).send(err)
+                return
+            }
+
             context.checkAuth();
 
-            const file = files['file']
             const idStr =  <string>fields['id']
+            const file = <File>files['file']
 
             if (!idStr) throw new Error('Failed to find "id" parameter')
             if (!file) throw new Error('Failed to find "file" parameter')
@@ -126,8 +131,8 @@ export async function processUpload(context: Context, req: Request, res: Respons
             const mimeOld = item.mimeType
             const fileOld = item.fileOrigName
 
-            item.fileOrigName = file.name
-            item.mimeType = file.type
+            item.fileOrigName = file.originalFilename || ''
+            item.mimeType = file.mimetype || ''
             item.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
@@ -156,15 +161,19 @@ export async function processUpload(context: Context, req: Request, res: Respons
 }
 
 export async function processCreateUpload(context: Context, req: Request, res: Response) {
-    const form = new IncomingForm()
-    form.keepExtensions = true
+    const form = new IncomingForm({maxFileSize: 500*1024*1024, keepExtensions: true})
  
     form.parse(req, async (err, fields, files) => {
         try {
+            if (err) {
+                logger.error(err)
+                res.status(400).send(err)
+                return
+            }
             context.checkAuth();
 
             // file, fileItemTypeId, parentId, relationId
-            const file = files['file']
+            const file = <File>files['file']
             const itemIdStr =  <string>fields['itemId']
             const fileItemTypeIdStr =  <string>fields['fileItemTypeId']
             const parentIdStr =  <string>fields['parentId']
@@ -215,7 +224,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not create such item , tenant: ' + context.getCurrentUser()!.tenantId)
             }
             const name:any = {}
-            name[lang] = file.name
+            name[lang] = file.originalFilename || ''
             // TODO: process item actions
             const item:Item = Item.build ({
                 id: id,
@@ -241,8 +250,8 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             const fm = FileManager.getInstance()
             await fm.saveFile(context.getCurrentUser()!.tenantId, item, file)
 
-            item.fileOrigName = file.name
-            item.mimeType = file.type
+            item.fileOrigName = file.originalFilename || ''
+            item.mimeType = file.mimetype || ''
             item.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
@@ -251,8 +260,8 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             if (audit.auditEnabled()) {
                 const itemChanges: AuditItem = {
                     added: {
-                        mimeType: file.type,
-                        fileOrigName: file.name
+                        mimeType: file.mimetype || '',
+                        fileOrigName: file.originalFilename || ''
                     }
                 }
                 audit.auditItem(ChangeType.CREATE, item.id, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
@@ -323,7 +332,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             }
 
             res.send('OK')
-        } catch (error) {
+        } catch (error: any) {
             logger.error(error)
             res.status(400).send(error.message)
         }
