@@ -151,11 +151,19 @@ export class WBChannelHandler extends ChannelHandler {
         for (const categoryId in channel.mappings) {
             const categoryConfig = channel.mappings[categoryId]
 
-            if (categoryConfig.valid && categoryConfig.valid.length > 0 && ( (categoryConfig.visible && categoryConfig.visible.length > 0) || categoryConfig.categoryExpr) ) {
+            if (categoryConfig.valid && categoryConfig.valid.length > 0 && ( 
+                (categoryConfig.visible && categoryConfig.visible.length > 0) || categoryConfig.categoryExpr || (categoryConfig.categoryAttr && categoryConfig.categoryAttrValue)) ) {
                 const pathArr = item.path.split('.')
-                const tstType = categoryConfig.valid.includes(item.typeId) 
+                const tstType = categoryConfig.valid.includes(item.typeId) || categoryConfig.valid.includes(''+item.typeId)
                 if (tstType) {
-                    const tst = categoryConfig.categoryExpr ? await this.evaluateExpression(channel, item, categoryConfig.categoryExpr) : categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                    let tst = null
+                    if (categoryConfig.visible && categoryConfig.visible.length > 0) {
+                        tst = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                    } else if (categoryConfig.categoryExpr) {
+                        tst = await this.evaluateExpression(channel, item, categoryConfig.categoryExpr)
+                    } else {
+                        tst = item.values[categoryConfig.categoryAttr] && item.values[categoryConfig.categoryAttr] == categoryConfig.categoryAttrValue
+                    }
                     if (tst) {
                         try {
                             await this.processItemInCategory(channel, item, categoryConfig, language, context)

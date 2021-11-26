@@ -142,11 +142,19 @@ export class OzonChannelHandler extends ChannelHandler {
         for (const categoryId in channel.mappings) {
             const categoryConfig = channel.mappings[categoryId]
 
-            if (categoryConfig.valid && categoryConfig.valid.length > 0 && ( (categoryConfig.visible && categoryConfig.visible.length > 0) || categoryConfig.categoryExpr) ) {
+            if (categoryConfig.valid && categoryConfig.valid.length > 0 && ( 
+                (categoryConfig.visible && categoryConfig.visible.length > 0) || categoryConfig.categoryExpr || (categoryConfig.categoryAttr && categoryConfig.categoryAttrValue)) ) {
                 const pathArr = item.path.split('.')
-                const tstType = categoryConfig.valid.includes(item.typeId) 
+                const tstType = categoryConfig.valid.includes(item.typeId) || categoryConfig.valid.includes(''+item.typeId)
                 if (tstType) {
-                    const tst = categoryConfig.categoryExpr ? await this.evaluateExpression(channel, item, categoryConfig.categoryExpr) : categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                    let tst = null
+                    if (categoryConfig.visible && categoryConfig.visible.length > 0) {
+                        tst = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                    } else if (categoryConfig.categoryExpr) {
+                        tst = await this.evaluateExpression(channel, item, categoryConfig.categoryExpr)
+                    } else {
+                        tst = item.values[categoryConfig.categoryAttr] && item.values[categoryConfig.categoryAttr] == categoryConfig.categoryAttrValue
+                    }
                     if (tst) {
                         try {
                             await this.processItemInCategory(channel, item, categoryConfig, language, context)
@@ -329,6 +337,7 @@ export class OzonChannelHandler extends ChannelHandler {
         const url = 'https://api-seller.ozon.ru/v2/product/import'
         logger.info("Sending request to Ozon: " + url + " => " + JSON.stringify(request))
 
+        /*
         const res = await fetch(url, {
             method: 'post',
             body:    JSON.stringify(request),
@@ -388,7 +397,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     item.changed('channels', true)            
                 }
             }
-        }
+        } */
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext) {
