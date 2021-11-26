@@ -405,11 +405,11 @@ export default class Context {
 
         if (!start) sql += ')'
 
+        const mng = ModelsManager.getInstance().getModelManager(this.getCurrentUser()!.tenantId)
+        const relationsToCheck = mng.getRelations().filter(relation => 
+            relation.options && 
+            relation.options.some((option:any) => option.name === 'participatesInAccess' && option.value === 'true'))
         if (processRelations) {
-            const mng = ModelsManager.getInstance().getModelManager(this.getCurrentUser()!.tenantId)
-            const relationsToCheck = mng.getRelations().filter(relation => 
-                relation.options && 
-                relation.options.some((option:any) => option.name === 'participatesInAccess' && option.value === 'true'))
             if (relationsToCheck.length > 0) {
                 // need to check item access through relations also
                 // object is visible if it has corresponding relations as a target and user can see any source object
@@ -431,6 +431,8 @@ export default class Context {
                 )) `
             }
         }
+
+        if (restrictedTypes.length === 0 && relationsToCheck.length === 0) return ''
 
         sql += ')'
         return sql
