@@ -193,7 +193,6 @@ export class YMChannelHandler extends ChannelHandler {
         for (let i = 0; i < categoryConfig.params.length; i++) {
             const paramConfig = categoryConfig.params[i]
             const value = await this.getValueByMapping(channel, paramConfig, item, language)
-            console.log(paramConfig, value)
             if (value) {
                 if (!offer.param) offer.param =[]
                 if (Array.isArray(value)) {
