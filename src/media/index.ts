@@ -110,8 +110,10 @@ export async function processUpload(context: Context, req: Request, res: Respons
             let idStr =  <string>fields['id']
             if (!idStr) { //try to find id as file
                 const tst = <File>files['id']
-                const tst2 = fs.readFileSync(tst.filepath, {encoding:'utf8'})
-                if (tst2) idStr = tst2.trim()
+                if (tst) {
+                    const tst2 = fs.readFileSync(tst.filepath, {encoding:'utf8'})
+                    if (tst2) idStr = tst2.trim()
+                }
             }
             if (!idStr) throw new Error('Failed to find "id" parameter')
 
