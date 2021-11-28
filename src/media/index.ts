@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import {Request, Response} from 'express'
 import Context from '../context'
 import { IncomingForm, File } from 'formidable'
@@ -106,10 +107,15 @@ export async function processUpload(context: Context, req: Request, res: Respons
 
             context.checkAuth();
 
-            const idStr =  <string>fields['id']
-            const file = <File>files['file']
-
+            let idStr =  <string>fields['id']
+            if (!idStr) { //try to find id as file
+                const tst = <File>files['id']
+                const tst2 = fs.readFileSync(tst.filepath, {encoding:'utf8'})
+                if (tst2) idStr = tst2.trim()
+            }
             if (!idStr) throw new Error('Failed to find "id" parameter')
+
+            const file = <File>files['file']
             if (!file) throw new Error('Failed to find "file" parameter')
 
             const id = parseInt(idStr)
