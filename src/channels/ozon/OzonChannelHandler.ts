@@ -122,11 +122,53 @@ export class OzonChannelHandler extends ChannelHandler {
         if (card.product_id !== item.values[channel.config.ozonIdAttr] || (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4)) {
             item.values[channel.config.ozonIdAttr] = card.product_id
             item.changed('values', true)
-            if (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4) {
-                item.channels[channel.identifier].status = 2
-                item.channels[channel.identifier].message = ''
-                item.changed('channels', true)
+
+            // try to find current status
+            const url = 'https://api-seller.ozon.ru/v2/product/info'
+            const request = {
+                "product_id": card.product_id
             }
+            logger.info("Sending request Ozon: " + url + " => " + JSON.stringify(request))
+            const res = await fetch(url, {
+                method: 'post',
+                body: JSON.stringify(request),
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+            if (res.status !== 200) {
+                const msg = 'Ошибка запроса на Ozon: ' + res.statusText
+                context.log += msg
+                return
+            } else {
+                const data = await res.json()
+                logger.info('   received data: ' + JSON.stringify(data))
+                const result = data.result
+                context.log += '   статус товара: ' + JSON.stringify(result.status)
+
+                if (item.channels[channel.identifier] && result.status.is_created) {
+                    item.channels[channel.identifier].status = 2
+                    item.channels[channel.identifier].message = ''
+                    item.changed('channels', true)
+
+                    logger.info('   product sources: ' + JSON.stringify(result.sources))
+                    context.log += '   sources: ' + JSON.stringify(result.sources)
+
+                    if (channel.config.ozonFBSIdAttr) {
+                        const fbs = result.sources.find((elem:any) => elem.source === 'fbs')
+                        if (fbs) item.values[channel.config.ozonFBSIdAttr] = fbs.sku 
+                    }
+                    if (channel.config.ozonFBOIdAttr) {
+                        const fbo = result.sources.find((elem:any) => elem.source === 'fbo')
+                        if (fbo) item.values[channel.config.ozonFBOIdAttr] = fbo.sku 
+                    }
+                }
+                if (item.channels[channel.identifier] && result.status.is_failed) {
+                    item.channels[channel.identifier].status = 3
+                    item.channels[channel.identifier].message = JSON.stringify(result.status.item_errors)
+                    item.changed('channels', true)
+                }
+
+            }
+
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })    
@@ -337,7 +379,6 @@ export class OzonChannelHandler extends ChannelHandler {
         const url = 'https://api-seller.ozon.ru/v2/product/import'
         logger.info("Sending request to Ozon: " + url + " => " + JSON.stringify(request))
 
-        /*
         const res = await fetch(url, {
             method: 'post',
             body:    JSON.stringify(request),
@@ -379,8 +420,8 @@ export class OzonChannelHandler extends ChannelHandler {
                 const data = item.channels[channel.identifier]
                 if (status === 'imported') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
-                    data.status = 2
-                    data.message = ''
+                    data.status = 4
+                    data.message = 'Товар находится на модерации'
                     data.syncedAt = Date.now()
                     item.changed('channels', true)            
                     item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
@@ -397,7 +438,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     item.changed('channels', true)            
                 }
             }
-        } */
+        }
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext) {
