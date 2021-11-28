@@ -6,6 +6,7 @@ import { ModelsManager } from "../models/manager"
 import { sequelize } from '../models'
 import logger from "../logger"
 import { exec } from "child_process"
+import { ItemRelation } from "../models/itemRelations"
 
 export abstract class ChannelHandler {
   private lovCache = new NodeCache();
@@ -72,6 +73,44 @@ export abstract class ChannelHandler {
 
   async evaluateExpression (channel: Channel, item: Item, expr: string): Promise<any> {
     const utils = {
+      getTargetRelations: async (relationIdentifier: string) => {
+        return await ItemRelation.findAll({
+          where: {
+            relationIdentifier: relationIdentifier,
+            targetId: item.id,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
+      getSourceRelations: async (relationIdentifier: string) => {
+        return await ItemRelation.findAll({
+          where: {
+            relationIdentifier: relationIdentifier,
+            itemId: item.id,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
+      getTargetRelation: async (relationIdentifier: string, itemIdentifier: string) => {
+        return await ItemRelation.findOne({
+          where: {
+            relationIdentifier: relationIdentifier,
+            targetId: item.id,
+            itemIdentifier: itemIdentifier,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
+      getSourceRelation: async (relationIdentifier: string, targetIdentifier: string) => {
+        return await ItemRelation.findOne({
+          where: {
+            relationIdentifier: relationIdentifier,
+            itemId: item.id,
+            targetIdentifier: targetIdentifier,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
       getTargetObject: async (relationIdentifier: string, full: false) => {
         const items: Item[] = await sequelize.query(
           `SELECT i.* FROM "items" i, "itemRelations" r where 

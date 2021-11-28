@@ -144,29 +144,32 @@ export class OzonChannelHandler extends ChannelHandler {
                 const result = data.result
                 context.log += '   статус товара: ' + JSON.stringify(result.status)
 
-                if (item.channels[channel.identifier] && result.status.is_created) {
-                    item.channels[channel.identifier].status = 2
-                    item.channels[channel.identifier].message = ''
-                    item.changed('channels', true)
+                if (item.channels[channel.identifier]) {
+                    if (result.status.is_created) {
+                        item.channels[channel.identifier].status = 2
+                        item.channels[channel.identifier].message = ''
+                        item.changed('channels', true)
 
-                    logger.info('   product sources: ' + JSON.stringify(result.sources))
-                    context.log += '   sources: ' + JSON.stringify(result.sources)
+                        logger.info('   product sources: ' + JSON.stringify(result.sources))
+                        context.log += '   sources: ' + JSON.stringify(result.sources)
 
-                    if (channel.config.ozonFBSIdAttr) {
-                        const fbs = result.sources.find((elem:any) => elem.source === 'fbs')
-                        if (fbs) item.values[channel.config.ozonFBSIdAttr] = fbs.sku 
-                    }
-                    if (channel.config.ozonFBOIdAttr) {
-                        const fbo = result.sources.find((elem:any) => elem.source === 'fbo')
-                        if (fbo) item.values[channel.config.ozonFBOIdAttr] = fbo.sku 
+                        if (channel.config.ozonFBSIdAttr) {
+                            const fbs = result.sources.find((elem:any) => elem.source === 'fbs')
+                            if (fbs) item.values[channel.config.ozonFBSIdAttr] = fbs.sku 
+                        }
+                        if (channel.config.ozonFBOIdAttr) {
+                            const fbo = result.sources.find((elem:any) => elem.source === 'fbo')
+                            if (fbo) item.values[channel.config.ozonFBOIdAttr] = fbo.sku 
+                        }
+                    } else if (result.status.is_failed) {
+                        item.channels[channel.identifier].status = 3
+                        item.channels[channel.identifier].message = JSON.stringify(result.status.item_errors)
+                        item.changed('channels', true)
+                    } else if (result.status.item_errors && result.status.item_errors.length > 0) {
+                        item.channels[channel.identifier].message = 'Модерация: ' + JSON.stringify(result.status.item_errors)
+                        item.changed('channels', true)
                     }
                 }
-                if (item.channels[channel.identifier] && result.status.is_failed) {
-                    item.channels[channel.identifier].status = 3
-                    item.channels[channel.identifier].message = JSON.stringify(result.status.item_errors)
-                    item.changed('channels', true)
-                }
-
             }
 
             await sequelize.transaction(async (t) => {
