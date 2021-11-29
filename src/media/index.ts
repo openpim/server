@@ -14,6 +14,8 @@ import { ItemRelation } from '../models/itemRelations'
 import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
 import { ChannelExecution } from '../models/channels'
 import contentDisposition = require('content-disposition')
+import { checkValues, filterValues, processItemActions } from '../resolvers/utils'
+import { EventType } from '../models/actions'
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -233,7 +235,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             }
             const name:any = {}
             name[lang] = file.originalFilename || ''
-            // TODO: process item actions
+
             const item:Item = Item.build ({
                 id: id,
                 path: path,
@@ -246,10 +248,17 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 typeIdentifier: fileItemType.identifier,
                 parentIdentifier: parentIdentifier, 
                 values: {},
+                channels: {},
                 fileOrigName: '',
                 storagePath: '',
                 mimeType: ''
             })
+
+            const values = {}
+            await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, item.channels, false)
+            filterValues(context.getEditItemAttributes2(parentItem.typeId, path), values)
+            checkValues(mng, values)
+            item.values = values
 
             // *** upload file ***
             const type = mng.getTypeById(item.typeId)?.getValue()
@@ -264,6 +273,8 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
+
+            await processItemActions(context, EventType.AfterCreate, item, item.parentIdentifier, item.name, item.values, item.channels, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: AuditItem = {
