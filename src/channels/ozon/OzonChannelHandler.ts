@@ -119,7 +119,11 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }
 
-        if (card.product_id !== item.values[channel.config.ozonIdAttr] || (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4)) {
+        // if (card.product_id !== item.values[channel.config.ozonIdAttr] || (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4)) {
+            if (!item.channels[channel.identifier]) {
+                item.channels[channel.identifier] = {status: 0, submittedAt: Date.now(), submittedBy: 'system', message: ''}
+            }
+
             item.values[channel.config.ozonIdAttr] = card.product_id
             item.changed('values', true)
 
@@ -147,7 +151,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (item.channels[channel.identifier]) {
                     if (result.status.is_created) {
                         item.channels[channel.identifier].status = 2
-                        item.channels[channel.identifier].message = ''
+                        item.channels[channel.identifier].message = JSON.stringify(result.status)
                         item.changed('channels', true)
 
                         logger.info('   product sources: ' + JSON.stringify(result.sources))
@@ -163,10 +167,11 @@ export class OzonChannelHandler extends ChannelHandler {
                         }
                     } else if (result.status.is_failed) {
                         item.channels[channel.identifier].status = 3
-                        item.channels[channel.identifier].message = JSON.stringify(result.status.item_errors)
+                        item.channels[channel.identifier].message = JSON.stringify(result.status)
                         item.changed('channels', true)
                     } else if (result.status.item_errors && result.status.item_errors.length > 0) {
-                        item.channels[channel.identifier].message = 'Модерация: ' + JSON.stringify(result.status.item_errors)
+                        item.channels[channel.identifier].status = 4
+                        item.channels[channel.identifier].message = 'Модерация: ' + JSON.stringify(result.status)
                         item.changed('channels', true)
                     }
                 }
@@ -176,9 +181,9 @@ export class OzonChannelHandler extends ChannelHandler {
                 await item.save({transaction: t})
             })    
             context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
-        } else {
+        /* } else {
             context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
-        }
+        } */
     }
 
     async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
