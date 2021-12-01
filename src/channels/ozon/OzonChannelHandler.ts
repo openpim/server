@@ -279,7 +279,7 @@ export class OzonChannelHandler extends ChannelHandler {
             
             if (
                 attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && 
-                attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width'
+                attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
             ) {
                 const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
                 if (!attr) {
@@ -563,7 +563,7 @@ export class OzonChannelHandler extends ChannelHandler {
             data = json.result[0].attributes.map((elem:any) => { 
                 return { 
                     id: 'attr_' + elem.id, 
-                    name: elem.name,
+                    name: elem.name + ' ('+ elem.type + ')',
                     required: elem.is_required,
                     description: elem.description,
                     dictionary: elem.dictionary_id !== 0,
