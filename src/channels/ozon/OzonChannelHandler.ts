@@ -8,6 +8,7 @@ import logger from "../../logger"
 import { sequelize } from '../../models'
 import { ModelsManager } from '../../models/manager'
 import { Type } from '../../models/types'
+import { Op } from 'sequelize'
 
 interface JobContext {
     log: string
@@ -56,81 +57,32 @@ export class OzonChannelHandler extends ChannelHandler {
     async syncJob(channel: Channel, context: JobContext, data: any) {
         context.log += 'Запущена синхронизация с Ozon\n'
 
-        let total = 0
-        let current = 0
-        const url = 'https://api-seller.ozon.ru/v1/product/list'
-        const request = {
-            "page": 1,
-            "page_size": 1000
-        }
-
-        do {
-            logger.info("Sending request Ozon: " + url + " => " + JSON.stringify(request))
-            const res = await fetch(url, {
-                method: 'post',
-                body:    JSON.stringify(request),
-                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+        if (data.item) {
+            const item = await Item.findByPk(data.item)
+            await this.syncItem(channel, item!, context)
+        } else {
+            const query:any = {}
+            query[channel.config.ozonIdAttr] = { [Op.ne]: '' }
+            let items = await Item.findAll({ 
+                where: { tenantId: channel.tenantId, values: query} 
             })
-
-            if (res.status !== 200) {
-                const msg = 'Ошибка запроса на Ozon: ' + res.statusText
-                context.log += msg                      
-                return
-            } else {
-                const json = await res.json()
-                if (json.error) {
-                    const msg = 'Ошибка запроса на Ozon: ' + json.error.message
-                    context.log += msg                      
-                    logger.info("Error from Ozon: " + JSON.stringify(json))
-                    return
-                }
-
-                total = json.result.total
-                context.log += 'Найдено '+ total + ' товаров, выбрано ' + request.page_size + ' страница ' + request.page + '\n'
-                current = request.page * request.page_size + 1
-                request.page = request.page + 1
-
-                for (let i = 0; i < json.result.items.length; i++) {
-                    const card = json.result.items[i];
-                    await this.syncCard(channel, card, context, data.attr)
-                }
-    
+            context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                await this.syncItem(channel, item, context)
             }
-        } while (total >= current)        
-
+        }
         context.log += 'Cинхронизация закончена'
     }
 
-    async syncCard(channel: Channel, card: any, context: JobContext, attr:string) {
-        const sku = card.offer_id
-        context.log += 'Обрабатывается товар: ['+ sku + ']\n'
+    async syncItem(channel: Channel, item: Item, context: JobContext) {
+        context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
-        const filter:any = {}
-        filter[attr] = sku
-        const item = await Item.findOne({
-            where: {
-                values: filter,
-                tenantId: channel.tenantId
-            }
-        })
-
-        if(!item) {
-            context.log += '   такой товар не найден\n'
-            return
-        }
-
-        // if (card.product_id !== item.values[channel.config.ozonIdAttr] || (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4)) {
-            if (!item.channels[channel.identifier]) {
-                item.channels[channel.identifier] = {status: 0, submittedAt: Date.now(), submittedBy: 'system', message: ''}
-            }
-
-            item.values[channel.config.ozonIdAttr] = card.product_id
-            item.changed('values', true)
-
+        if (item.channels[channel.identifier]) {
             // try to find current status
             const url = 'https://api-seller.ozon.ru/v2/product/info'
             const request = {
-                "product_id": card.product_id
+                "product_id": item.values[channel.config.ozonIdAttr]
             }
             logger.info("Sending request Ozon: " + url + " => " + JSON.stringify(request))
             const res = await fetch(url, {
@@ -148,42 +100,41 @@ export class OzonChannelHandler extends ChannelHandler {
                 const result = data.result
                 context.log += '   статус товара: ' + JSON.stringify(result.status)
 
-                if (item.channels[channel.identifier]) {
-                    if (result.status.is_created) {
-                        item.channels[channel.identifier].status = 2
-                        item.channels[channel.identifier].message = JSON.stringify(result.status)
-                        item.changed('channels', true)
+                if (result.status.is_created) {
+                    item.channels[channel.identifier].status = 2
+                    item.channels[channel.identifier].message = JSON.stringify(result.status)
+                    item.channels[channel.identifier].syncedAt = new Date().getTime()
+                    item.changed('channels', true)
 
-                        logger.info('   product sources: ' + JSON.stringify(result.sources))
-                        context.log += '   sources: ' + JSON.stringify(result.sources)
+                    logger.info('   product sources: ' + JSON.stringify(result.sources))
+                    context.log += '   sources: ' + JSON.stringify(result.sources)
 
-                        if (channel.config.ozonFBSIdAttr) {
-                            const fbs = result.sources.find((elem:any) => elem.source === 'fbs')
-                            if (fbs) item.values[channel.config.ozonFBSIdAttr] = fbs.sku 
-                        }
-                        if (channel.config.ozonFBOIdAttr) {
-                            const fbo = result.sources.find((elem:any) => elem.source === 'fbo')
-                            if (fbo) item.values[channel.config.ozonFBOIdAttr] = fbo.sku 
-                        }
-                    } else if (result.status.is_failed) {
-                        item.channels[channel.identifier].status = 3
-                        item.channels[channel.identifier].message = JSON.stringify(result.status)
-                        item.changed('channels', true)
-                    } else if (result.status.item_errors && result.status.item_errors.length > 0) {
-                        item.channels[channel.identifier].status = 4
-                        item.channels[channel.identifier].message = 'Модерация: ' + JSON.stringify(result.status)
-                        item.changed('channels', true)
+                    if (channel.config.ozonFBSIdAttr) {
+                        const fbs = result.sources.find((elem: any) => elem.source === 'fbs')
+                        if (fbs) item.values[channel.config.ozonFBSIdAttr] = fbs.sku
                     }
+                    if (channel.config.ozonFBOIdAttr) {
+                        const fbo = result.sources.find((elem: any) => elem.source === 'fbo')
+                        if (fbo) item.values[channel.config.ozonFBOIdAttr] = fbo.sku
+                    }
+                } else if (result.status.is_failed) {
+                    item.channels[channel.identifier].status = 3
+                    item.channels[channel.identifier].message = JSON.stringify(result.status)
+                    item.channels[channel.identifier].syncedAt = new Date().getTime()
+                    item.changed('channels', true)
+                } else {
+                    item.channels[channel.identifier].status = 4
+                    item.channels[channel.identifier].message = 'Модерация: ' + JSON.stringify(result.status)
+                    item.channels[channel.identifier].syncedAt = new Date().getTime()
+                    item.changed('channels', true)
                 }
             }
+        }
 
-            await sequelize.transaction(async (t) => {
-                await item.save({transaction: t})
-            })    
-            context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
-        /* } else {
-            context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
-        } */
+        await sequelize.transaction(async (t) => {
+            await item.save({ transaction: t })
+        })
+        context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
     }
 
     async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
