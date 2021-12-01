@@ -9,8 +9,8 @@ type Query {
 }
 
 type Mutation {
-  createItem(parentId: ID, identifier: String!, name: LanguageDependentString!, typeId: ID!, values: JSONObject, channels: JSONObject): ID!
-  updateItem(id: ID!, name: LanguageDependentString, values: JSONObject, channels: JSONObject) : ID!
+  createItem(parentId: ID, identifier: String!, name: LanguageDependentString!, typeId: ID!, values: JSONObject, channels: JSONObject): Item!
+  updateItem(id: ID!, name: LanguageDependentString, values: JSONObject, channels: JSONObject) : Item!
   moveItem(id: ID!, parentId: ID!) : Item!
   removeItem(id: ID!) : Boolean!
   removeFile(id: ID!) : Boolean!

@@ -362,7 +362,7 @@ export default {
                 audit.auditItem(ChangeType.CREATE, item.id, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, item.createdAt)
             }
 
-            return item.id
+            return item
         },
         updateItem: async (parent: any, { id, name, values, channels }: any, context: Context) => {
             context.checkAuth()
@@ -411,7 +411,7 @@ export default {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }
 
-            return item.id
+            return item
         },
         moveItem: async (parent: any, { id, parentId }: any, context: Context) => {
             context.checkAuth()
