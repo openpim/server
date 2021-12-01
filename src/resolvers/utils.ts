@@ -181,11 +181,33 @@ export function checkValues(mng: ModelManager, values: any) {
             if (attr.languageDependent) {
                 for(const lang in values[prop]) {
                     const value = values[prop][lang] ? '' + values[prop][lang] : ''
-                    if (!regex.test(value)) throw new Error(attr.errorMessage || 'Wrong value: ' + value + ' for pattern: ' + attr.pattern)    
+                    if (!regex.test(value)) {
+                        let str = 'Wrong value: ' + value + ' for pattern: ' + attr.pattern
+                        if (attr.errorMessage) {
+                            for (const prop in attr.errorMessage) {
+                                if (attr.errorMessage[prop]) {
+                                    str = attr.errorMessage[prop]
+                                    break
+                                }
+                            }
+                        }
+                        throw  new Error(str)
+                    }
                 }
             } else {
                 const value = values[prop] ? '' + values[prop] : ''
-                if (!regex.test(value)) throw new Error(attr.errorMessage || 'Wrong value: ' + value + ' for pattern: ' + attr.pattern)
+                if (!regex.test(value)) {
+                    let str = 'Wrong value: ' + value + ' for pattern: ' + attr.pattern
+                    if (attr.errorMessage) {
+                        for (const prop in attr.errorMessage) {
+                            if (attr.errorMessage[prop]) {
+                                str = attr.errorMessage[prop]
+                                break
+                            }
+                        }
+                    }
+                    throw  new Error(str)
+                }
             }
         }
     }
