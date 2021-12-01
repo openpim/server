@@ -162,7 +162,7 @@ export async function processUpload(context: Context, req: Request, res: Respons
                 audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
             }
 
-            res.send('OK')
+            res.send(JSON.stringify(item))
         } catch (error) {
             logger.error(error)
             res.status(400).send(error.message)
