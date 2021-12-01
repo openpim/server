@@ -129,12 +129,14 @@ export class OzonChannelHandler extends ChannelHandler {
                     item.changed('channels', true)
                 }
             }
+            await sequelize.transaction(async (t) => {
+                await item.save({ transaction: t })
+            })
+            context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
+        } else {
+            context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
         }
 
-        await sequelize.transaction(async (t) => {
-            await item.save({ transaction: t })
-        })
-        context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
     }
 
     async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
