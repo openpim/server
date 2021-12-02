@@ -84,7 +84,9 @@ export class OzonChannelHandler extends ChannelHandler {
             const request = {
                 "product_id": item.values[channel.config.ozonIdAttr]
             }
-            logger.info("Sending request Ozon: " + url + " => " + JSON.stringify(request))
+            const log = "Sending request Ozon: " + url + " => " + JSON.stringify(request)
+            logger.info(log)
+            if (channel.config.debug) context.log += log+'\n'
             const res = await fetch(url, {
                 method: 'post',
                 body: JSON.stringify(request),
@@ -348,7 +350,9 @@ export class OzonChannelHandler extends ChannelHandler {
         if (images && images.length>0 ) product.images = images
 
         const url = 'https://api-seller.ozon.ru/v2/product/import'
-        logger.info("Sending request to Ozon: " + url + " => " + JSON.stringify(request))
+        const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
+        logger.info(log)
+        if (channel.config.debug) context.log += log+'\n'
 
         const res = await fetch(url, {
             method: 'post',
@@ -365,12 +369,16 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         } else {
             const json = await res.json()
-            logger.info("Response from Ozon: " + JSON.stringify(json))
+            const log = "Response from Ozon: " + JSON.stringify(json)
+            logger.info(log)
+            if (channel.config.debug) context.log += log+'\n'
 
             await this.sleep(2000)
             
             const taskId = json.result.task_id
-            logger.info("Sending request to Ozon to check task id: " + taskId)
+            const log2 = "Sending request to Ozon to check task id: " + taskId
+            logger.info(log2)
+            if (channel.config.debug) context.log += log2+'\n'
             const res2 = await fetch('https://api-seller.ozon.ru/v1/product/import/info', {
                 method: 'post',
                 body:    JSON.stringify({task_id: taskId}),
@@ -385,7 +393,9 @@ export class OzonChannelHandler extends ChannelHandler {
                 return
             } else {
                 const json2 = await res2.json()
-                logger.info("Response 2 from Ozon: " + JSON.stringify(json2))
+                const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
+                logger.info(log3)
+                if (channel.config.debug) context.log += log3+'\n'
     
                 const status = json2.result.items[0].status
                 const data = item.channels[channel.identifier]
