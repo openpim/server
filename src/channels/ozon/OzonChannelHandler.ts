@@ -173,8 +173,8 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 }
             } else {
-                context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
-                logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
+                context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию категории: '+categoryConfig.name+' \n'
+                // logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
             }
         }
 
@@ -398,8 +398,9 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (channel.config.debug) context.log += log3+'\n'
     
                 const status = json2.result.items[0].status
+                const errors = json2.result.items[0].errors
                 const data = item.channels[channel.identifier]
-                if (status === 'imported') {
+                if (status === 'imported' && (!errors || errors.length === 0) ) {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
                     data.status = 4
                     data.message = 'Товар находится на модерации'
@@ -407,10 +408,10 @@ export class OzonChannelHandler extends ChannelHandler {
                     item.changed('channels', true)            
                     item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                     item.changed('values', true)
-                } else if (status === 'failed') {
+                } else if (status === 'failed' || (errors && errors.length > 0) ) {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана с ошибкой.\n'
                     data.status = 3
-                    data.message = ''
+                    data.message = errors && errors.length > 0? 'Ошибки:'+JSON.stringify(errors) :''
                     item.changed('channels', true)            
                 } else {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана со статусом: ' + status + ' \n'
