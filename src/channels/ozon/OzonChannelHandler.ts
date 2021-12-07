@@ -346,8 +346,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
         
-        const images = await this.processItemImages(channel, item, context)
-        if (images && images.length>0 ) product.images = images
+        await this.processItemImages(channel, item, context, product)
 
         const url = 'https://api-seller.ozon.ru/v2/product/import'
         const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
@@ -423,8 +422,7 @@ export class OzonChannelHandler extends ChannelHandler {
         }
     }
 
-    async processItemImages(channel: Channel, item: Item, context: JobContext) {
-        const data:string[] = [] 
+    async processItemImages(channel: Channel, item: Item, context: JobContext, product: any) {
         if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
             const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
             const typeNode = mng.getTypeById(item.typeId)
@@ -458,7 +456,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (images) {
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
-                        if (image.values[channel.config.ozonImageAttr]) data.push(image.values[channel.config.ozonImageAttr])
+                        const url = image.values[channel.config.ozonImageAttr]
+                        if (url) {
+                            product.primary_image = url
+                            break
+                        }
                     }
                 }
             }
@@ -487,14 +489,15 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 })
                 if (images) {
+                    const data:string[] = [] 
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
                         if (image.values[channel.config.ozonImageAttr]) data.push(image.values[channel.config.ozonImageAttr])
                     }
+                    if (data.length > 0) product.images = data
                 }
             }
         }
-        return data
     }    
     private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any) {
         if (dictionary) {
