@@ -400,15 +400,15 @@ export class OzonChannelHandler extends ChannelHandler {
                 const status = json2.result.items[0].status
                 const errors = json2.result.items[0].errors
                 const data = item.channels[channel.identifier]
-                if (status === 'imported' && (!errors || errors.length === 0) ) {
+                if (status === 'imported') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
                     data.status = 4
-                    data.message = 'Товар находится на модерации'
+                    data.message = 'Товар находится на модерации ' + errors && errors.length > 0? JSON.stringify(errors) :''
                     data.syncedAt = Date.now()
                     item.changed('channels', true)            
                     item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                     item.changed('values', true)
-                } else if (status === 'failed' || (errors && errors.length > 0) ) {
+                } else if (status === 'failed') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана с ошибкой.\n'
                     data.status = 3
                     data.message = errors && errors.length > 0? 'Ошибки:'+JSON.stringify(errors) :''
