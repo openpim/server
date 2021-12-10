@@ -123,7 +123,7 @@ export class YMChannelHandler extends ChannelHandler {
             const categoryConfig = channel.mappings[categoryId]
             if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
                 const pathArr = item.path.split('.')
-                const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                const tst = categoryConfig.valid.includes(item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                 if (tst) {
                     try {
                         await this.processItemInCategory(channel, item, offers, categoryConfig, language, context)
@@ -173,9 +173,15 @@ export class YMChannelHandler extends ChannelHandler {
             
             if (attrConfig.id != 'id') {
                 const value = await this.getValueByMapping(channel, attrConfig, item, language)
-                if (value) {
+                if (value != null) {
                     if (attrConfig.id != 'group_id' || variant) {
-                        if (Array.isArray(value)) {
+                        if (attrConfig.id.startsWith('delivery-option')) {
+                            const arr = value.split(',')
+                            if (!offer['delivery-options']) offer['delivery-options'] = {option: []}
+                            const option:any = {$: {cost: arr[0], days: arr[1]}}
+                            if (arr.length > 2) option.$['order-before'] = arr[2]
+                            offer['delivery-options'].option.push(option)
+                        } else if (Array.isArray(value)) {
                             if (offer[attrConfig.id]) offer[attrConfig.id] = [offer[attrConfig.id]]
                                 else offer[attrConfig.id] = []
                             value.forEach(elem => {
