@@ -79,6 +79,40 @@ export class OzonChannelHandler extends ChannelHandler {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]) {
+            const tst = item.values[channel.config.ozonIdAttr]
+            if (tst.startsWith('task_id=')) {
+                // receive product id first
+                const taskId = tst.substring(8)
+                const log2 = "Sending request to Ozon to check task id: " + taskId
+                logger.info(log2)
+                if (channel.config.debug) context.log += log2+'\n'
+                const res2 = await fetch('https://api-seller.ozon.ru/v1/product/import/info', {
+                    method: 'post',
+                    body:    JSON.stringify({task_id: taskId}),
+                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                })
+                if (res2.status !== 200) {
+                    const text = await res2.text()
+                    const msg = 'Ошибка запроса на Ozon: ' + res2.statusText + "   " + text
+                    context.log += msg                      
+                    this.reportError(channel, item, msg)
+                    logger.error(msg)
+                    return
+                } else {
+                    const json2 = await res2.json()
+                    const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
+                    logger.info(log3)
+                    if (channel.config.debug) context.log += log3+'\n'
+                    if (json2.result.items[0].product_id == 0) {
+                        context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил product_id \n'
+                    } else {
+                        item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
+                        item.changed('values', true)
+                    }
+                }
+    
+            }
+
             // try to find current status
             const url = 'https://api-seller.ozon.ru/v2/product/info'
             const request = {
@@ -410,8 +444,12 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.status = 4
                     data.message = 'Товар находится на модерации ' + errors && errors.length > 0? JSON.stringify(errors) :''
                     data.syncedAt = Date.now()
-                    item.changed('channels', true)            
-                    item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
+                    item.changed('channels', true)
+                    if (json2.result.items[0].product_id == 0) {
+                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId
+                    } else {
+                        item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
+                    }
                     item.changed('values', true)
                 } else if (status === 'failed') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана с ошибкой.\n'
@@ -423,6 +461,12 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.status = 4
                     data.message = ''
                     item.changed('channels', true)            
+                    if (json2.result.items[0].product_id == 0) {
+                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId
+                    } else {
+                        item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
+                    }
+                    item.changed('values', true)
                 }
             }
         }
