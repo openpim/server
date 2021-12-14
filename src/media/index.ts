@@ -57,6 +57,7 @@ export async function processChannelDownload(context: Context, req: Request, res
 
 export async function processDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
+    const inline = req.query.inline
     const id = parseInt(idStr)
     if (!id) throw new Error('Wrong "id" parameter')
 
@@ -89,7 +90,7 @@ export async function processDownload(context: Context, req: Request, res: Respo
     const hdrs:any = {
         'Content-Type': item.mimeType
     }
-    if (!thumbnail) {
+    if (!thumbnail && inline === undefined) {
         hdrs['Content-Disposition'] = contentDisposition(item.fileOrigName)
 
     }
