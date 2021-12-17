@@ -7,6 +7,7 @@ import { Item } from "../../models/items"
 import { sequelize } from '../../models'
 import { FileManager } from "../../media/FileManager"
 import * as fs from 'fs'
+import { ItemRelation } from "../../models/itemRelations"
 
 const fsAsync = require('fs').promises
 
@@ -123,8 +124,21 @@ export class YMChannelHandler extends ChannelHandler {
             const categoryConfig = channel.mappings[categoryId]
             if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
                 const pathArr = item.path.split('.')
-                const tst = categoryConfig.valid.includes(''+item.typeId) && categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
-                if (tst) {
+                const tst1 = categoryConfig.valid.includes(item.typeId) 
+                
+                let tst2 = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                if (categoryConfig.visibleRelation) {
+                    let sources = await Item.findAll({ 
+                        where: { tenantId: channel.tenantId, '$sourceRelation.relationId$': categoryConfig.visibleRelation, '$sourceRelation.targetId$': item.id },
+                        include: [{model: ItemRelation, as: 'sourceRelation'}]
+                    })
+                    tst2 = sources.some(source => {
+                        const pathArr = source.path.split('.')
+                        return categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                    })
+                }
+
+                if (tst1 && tst2) {
                     try {
                         await this.processItemInCategory(channel, item, offers, categoryConfig, language, context)
                         await sequelize.transaction(async (t) => {
@@ -173,9 +187,15 @@ export class YMChannelHandler extends ChannelHandler {
             
             if (attrConfig.id != 'id') {
                 const value = await this.getValueByMapping(channel, attrConfig, item, language)
-                if (value) {
+                if (value != null) {
                     if (attrConfig.id != 'group_id' || variant) {
-                        if (Array.isArray(value)) {
+                        if (attrConfig.id.startsWith('delivery-option')) {
+                            const arr = value.split(',')
+                            if (!offer['delivery-options']) offer['delivery-options'] = {option: []}
+                            const option:any = {$: {cost: arr[0], days: arr[1]}}
+                            if (arr.length > 2) option.$['order-before'] = arr[2]
+                            offer['delivery-options'].option.push(option)
+                        } else if (Array.isArray(value)) {
                             if (offer[attrConfig.id]) offer[attrConfig.id] = [offer[attrConfig.id]]
                                 else offer[attrConfig.id] = []
                             value.forEach(elem => {

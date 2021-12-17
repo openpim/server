@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"tsc -w\" \"nodemon dist/index.js\"",
+    "dev": "concurrently \"tsc -w\" \"nodemon  --insecure-http-parser dist/index.js\"",
     "dev2": "concurrently \"tsc -w\" \"nodemon --max-old-space-size=4096 dist/index.js\"",
     "debug": "concurrently \"tsc -w\" \"nodemon --inspect dist/index.js\"",
     "docker": "docker build --tag openpim:server -f docker/Dockerfile .",

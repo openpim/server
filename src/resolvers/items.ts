@@ -2,7 +2,7 @@ import Context from '../context'
 import { sequelize } from '../models'
 import { QueryTypes, Utils } from 'sequelize'
 import { Item } from '../models/items'
-import {  ModelsManager } from '../models/manager'
+import {  ModelManager, ModelsManager } from '../models/manager'
 import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
@@ -15,7 +15,7 @@ import audit from '../audit'
 import { ChangeType, ItemChanges, AuditItem } from '../audit'
 
 
-function generateOrder(order: string[][]) {
+function generateOrder(order: string[][], mng: ModelManager) {
     if (!order) return 'id ASC'
 
     let result = ''
@@ -24,7 +24,15 @@ function generateOrder(order: string[][]) {
         const field = arr[0]
         const idx = field.indexOf('.')
         if (idx !== -1) {
-            result = field.substring(0, idx)+"->'"+field.substring(idx+1)+"'"
+            const obj = field.substring(0, idx)
+            const prop = field.substring(idx+1)
+            result = '('+obj+"->>'"+prop+"')"
+            if (obj === 'values') {
+                const attr = mng.getAttributeByIdentifier(prop)
+                if (attr && (attr.attr.type === 3 || attr.attr.type === 4 || attr.attr.type === 7) ) { // integer, float, lov
+                    result += '::numeric'
+                }
+            }
         } else {
             result = field
         }
@@ -102,7 +110,8 @@ export default {
             context.checkAuth()
 
             params.restrictSql = context.generateRestrictionsInSQL('', true)
-            params.orderSql = generateOrder(params.order)
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            params.orderSql = generateOrder(params.order, mng)
             params.context = context
 
             if (params.parentId) {

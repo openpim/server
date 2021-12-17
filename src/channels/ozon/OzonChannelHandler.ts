@@ -79,6 +79,40 @@ export class OzonChannelHandler extends ChannelHandler {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]) {
+            const tst = item.values[channel.config.ozonIdAttr]
+            if (tst.startsWith('task_id=')) {
+                // receive product id first
+                const taskId = tst.substring(8)
+                const log2 = "Sending request to Ozon to check task id: " + taskId
+                logger.info(log2)
+                if (channel.config.debug) context.log += log2+'\n'
+                const res2 = await fetch('https://api-seller.ozon.ru/v1/product/import/info', {
+                    method: 'post',
+                    body:    JSON.stringify({task_id: taskId}),
+                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                })
+                if (res2.status !== 200) {
+                    const text = await res2.text()
+                    const msg = 'Ошибка запроса на Ozon: ' + res2.statusText + "   " + text
+                    context.log += msg                      
+                    this.reportError(channel, item, msg)
+                    logger.error(msg)
+                    return
+                } else {
+                    const json2 = await res2.json()
+                    const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
+                    logger.info(log3)
+                    if (channel.config.debug) context.log += log3+'\n'
+                    if (json2.result.items[0].product_id == 0) {
+                        context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил product_id \n'
+                    } else {
+                        item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
+                        item.changed('values', true)
+                    }
+                }
+    
+            }
+
             // try to find current status
             const url = 'https://api-seller.ozon.ru/v2/product/info'
             const request = {
@@ -113,11 +147,17 @@ export class OzonChannelHandler extends ChannelHandler {
 
                     if (channel.config.ozonFBSIdAttr) {
                         const fbs = result.sources.find((elem: any) => elem.source === 'fbs')
-                        if (fbs) item.values[channel.config.ozonFBSIdAttr] = fbs.sku
+                        if (fbs) {
+                            item.values[channel.config.ozonFBSIdAttr] = fbs.sku
+                            item.changed('values', true)
+                        }
                     }
                     if (channel.config.ozonFBOIdAttr) {
                         const fbo = result.sources.find((elem: any) => elem.source === 'fbo')
-                        if (fbo) item.values[channel.config.ozonFBOIdAttr] = fbo.sku
+                        if (fbo) {
+                            item.values[channel.config.ozonFBOIdAttr] = fbo.sku
+                            item.changed('values', true)
+                        }
                     }
                 } else if (result.status.is_failed) {
                     item.channels[channel.identifier].status = 3
@@ -346,8 +386,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
         
-        const images = await this.processItemImages(channel, item, context)
-        if (images && images.length>0 ) product.images = images
+        await this.processItemImages(channel, item, context, product)
 
         const url = 'https://api-seller.ozon.ru/v2/product/import'
         const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
@@ -400,15 +439,19 @@ export class OzonChannelHandler extends ChannelHandler {
                 const status = json2.result.items[0].status
                 const errors = json2.result.items[0].errors
                 const data = item.channels[channel.identifier]
-                if (status === 'imported' && (!errors || errors.length === 0) ) {
+                if (status === 'imported') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
                     data.status = 4
-                    data.message = 'Товар находится на модерации'
+                    data.message = 'Товар находится на модерации ' + errors && errors.length > 0? JSON.stringify(errors) :''
                     data.syncedAt = Date.now()
-                    item.changed('channels', true)            
-                    item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
+                    item.changed('channels', true)
+                    if (json2.result.items[0].product_id == 0) {
+                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId
+                    } else {
+                        item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
+                    }
                     item.changed('values', true)
-                } else if (status === 'failed' || (errors && errors.length > 0) ) {
+                } else if (status === 'failed') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана с ошибкой.\n'
                     data.status = 3
                     data.message = errors && errors.length > 0? 'Ошибки:'+JSON.stringify(errors) :''
@@ -418,13 +461,18 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.status = 4
                     data.message = ''
                     item.changed('channels', true)            
+                    if (json2.result.items[0].product_id == 0) {
+                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId
+                    } else {
+                        item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
+                    }
+                    item.changed('values', true)
                 }
             }
         }
     }
 
-    async processItemImages(channel: Channel, item: Item, context: JobContext) {
-        const data:string[] = [] 
+    async processItemImages(channel: Channel, item: Item, context: JobContext, product: any) {
         if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
             const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
             const typeNode = mng.getTypeById(item.typeId)
@@ -458,7 +506,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (images) {
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
-                        if (image.values[channel.config.ozonImageAttr]) data.push(image.values[channel.config.ozonImageAttr])
+                        const url = image.values[channel.config.ozonImageAttr]
+                        if (url) {
+                            product.primary_image = url
+                            break
+                        }
                     }
                 }
             }
@@ -487,14 +539,15 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 })
                 if (images) {
+                    const data:string[] = [] 
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
                         if (image.values[channel.config.ozonImageAttr]) data.push(image.values[channel.config.ozonImageAttr])
                     }
+                    if (data.length > 0) product.images = data
                 }
             }
         }
-        return data
     }    
     private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any) {
         if (dictionary) {
