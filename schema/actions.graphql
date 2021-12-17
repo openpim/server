@@ -34,4 +34,5 @@ type ButtonActionResult {
   error: String,
   compileError: String,
   message: String,
+  data: JSON
 }

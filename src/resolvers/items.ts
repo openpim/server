@@ -382,7 +382,11 @@ export default {
 
             if (!channels) channels = {}
 
-            await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false)
+            const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false)
+
+            if(actionResponse.some((resp) => resp.result === 'cancelSave')) {
+                return item
+            }
 
             let itemDiff: AuditItem
             if (channels) {
