@@ -79,7 +79,7 @@ export class OzonChannelHandler extends ChannelHandler {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]) {
-            const tst = item.values[channel.config.ozonIdAttr]
+            const tst = ''+item.values[channel.config.ozonIdAttr]
             if (tst.startsWith('task_id=')) {
                 // receive product id first
                 const taskId = tst.substring(8)
