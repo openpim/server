@@ -26,7 +26,7 @@ function generateOrder(order: string[][], mng: ModelManager) {
         if (idx !== -1) {
             const obj = field.substring(0, idx)
             const prop = field.substring(idx+1)
-            result = '('+obj+"->>'"+prop+"')"
+            result += '('+obj+"->>'"+prop+"')"
             if (obj === 'values') {
                 const attr = mng.getAttributeByIdentifier(prop)
                 if (attr && (attr.attr.type === 3 || attr.attr.type === 4 || attr.attr.type === 7) ) { // integer, float, lov
@@ -34,7 +34,7 @@ function generateOrder(order: string[][], mng: ModelManager) {
                 }
             }
         } else {
-            result = field
+            result += '"'+field+'"'
         }
         result += " " + arr[1]
 
