@@ -556,7 +556,7 @@ export class WBChannelHandler extends ChannelHandler {
     }
 
 
-    public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory[]|null}> {
         let data = this.cache.get('categories')
         if (! data) {
             const res = await fetch('https://content-suppliers.wildberries.ru/ns/characteristics-configurator-api/content-configurator/api/v1/config/get/object/all?top=10000&lang=ru')
@@ -564,14 +564,14 @@ export class WBChannelHandler extends ChannelHandler {
             data = Object.values(json.data).map(value => { return {id: this.transliterate((<string>value).toLowerCase()), name: value} } )
             this.cache.set('categories', data, 3600)
         }
-        return <ChannelCategory[]>data
+        return { list: <ChannelCategory[]>data, tree: null }
     }
     
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_'+categoryId)
         if (! data) {
             const categories = await this.getCategories(channel)
-            const category = categories.find(elem => elem.id === categoryId)
+            const category = categories.list!.find((elem:any) => elem.id === categoryId)
 
             if (!category) throw new Error('Failed to find category by id: ' + categoryId)
 

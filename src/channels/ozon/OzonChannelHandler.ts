@@ -587,7 +587,7 @@ export class OzonChannelHandler extends ChannelHandler {
         }
     }
 
-    public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory[]|null}> {
         if (!channel.config.ozonClientId) throw new Error('Не введен Client Id в конфигурации канала.')
         if (!channel.config.ozonApiKey) throw new Error('Не введен Api Key в конфигурации канала.')
 
@@ -601,7 +601,7 @@ export class OzonChannelHandler extends ChannelHandler {
             this.collectAllLeafs(json.result, <ChannelCategory[]>data)
             this.cache.set('categories', data, 3600)
         }
-        return <ChannelCategory[]>data
+        return {list: <ChannelCategory[]>data, tree: null}
     }
     private collectAllLeafs(arr: any[], data: ChannelCategory[]) {
         arr.forEach(elem => {

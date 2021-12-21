@@ -28,8 +28,8 @@ export class ExtChannelHandler extends ChannelHandler {
         }    
     }
 
-    public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
-        return []
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory[]|null}> {
+        return { list: [], tree: null }
     }
 
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {

@@ -4,7 +4,7 @@ type Query {
   getChannelStatus(id: ID!) : [ChannelStatus]
   getChannelStatusByCategories(id: ID!) : [ChannelCategoryStatus]
   getExecutions(channelId: ID!, offset: Int!, limit: Int!, order: JSON): ExecutionsResponse
-  getChannelCategories(id: ID!) : [ChannelCategory]
+  getChannelCategories(id: ID!) : ChannelCategoriesResponse
   getChannelAttributes(channelId: ID!, categoryId: ID!) : [ChannelAttribute]
 }
 
@@ -58,6 +58,11 @@ type Execution {
   log: String
   createdAt: UTCDateTime!
   updatedAt: UTCDateTime!
+}
+
+type ChannelCategoriesResponse {
+  list: [ChannelCategory]
+  tree: JSONObject
 }
 
 type ChannelCategory {
