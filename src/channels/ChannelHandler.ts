@@ -13,7 +13,7 @@ export abstract class ChannelHandler {
 
   abstract processChannel(channel: Channel, language: string, data: any): Promise<void>
 
-  abstract getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory[]|null}>
+  abstract getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}>
 
   abstract getAttributes(channel: Channel, categoryId: string): Promise<{ id: string; name: string; required: boolean; dictionary: boolean, dictionaryLink?: string }[]>
 
@@ -249,6 +249,7 @@ export abstract class ChannelHandler {
 export interface ChannelCategory {
   id: string
   name: string
+  children?: ChannelCategory[]
 }
 
 export interface ChannelAttribute {

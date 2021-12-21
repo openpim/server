@@ -587,21 +587,21 @@ export class OzonChannelHandler extends ChannelHandler {
         }
     }
 
-    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory[]|null}> {
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
         if (!channel.config.ozonClientId) throw new Error('Не введен Client Id в конфигурации канала.')
         if (!channel.config.ozonApiKey) throw new Error('Не введен Api Key в конфигурации канала.')
 
-        let data = this.cache.get('categories')
-        if (! data) {
+        let tree:ChannelCategory | undefined = this.cache.get('categories')
+        if (! tree) {
+            tree  = {id: '', name: 'root', children: []}
             const res = await fetch('https://api-seller.ozon.ru/v1/categories/tree?language=DEFAULT', {
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
             })
             const json = await res.json()
-            data = []
-            this.collectAllLeafs(json.result, <ChannelCategory[]>data)
-            this.cache.set('categories', data, 3600)
+            this.collectTree(json.result, tree)
+            this.cache.set('categories', tree, 3600)
         }
-        return {list: <ChannelCategory[]>data, tree: null}
+        return {list: null, tree: tree}
     }
     private collectAllLeafs(arr: any[], data: ChannelCategory[]) {
         arr.forEach(elem => {
@@ -614,7 +614,17 @@ export class OzonChannelHandler extends ChannelHandler {
           }  
         })
     }
-
+    private collectTree(arr: any[], treeNode: ChannelCategory) {
+        arr.forEach(elem => {
+            const child = {id: 'cat_' + elem.category_id, name: elem.title, children: []}
+            treeNode.children!.push(child)
+            if (elem.children) {
+                if (elem.children.length > 0) {
+                    this.collectTree(elem.children, child)
+                }
+            }  
+        })
+    }
     
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_'+categoryId)

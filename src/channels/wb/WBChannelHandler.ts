@@ -556,7 +556,7 @@ export class WBChannelHandler extends ChannelHandler {
     }
 
 
-    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory[]|null}> {
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
         let data = this.cache.get('categories')
         if (! data) {
             const res = await fetch('https://content-suppliers.wildberries.ru/ns/characteristics-configurator-api/content-configurator/api/v1/config/get/object/all?top=10000&lang=ru')
