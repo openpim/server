@@ -12,6 +12,7 @@ import { LOV } from '../models/lovs'
 import { SavedColumns, SavedSearch } from '../models/search'
 import { sequelize } from '../models'
 import { Op, literal } from 'sequelize'
+import moment = require('moment')
 
 /* sample search request
 query { search(
@@ -51,6 +52,24 @@ function replaceOperations(obj: any) {
 
         if (typeof value === 'string' && value.startsWith('###:')) {
             value = literal(value.substring(4))
+        }
+
+        if (typeof value === 'string' && value.startsWith('#DAY#')) {
+            const tst = value.substring(5)
+            const days = parseInt(tst)
+            if (days != NaN) value = moment().startOf('day').add(days, 'days').utc().format()
+        }
+
+        if (typeof value === 'string' && value.startsWith('#HOUR#')) {
+            const tst = value.substring(6)
+            const hours = parseInt(tst)
+            if (hours != NaN) value = moment().add(hours, 'hours').utc().format()
+        }
+
+        if (typeof value === 'string' && value.startsWith('#MIN#')) {
+            const tst = value.substring(5)
+            const min = parseInt(tst)
+            if (min != NaN) value = moment().add(min, 'minutes').utc().format()
         }
 
         if (prop.startsWith('OP_')) {
