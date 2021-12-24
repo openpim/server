@@ -73,6 +73,22 @@ export abstract class ChannelHandler {
 
   async evaluateExpression (channel: Channel, item: Item, expr: string): Promise<any> {
     const utils = {
+      getItem: async (identifier: string) => {
+        return await Item.findOne({
+          where: {
+            identifier: identifier,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
+      getRelation: async (relationIdentifier: string) => {
+        return await ItemRelation.findOne({
+          where: {
+            relationIdentifier: relationIdentifier,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
       getTargetRelations: async (relationIdentifier: string) => {
         return await ItemRelation.findAll({
           where: {
