@@ -225,6 +225,7 @@ export function checkValues(mng: ModelManager, values: any) {
 }
 
 function checkInteger(attr: Attribute, value: any) {
+    if (!value) return
     if (typeof value === 'string') {
         if (value.includes('.')) {
             throw new Error(value + ' is not an Integer for attribute with identifier: ' + attr.identifier)
