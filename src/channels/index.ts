@@ -55,7 +55,7 @@ export class ChannelsManager {
                 if (count > 0) {
                     logger.info("Found " + count + " submitted items for channel " + channel.identifier + ", tenant: " + this.tenantId)
                     const handler = this.getHandler(channel)
-                    handler.processChannel(channel, language, data)
+                    await handler.processChannel(channel, language, data)
                 } else {
                     logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
                 }
