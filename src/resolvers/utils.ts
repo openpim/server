@@ -20,6 +20,7 @@ import * as mailer from 'nodemailer'
 
 import logger from '../logger'
 import { LOV } from "../models/lovs"
+import { Attribute } from "../models/attributes"
 const dateFormat = require("dateformat")
 
 export function filterChannels(context: Context, channels:any) {
@@ -209,6 +210,33 @@ export function checkValues(mng: ModelManager, values: any) {
                     throw  new Error(str)
                 }
             }
+        } else if (attr && attr.type === 3) { // Integer
+            if (attr.languageDependent) {
+                for(const lang in values[prop]) {
+                    const value = values[prop][lang]
+                    checkInteger(attr, value)
+                }
+            } else {
+                const value = values[prop]
+                checkInteger(attr, value)
+            }
+        }
+    }
+}
+
+function checkInteger(attr: Attribute, value: any) {
+    if (typeof value === 'string') {
+        if (value.includes('.')) {
+            throw new Error(value + ' is not an Integer for attribute with identifier: ' + attr.identifier)
+        } else {
+            const tst = parseInt(value)
+            if (!(/^[-+]?(\d+|Infinity)$/.test(value))) {
+                throw new Error(value + ' is not an Integer for attribute with identifier: ' + attr.identifier)
+            }
+        }
+    } else {
+        if (!Number.isInteger(value)) {
+            throw new Error(value + ' is not an Integer for attribute with identifier: ' + attr.identifier)
         }
     }
 }
