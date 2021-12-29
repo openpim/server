@@ -189,7 +189,9 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             const fileItemTypeIdStr =  <string>fields['fileItemTypeId']
             const parentIdStr =  <string>fields['parentId']
             const relationIdStr =  <string>fields['relationId']
-            const lang =  <string>fields['lang']
+            const lang = <string>fields['lang']
+            const fileName = <string>fields['fileName']
+            const fileIdentifier = <string>fields['fileIdentifier']
 
             if (!file) throw new Error('Failed to find "file" parameter')
             if (!itemIdStr) throw new Error('Failed to find "itemId" parameter')
@@ -197,6 +199,8 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             if (!parentIdStr) throw new Error('Failed to find "parentId" parameter')
             if (!relationIdStr) throw new Error('Failed to find "relationId" parameter')
             if (!lang) throw new Error('Failed to find "lang" parameter')
+            if (!fileName) throw new Error('Failed to find "fileName" parameter')
+            if (!fileIdentifier) throw new Error('Failed to find "fileIdentifier" parameter')
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
@@ -205,14 +209,10 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             if (!tmp) throw new Error('Failed to find type by id: ' + fileItemTypeIdStr)
             const fileItemType = <Type>tmp!.getValue()
 
-            let results:any = await sequelize.query("SELECT nextval('identifier_seq')", { 
-                type: QueryTypes.SELECT
-            });
             // TODO: do we need to check if we have such item already?
-            const nextId = (results[0]).nextval
-            const fileItemIdent = fileItemType.identifier + nextId
+            const fileItemIdent = fileIdentifier
 
-            results = await sequelize.query("SELECT nextval('items_id_seq')", { 
+            let results:any = await sequelize.query("SELECT nextval('items_id_seq')", { 
                 type: QueryTypes.SELECT
             });
             const id = (results[0]).nextval
@@ -235,7 +235,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not create such item , tenant: ' + context.getCurrentUser()!.tenantId)
             }
             const name:any = {}
-            name[lang] = file.originalFilename || ''
+            name[lang] = fileName || file.originalFilename || ''
 
             const item:Item = Item.build ({
                 id: id,
@@ -271,6 +271,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             item.fileOrigName = file.originalFilename || ''
             item.mimeType = file.mimetype || ''
             item.updatedBy = context.getCurrentUser()!.login
+            console.log(item)
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
@@ -296,13 +297,13 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + rel.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const relIdent = rel.identifier + nextId
-
             const nItemId = parseInt(itemIdStr)
             const source = await Item.applyScope(context).findByPk(nItemId)
             if (!source) {
                 throw new Error('Failed to find item by id: ' + itemIdStr + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
+
+            const relIdent = source.identifier + "_" + fileItemIdent
 
             const tst3 = rel.targets.find((typeId: number) => typeId === item.typeId)
             if (!tst3) {
