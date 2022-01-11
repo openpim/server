@@ -124,9 +124,9 @@ export class YMChannelHandler extends ChannelHandler {
             const categoryConfig = channel.mappings[categoryId]
             if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
                 const pathArr = item.path.split('.')
-                const tst1 = categoryConfig.valid.includes(item.typeId) 
+                const tst1 = categoryConfig.valid.includes(item.typeId) || categoryConfig.valid.includes(''+item.typeId)
                 
-                let tst2 = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                let tst2 = null
                 if (categoryConfig.visibleRelation) {
                     let sources = await Item.findAll({ 
                         where: { tenantId: channel.tenantId, '$sourceRelation.relationId$': categoryConfig.visibleRelation, '$sourceRelation.targetId$': item.id },
@@ -136,6 +136,8 @@ export class YMChannelHandler extends ChannelHandler {
                         const pathArr = source.path.split('.')
                         return categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                     })
+                } else {
+                    tst2 = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                 }
 
                 if (tst1 && tst2) {
