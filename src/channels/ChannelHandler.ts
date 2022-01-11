@@ -181,7 +181,7 @@ export abstract class ChannelHandler {
       return await func(item, utils)
     } catch (err) {
       logger.error('Failed to execute expression :[' + expr + '] for item with id: ' + item.id + ' with error: ' + err.message)
-      return null
+      throw err
     }
   }
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
