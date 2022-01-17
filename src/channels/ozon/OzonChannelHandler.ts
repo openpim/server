@@ -103,7 +103,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
                     logger.info(log3)
                     if (channel.config.debug) context.log += log3+'\n'
-                    if (json2.result.items[0].product_id == 0) {
+                    if (json2.result.items.length === 0 || json2.result.items[0].product_id == 0) {
                         context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил product_id \n'
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
@@ -430,14 +430,18 @@ export class OzonChannelHandler extends ChannelHandler {
                 this.reportError(channel, item, msg)
                 logger.error(msg)
                 return
-            } else {
+            } else {    
                 const json2 = await res2.json()
                 const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
                 logger.info(log3)
                 if (channel.config.debug) context.log += log3+'\n'
     
-                const status = json2.result.items[0].status
-                const errors = json2.result.items[0].errors
+                let status = null
+                let errors = null
+                if (json2.result.items && json2.result.items.length > 0) {
+                    status = json2.result.items[0].status
+                    errors = json2.result.items[0].errors
+                }
                 const data = item.channels[channel.identifier]
                 if (status === 'imported') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
@@ -461,7 +465,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.status = 4
                     data.message = ''
                     item.changed('channels', true)            
-                    if (json2.result.items[0].product_id == 0) {
+                    if (status === null || json2.result.items[0].product_id == 0) {
                         item.values[channel.config.ozonIdAttr] = 'task_id='+taskId
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
