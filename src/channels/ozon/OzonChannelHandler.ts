@@ -110,7 +110,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         item.changed('values', true)
                     }
                 }
-    
+                return
             }
 
             // try to find current status
