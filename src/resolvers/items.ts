@@ -193,8 +193,7 @@ export default {
                 const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
                 const type:Type = mng.getTypeById(item.typeId)?.getValue()
                 
-                // const relIds = type.images ? type.images.slice(0) : []
-                // if (type.mainImage) relIds.push(type.mainImage)
+                const skipRelationIds = mng.getRelations().filter(rel => rel.options.some((option:any) => option.name === 'skipInAssets' && option.value === 'true')).map(rel => rel.id)
 
                 const data: any[] = await sequelize.query(
                     `SELECT a."id", a."typeId", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName"
@@ -208,11 +207,13 @@ export default {
                         coalesce(a."storagePath", '') != '' and
                         ir."deletedAt" is null and
                         a."deletedAt" is null and 
-                        r."deletedAt" is null
-                        order by r.order, ir.values->'_itemRelationOrder', a.id`, {
+                        r."deletedAt" is null 
+                        `+ (skipRelationIds.length > 0 ? `and r.id not in (:skipRelationIds)` : ``) +
+                        ` order by r.order, ir.values->'_itemRelationOrder', a.id`, {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
-                        itemId: item.id
+                        itemId: item.id,
+                        skipRelationIds: skipRelationIds
                     },
                     type: QueryTypes.SELECT
                 })
