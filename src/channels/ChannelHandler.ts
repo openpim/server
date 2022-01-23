@@ -136,7 +136,7 @@ export abstract class ChannelHandler {
               i."id"=r."targetId" and 
               r."relationIdentifier" = :relationIdentifier and 
               r."itemId"=:itemId 
-              order by i.id limit 1 offset 0`, {
+              order by i.id`, {
           replacements: { 
               tenant: channel.tenantId,
               relationIdentifier: relationIdentifier,
@@ -160,7 +160,7 @@ export abstract class ChannelHandler {
               i."id"=r."itemId" and 
               r."relationIdentifier" = :relationIdentifier and 
               r."targetId"=:itemId 
-              order by i.id limit 1 offset 0`, {
+              order by i.id`, {
           replacements: { 
               tenant: channel.tenantId,
               relationIdentifier: relationIdentifier,
