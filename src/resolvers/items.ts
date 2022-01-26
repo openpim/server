@@ -392,6 +392,11 @@ export default {
 
             if (!channels) channels = {}
 
+            if (values) {
+                filterValues(context.getEditItemAttributes(item), values)
+                checkValues(mng, values)
+            }
+
             const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false)
 
             if(actionResponse.some((resp) => resp.result === 'cancelSave')) {
@@ -405,8 +410,6 @@ export default {
                 item.channels = mergeValues(channels, item.channels)
             }
             if (values) {
-                filterValues(context.getEditItemAttributes(item), values)
-                checkValues(mng, values)
                 if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values}, {name: name, values: values})
                 item.values = mergeValues(values, item.values)
             } else {
