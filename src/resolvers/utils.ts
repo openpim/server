@@ -437,8 +437,8 @@ function makeItemProxy(item: any) {
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='changed') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+                return (...args: any) => {
+                    return target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='id') { return target[ property ]
             } else  if ((<string>property) =='tenantId') { return target[ property ]
@@ -527,8 +527,8 @@ function makeItemRelationProxy(item: any) {
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='changed') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+                return (...args: any) => {
+                    return target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='id') { return target[ property ]
             } else  if ((<string>property) =='tenantId') { return target[ property ]

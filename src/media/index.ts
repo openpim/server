@@ -144,10 +144,15 @@ export async function processUpload(context: Context, req: Request, res: Respons
 
             item.fileOrigName = file.originalFilename || ''
             item.mimeType = file.mimetype || ''
+
+            await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false)
+
             item.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
+
+            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: AuditItem = {
@@ -255,12 +260,6 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 mimeType: ''
             })
 
-            const values = {}
-            await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, item.channels, false)
-            filterValues(context.getEditItemAttributes2(parentItem.typeId, path), values)
-            checkValues(mng, values)
-            item.values = values
-
             // *** upload file ***
             const type = mng.getTypeById(item.typeId)?.getValue()
             if (!type!.file) throw new Error('Item with id: ' + id + ' is not a file, user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
@@ -270,8 +269,15 @@ export async function processCreateUpload(context: Context, req: Request, res: R
 
             item.fileOrigName = file.originalFilename || ''
             item.mimeType = file.mimetype || ''
+
+            const values = {}
+            await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, item.channels, false)
+            checkValues(mng, values)
+            item.values = values
+            item.name = name
+
             item.updatedBy = context.getCurrentUser()!.login
-            console.log(item)
+
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
