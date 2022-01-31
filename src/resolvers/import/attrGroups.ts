@@ -105,7 +105,8 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
                     updatedBy: context.getCurrentUser()!.login,
                     name: group.name || null,
                     order: group.order != null? group.order : null,
-                    visible: group.visible || false
+                    visible: group.visible || false,
+                    options: group.options ?  group.options : []
                 }, {transaction: t})
             })
 
@@ -119,6 +120,7 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
             if (group.name) data.name = group.name
             if (group.order != null) data.order = group.order
             if (group.visible != null) data.visible = group.visible
+            if (group.options != null) data.options = group.options
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})

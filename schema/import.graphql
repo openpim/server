@@ -110,6 +110,7 @@ input AttrGroupImportRequest {
   name: LanguageDependentString
   order: Int
   visible: Boolean
+  options: JSON
 }
 
 input AttributeImportRequest {

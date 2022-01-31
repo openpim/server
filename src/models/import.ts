@@ -181,6 +181,7 @@ export interface IAttrGroupImportRequest {
   name: any
   order: number
   visible: boolean
+  options: any
 }
 
 export interface IAttributeImportRequest {
