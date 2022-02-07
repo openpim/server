@@ -696,6 +696,31 @@ class ActionUtils {
         this.#context = ctx
     }
 
+    public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+
+        let action  = mng.getActions().find(act => act.identifier === actionIdentifier)
+        if (!action) {
+            throw new Error('Failed to find action by identifier: ' + actionIdentifier + ', tenant: ' + mng.getTenantId())
+        }
+
+        const context = this.#context
+        return await processActions(mng, [action], { Op: Op,
+            event: event,
+            user: context.getCurrentUser()?.login,
+            roles: context.getUser()?.getRoles(),
+            utils: new ActionUtils(context),
+            system: { exec, awaitExec, fetch, URLSearchParams, mailer },
+            isImport: isImport, 
+            item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
+            models: { 
+                item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
+                itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+                lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
+            } 
+        })
+    }
+
     public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
