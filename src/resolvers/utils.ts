@@ -644,11 +644,15 @@ class ActionUtils {
     }
 
     public getItemAttributes(item: Item, groupIdentifier?: string) {
+        return this.getItemAttributesForGroups(item, groupIdentifier ? [groupIdentifier]: undefined)
+    }
+    
+    public getItemAttributesForGroups(item: Item, groupIdentifiers?: string[]) {
         const attrArr: string[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
         this.#mng.getAttrGroups().forEach(group => {
-            if (group.getGroup().visible && (!groupIdentifier || group.getGroup().identifier === groupIdentifier)) {
+            if (group.getGroup().visible && (!groupIdentifiers || groupIdentifiers.includes(group.getGroup().identifier))) {
                 group.getAttributes().forEach(attr => {
                     if (attr.valid.includes(item.typeId)) {
                         for (let i=0; i<attr.visible.length; i++ ) {
