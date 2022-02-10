@@ -348,7 +348,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         if (Array.isArray(value)) {
                             for (let j = 0; j < value.length; j++) {
                                 const elem = value[j];
-                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, elem)
+                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, elem, attrConfig.options)
                                 if (!ozonValue) {
                                     const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                                     context.log += msg                      
@@ -360,7 +360,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         } if (typeof value === 'object') {
                             data.values.push(value)
                         } else {
-                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, value)
+                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, value, attrConfig.options)
                             if (!ozonValue) {
                                 const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                                 context.log += msg                      
@@ -553,8 +553,12 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
     }    
-    private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any) {
+    private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any, options: any) {
         if (dictionary) {
+            if (options) {
+                const tst = options.find((elem:any) => elem.name === value)
+                if (tst) return {dictionary_value_id: tst.value, value: value}
+            }
             let dict: any[] | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId)
             if (!dict) {
                 dict = []
