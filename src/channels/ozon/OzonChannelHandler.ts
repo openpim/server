@@ -105,12 +105,12 @@ export class OzonChannelHandler extends ChannelHandler {
                     if (channel.config.debug) context.log += log3+'\n'
                     if (json2.result.items.length === 0 || json2.result.items[0].product_id == 0) {
                         context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил product_id \n'
+                        return
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                         item.changed('values', true)
                     }
                 }
-                return
             }
 
             // try to find current status
