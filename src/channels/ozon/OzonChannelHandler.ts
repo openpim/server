@@ -35,23 +35,29 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }
 
-        if (!data) {
-            const query:any = {}
-            query[channel.identifier] = {status: 1}
-            let items = await Item.findAndCountAll({ 
-                where: { tenantId: channel.tenantId, channels: query} 
-            })
-            context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
-            for (let i = 0; i < items.rows.length; i++) {
-                const item = items.rows[i];
-                await this.processItem(channel, item, language, context)
-                context.log += '\n\n'
+        try {
+            if (!data) {
+                const query:any = {}
+                query[channel.identifier] = {status: 1}
+                let items = await Item.findAndCountAll({ 
+                    where: { tenantId: channel.tenantId, channels: query} 
+                })
+                context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
+                for (let i = 0; i < items.rows.length; i++) {
+                    const item = items.rows[i];
+                    await this.processItem(channel, item, language, context)
+                    context.log += '\n\n'
+                }
+            } else if (data.sync) {
+                await this.syncJob(channel, context, data)
             }
-        } else if (data.sync) {
-            await this.syncJob(channel, context, data)
-        }
 
-        await this.finishExecution(channel, chanExec, 2, context.log)
+            await this.finishExecution(channel, chanExec, 2, context.log)
+        } catch (err) {
+            logger.error("Error on channel processing", err)
+            context.log += 'Ошибка запуска канала - '+ JSON.stringify(err)
+            await this.finishExecution(channel, chanExec, 3, context.log)
+        }
     }
 
     async syncJob(channel: Channel, context: JobContext, data: any) {
@@ -136,7 +142,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 const result = data.result
                 context.log += '   статус товара: ' + JSON.stringify(result.status)
 
-                if (result.status.is_created) {
+                if (result.status.is_created && !result.status.is_failed) {
                     item.channels[channel.identifier].status = 2
                     item.channels[channel.identifier].message = JSON.stringify(result.status)
                     item.channels[channel.identifier].syncedAt = new Date().getTime()
