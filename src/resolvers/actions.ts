@@ -116,6 +116,7 @@ export default {
             if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
 
             item.values = values
+            item.changed("values", true)
             item.channels = channels
 
             item.updatedBy = context.getCurrentUser()!.login
