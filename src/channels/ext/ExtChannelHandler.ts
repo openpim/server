@@ -6,7 +6,7 @@ import * as fs from 'fs'
 import { FileManager } from "../../media/FileManager"
 
 export class ExtChannelHandler extends ChannelHandler {
-    public async processChannel(channel: Channel, language: string): Promise<void> {
+    public async processChannel(channel: Channel, language: string): Promise<ChannelExecution> {
         if (channel.config.extCmd) {
             const chanExec = await this.createExecution(channel)
     
@@ -23,9 +23,10 @@ export class ExtChannelHandler extends ChannelHandler {
     
             const log = result.stdout + (result.stderr ? "\nERRORS:\n" + result.stderr : "") 
             await this.finishExecution(channel, chanExec, result.code === 0 ? 2 : 3, log)
+            return chanExec
         } else {
-            logger.warn('Command is not defined for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
-        }    
+            throw new Error('Command is not defined for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
+        }
     }
 
     public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {

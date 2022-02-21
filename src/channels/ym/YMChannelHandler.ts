@@ -17,7 +17,7 @@ interface JobContext {
 }
 
 export class YMChannelHandler extends ChannelHandler {
-    public async processChannel(channel: Channel, language: string): Promise<void> {
+    public async processChannel(channel: Channel, language: string): Promise<ChannelExecution> {
         logger.debug('YM channel trigered: ' + channel.identifier)
         const chanExec = await this.createExecution(channel)
         const context: JobContext = {log: '', result: 2}
@@ -96,6 +96,7 @@ export class YMChannelHandler extends ChannelHandler {
             context.log += "Ошибка: " + err.message
         } finally {
             await this.finishExecution(channel, chanExec, context.result, context.log)
+            return chanExec
         }
     }
 

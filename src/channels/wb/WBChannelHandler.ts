@@ -1,4 +1,4 @@
-import { Channel } from '../../models/channels'
+import { Channel, ChannelExecution } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch from 'node-fetch'
 import * as FormData from 'form-data'
@@ -19,23 +19,23 @@ interface JobContext {
 export class WBChannelHandler extends ChannelHandler {
     private cache = new NodeCache();
 
-    public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
-        const chanExec = await this.createExecution(channel)
-       
-        const context: JobContext = {log: ''}
+    public async processChannel(channel: Channel, language: string, data: any, existingChanExec?: ChannelExecution): Promise<ChannelExecution> {
+        const chanExec = existingChanExec || await this.createExecution(channel)
+      
+        const context: JobContext = {log: existingChanExec ? existingChanExec.log : ''}
 
         if (!channel.config.wbToken) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен API token в конфигурации канала')
-            return
+            return chanExec
         }
         if (!channel.config.wbSupplierID) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен идентификатор поставщика в конфигурации канала')
-            return
+            return chanExec
         }
 
         if (!channel.config.wbIdAttr) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить Wildberries ID')
-            return
+            return chanExec
         }
 
 
@@ -61,10 +61,12 @@ export class WBChannelHandler extends ChannelHandler {
             }
 
             await this.finishExecution(channel, chanExec, 2, context.log)
+            return chanExec
         } catch (err) {
             logger.error("Error on channel processing", err)
             context.log += 'Ошибка запуска канала - '+ JSON.stringify(err)
             await this.finishExecution(channel, chanExec, 3, context.log)
+            return chanExec
         }
     }
 

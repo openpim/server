@@ -11,7 +11,7 @@ import { ItemRelation } from "../models/itemRelations"
 export abstract class ChannelHandler {
   private lovCache = new NodeCache();
 
-  abstract processChannel(channel: Channel, language: string, data: any): Promise<void>
+  abstract processChannel(channel: Channel, language: string, data: any, chanExec?: ChannelExecution): Promise<ChannelExecution>
 
   abstract getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}>
 
@@ -60,7 +60,6 @@ export abstract class ChannelHandler {
         await channel.save({transaction: t})
         await chanExec!.save({transaction: t})
     })
-
   }
 
   isVariant(channel: Channel, item: Item): boolean {

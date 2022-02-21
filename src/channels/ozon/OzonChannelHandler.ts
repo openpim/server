@@ -1,4 +1,4 @@
-import { Channel } from '../../models/channels'
+import { Channel, ChannelExecution } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch from 'node-fetch'
 import * as FormData from 'form-data'
@@ -17,22 +17,22 @@ interface JobContext {
 export class OzonChannelHandler extends ChannelHandler {
     private cache = new NodeCache();
 
-    public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
-        const chanExec = await this.createExecution(channel)
-       
-        const context: JobContext = {log: ''}
+    public async processChannel(channel: Channel, language: string, data: any, existingChanExec?: ChannelExecution): Promise<ChannelExecution> {
+        const chanExec = existingChanExec || await this.createExecution(channel)
+      
+        const context: JobContext = {log: existingChanExec ? existingChanExec.log : ''}
 
         if (!channel.config.ozonClientId) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен Client Id в конфигурации канала')
-            return
+            return chanExec
         }
         if (!channel.config.ozonApiKey) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен API key в конфигурации канала')
-            return
+            return chanExec
         }
         if (!channel.config.ozonIdAttr) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить Ozon ID')
-            return
+            return chanExec
         }
 
         try {
@@ -42,6 +42,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 let items = await Item.findAndCountAll({ 
                     where: { tenantId: channel.tenantId, channels: query} 
                 })
+                context.log += 'Запущена выгрузка на Ozon\n'
                 context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
                 for (let i = 0; i < items.rows.length; i++) {
                     const item = items.rows[i];
@@ -52,11 +53,13 @@ export class OzonChannelHandler extends ChannelHandler {
                 await this.syncJob(channel, context, data)
             }
 
-            await this.finishExecution(channel, chanExec, 2, context.log)
+            await this.finishExecution(channel, chanExec, existingChanExec ? existingChanExec.status : 2, context.log)
+            return chanExec
         } catch (err) {
             logger.error("Error on channel processing", err)
             context.log += 'Ошибка запуска канала - '+ JSON.stringify(err)
             await this.finishExecution(channel, chanExec, 3, context.log)
+            return chanExec
         }
     }
 

@@ -52,12 +52,18 @@ export class ChannelsManager {
                     where: whereExpression
                 })
                 const count = result[0].getDataValue('count')
+                const handler = this.getHandler(channel)
+                let chanExec
                 if (count > 0) {
                     logger.info("Found " + count + " submitted items for channel " + channel.identifier + ", tenant: " + this.tenantId)
-                    const handler = this.getHandler(channel)
-                    await handler.processChannel(channel, language, data)
+                    chanExec = await handler.processChannel(channel, language, data)
                 } else {
                     logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
+                }
+                if (channel.config.syncAfterStart) {
+                    if (!chanExec) chanExec = await handler.createExecution(channel)
+                    logger.info("Starting sync after channel processing " + channel.identifier + ", tenant: " + this.tenantId)
+                    await handler.processChannel(channel, language, {sync:true}, chanExec)
                 }
             } finally {
                 jobDetails[1] = false
