@@ -29,7 +29,7 @@ export class ChannelsManager {
     public async triggerChannel(channel: Channel,language: string, data: any) {
         logger.info("Channel " + channel.identifier + " was triggered, tenant: " + this.tenantId)
 
-        let jobDetails = this.jobMap[channel.identifier]
+        let jobDetails = this.jobMap[channel.identifier+(data?'_sync':'')]
         if (jobDetails) {
             if (jobDetails[1]) {
                 logger.warn("Channel " + channel.identifier + " is already running, skip it, tenant: " + this.tenantId)
@@ -38,7 +38,7 @@ export class ChannelsManager {
             jobDetails[1] = true
         } else {
             jobDetails = [null, true]
-            this.jobMap[channel.identifier] = jobDetails
+            this.jobMap[channel.identifier+(data?'_sync':'')] = jobDetails
         }
 
         if (!data) {
@@ -98,12 +98,15 @@ export class ChannelsManager {
                     logger.warn('Time is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             }
-            if (channel.config.syncStart === 2) { // sync interval
+            if (!channel.config.syncStart || channel.config.syncStart === 1) {
+                this.jobMap[channel.identifier+'_sync'] = [null, false]
+            } else if (channel.config.syncStart === 2) { // sync interval
                 if(channel.config.syncInterval) {
                     const range = new Range(0, 60, parseInt(channel.config.syncInterval))
                     const job = scheduleJob({minute: range}, () => {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
+                    this.jobMap[channel.identifier+'_sync'] = [job, false]
                 }
             } else { // sync time
                 if(channel.config.syncTime) {
@@ -111,6 +114,7 @@ export class ChannelsManager {
                     const job = scheduleJob({hour: parseInt(arr[0]), minute: parseInt(arr[1])}, () => {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
+                    this.jobMap[channel.identifier+'_sync'] = [job, false]
                 }
             }
         }
