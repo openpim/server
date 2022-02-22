@@ -17,22 +17,22 @@ interface JobContext {
 export class OzonChannelHandler extends ChannelHandler {
     private cache = new NodeCache();
 
-    public async processChannel(channel: Channel, language: string, data: any, existingChanExec?: ChannelExecution): Promise<ChannelExecution> {
-        const chanExec = existingChanExec || await this.createExecution(channel)
+    public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
+        const chanExec = await this.createExecution(channel)
       
-        const context: JobContext = {log: existingChanExec ? existingChanExec.log : ''}
+        const context: JobContext = {log: ''}
 
         if (!channel.config.ozonClientId) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен Client Id в конфигурации канала')
-            return chanExec
+            return 
         }
         if (!channel.config.ozonApiKey) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен API key в конфигурации канала')
-            return chanExec
+            return 
         }
         if (!channel.config.ozonIdAttr) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить Ozon ID')
-            return chanExec
+            return 
         }
 
         try {
@@ -53,13 +53,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 await this.syncJob(channel, context, data)
             }
 
-            await this.finishExecution(channel, chanExec, existingChanExec ? existingChanExec.status : 2, context.log)
-            return chanExec
+            await this.finishExecution(channel, chanExec, 2, context.log)
         } catch (err) {
             logger.error("Error on channel processing", err)
             context.log += 'Ошибка запуска канала - '+ JSON.stringify(err)
             await this.finishExecution(channel, chanExec, 3, context.log)
-            return chanExec
         }
     }
 

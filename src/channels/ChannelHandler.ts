@@ -11,7 +11,7 @@ import { ItemRelation } from "../models/itemRelations"
 export abstract class ChannelHandler {
   private lovCache = new NodeCache();
 
-  abstract processChannel(channel: Channel, language: string, data: any, chanExec?: ChannelExecution): Promise<ChannelExecution>
+  abstract processChannel(channel: Channel, language: string, data: any): Promise<void>
 
   abstract getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}>
 

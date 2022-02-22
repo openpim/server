@@ -53,17 +53,11 @@ export class ChannelsManager {
                 })
                 const count = result[0].getDataValue('count')
                 const handler = this.getHandler(channel)
-                let chanExec
                 if (count > 0) {
                     logger.info("Found " + count + " submitted items for channel " + channel.identifier + ", tenant: " + this.tenantId)
-                    chanExec = await handler.processChannel(channel, language, data)
+                    await handler.processChannel(channel, language, data)
                 } else {
                     logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
-                }
-                if (channel.config.syncAfterStart) {
-                    if (!chanExec) chanExec = await handler.createExecution(channel)
-                    logger.info("Starting sync after channel processing " + channel.identifier + ", tenant: " + this.tenantId)
-                    await handler.processChannel(channel, language, {sync:true}, chanExec)
                 }
             } finally {
                 jobDetails[1] = false
@@ -102,6 +96,21 @@ export class ChannelsManager {
                     this.jobMap[channel.identifier] = [job, false]
                 } else {
                     logger.warn('Time is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
+                }
+            }
+            if (channel.config.syncStart === 2) { // sync interval
+                if(channel.config.syncInterval) {
+                    const range = new Range(0, 60, parseInt(channel.config.syncInterval))
+                    const job = scheduleJob({minute: range}, () => {
+                        this.triggerChannel(channel, channel.config.language, {sync:true})
+                    })  
+                }
+            } else { // sync time
+                if(channel.config.syncTime) {
+                    const arr = channel.config.syncTime.split(':')
+                    const job = scheduleJob({hour: parseInt(arr[0]), minute: parseInt(arr[1])}, () => {
+                        this.triggerChannel(channel, channel.config.language, {sync:true})
+                    })  
                 }
             }
         }
