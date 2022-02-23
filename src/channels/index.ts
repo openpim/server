@@ -29,6 +29,11 @@ export class ChannelsManager {
     public async triggerChannel(channel: Channel,language: string, data: any) {
         logger.info("Channel " + channel.identifier + " was triggered, tenant: " + this.tenantId)
 
+        if (!language) {
+            logger.error("Failed to find language for automatic start for channel " + channel.identifier + ", processing stopped, tenant: " + this.tenantId)
+            return
+        }
+
         let jobDetails = this.jobMap[channel.identifier+(data?'_sync':'')]
         if (jobDetails) {
             if (jobDetails[1]) {
@@ -65,7 +70,7 @@ export class ChannelsManager {
         } else {
             try {
                 const handler = this.getHandler(channel)
-                handler.processChannel(channel, language, data)
+                await handler.processChannel(channel, language, data)
             } finally {
                 jobDetails[1] = false
             }
@@ -134,16 +139,12 @@ export class ChannelsManager {
 }
 
 export class ChannelsManagerFactory {
-    private static instance: ChannelsManagerFactory
+    private static instance: ChannelsManagerFactory = new ChannelsManagerFactory()
     private tenantMap: Record<string, ChannelsManager> = {}
     
     private constructor() { }
 
     public static getInstance(): ChannelsManagerFactory {
-        if (!ChannelsManagerFactory.instance) {
-            ChannelsManagerFactory.instance = new ChannelsManagerFactory()
-        }
-
         return ChannelsManagerFactory.instance
     }
 
