@@ -102,6 +102,8 @@ input RelationImportRequest {
   targets: [String]
   child: Boolean
   multi: Boolean
+  order: Int
+  options: JSON
 }
 
 input AttrGroupImportRequest {

@@ -109,11 +109,12 @@ export async function importRelation(context: Context, config: IImportConfig, re
                     createdBy: context.getCurrentUser()!.login,
                     updatedBy: context.getCurrentUser()!.login,
                     name: relation.name,
-                    sources: {data: sources},
-                    targets: {data: targets},
+                    sources: sources,
+                    targets: targets,
                     child: relation.child || false,
                     multi: relation.multi || false,
-                    options: relation.options ?  relation.options : []
+                    options: relation.options ?  relation.options : [],
+                    order: relation.order || 0,
                 }, {transaction: t})
             })
             mng.getRelations().push(data)
@@ -132,8 +133,9 @@ export async function importRelation(context: Context, config: IImportConfig, re
             if (relation.child != null) data.child = relation.child
             if (relation.multi != null) data.multi = relation.multi
             if (relation.options != null) data.options = relation.options
-            if (relation.sources) data.sources = {data: sources}
-            if (relation.targets) data.targets = {data: targets}
+            if (relation.sources) data.sources = sources
+            if (relation.targets) data.targets = targets
+            if (relation.order != null) data.order = relation.order
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})

@@ -173,6 +173,7 @@ export interface IRelationImportRequest {
   child: boolean
   multi: boolean
   options: any
+  order: number
 }
 
 export interface IAttrGroupImportRequest {
