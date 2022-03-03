@@ -293,6 +293,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     })
     const valuesCopy = {...item.values}
     const channelsCopy = {...item.channels}
+    const nameCopy = {...item.name}
     const ret = await processActions(mng, actions, { Op: Op,
         event: 'Button:'+buttonText,
         user: context.getCurrentUser()?.login,
@@ -300,7 +301,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
         utils: new ActionUtils(context),
         system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         buttonText: buttonText, 
-        item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy,
+        item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
