@@ -143,7 +143,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 const result = data.result
                 context.log += '   статус товара: ' + JSON.stringify(result.status)
 
-                if (result.status.is_created && !result.status.is_failed && result.moderate_status !== 'declined') {
+                if (result.status.is_created && !result.status.is_failed && result.status.moderate_status !== 'declined') {
                     item.channels[channel.identifier].status = 2
                     item.channels[channel.identifier].message = JSON.stringify(result.status)
                     item.channels[channel.identifier].syncedAt = new Date().getTime()
@@ -166,7 +166,7 @@ export class OzonChannelHandler extends ChannelHandler {
                             item.changed('values', true)
                         }
                     }
-                } else if (result.status.is_failed || result.moderate_status === 'declined') {
+                } else if (result.status.is_failed || result.status.moderate_status === 'declined') {
                     item.channels[channel.identifier].status = 3
                     item.channels[channel.identifier].message = JSON.stringify(result.status)
                     item.channels[channel.identifier].syncedAt = new Date().getTime()
