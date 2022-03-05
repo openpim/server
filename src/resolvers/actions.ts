@@ -30,7 +30,6 @@ export default {
                 throw new Error('Identifier already exists: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const c = code ? code.replace(/_#n#_/g, "\n").replace(/_#dbl#_/g, "\"") : ''
             const action = await sequelize.transaction(async (t) => {
                 return await Action.create ({
                     identifier: identifier,
@@ -39,7 +38,7 @@ export default {
                     updatedBy: context.getCurrentUser()!.login,
                     name: name,
                     order: order != null ? order : 0,
-                    code: c,
+                    code: code || '',
                     triggers: triggers || []
                 }, {transaction: t})
             })
@@ -62,7 +61,7 @@ export default {
             }
 
             if (name) act.name = name
-            if (code) act.code = code.replace(/_#n#_/g, "\n").replace(/_#dbl#_/g, "\"")
+            if (code) act.code = code
             if (triggers) act.triggers = triggers
             if (order != null) act.order = order
             act.updatedBy = context.getCurrentUser()!.login
@@ -119,6 +118,7 @@ export default {
             if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
 
             item.values = values
+            item.changed("values", true)
             item.channels = channels
 
             item.updatedBy = context.getCurrentUser()!.login

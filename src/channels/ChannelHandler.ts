@@ -13,7 +13,7 @@ export abstract class ChannelHandler {
 
   abstract processChannel(channel: Channel, language: string, data: any): Promise<void>
 
-  abstract getCategories(channel: Channel): Promise<ChannelCategory[]>
+  abstract getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}>
 
   abstract getAttributes(channel: Channel, categoryId: string): Promise<{ id: string; name: string; required: boolean; dictionary: boolean, dictionaryLink?: string }[]>
 
@@ -60,7 +60,6 @@ export abstract class ChannelHandler {
         await channel.save({transaction: t})
         await chanExec!.save({transaction: t})
     })
-
   }
 
   isVariant(channel: Channel, item: Item): boolean {
@@ -73,6 +72,22 @@ export abstract class ChannelHandler {
 
   async evaluateExpression (channel: Channel, item: Item, expr: string): Promise<any> {
     const utils = {
+      getItem: async (identifier: string) => {
+        return await Item.findOne({
+          where: {
+            identifier: identifier,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
+      getRelation: async (relationIdentifier: string) => {
+        return await ItemRelation.findOne({
+          where: {
+            relationIdentifier: relationIdentifier,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
       getTargetRelations: async (relationIdentifier: string) => {
         return await ItemRelation.findAll({
           where: {
@@ -120,7 +135,7 @@ export abstract class ChannelHandler {
               i."id"=r."targetId" and 
               r."relationIdentifier" = :relationIdentifier and 
               r."itemId"=:itemId 
-              order by i.id limit 1 offset 0`, {
+              order by i.id`, {
           replacements: { 
               tenant: channel.tenantId,
               relationIdentifier: relationIdentifier,
@@ -144,7 +159,7 @@ export abstract class ChannelHandler {
               i."id"=r."itemId" and 
               r."relationIdentifier" = :relationIdentifier and 
               r."targetId"=:itemId 
-              order by i.id limit 1 offset 0`, {
+              order by i.id`, {
           replacements: { 
               tenant: channel.tenantId,
               relationIdentifier: relationIdentifier,
@@ -165,7 +180,7 @@ export abstract class ChannelHandler {
       return await func(item, utils)
     } catch (err) {
       logger.error('Failed to execute expression :[' + expr + '] for item with id: ' + item.id + ' with error: ' + err.message)
-      return null
+      throw err
     }
   }
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
@@ -249,6 +264,7 @@ export abstract class ChannelHandler {
 export interface ChannelCategory {
   id: string
   name: string
+  children?: ChannelCategory[]
 }
 
 export interface ChannelAttribute {

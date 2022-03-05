@@ -26,7 +26,7 @@ function generateOrder(order: string[][], mng: ModelManager) {
         if (idx !== -1) {
             const obj = field.substring(0, idx)
             const prop = field.substring(idx+1)
-            result = '('+obj+"->>'"+prop+"')"
+            result += '('+obj+"->>'"+prop+"')"
             if (obj === 'values') {
                 const attr = mng.getAttributeByIdentifier(prop)
                 if (attr && (attr.attr.type === 3 || attr.attr.type === 4 || attr.attr.type === 7) ) { // integer, float, lov
@@ -34,7 +34,7 @@ function generateOrder(order: string[][], mng: ModelManager) {
                 }
             }
         } else {
-            result = field
+            result += '"'+field+'"'
         }
         result += " " + arr[1]
 
@@ -193,8 +193,7 @@ export default {
                 const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
                 const type:Type = mng.getTypeById(item.typeId)?.getValue()
                 
-                // const relIds = type.images ? type.images.slice(0) : []
-                // if (type.mainImage) relIds.push(type.mainImage)
+                const skipRelationIds = mng.getRelations().filter(rel => rel.options.some((option:any) => option.name === 'skipInAssets' && option.value === 'true')).map(rel => rel.id)
 
                 const data: any[] = await sequelize.query(
                     `SELECT a."id", a."typeId", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName"
@@ -208,11 +207,13 @@ export default {
                         coalesce(a."storagePath", '') != '' and
                         ir."deletedAt" is null and
                         a."deletedAt" is null and 
-                        r."deletedAt" is null
-                        order by r.order, ir.values->'_itemRelationOrder', a.id`, {
+                        r."deletedAt" is null 
+                        `+ (skipRelationIds.length > 0 ? `and r.id not in (:skipRelationIds)` : ``) +
+                        ` order by r.order, ir.values->'_itemRelationOrder', a.id`, {
                     replacements: { 
                         tenant: context.getCurrentUser()!.tenantId,
-                        itemId: item.id
+                        itemId: item.id,
+                        skipRelationIds: skipRelationIds
                     },
                     type: QueryTypes.SELECT
                 })
@@ -391,6 +392,11 @@ export default {
 
             if (!channels) channels = {}
 
+            if (values) {
+                filterValues(context.getEditItemAttributes(item), values)
+                checkValues(mng, values)
+            }
+
             const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false)
 
             if(actionResponse.some((resp) => resp.result === 'cancelSave')) {
@@ -404,10 +410,9 @@ export default {
                 item.channels = mergeValues(channels, item.channels)
             }
             if (values) {
-                filterValues(context.getEditItemAttributes(item), values)
-                checkValues(mng, values)
                 if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values}, {name: name, values: values})
                 item.values = mergeValues(values, item.values)
+                item.changed("values", true)
             } else {
                 if (audit.auditEnabled()) itemDiff = diff({name: item.name}, {name: name})
             }

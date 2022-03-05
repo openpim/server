@@ -29,7 +29,12 @@ export class ChannelsManager {
     public async triggerChannel(channel: Channel,language: string, data: any) {
         logger.info("Channel " + channel.identifier + " was triggered, tenant: " + this.tenantId)
 
-        let jobDetails = this.jobMap[channel.identifier]
+        if (!language) {
+            logger.error("Failed to find language for automatic start for channel " + channel.identifier + ", processing stopped, tenant: " + this.tenantId)
+            return
+        }
+
+        let jobDetails = this.jobMap[channel.identifier+(data?'_sync':'')]
         if (jobDetails) {
             if (jobDetails[1]) {
                 logger.warn("Channel " + channel.identifier + " is already running, skip it, tenant: " + this.tenantId)
@@ -38,7 +43,7 @@ export class ChannelsManager {
             jobDetails[1] = true
         } else {
             jobDetails = [null, true]
-            this.jobMap[channel.identifier] = jobDetails
+            this.jobMap[channel.identifier+(data?'_sync':'')] = jobDetails
         }
 
         if (!data) {
@@ -52,10 +57,10 @@ export class ChannelsManager {
                     where: whereExpression
                 })
                 const count = result[0].getDataValue('count')
+                const handler = this.getHandler(channel)
                 if (count > 0) {
                     logger.info("Found " + count + " submitted items for channel " + channel.identifier + ", tenant: " + this.tenantId)
-                    const handler = this.getHandler(channel)
-                    handler.processChannel(channel, language, data)
+                    await handler.processChannel(channel, language, data)
                 } else {
                     logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
                 }
@@ -65,7 +70,7 @@ export class ChannelsManager {
         } else {
             try {
                 const handler = this.getHandler(channel)
-                handler.processChannel(channel, language, data)
+                await handler.processChannel(channel, language, data)
             } finally {
                 jobDetails[1] = false
             }
@@ -98,6 +103,25 @@ export class ChannelsManager {
                     logger.warn('Time is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             }
+            if (!channel.config.syncStart || channel.config.syncStart === 1) {
+                this.jobMap[channel.identifier+'_sync'] = [null, false]
+            } else if (channel.config.syncStart === 2) { // sync interval
+                if(channel.config.syncInterval) {
+                    const range = new Range(0, 60, parseInt(channel.config.syncInterval))
+                    const job = scheduleJob({minute: range}, () => {
+                        this.triggerChannel(channel, channel.config.language, {sync:true})
+                    })  
+                    this.jobMap[channel.identifier+'_sync'] = [job, false]
+                }
+            } else { // sync time
+                if(channel.config.syncTime) {
+                    const arr = channel.config.syncTime.split(':')
+                    const job = scheduleJob({hour: parseInt(arr[0]), minute: parseInt(arr[1])}, () => {
+                        this.triggerChannel(channel, channel.config.language, {sync:true})
+                    })  
+                    this.jobMap[channel.identifier+'_sync'] = [job, false]
+                }
+            }
         }
     }
 
@@ -115,16 +139,12 @@ export class ChannelsManager {
 }
 
 export class ChannelsManagerFactory {
-    private static instance: ChannelsManagerFactory
+    private static instance: ChannelsManagerFactory = new ChannelsManagerFactory()
     private tenantMap: Record<string, ChannelsManager> = {}
     
     private constructor() { }
 
     public static getInstance(): ChannelsManagerFactory {
-        if (!ChannelsManagerFactory.instance) {
-            ChannelsManagerFactory.instance = new ChannelsManagerFactory()
-        }
-
         return ChannelsManagerFactory.instance
     }
 

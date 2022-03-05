@@ -1,4 +1,5 @@
 import { Client } from '@elastic/elasticsearch'
+import logger from "./logger"
 
 class Audit {
     private client: Client | null = null
@@ -17,72 +18,90 @@ class Audit {
 
     public async auditItem(change: ChangeType, id: number, identifier: string, item: AuditItem, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
-        await this.client!.index({
-            index: "items",
-            body: {
-                itemId: id,
-                identifier: identifier,
-                operation: change,
-                user: login,
-                changedAt: changedAt,
-                data: item
-            }
-        })
+        try {
+            await this.client!.index({
+                index: "items",
+                body: {
+                    itemId: id,
+                    identifier: identifier,
+                    operation: change,
+                    user: login,
+                    changedAt: changedAt,
+                    data: item
+                }
+            })
+        } catch (err) {
+            logger.error("Error sending audit for item", err)
+        }
     }
 
     public async auditItemRelation(change: ChangeType, id: number, identifier: string, item: AuditItemRelation, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
-        await this.client!.index({
-            index: "item_relations",
-            body: {
-                itemRelationId: id,
-                identifier: identifier,
-                operation: change,
-                user: login,
-                changedAt: changedAt,
-                data: item
-            }
-        })
+            try {
+            await this.client!.index({
+                index: "item_relations",
+                body: {
+                    itemRelationId: id,
+                    identifier: identifier,
+                    operation: change,
+                    user: login,
+                    changedAt: changedAt,
+                    data: item
+                }
+            })
+        } catch (err) {
+            logger.error("Error sending audit for item relation", err)
+        }
     }
 
     public async getItemHistory(id: number, offset: number, limit: number, order: any) {
     if (!this.auditEnabled()) return {count: 0, rows: []}
-        const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
-        const response = await this.client!.search({
-            index: "items",
-            from: offset,
-            size: limit,
-            body: {
-                query: {
-                  term: {
-                    itemId: id
-                  }
-                },
-                sort: sort
-            }
-        })
-        return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
-    }
-
-    public async getItemRelationHistory(id: number, offset: number, limit: number, order: any) {
-        if (!this.auditEnabled()) return {count: 0, rows: []}
+        try {
             const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
             const response = await this.client!.search({
-                index: "item_relations",
+                index: "items",
                 from: offset,
                 size: limit,
                 body: {
                     query: {
-                      term: {
-                        itemRelationId: id
-                      }
+                    term: {
+                        itemId: id
+                    }
                     },
                     sort: sort
                 }
             })
             return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+        } catch (err) {
+            logger.error("Error getting audit for item", err)
+            return { count: 0, rows: []}
         }
-    
+    }
+
+    public async getItemRelationHistory(id: number, offset: number, limit: number, order: any) {
+        if (!this.auditEnabled()) return {count: 0, rows: []}
+            try {
+                const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
+                const response = await this.client!.search({
+                    index: "item_relations",
+                    from: offset,
+                    size: limit,
+                    body: {
+                        query: {
+                        term: {
+                            itemRelationId: id
+                        }
+                        },
+                        sort: sort
+                    }
+                })
+            return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+            } catch (err) {
+                logger.error("Error getting audit for item relation", err)
+                return { count: 0, rows: []}
+            }
+        }
+   
 }
 
 export enum ChangeType {

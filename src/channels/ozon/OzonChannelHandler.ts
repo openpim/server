@@ -1,4 +1,4 @@
-import { Channel } from '../../models/channels'
+import { Channel, ChannelExecution } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch from 'node-fetch'
 import * as FormData from 'form-data'
@@ -19,39 +19,46 @@ export class OzonChannelHandler extends ChannelHandler {
 
     public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
         const chanExec = await this.createExecution(channel)
-       
+      
         const context: JobContext = {log: ''}
 
         if (!channel.config.ozonClientId) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен Client Id в конфигурации канала')
-            return
+            return 
         }
         if (!channel.config.ozonApiKey) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен API key в конфигурации канала')
-            return
+            return 
         }
         if (!channel.config.ozonIdAttr) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить Ozon ID')
-            return
+            return 
         }
 
-        if (!data) {
-            const query:any = {}
-            query[channel.identifier] = {status: 1}
-            let items = await Item.findAndCountAll({ 
-                where: { tenantId: channel.tenantId, channels: query} 
-            })
-            context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
-            for (let i = 0; i < items.rows.length; i++) {
-                const item = items.rows[i];
-                await this.processItem(channel, item, language, context)
-                context.log += '\n\n'
+        try {
+            if (!data) {
+                const query:any = {}
+                query[channel.identifier] = {status: 1}
+                let items = await Item.findAndCountAll({ 
+                    where: { tenantId: channel.tenantId, channels: query} 
+                })
+                context.log += 'Запущена выгрузка на Ozon\n'
+                context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
+                for (let i = 0; i < items.rows.length; i++) {
+                    const item = items.rows[i];
+                    await this.processItem(channel, item, language, context)
+                    context.log += '\n\n'
+                }
+            } else if (data.sync) {
+                await this.syncJob(channel, context, data)
             }
-        } else if (data.sync) {
-            await this.syncJob(channel, context, data)
-        }
 
-        await this.finishExecution(channel, chanExec, 2, context.log)
+            await this.finishExecution(channel, chanExec, 2, context.log)
+        } catch (err) {
+            logger.error("Error on channel processing", err)
+            context.log += 'Ошибка запуска канала - '+ JSON.stringify(err)
+            await this.finishExecution(channel, chanExec, 3, context.log)
+        }
     }
 
     async syncJob(channel: Channel, context: JobContext, data: any) {
@@ -79,7 +86,7 @@ export class OzonChannelHandler extends ChannelHandler {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]) {
-            const tst = item.values[channel.config.ozonIdAttr]
+            const tst = ''+item.values[channel.config.ozonIdAttr]
             if (tst.startsWith('task_id=')) {
                 // receive product id first
                 const taskId = tst.substring(8)
@@ -103,14 +110,14 @@ export class OzonChannelHandler extends ChannelHandler {
                     const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
                     logger.info(log3)
                     if (channel.config.debug) context.log += log3+'\n'
-                    if (json2.result.items[0].product_id == 0) {
+                    if (json2.result.items.length === 0 || json2.result.items[0].product_id == 0) {
                         context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил product_id \n'
+                        return
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                         item.changed('values', true)
                     }
                 }
-    
             }
 
             // try to find current status
@@ -136,7 +143,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 const result = data.result
                 context.log += '   статус товара: ' + JSON.stringify(result.status)
 
-                if (result.status.is_created) {
+                if (result.status.is_created && !result.status.is_failed && result.status.moderate_status !== 'declined') {
                     item.channels[channel.identifier].status = 2
                     item.channels[channel.identifier].message = JSON.stringify(result.status)
                     item.channels[channel.identifier].syncedAt = new Date().getTime()
@@ -159,7 +166,7 @@ export class OzonChannelHandler extends ChannelHandler {
                             item.changed('values', true)
                         }
                     }
-                } else if (result.status.is_failed) {
+                } else if (result.status.is_failed || result.status.moderate_status === 'declined') {
                     item.channels[channel.identifier].status = 3
                     item.channels[channel.identifier].message = JSON.stringify(result.status)
                     item.channels[channel.identifier].syncedAt = new Date().getTime()
@@ -348,7 +355,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         if (Array.isArray(value)) {
                             for (let j = 0; j < value.length; j++) {
                                 const elem = value[j];
-                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, elem)
+                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, elem, attrConfig.options)
                                 if (!ozonValue) {
                                     const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                                     context.log += msg                      
@@ -360,7 +367,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         } if (typeof value === 'object') {
                             data.values.push(value)
                         } else {
-                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, value)
+                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, value, attrConfig.options)
                             if (!ozonValue) {
                                 const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                                 context.log += msg                      
@@ -430,14 +437,18 @@ export class OzonChannelHandler extends ChannelHandler {
                 this.reportError(channel, item, msg)
                 logger.error(msg)
                 return
-            } else {
+            } else {    
                 const json2 = await res2.json()
                 const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
                 logger.info(log3)
                 if (channel.config.debug) context.log += log3+'\n'
     
-                const status = json2.result.items[0].status
-                const errors = json2.result.items[0].errors
+                let status = null
+                let errors = null
+                if (json2.result.items && json2.result.items.length > 0) {
+                    status = json2.result.items[0].status
+                    errors = json2.result.items[0].errors
+                }
                 const data = item.channels[channel.identifier]
                 if (status === 'imported') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
@@ -461,7 +472,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.status = 4
                     data.message = ''
                     item.changed('channels', true)            
-                    if (json2.result.items[0].product_id == 0) {
+                    if (status === null || json2.result.items[0].product_id == 0) {
                         item.values[channel.config.ozonIdAttr] = 'task_id='+taskId
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
@@ -469,7 +480,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     item.changed('values', true)
                 }
             }
-        }
+        } 
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext, product: any) {
@@ -549,8 +560,12 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
     }    
-    private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any) {
+    private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any, options: any) {
         if (dictionary) {
+            if (options) {
+                const tst = options.find((elem:any) => elem.name === value)
+                if (tst) return {dictionary_value_id: tst.value, value: value}
+            }
             let dict: any[] | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId)
             if (!dict) {
                 dict = []
@@ -583,25 +598,25 @@ export class OzonChannelHandler extends ChannelHandler {
                 return {dictionary_value_id: entry.id, value: value}
             }
         } else {
-            return { value: value }
+            return { value: ''+value }
         }
     }
 
-    public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
         if (!channel.config.ozonClientId) throw new Error('Не введен Client Id в конфигурации канала.')
         if (!channel.config.ozonApiKey) throw new Error('Не введен Api Key в конфигурации канала.')
 
-        let data = this.cache.get('categories')
-        if (! data) {
+        let tree:ChannelCategory | undefined = this.cache.get('categories')
+        if (! tree) {
+            tree  = {id: '', name: 'root', children: []}
             const res = await fetch('https://api-seller.ozon.ru/v1/categories/tree?language=DEFAULT', {
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
             })
             const json = await res.json()
-            data = []
-            this.collectAllLeafs(json.result, <ChannelCategory[]>data)
-            this.cache.set('categories', data, 3600)
+            this.collectTree(json.result, tree)
+            this.cache.set('categories', tree, 3600)
         }
-        return <ChannelCategory[]>data
+        return {list: null, tree: tree}
     }
     private collectAllLeafs(arr: any[], data: ChannelCategory[]) {
         arr.forEach(elem => {
@@ -614,7 +629,17 @@ export class OzonChannelHandler extends ChannelHandler {
           }  
         })
     }
-
+    private collectTree(arr: any[], treeNode: ChannelCategory) {
+        arr.forEach(elem => {
+            const child = {id: 'cat_' + elem.category_id, name: elem.title, children: []}
+            treeNode.children!.push(child)
+            if (elem.children) {
+                if (elem.children.length > 0) {
+                    this.collectTree(elem.children, child)
+                }
+            }  
+        })
+    }
     
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_'+categoryId)

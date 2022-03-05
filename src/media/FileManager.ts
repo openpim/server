@@ -103,8 +103,7 @@ export class FileManager {
         try {
             fs.renameSync(uploadedFile, fullPath)
         } catch (e) { 
-            logger.error('Failed to rename file (will use copy instead): ', uploadedFile, fullPath)
-            logger.error(e)
+            // logger.warn('Failed to rename file (will use copy instead): ', uploadedFile, fullPath, e)
             fs.copyFileSync(uploadedFile, fullPath)
             fs.unlinkSync(uploadedFile)
         }

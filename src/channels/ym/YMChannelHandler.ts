@@ -124,9 +124,9 @@ export class YMChannelHandler extends ChannelHandler {
             const categoryConfig = channel.mappings[categoryId]
             if (categoryConfig.valid && categoryConfig.valid.length > 0 && categoryConfig.visible && categoryConfig.visible.length > 0) {
                 const pathArr = item.path.split('.')
-                const tst1 = categoryConfig.valid.includes(item.typeId) 
+                const tst1 = categoryConfig.valid.includes(item.typeId) || categoryConfig.valid.includes(''+item.typeId)
                 
-                let tst2 = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                let tst2 = null
                 if (categoryConfig.visibleRelation) {
                     let sources = await Item.findAll({ 
                         where: { tenantId: channel.tenantId, '$sourceRelation.relationId$': categoryConfig.visibleRelation, '$sourceRelation.targetId$': item.id },
@@ -136,6 +136,8 @@ export class YMChannelHandler extends ChannelHandler {
                         const pathArr = source.path.split('.')
                         return categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                     })
+                } else {
+                    tst2 = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
                 }
 
                 if (tst1 && tst2) {
@@ -173,73 +175,80 @@ export class YMChannelHandler extends ChannelHandler {
             this.reportError(channel, item, msg)
             return
         }
-        const offer: any = {$: {id: id}}
 
-        if (categoryConfig.type === 'vendor.model') offer.$.type = 'vendor.model'
-        if (categoryConfig.type === 'medicine') offer.$.type = 'medicine'
-        if (categoryConfig.type === 'books') offer.$.type = 'books'
+        try {
+            const offer: any = {$: {id: id}}
 
-        const variant = this.isVariant(channel, item)
+            if (categoryConfig.type === 'vendor.model') offer.$.type = 'vendor.model'
+            if (categoryConfig.type === 'medicine') offer.$.type = 'medicine'
+            if (categoryConfig.type === 'books') offer.$.type = 'books'
 
-        // atributes
-        for (let i = 0; i < categoryConfig.attributes.length; i++) {
-            const attrConfig = categoryConfig.attributes[i]
-            
-            if (attrConfig.id != 'id') {
-                const value = await this.getValueByMapping(channel, attrConfig, item, language)
-                if (value != null) {
-                    if (attrConfig.id != 'group_id' || variant) {
-                        if (attrConfig.id.startsWith('delivery-option')) {
-                            const arr = value.split(',')
-                            if (!offer['delivery-options']) offer['delivery-options'] = {option: []}
-                            const option:any = {$: {cost: arr[0], days: arr[1]}}
-                            if (arr.length > 2) option.$['order-before'] = arr[2]
-                            offer['delivery-options'].option.push(option)
-                        } else if (Array.isArray(value)) {
-                            if (offer[attrConfig.id]) offer[attrConfig.id] = [offer[attrConfig.id]]
-                                else offer[attrConfig.id] = []
-                            value.forEach(elem => {
-                                offer[attrConfig.id].push(elem)
-                            })
-                        } else {
-                            offer[attrConfig.id] = value
+            const variant = this.isVariant(channel, item)
+
+            // atributes
+            for (let i = 0; i < categoryConfig.attributes.length; i++) {
+                const attrConfig = categoryConfig.attributes[i]
+                
+                if (attrConfig.id != 'id') {
+                    const value = await this.getValueByMapping(channel, attrConfig, item, language)
+                    if (value != null) {
+                        if (attrConfig.id != 'group_id' || variant) {
+                            if (attrConfig.id.startsWith('delivery-option')) {
+                                const arr = value.split(',')
+                                if (!offer['delivery-options']) offer['delivery-options'] = {option: []}
+                                const option:any = {$: {cost: arr[0], days: arr[1]}}
+                                if (arr.length > 2) option.$['order-before'] = arr[2]
+                                offer['delivery-options'].option.push(option)
+                            } else if (Array.isArray(value)) {
+                                if (offer[attrConfig.id]) offer[attrConfig.id] = [offer[attrConfig.id]]
+                                    else offer[attrConfig.id] = []
+                                value.forEach(elem => {
+                                    offer[attrConfig.id].push(elem)
+                                })
+                            } else {
+                                offer[attrConfig.id] = value
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // addition params
-        for (let i = 0; i < categoryConfig.params.length; i++) {
-            const paramConfig = categoryConfig.params[i]
-            const value = await this.getValueByMapping(channel, paramConfig, item, language)
-            if (value) {
-                if (!offer.param) offer.param =[]
-                if (Array.isArray(value)) {
-                        if (paramConfig.id === 'picture') {
-                            if (offer.picture && !Array.isArray(offer.picture)) offer.picture = [offer.picture]
-                                else if (!offer.picture) offer.picture = []
-                        }
-                        value.forEach(elem => {
-                        if (paramConfig.id === 'picture') {
-                            offer.picture.push(elem)
-                        } else {
-                            offer.param.push({$:{name: paramConfig.id}, _: elem})
-                        }
-                    })
-                } else {
-                    if (paramConfig.id === 'picture') offer.picture = value 
-                        else offer.param.push({$:{name: paramConfig.id}, _: value})
+            // addition params
+            for (let i = 0; i < categoryConfig.params.length; i++) {
+                const paramConfig = categoryConfig.params[i]
+                const value = await this.getValueByMapping(channel, paramConfig, item, language)
+                if (value) {
+                    if (!offer.param) offer.param =[]
+                    if (Array.isArray(value)) {
+                            if (paramConfig.id === 'picture') {
+                                if (offer.picture && !Array.isArray(offer.picture)) offer.picture = [offer.picture]
+                                    else if (!offer.picture) offer.picture = []
+                            }
+                            value.forEach(elem => {
+                            if (paramConfig.id === 'picture') {
+                                offer.picture.push(elem)
+                            } else {
+                                offer.param.push({$:{name: paramConfig.id}, _: elem})
+                            }
+                        })
+                    } else {
+                        if (paramConfig.id === 'picture') offer.picture = value 
+                            else offer.param.push({$:{name: paramConfig.id}, _: value})
+                    }
                 }
             }
-        }
 
-        offers.push(offer)
-        context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
-        data.status = 2
-        data.message = ''
-        data.syncedAt = Date.now()
-        item.changed('channels', true)
+            offers.push(offer)
+            context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
+            data.status = 2
+            data.message = ''
+            data.syncedAt = Date.now()
+            item.changed('channels', true)
+        } catch (err) {
+            const msg = 'Ошибка обработки записи: ' + err.message
+            context.log += msg
+            this.reportError(channel, item, msg)
+        }
     }
 
     private async processCategories(channel: Channel, yml: any, language: string, context: JobContext) {
@@ -333,8 +342,8 @@ export class YMChannelHandler extends ChannelHandler {
         }
     }
 
-    public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
-        return []
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
+        return {list: [], tree : null}
     }
 
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {

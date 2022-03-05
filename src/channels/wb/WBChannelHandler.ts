@@ -1,4 +1,4 @@
-import { Channel } from '../../models/channels'
+import { Channel, ChannelExecution } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch from 'node-fetch'
 import * as FormData from 'form-data'
@@ -21,7 +21,7 @@ export class WBChannelHandler extends ChannelHandler {
 
     public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
         const chanExec = await this.createExecution(channel)
-       
+      
         const context: JobContext = {log: ''}
 
         if (!channel.config.wbToken) {
@@ -33,27 +33,39 @@ export class WBChannelHandler extends ChannelHandler {
             return
         }
 
-        if (!data) {
-            const query:any = {}
-            query[channel.identifier] = {status: 1}
-            let items = await Item.findAndCountAll({ 
-                where: { tenantId: channel.tenantId, channels: query},
-                order: [['parentIdentifier', 'ASC'], ['id', 'ASC']]
-            })
-            context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
-            for (let i = 0; i < items.rows.length; i++) {
-                const item = items.rows[i];
-                await this.processItem(channel, item, language, context)
-                context.log += '\n\n'
-            }
-            if (context.variantRequest) { // send last variant request that was not processed
-                await this.sendVariantsRequest(channel, context)
-            }
-        } else if (data.sync) {
-            await this.syncJob(channel, context, data)
+        if (!channel.config.wbIdAttr) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить Wildberries ID')
+            return
         }
 
-        await this.finishExecution(channel, chanExec, 2, context.log)
+
+        try {
+            if (!data) {
+                const query:any = {}
+                query[channel.identifier] = {status: 1}
+                let items = await Item.findAndCountAll({ 
+                    where: { tenantId: channel.tenantId, channels: query},
+                    order: [['parentIdentifier', 'ASC'], ['id', 'ASC']]
+                })
+                context.log += 'Найдено ' + items.count +' записей для обработки \n\n'
+                for (let i = 0; i < items.rows.length; i++) {
+                    const item = items.rows[i];
+                    await this.processItem(channel, item, language, context)
+                    context.log += '\n\n'
+                }
+                if (context.variantRequest) { // send last variant request that was not processed
+                    await this.sendVariantsRequest(channel, context)
+                }
+            } else if (data.sync) {
+                await this.syncJob(channel, context, data)
+            }
+
+            await this.finishExecution(channel, chanExec, 2, context.log)
+        } catch (err) {
+            logger.error("Error on channel processing", err)
+            context.log += 'Ошибка запуска канала - '+ JSON.stringify(err)
+            await this.finishExecution(channel, chanExec, 3, context.log)
+        }
     }
 
     async syncJob(channel: Channel, context: JobContext, data: any) {
@@ -128,8 +140,8 @@ export class WBChannelHandler extends ChannelHandler {
             return
         }
 
-        if (card.imtId !== item.values.wbId) {
-            item.values.wbId = card.imtId
+        if (card.imtId !== item.values[channel.config.wbIdAttr]) {
+            item.values[channel.config.wbIdAttr] = card.imtId
             item.changed('values', true)
             if (item.channels[channel.identifier] && item.channels[channel.identifier].status === 4) {
                 item.channels[channel.identifier].status = 2
@@ -178,7 +190,7 @@ export class WBChannelHandler extends ChannelHandler {
                 }
             } else {
                 context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
-                logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
+                // logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
             }
         }
 
@@ -200,7 +212,7 @@ export class WBChannelHandler extends ChannelHandler {
             const item = context.variantItems![i]
             item.channels[channel.identifier] = data
             item.changed('channels', true)
-            item.values.wbId = varItem.values.wbId
+            item.values[channel.config.wbIdAttr] = varItem.values[channel.config.wbIdAttr]
             item.changed('values', true)
             await sequelize.transaction(async (t) => {
                 await varItem.save({transaction: t})
@@ -217,7 +229,7 @@ export class WBChannelHandler extends ChannelHandler {
         // request to WB
         let request:any = {id: uuid.v4(), jsonrpc: '2.0', params: { supplierID: channel.config.wbSupplierID, card: {}}}
 
-        const create = item.values.wbId ? false : true
+        const create = item.values[channel.config.wbIdAttr] ? false : true
 
         // check for variant
         const variant = this.isVariant(channel, item)
@@ -246,7 +258,7 @@ export class WBChannelHandler extends ChannelHandler {
                 id: uuid.v4(),
                 jsonrpc: "2.0",
                 params: {
-                    imtID: item.values.wbId
+                    imtID: item.values[channel.config.wbIdAttr]
                 }
             }
             logger.info("Sending request Windberries: " + loadUrl + " => " + JSON.stringify(loadRequest))
@@ -407,9 +419,9 @@ export class WBChannelHandler extends ChannelHandler {
     }
 
     async sendRequest(channel: Channel, item: Item, request: any, context: JobContext) {
-        const create = item.values.wbId ? false : true
+        const create = item.values[channel.config.wbIdAttr] ? false : true
 
-        if (!create) request.params.card.imtId = item.values.wbId
+        if (!create) request.params.card.imtId = item.values[channel.config.wbIdAttr]
         const url = create ? 'https://suppliers-api.wildberries.ru/card/create' : 'https://suppliers-api.wildberries.ru/card/update'
         logger.info("Sending request Windberries: " + url + " => " + JSON.stringify(request))
 
@@ -485,7 +497,7 @@ export class WBChannelHandler extends ChannelHandler {
                     item.changed('channels', true)
                     return
                 }
-                item.values.wbId = json.result.cards[0].imtId
+                item.values[channel.config.wbIdAttr] = json.result.cards[0].imtId
                 item.changed('values', true)
             }
         }
@@ -556,7 +568,7 @@ export class WBChannelHandler extends ChannelHandler {
     }
 
 
-    public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
         let data = this.cache.get('categories')
         if (! data) {
             const res = await fetch('https://content-suppliers.wildberries.ru/ns/characteristics-configurator-api/content-configurator/api/v1/config/get/object/all?top=10000&lang=ru')
@@ -564,14 +576,14 @@ export class WBChannelHandler extends ChannelHandler {
             data = Object.values(json.data).map(value => { return {id: this.transliterate((<string>value).toLowerCase()), name: value} } )
             this.cache.set('categories', data, 3600)
         }
-        return <ChannelCategory[]>data
+        return { list: <ChannelCategory[]>data, tree: null }
     }
     
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_'+categoryId)
         if (! data) {
             const categories = await this.getCategories(channel)
-            const category = categories.find(elem => elem.id === categoryId)
+            const category = categories.list!.find((elem:any) => elem.id === categoryId)
 
             if (!category) throw new Error('Failed to find category by id: ' + categoryId)
 

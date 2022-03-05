@@ -17,9 +17,13 @@ const awaitExec = util.promisify(exec);
 import fetch from 'node-fetch'
 import { URLSearchParams } from 'url'
 import * as mailer from 'nodemailer'
+import * as http2 from 'http2'
+import * as http from 'http'
+import * as https from 'https'
 
 import logger from '../logger'
 import { LOV } from "../models/lovs"
+import { Attribute } from "../models/attributes"
 const dateFormat = require("dateformat")
 
 export function filterChannels(context: Context, channels:any) {
@@ -209,6 +213,34 @@ export function checkValues(mng: ModelManager, values: any) {
                     throw  new Error(str)
                 }
             }
+        } else if (attr && attr.type === 3) { // Integer
+            if (attr.languageDependent) {
+                for(const lang in values[prop]) {
+                    const value = values[prop][lang]
+                    checkInteger(attr, value)
+                }
+            } else {
+                const value = values[prop]
+                checkInteger(attr, value)
+            }
+        }
+    }
+}
+
+function checkInteger(attr: Attribute, value: any) {
+    if (!value) return
+    if (typeof value === 'string') {
+        if (value.includes('.')) {
+            throw new Error(value + ' is not an Integer for attribute with identifier: ' + attr.identifier)
+        } else {
+            const tst = parseInt(value)
+            if (!(/^[-+]?(\d+|Infinity)$/.test(value))) {
+                throw new Error(value + ' is not an Integer for attribute with identifier: ' + attr.identifier)
+            }
+        }
+    } else {
+        if (!Number.isInteger(value)) {
+            throw new Error(value + ' is not an Integer for attribute with identifier: ' + attr.identifier)
         }
     }
 }
@@ -233,7 +265,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams, mailer },
+        system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
         models: { 
@@ -261,14 +293,15 @@ export async function processItemButtonActions(context: Context, buttonText: str
     })
     const valuesCopy = {...item.values}
     const channelsCopy = {...item.channels}
+    const nameCopy = {...item.name}
     const ret = await processActions(mng, actions, { Op: Op,
         event: 'Button:'+buttonText,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams, mailer },
+        system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         buttonText: buttonText, 
-        item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy,
+        item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -288,7 +321,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams, mailer },
+        system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         item: makeItemProxy(item), values: values, channels:channels, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
@@ -408,8 +441,8 @@ function makeItemProxy(item: any) {
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='changed') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+                return (...args: any) => {
+                    return target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='id') { return target[ property ]
             } else  if ((<string>property) =='tenantId') { return target[ property ]
@@ -469,7 +502,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams, mailer },
+        system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
@@ -498,8 +531,8 @@ function makeItemRelationProxy(item: any) {
                     return await target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='changed') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+                return (...args: any) => {
+                    return target[ property ].apply( target, args )
                 }
             } else  if ((<string>property) =='id') { return target[ property ]
             } else  if ((<string>property) =='tenantId') { return target[ property ]
@@ -615,11 +648,15 @@ class ActionUtils {
     }
 
     public getItemAttributes(item: Item, groupIdentifier?: string) {
+        return this.getItemAttributesForGroups(item, groupIdentifier ? [groupIdentifier]: undefined)
+    }
+    
+    public getItemAttributesForGroups(item: Item, groupIdentifiers?: string[]) {
         const attrArr: string[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
         this.#mng.getAttrGroups().forEach(group => {
-            if (group.getGroup().visible && (!groupIdentifier || group.getGroup().identifier === groupIdentifier)) {
+            if (group.getGroup().visible && (!groupIdentifiers || groupIdentifiers.includes(group.getGroup().identifier))) {
                 group.getAttributes().forEach(attr => {
                     if (attr.valid.includes(item.typeId)) {
                         for (let i=0; i<attr.visible.length; i++ ) {
@@ -665,6 +702,31 @@ class ActionUtils {
     public runAs(login: string) {
         const ctx = Context.createAs(login, this.#context.getCurrentUser()!.tenantId)
         this.#context = ctx
+    }
+
+    public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+
+        let action  = mng.getActions().find(act => act.identifier === actionIdentifier)
+        if (!action) {
+            throw new Error('Failed to find action by identifier: ' + actionIdentifier + ', tenant: ' + mng.getTenantId())
+        }
+
+        const context = this.#context
+        return await processActions(mng, [action], { Op: Op,
+            event: event,
+            user: context.getCurrentUser()?.login,
+            roles: context.getUser()?.getRoles(),
+            utils: new ActionUtils(context),
+            system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+            isImport: isImport, 
+            item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
+            models: { 
+                item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
+                itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+                lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
+            } 
+        })
     }
 
     public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any) {

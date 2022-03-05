@@ -24,12 +24,12 @@ export class ExtChannelHandler extends ChannelHandler {
             const log = result.stdout + (result.stderr ? "\nERRORS:\n" + result.stderr : "") 
             await this.finishExecution(channel, chanExec, result.code === 0 ? 2 : 3, log)
         } else {
-            logger.warn('Command is not defined for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
-        }    
+            throw new Error('Command is not defined for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
+        }
     }
 
-    public async getCategories(channel: Channel): Promise<ChannelCategory[]> {
-        return []
+    public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
+        return { list: [], tree: null }
     }
 
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
