@@ -16,7 +16,7 @@ export default {
         }
     },
     Mutation: {
-        createAction: async (parent: any, {identifier, name, code, triggers}: any, context: Context) => {
+        createAction: async (parent: any, {identifier, name, code, order, triggers}: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ACTIONS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create action, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -38,6 +38,7 @@ export default {
                     createdBy: context.getCurrentUser()!.login,
                     updatedBy: context.getCurrentUser()!.login,
                     name: name,
+                    order: order != null ? order : 0,
                     code: c,
                     triggers: triggers || []
                 }, {transaction: t})
@@ -46,7 +47,7 @@ export default {
             mng.getActions().push(action)
             return action.id
         },
-        updateAction: async (parent: any, { id, name, code, triggers }: any, context: Context) => {
+        updateAction: async (parent: any, { id, name, code, order, triggers }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ACTIONS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update action, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -63,6 +64,7 @@ export default {
             if (name) act.name = name
             if (code) act.code = code.replace(/_#n#_/g, "\n").replace(/_#dbl#_/g, "\"")
             if (triggers) act.triggers = triggers
+            if (order != null) act.order = order
             act.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await act!.save({transaction: t})

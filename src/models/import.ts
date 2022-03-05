@@ -257,6 +257,9 @@ export interface IOtherAccessRequest {
   exportXLS: boolean
   exportCSV: boolean
   importXLS: boolean
+  searchRelations: boolean
+  exportRelationsXLS: boolean
+  importRelationsXLS: boolean
 }
 
 export interface ILOVImportRequest {

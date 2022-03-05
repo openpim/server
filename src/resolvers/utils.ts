@@ -320,7 +320,7 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
             sandbox: sandbox
         }) 
         vm.setGlobals({console: console})
-
+        actions.sort((a, b) => a.order - b.order)
         for (let i = 0; i < actions.length; i++) {
             const action = actions[i]
             let script:VMScript | {compileError: boolean, error: string} | undefined = mng.getActionsCache()[action.identifier]

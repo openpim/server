@@ -330,7 +330,7 @@ export default {
         }
     },
     Mutation: {
-        saveSearch: async (parent: any, { identifier, name, publicSearch, extended, filters, whereClause }: any, context: Context) => {
+        saveSearch: async (parent: any, { identifier, entity, name, publicSearch, extended, filters, whereClause }: any, context: Context) => {
             context.checkAuth()
             if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
@@ -344,6 +344,7 @@ export default {
                 if (data.user !== context.getCurrentUser()?.login) {
                     throw new Error('Failed to update search that belogs to another user by identifier: ' + identifier + ', tenant: ' + context.getCurrentUser()?.tenantId)
                 }
+                data.entity = entity
                 if (name) data.name = name
                 if (extended != null) data.extended = extended
                 if (filters) data.filters = filters
@@ -357,11 +358,12 @@ export default {
             } else {
                 const data = await sequelize.transaction(async (t) => {
                     return await SavedSearch.create ({
-                        identifier: identifier,
+                        identifier,
+                        entity,
                         tenantId: context.getCurrentUser()!.tenantId,
                         createdBy: context.getCurrentUser()!.login,
                         updatedBy: context.getCurrentUser()!.login,
-                        name: name,
+                        name,
                         public: publicSearch != null ? publicSearch : false,
                         extended: extended != null ? extended : false,
                         filters: filters || [],

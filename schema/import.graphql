@@ -184,6 +184,9 @@ input OtherAccessRequest {
   exportXLS: Boolean!
   exportCSV: Boolean!
   importXLS: Boolean!
+  searchRelations: Boolean!
+  exportRelationsXLS: Boolean!
+  importRelationsXLS: Boolean!
 }
 
 input LOVImportRequest {
