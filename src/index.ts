@@ -15,6 +15,7 @@ import { Buffer } from 'buffer'
 /* const env = process.argv.length > 2 ? '.'+process.argv[2] : ''
 logger.info("Using environment: [" + env + "]")
 dotenv.config({ path: './.env' + env  }) */
+dotenv.config({ path: './.env' }) 
 
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
 if (process.env.OPENPIM_DATABASE_NAME) process.env.DATABASE_NAME = process.env.OPENPIM_DATABASE_NAME
