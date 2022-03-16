@@ -12,9 +12,9 @@ import * as dotenv from "dotenv";
 import * as crypto from "crypto"
 import { Buffer } from 'buffer'
 
-const env = process.argv.length > 2 ? '.'+process.argv[2] : ''
+/* const env = process.argv.length > 2 ? '.'+process.argv[2] : ''
 logger.info("Using environment: [" + env + "]")
-dotenv.config({ path: './.env' + env  })
+dotenv.config({ path: './.env' + env  }) */
 
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
 if (process.env.OPENPIM_DATABASE_NAME) process.env.DATABASE_NAME = process.env.OPENPIM_DATABASE_NAME
@@ -90,6 +90,10 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       return (params);
     }
   })));
+
+  app.get('/healthcheck', async (req, res) => {
+    res.json({result: "OK"})
+  })
 
   app.post('/asset-upload', async (req, res) => {
     try {
