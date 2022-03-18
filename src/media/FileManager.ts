@@ -77,8 +77,8 @@ export class FileManager {
         try {
             fs.renameSync(file, fullPath)
         } catch (e) { 
-            logger.error('Failed to rename file (will use copy instead): ', file, fullPath)
-            logger.error(e)
+            // logger.error('Failed to rename file (will use copy instead): ', file, fullPath)
+            // logger.error(e)
             fs.copyFileSync(file, fullPath)
             fs.unlinkSync(file)
         }
