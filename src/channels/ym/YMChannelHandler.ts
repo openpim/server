@@ -72,7 +72,8 @@ export class YMChannelHandler extends ChannelHandler {
                     }
 
                     if (channel.config.extCmd) {
-                        const cmd = channel.config.extCmd + ' ' + fileName
+                        const cmd = channel.config.extCmd.replace('{file}', fileName)
+
                         logger.debug('Starting [' + cmd + ']')
                         context.log += '\nЗапускается ' + cmd
                         const result: any = await this.asyncExec(cmd)
