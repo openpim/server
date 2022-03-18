@@ -9,6 +9,8 @@ import { FileManager } from "../../media/FileManager"
 import * as fs from 'fs'
 import { ItemRelation } from "../../models/itemRelations"
 
+const dateFormat = require("dateformat")
+
 const fsAsync = require('fs').promises
 
 interface JobContext {
@@ -32,7 +34,7 @@ export class YMChannelHandler extends ChannelHandler {
                 const currency1 = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'currency1'))
 
                 if (name && company && url && currency1) {
-                    const yml:any = {yml_catalog : {$: {date: new Date().toISOString()}, shop: {name: name, company: company, url: url, currencies:{ currency:[]}}}}
+                    const yml:any = {yml_catalog : {$: {date: dateFormat(new Date(), 'yyyy-mm-dd HH:MM')}, shop: {name: name, company: company, url: url, currencies:{ currency:[]}}}}
 
                     channel.config.ymShopAttributes.forEach((attrConfig:any) => {
                         if (attrConfig.id !== 'name' && attrConfig.id !== 'company' && attrConfig.id !== 'url') {
