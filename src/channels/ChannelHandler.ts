@@ -269,6 +269,8 @@ export interface ChannelCategory {
 
 export interface ChannelAttribute {
   id: string
+  type: string
+  isNumber: boolean
   name: string
   required: boolean
   dictionary: boolean

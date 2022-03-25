@@ -8,6 +8,8 @@ import logger from "../../logger"
 import { sequelize } from '../../models'
 import * as uuid from "uuid"
 import * as fs from 'fs'
+import { Op } from 'sequelize'
+import { type } from 'os'
 
 interface JobContext {
     log: string
@@ -34,6 +36,10 @@ export class WBChannelHandler extends ChannelHandler {
             return
         }
 
+        if (!channel.config.wbCodeAttr) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где находится артикул товара')
+            return
+        }
 
         try {
             if (!data) {
@@ -65,16 +71,16 @@ export class WBChannelHandler extends ChannelHandler {
     }
 
     async syncJob(channel: Channel, context: JobContext, data: any) {
-        context.log += 'Запущена синхронизация с Ozon\n'
+        context.log += 'Запущена синхронизация с WB\n'
 
         if (data.item) {
             const item = await Item.findByPk(data.item)
             await this.syncItem(channel, item!, context)
         } else {
             const query:any = {}
-            query[channel.config.ozonIdAttr] = { [Op.ne]: '' }
+            query[channel.identifier] = { [Op.ne]: '' }
             let items = await Item.findAll({ 
-                where: { tenantId: channel.tenantId, values: query} 
+                where: { tenantId: channel.tenantId, channels: query} 
             })
             context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
             for (let i = 0; i < items.length; i++) {
@@ -83,183 +89,77 @@ export class WBChannelHandler extends ChannelHandler {
             }
         }
         context.log += 'Cинхронизация закончена'
-/*
-        context.log += 'Запущена синхронизация с Wildberries\n'
-
-        let total = 0
-        let current = 0
-        const url = 'https://suppliers-api.wildberries.ru/card/list'
-        const request = {
-            "id": uuid.v4(),
-            "jsonrpc": "2.0",
-            "params": {
-              "query": {
-                "limit": 1000,
-                "offset": 0
-              }
-            }
-        }
-
-        do {
-            logger.info("Sending request Windberries: " + url + " => " + JSON.stringify(request))
-            const res = await fetch(url, {
-                method: 'post',
-                body:    JSON.stringify(request),
-                headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
-            })
-
-            if (res.status !== 200) {
-                const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
-                context.log += msg                      
-                return
-            } else {
-                const json = await res.json()
-                if (json.error) {
-                    const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
-                    context.log += msg                      
-                    logger.info("Error from Windberries: " + JSON.stringify(json))
-                    return
-                }
-
-                total = json.result.cursor.total
-                context.log += 'Найдено '+ total + ' товаров, выбрано ' + request.params.query.limit + ' со смещением ' + request.params.query.offset + '\n'
-                current = request.params.query.offset + request.params.query.limit + 1
-                request.params.query.offset = current
-
-                for (let i = 0; i < json.result.cards.length; i++) {
-                    const card = json.result.cards[i];
-                    await this.syncCard(channel, card, context, data.attr)
-                }
-    
-            }
-        } while (total >= current)
-
-        context.log += 'Cинхронизация закончена' */
     }
 
     async syncItem(channel: Channel, item: Item, context: JobContext) {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
-        if (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]) {
-            const tst = ''+item.values[channel.config.ozonIdAttr]
-            if (tst.startsWith('task_id=')) {
-                // receive product id first
-                const taskId = tst.substring(8)
-                const log2 = "Sending request to Ozon to check task id: " + taskId
-                logger.info(log2)
-                if (channel.config.debug) context.log += log2+'\n'
-                const res2 = await fetch('https://api-seller.ozon.ru/v1/product/import/info', {
+        if (item.channels[channel.identifier]) {
+            const article = item.values[channel.config.wbCodeAttr]
+            if (!article) {
+                item.channels[channel.identifier].status = 3
+                item.channels[channel.identifier].message = 'Не найдено значение артикула товара в атрибуте: ' + channel.config.wbCodeAttr
+            } else {
+                const url = 'https://suppliers-api.wildberries.ru/card/list'
+                const request = {
+                    "id": uuid.v4(),
+                    "jsonrpc": "2.0",
+                    "params": {
+                        "filter": {
+                            "find": [
+                                {
+                                    "column": "nomenclatures.vendorCode",
+                                    "search": article
+                                }
+                            ]
+                        },
+                    "query": {
+                        "limit": 1000,
+                        "offset": 0
+                    }
+                    }
+                }
+                let msg = "Запрос на WB: " + url + " => " + JSON.stringify(request)
+                logger.info(msg)
+                if (channel.config.debug) context.log += msg+'\n'
+                const res = await fetch(url, {
                     method: 'post',
-                    body:    JSON.stringify({task_id: taskId}),
-                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                    body:    JSON.stringify(request),
+                    headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
                 })
-                if (res2.status !== 200) {
-                    const text = await res2.text()
-                    const msg = 'Ошибка запроса на Ozon: ' + res2.statusText + "   " + text
+    
+                if (res.status !== 200) {
+                    const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
                     context.log += msg                      
-                    this.reportError(channel, item, msg)
-                    logger.error(msg)
                     return
                 } else {
-                    const json2 = await res2.json()
-                    const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
-                    logger.info(log3)
-                    if (channel.config.debug) context.log += log3+'\n'
-                    if (json2.result.items.length === 0 || json2.result.items[0].product_id == 0) {
-                        context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил product_id \n'
-                        return
-                    } else {
-                        item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
-                        item.changed('values', true)
-                    }
+                    const json = await res.json()
+                    if (channel.config.debug) context.log += 'Ответ от WB '+JSON.stringify(json)+'\n'
+                    if (json.result.cursor.total == 0) {
+                        const msg = 'Товар с артикулом '+article+' не найден на WB'
+                        context.log += msg                      
+                        logger.info(msg)
+                        item.channels[channel.identifier].status = 3
+                        item.channels[channel.identifier].message = msg
+                    } else {    
+                        const card = json.result.cards[0];
+                        await this.syncCard(channel, card, item, context)
+                    }        
                 }
             }
 
-            // try to find current status
-            const url = 'https://api-seller.ozon.ru/v2/product/info'
-            const request = {
-                "product_id": item.values[channel.config.ozonIdAttr]
-            }
-            const log = "Sending request Ozon: " + url + " => " + JSON.stringify(request)
-            logger.info(log)
-            if (channel.config.debug) context.log += log+'\n'
-            const res = await fetch(url, {
-                method: 'post',
-                body: JSON.stringify(request),
-                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
-            if (res.status !== 200) {
-                const msg = 'Ошибка запроса на Ozon: ' + res.statusText
-                context.log += msg
-                return
-            } else {
-                const data = await res.json()
-                logger.info('   received data: ' + JSON.stringify(data))
-                const result = data.result
-                context.log += '   статус товара: ' + JSON.stringify(result.status)
-
-                if (result.status.is_created && !result.status.is_failed && result.status.moderate_status !== 'declined') {
-                    item.channels[channel.identifier].status = 2
-                    item.channels[channel.identifier].message = JSON.stringify(result.status)
-                    item.channels[channel.identifier].syncedAt = new Date().getTime()
-                    item.changed('channels', true)
-
-                    logger.info('   product sources: ' + JSON.stringify(result.sources))
-                    context.log += '   sources: ' + JSON.stringify(result.sources)
-
-                    if (channel.config.ozonFBSIdAttr) {
-                        const fbs = result.sources.find((elem: any) => elem.source === 'fbs')
-                        if (fbs) {
-                            item.values[channel.config.ozonFBSIdAttr] = fbs.sku
-                            item.changed('values', true)
-                        }
-                    }
-                    if (channel.config.ozonFBOIdAttr) {
-                        const fbo = result.sources.find((elem: any) => elem.source === 'fbo')
-                        if (fbo) {
-                            item.values[channel.config.ozonFBOIdAttr] = fbo.sku
-                            item.changed('values', true)
-                        }
-                    }
-                } else if (result.status.is_failed || result.status.moderate_status === 'declined') {
-                    item.channels[channel.identifier].status = 3
-                    item.channels[channel.identifier].message = JSON.stringify(result.status)
-                    item.channels[channel.identifier].syncedAt = new Date().getTime()
-                    item.changed('channels', true)
-                } else {
-                    item.channels[channel.identifier].status = 4
-                    item.channels[channel.identifier].message = 'Модерация: ' + JSON.stringify(result.status)
-                    item.channels[channel.identifier].syncedAt = new Date().getTime()
-                    item.changed('channels', true)
-                }
-            }
             await sequelize.transaction(async (t) => {
                 await item.save({ transaction: t })
             })
-            context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
         } else {
             context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
         }
 
     }    
 
-    async syncCard(channel: Channel, card: any, context: JobContext, attr:string) {
+    async syncCard(channel: Channel, card: any, item: Item, context: JobContext) {
         const sku = card.nomenclatures[0].vendorCode
         context.log += 'Обрабатывается товар: ['+ sku + ']\n'
-
-        const filter:any = {}
-        filter[attr] = sku
-        const item = await Item.findOne({
-            where: {
-                values: filter,
-                tenantId: channel.tenantId
-            }
-        })
-        
-        if(!item) {
-            context.log += '   такой товар не найден\n'
-            return
-        }
 
         if (card.imtId !== item.values[channel.config.wbIdAttr]) {
             item.values[channel.config.wbIdAttr] = card.imtId
@@ -269,9 +169,6 @@ export class WBChannelHandler extends ChannelHandler {
                 item.channels[channel.identifier].message = ''
                 item.changed('channels', true)
             }
-            await sequelize.transaction(async (t) => {
-                await item.save({transaction: t})
-            })    
             context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
         } else {
             context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
@@ -379,16 +276,18 @@ export class WBChannelHandler extends ChannelHandler {
                 id: uuid.v4(),
                 jsonrpc: "2.0",
                 params: {
-                    imtID: item.values[channel.config.wbIdAttr]
+                    imtID: parseInt(item.values[channel.config.wbIdAttr])
                 }
             }
-            logger.info("Sending request Windberries: " + loadUrl + " => " + JSON.stringify(loadRequest))
+            let msg = "Sending request Windberries: " + loadUrl + " => " + JSON.stringify(loadRequest)
+            logger.info(msg)
+            if (channel.config.debug) context.log += msg+'\n'
             const res = await fetch(loadUrl, {
                 method: 'post',
                 body:    JSON.stringify(loadRequest),
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
-            logger.info("Response status from Windberries: " + res.status)
+            logger.info("Response status from Wildberries: " + res.status)
             if (res.status !== 200) {
                 const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
                 context.log += msg                      
@@ -396,11 +295,12 @@ export class WBChannelHandler extends ChannelHandler {
                 return
             } else {
                 const json = await res.json()
+                if (channel.config.debug) context.log += 'received response:'+JSON.stringify(json)+'\n'
                 if (json.error) {
                     const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
                     this.reportError(channel, item, msg)
                     context.log += msg                      
-                    logger.info("Error from Windberries: " + JSON.stringify(json))
+                    logger.info("Error from Wildberries: " + JSON.stringify(json))
                     return
                 }
                 request.params.card = json.result.card
@@ -484,13 +384,17 @@ export class WBChannelHandler extends ChannelHandler {
                 try {
                     const value = await this.getValueByMapping(channel, attrConfig, item, language)
                     if (value) {
-                        const data = {type: attr.name, params: <any[]>[]}
+                        const data = {type: attr.type, params: <any[]>[]}
                         if (Array.isArray(value)) {
                             value.forEach((elem:any) => {
-                                data.params.push({ value: elem })
+                                const obj:any = {}
+                                obj[attr.isNumber?'count':'value'] = elem
+                                data.params.push(obj)
                             })
                         } else {
-                            data.params.push({ value: value })
+                            const obj:any = {}
+                            obj[attr.isNumber?'count':'value'] = value
+                            data.params.push(obj)
                         }
 
                         if (attrConfig.id.startsWith('nom#')) {
@@ -542,16 +446,20 @@ export class WBChannelHandler extends ChannelHandler {
     async sendRequest(channel: Channel, item: Item, request: any, context: JobContext) {
         const create = item.values[channel.config.wbIdAttr] ? false : true
 
-        if (!create) request.params.card.imtId = item.values[channel.config.wbIdAttr]
+        if (!create) request.params.card.imtId = parseInt(item.values[channel.config.wbIdAttr])
         const url = create ? 'https://suppliers-api.wildberries.ru/card/create' : 'https://suppliers-api.wildberries.ru/card/update'
-        logger.info("Sending request Windberries: " + url + " => " + JSON.stringify(request))
+        let msg = "Sending request Windberries: " + url + " => " + JSON.stringify(request)
+        logger.info(msg)
+        if (channel.config.debug) context.log += msg+'\n'
 
         const res = await fetch(url, {
             method: 'post',
             body:    JSON.stringify(request),
             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
         })
-        logger.info("Response status from Windberries: " + res.status)
+        msg = "Response status from Windberries: " + res.status
+        logger.info(msg)
+        if (channel.config.debug) context.log += msg+'\n'
         if (res.status !== 200) {
             const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
             context.log += msg                      
@@ -559,6 +467,7 @@ export class WBChannelHandler extends ChannelHandler {
             return
         } else {
             const json = await res.json()
+            if (channel.config.debug) context.log += 'received response:'+JSON.stringify(json)+'\n'
             if (json.error) {
                 const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
                 this.reportError(channel, item, msg)
@@ -589,6 +498,9 @@ export class WBChannelHandler extends ChannelHandler {
                   }
                 }
             }
+            let msg = "Sending request Windberries: https://suppliers-api.wildberries.ru/card/list => " + JSON.stringify(query)
+            logger.info(msg)
+            if (channel.config.debug) context.log += msg+'\n'
             const res = await fetch('https://suppliers-api.wildberries.ru/card/list', {
                 method: 'post',
                 body:    JSON.stringify(query),
@@ -601,6 +513,7 @@ export class WBChannelHandler extends ChannelHandler {
                 return
             } else {
                 const json = await res.json()
+                if (channel.config.debug) context.log += 'received response:'+JSON.stringify(json)+'\n'
                 if (json.error) {
                     const msg = 'Ошибка запроса проверки на Wildberries: ' + json.error.message
                     context.log += msg                      
@@ -713,6 +626,8 @@ export class WBChannelHandler extends ChannelHandler {
             data = Object.values(json.data.addin).map((addin:any) => { 
                 return { 
                     id: this.transliterate((<string>addin.type).toLowerCase()), 
+                    type: addin.type,
+                    isNumber: addin.isNumber,
                     name: addin.type + (addin.units ? ' (' + addin.units[0] + ')' : '') + (addin.isNumber ? ' [число]' : ''),
                     required: addin.required,
                     dictionary: !!addin.dictionary,
@@ -724,6 +639,8 @@ export class WBChannelHandler extends ChannelHandler {
                 const nomenclature = json.data.nomenclature.addin.map((addin:any) => { 
                     return { 
                         id: 'nom#' + this.transliterate((<string>addin.type).toLowerCase()), 
+                        type: addin.type,
+                        isNumber: addin.isNumber,
                         name: addin.type + (addin.units ? ' (' + addin.units[0] + ')' : '') + (addin.isNumber ? ' [число]' : ''),
                         required: addin.required,
                         dictionary: !!addin.dictionary,
@@ -737,6 +654,8 @@ export class WBChannelHandler extends ChannelHandler {
                 const variation = json.data.nomenclature.variation.addin.map((addin:any) => { 
                     return { 
                         id: 'var#' + this.transliterate((<string>addin.type).toLowerCase()), 
+                        type: addin.type,
+                        isNumber: addin.isNumber,
                         name: addin.type + (addin.units ? ' (' + addin.units[0] + ')' : '') + (addin.isNumber ? ' [число]' : ''),
                         required: addin.required,
                         dictionary: !!addin.dictionary,
