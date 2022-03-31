@@ -14,7 +14,7 @@ import { ItemRelation } from '../models/itemRelations'
 import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
 import { ChannelExecution } from '../models/channels'
 import contentDisposition = require('content-disposition')
-import { checkValues, filterValues, processItemActions } from '../resolvers/utils'
+import { checkValues, filterValues, mergeValues, processItemActions } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
@@ -273,7 +273,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             const values = {}
             await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, item.channels, false)
             checkValues(mng, values)
-            item.values = values
+            item.values = mergeValues(values, item.values)        
             item.name = name
 
             item.updatedBy = context.getCurrentUser()!.login
