@@ -6,11 +6,11 @@ import { sequelize } from '../models'
 import { Role, User } from './users'
 import { Action } from './actions'
 import { Dashboard } from './dashboards'
-import { WhereOptions } from 'sequelize/types'
+import { WhereOptions } from 'sequelize'
 import { Channel } from './channels'
 
 import logger from '../logger'
-import * as NodeCache from 'node-cache'
+import NodeCache from 'node-cache'
 
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()

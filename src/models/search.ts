@@ -5,6 +5,7 @@ import Context from '../context';
 
 export class SavedSearch extends Base {
     public identifier!: string
+    public entity!: string
     public name!: any
     public public!: boolean
     public extended!: boolean
@@ -33,6 +34,11 @@ export function init(sequelize: Sequelize):void {
           type: new DataTypes.STRING(250),
           allowNull: false,
           unique: 'uniqueIdentifierSearch'
+        },
+        entity: {
+          type: new DataTypes.STRING(50),
+          allowNull: false,
+          defaultValue: 'ITEM'
         },
         name: {
           type: DataTypes.JSONB,

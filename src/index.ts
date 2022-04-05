@@ -1,20 +1,21 @@
-import * as express from 'express'
-import { graphqlHTTP } from 'express-graphql' 
-import { importSchema } from 'graphql-import'
-import { makeExecutableSchema } from 'graphql-tools'
-import { GraphQLError } from 'graphql'
-import * as cors from 'cors'
-import * as bodyParser from 'body-parser'
-import logger from './logger'
-
-import * as dotenv from "dotenv";
-
-import * as crypto from "crypto"
-import { Buffer } from 'buffer'
-
-const env = process.argv.length > 2 ? '.'+process.argv[2] : ''
-logger.info("Using environment: [" + env + "]")
-dotenv.config({ path: './.env' + env  })
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import { Buffer } from 'buffer';
+import cors from 'cors';
+import * as crypto from "crypto";
+import * as dotenv from 'dotenv';
+import express from 'express';
+import { graphqlHTTP } from 'express-graphql';
+import { GraphQLError } from 'graphql';
+import { importSchema } from 'graphql-import';
+import { IncomingMessage } from 'http';
+import { ChannelsManagerFactory } from './channels';
+import Context from './context';
+import logger from './logger';
+import { processChannelDownload, processCreateUpload, processDownload, processUpload } from './media';
+import { initModels } from './models';
+import { ModelsManager } from './models/manager';
+import resolvers from './resolvers';
+import version from './version';
 
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
 if (process.env.OPENPIM_DATABASE_NAME) process.env.DATABASE_NAME = process.env.OPENPIM_DATABASE_NAME
@@ -23,23 +24,16 @@ if (process.env.OPENPIM_DATABASE_USER) process.env.DATABASE_USER = process.env.O
 if (process.env.OPENPIM_DATABASE_PASSWORD) process.env.DATABASE_PASSWORD = process.env.OPENPIM_DATABASE_PASSWORD
 if (process.env.OPENPIM_AUDIT_URL) process.env.AUDIT_URL = process.env.OPENPIM_AUDIT_URL
 
-import resolvers from './resolvers'
-import Context from './context'
-import { IncomingMessage } from 'http';
-import { initModels } from './models'
-import { ModelsManager } from './models/manager'
-import { processUpload, processCreateUpload, processDownload, processChannelDownload } from './media';
+dotenv.config();
+const app = express();
 
-import version from './version'
-import { ChannelsManagerFactory } from './channels'
-
-// Construct a schema, using GraphQL schema language
-async function start() { 
-  logger.info('Server version: ' + version.buildMajor + '.' + version.buildMinor + "." + version.buildRevision)
-  logger.info('Arguments: ' + process.argv)
+(async () => {
+  logger.info(`Server version: ${  version.buildMajor  }.${  version.buildMinor  }.${  version.buildRevision}`)
+  logger.info(`Arguments: ${  process.argv}`)
   
+  // Construct a schema, using GraphQL schema language
   const typeDefs = await importSchema('./schema/index.graphql'); 
-  let schema = await makeExecutableSchema({ typeDefs, resolvers })
+  const schema = await makeExecutableSchema({ typeDefs, resolvers })
 
   await initModels();
 
@@ -71,22 +65,21 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   ModelsManager.getInstance().init(channelTypes)
   ChannelsManagerFactory.getInstance().init()
-
-  let app = express();
-  app.use(bodyParser.json({limit: '500mb'}));
-  app.use(cors())
+  
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cors());
   
   app.use('/graphql', graphqlHTTP(async (request: IncomingMessage ) => ({
-    schema: schema,
+    schema,
     graphiql: false,
     context: await Context.create(request),
     customFormatErrorFn: (error: GraphQLError) => {
       const params = {
         message: error.message
       };
-      // console.log(request)
       logger.error('ERROR -', error, error.source);
-      logger.error('   request - ' + JSON.stringify((<any>request).body));
+      logger.error(`   request - ${ JSON.stringify((<any>request).body)}`);
       return (params);
     }
   })));
@@ -97,7 +90,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       context.checkAuth()
 
       await processUpload(context, req, res)
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).send(error.message)
     }
   })
@@ -108,7 +101,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       context.checkAuth()
 
       await processCreateUpload(context, req, res)
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).send(error.message)
     }
   })
@@ -117,7 +110,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     try {
       const context = await Context.create(req)
       await processDownload(context, req, res, false)
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).send(error.message)
     }
   })
@@ -127,7 +120,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       const context = await Context.create(req)
       context.checkAuth()
       await processDownload(context, req, res, true)
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).send(error.message)
     }
   })
@@ -137,13 +130,11 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       const context = await Context.create(req)
       context.checkAuth()
       await processChannelDownload(context, req, res, false)
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).send(error.message)
     }
   })
 
   app.listen(process.env.PORT);
-  logger.info('Running a GraphQL API server at http://localhost:'+process.env.PORT+'/graphql');
-}
-
-start()
+  logger.info('Running a GraphQL API server at http://localhost:' + process.env.PORT + '/graphql');
+})();

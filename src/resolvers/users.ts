@@ -3,7 +3,7 @@ import * as jwt from 'jsonwebtoken';
 import { sequelize } from '../models'
 import { User, Role } from '../models/users'
 import { GraphQLError } from 'graphql';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { ModelsManager, UserWrapper } from '../models/manager';
 import { Op } from 'sequelize'
 
@@ -78,7 +78,7 @@ export default {
                     relAccess: relAccess || { relations: [], access: 0, groups: [] },
                     itemAccess: itemAccess || { valid: [], fromItems: [], access: 0, groups: [] },
                     channelAccess: channelAccess || [],
-                    otherAccess: otherAccess || { audit: false, search: false, exportXLS: false, exportCSV: false, importXLS: false },
+                    otherAccess: otherAccess || { audit: false, search: false, exportXLS: false, exportCSV: false, importXLS: false, searchRelations: false, exportRelationsXLS: false, importRelationsXLS: false },
                     options: options ? options : []
                 }, {transaction: t})
             })

@@ -24,7 +24,7 @@ import * as https from 'https'
 import logger from '../logger'
 import { LOV } from "../models/lovs"
 import { Attribute } from "../models/attributes"
-const dateFormat = require("dateformat")
+import dateFormat from "dateformat"
 
 export function filterChannels(context: Context, channels:any) {
     for (const prop in channels) {
@@ -353,7 +353,7 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
             sandbox: sandbox
         }) 
         vm.setGlobals({console: console})
-
+        actions.sort((a, b) => a.order - b.order)
         for (let i = 0; i < actions.length; i++) {
             const action = actions[i]
             let script:VMScript | {compileError: boolean, error: string} | undefined = mng.getActionsCache()[action.identifier]

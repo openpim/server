@@ -3,8 +3,8 @@ type Query {
 }
 
 type Mutation {
-  createAction(identifier: String!, name: LanguageDependentString!, code: String!, triggers: JSON!): ID!
-  updateAction(id: ID!, name: LanguageDependentString, code: String, triggers: JSON) : ID!
+  createAction(identifier: String!, name: LanguageDependentString!, code: String!, order: Int, triggers: JSON!): ID!
+  updateAction(id: ID!, name: LanguageDependentString, code: String, order: Int, triggers: JSON) : ID!
   removeAction(id: ID!) : Boolean!
   executeButtonAction(itemId: ID!, buttonText: String!) : ButtonActionResult!
   testAction(itemId: ID!, actionId: ID!) : ActionTestResult
@@ -16,6 +16,7 @@ type Action {
   name: LanguageDependentString!
   code: String!
   triggers: JSON!
+  order: Int!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!

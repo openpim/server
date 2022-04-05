@@ -3,7 +3,7 @@ import { IImportConfig, ImportResponse, ReturnMessage, ImportResult, ImportMode,
 import { sequelize } from "../../models"
 import { ModelsManager, ModelManager, AttrGroupWrapper, UserWrapper } from "../../models/manager"
 import { User } from "../../models/users"
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize'
 
 import logger from '../../logger'

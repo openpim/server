@@ -21,6 +21,7 @@ export class Action extends Base {
   public identifier!: string
   public name!: any
   public code!: string
+  public order!: number
   public triggers!: any
 }
 
@@ -38,6 +39,10 @@ export function init(sequelize: Sequelize):void {
       code: {
         type: new DataTypes.STRING(65535),
         allowNull: false
+      },
+      order: {
+        type: new DataTypes.INTEGER,
+        allowNull: false,
       },
       triggers: {
         type: DataTypes.JSONB,

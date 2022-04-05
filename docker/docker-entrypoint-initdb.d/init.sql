@@ -24,7 +24,7 @@ CREATE EXTENSION IF NOT EXISTS ltree WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION ltree; Type: COMMENT; Schema: -; Owner:
+-- Name: EXTENSION ltree; Type: COMMENT; Schema: -; Owner: 
 --
 
 COMMENT ON EXTENSION ltree IS 'data type for hierarchical tree-like structures';
@@ -39,17 +39,17 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.actions (
-                                identifier character varying(250) NOT NULL,
-                                name jsonb NOT NULL,
-                                code character varying(65535) NOT NULL,
-                                triggers jsonb NOT NULL,
-                                id integer NOT NULL,
-                                "tenantId" character varying(50) NOT NULL,
-                                "createdBy" character varying(250) NOT NULL,
-                                "updatedBy" character varying(250) NOT NULL,
-                                "createdAt" timestamp with time zone NOT NULL,
-                                "updatedAt" timestamp with time zone NOT NULL,
-                                "deletedAt" timestamp with time zone
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    code character varying(65535) NOT NULL,
+    triggers jsonb NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -82,18 +82,18 @@ ALTER SEQUENCE public.actions_id_seq OWNED BY public.actions.id;
 --
 
 CREATE TABLE public."attrGroups" (
-                                     identifier character varying(250) NOT NULL,
-                                     name jsonb NOT NULL,
-                                     "order" integer NOT NULL,
-                                     visible boolean NOT NULL,
-                                     id integer NOT NULL,
-                                     "tenantId" character varying(50) NOT NULL,
-                                     "createdBy" character varying(250) NOT NULL,
-                                     "updatedBy" character varying(250) NOT NULL,
-                                     "createdAt" timestamp with time zone NOT NULL,
-                                     "updatedAt" timestamp with time zone NOT NULL,
-                                     "deletedAt" timestamp with time zone,
-                                     options jsonb DEFAULT '[]'::jsonb
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    "order" integer NOT NULL,
+    visible boolean NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    options jsonb DEFAULT '[]'::jsonb
 );
 
 
@@ -126,27 +126,27 @@ ALTER SEQUENCE public."attrGroups_id_seq" OWNED BY public."attrGroups".id;
 --
 
 CREATE TABLE public.attributes (
-                                   identifier character varying(250) NOT NULL,
-                                   name jsonb NOT NULL,
-                                   "order" integer NOT NULL,
-                                   valid jsonb,
-                                   visible jsonb,
-                                   relations jsonb,
-                                   "languageDependent" boolean NOT NULL,
-                                   type integer NOT NULL,
-                                   pattern character varying(250),
-                                   "errorMessage" jsonb,
-                                   lov integer,
-                                   "richText" boolean NOT NULL,
-                                   "multiLine" boolean NOT NULL,
-                                   id integer NOT NULL,
-                                   "tenantId" character varying(50) NOT NULL,
-                                   "createdBy" character varying(250) NOT NULL,
-                                   "updatedBy" character varying(250) NOT NULL,
-                                   "createdAt" timestamp with time zone NOT NULL,
-                                   "updatedAt" timestamp with time zone NOT NULL,
-                                   "deletedAt" timestamp with time zone,
-                                   options jsonb DEFAULT '[]'::jsonb
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    "order" integer NOT NULL,
+    valid jsonb,
+    visible jsonb,
+    relations jsonb,
+    "languageDependent" boolean NOT NULL,
+    type integer NOT NULL,
+    pattern character varying(250),
+    "errorMessage" jsonb,
+    lov integer,
+    "richText" boolean NOT NULL,
+    "multiLine" boolean NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    options jsonb DEFAULT '[]'::jsonb
 );
 
 
@@ -194,22 +194,22 @@ ALTER TABLE public.channels_id_seq OWNER TO postgres;
 --
 
 CREATE TABLE public.channels (
-                                 identifier character varying(250) NOT NULL,
-                                 name jsonb NOT NULL,
-                                 active boolean NOT NULL,
-                                 type integer NOT NULL,
-                                 valid jsonb,
-                                 visible jsonb,
-                                 config jsonb NOT NULL,
-                                 mappings jsonb NOT NULL,
-                                 runtime jsonb NOT NULL,
-                                 id integer DEFAULT nextval('public.channels_id_seq'::regclass) NOT NULL,
-                                 "tenantId" character varying(50) NOT NULL,
-                                 "createdBy" character varying(250) NOT NULL,
-                                 "updatedBy" character varying(250) NOT NULL,
-                                 "createdAt" timestamp with time zone NOT NULL,
-                                 "updatedAt" timestamp with time zone NOT NULL,
-                                 "deletedAt" timestamp with time zone
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    active boolean NOT NULL,
+    type integer NOT NULL,
+    valid jsonb,
+    visible jsonb,
+    config jsonb NOT NULL,
+    mappings jsonb NOT NULL,
+    runtime jsonb NOT NULL,
+    id integer DEFAULT nextval('public.channels_id_seq'::regclass) NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -235,19 +235,19 @@ ALTER TABLE public.channels_exec_id_seq OWNER TO postgres;
 --
 
 CREATE TABLE public.channels_exec (
-                                      "channelId" integer NOT NULL,
-                                      status integer NOT NULL,
-                                      "startTime" timestamp with time zone NOT NULL,
-                                      "finishTime" timestamp with time zone,
-                                      "storagePath" character varying(255),
-                                      log jsonb,
-                                      id integer DEFAULT nextval('public.channels_exec_id_seq'::regclass) NOT NULL,
-                                      "tenantId" character varying(50) NOT NULL,
-                                      "createdBy" character varying(250) NOT NULL,
-                                      "updatedBy" character varying(250) NOT NULL,
-                                      "createdAt" timestamp with time zone NOT NULL,
-                                      "updatedAt" timestamp with time zone NOT NULL,
-                                      "deletedAt" timestamp with time zone
+    "channelId" integer NOT NULL,
+    status integer NOT NULL,
+    "startTime" timestamp with time zone NOT NULL,
+    "finishTime" timestamp with time zone,
+    "storagePath" character varying(255),
+    log jsonb,
+    id integer DEFAULT nextval('public.channels_exec_id_seq'::regclass) NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -258,17 +258,17 @@ ALTER TABLE public.channels_exec OWNER TO postgres;
 --
 
 CREATE TABLE public.dashboards (
-                                   identifier character varying(250) NOT NULL,
-                                   name jsonb NOT NULL,
-                                   users jsonb NOT NULL,
-                                   components jsonb NOT NULL,
-                                   id integer NOT NULL,
-                                   "tenantId" character varying(50) NOT NULL,
-                                   "createdBy" character varying(250) NOT NULL,
-                                   "updatedBy" character varying(250) NOT NULL,
-                                   "createdAt" timestamp with time zone NOT NULL,
-                                   "updatedAt" timestamp with time zone NOT NULL,
-                                   "deletedAt" timestamp with time zone
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    users jsonb NOT NULL,
+    components jsonb NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -301,10 +301,10 @@ ALTER SEQUENCE public.dashboards_id_seq OWNED BY public.dashboards.id;
 --
 
 CREATE TABLE public.group_attribute (
-                                        "createdAt" timestamp with time zone NOT NULL,
-                                        "updatedAt" timestamp with time zone NOT NULL,
-                                        "AttrGroupId" integer NOT NULL,
-                                        "AttributeId" integer NOT NULL
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "AttrGroupId" integer NOT NULL,
+    "AttributeId" integer NOT NULL
 );
 
 
@@ -329,21 +329,21 @@ ALTER TABLE public.identifier_seq OWNER TO postgres;
 --
 
 CREATE TABLE public."itemRelations" (
-                                        identifier character varying(250) NOT NULL,
-                                        "itemId" integer NOT NULL,
-                                        "itemIdentifier" character varying(250) NOT NULL,
-                                        "relationId" integer NOT NULL,
-                                        "relationIdentifier" character varying(250) NOT NULL,
-                                        "targetId" integer NOT NULL,
-                                        "targetIdentifier" character varying(250) NOT NULL,
-                                        "values" jsonb,
-                                        id integer NOT NULL,
-                                        "tenantId" character varying(50) NOT NULL,
-                                        "createdBy" character varying(250) NOT NULL,
-                                        "updatedBy" character varying(250) NOT NULL,
-                                        "createdAt" timestamp with time zone NOT NULL,
-                                        "updatedAt" timestamp with time zone NOT NULL,
-                                        "deletedAt" timestamp with time zone
+    identifier character varying(250) NOT NULL,
+    "itemId" integer NOT NULL,
+    "itemIdentifier" character varying(250) NOT NULL,
+    "relationId" integer NOT NULL,
+    "relationIdentifier" character varying(250) NOT NULL,
+    "targetId" integer NOT NULL,
+    "targetIdentifier" character varying(250) NOT NULL,
+    "values" jsonb,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -376,24 +376,24 @@ ALTER SEQUENCE public."itemRelations_id_seq" OWNED BY public."itemRelations".id;
 --
 
 CREATE TABLE public.items (
-                              identifier character varying(250) NOT NULL,
-                              path public.ltree NOT NULL,
-                              name jsonb NOT NULL,
-                              "typeId" integer NOT NULL,
-                              "typeIdentifier" character varying(250) NOT NULL,
-                              "parentIdentifier" character varying(250) NOT NULL,
-                              "values" jsonb,
-                              "fileOrigName" character varying(250) NOT NULL,
-                              "storagePath" character varying(500) NOT NULL,
-                              "mimeType" character varying(250) NOT NULL,
-                              id integer NOT NULL,
-                              "tenantId" character varying(50) NOT NULL,
-                              "createdBy" character varying(250) NOT NULL,
-                              "updatedBy" character varying(250) NOT NULL,
-                              "createdAt" timestamp with time zone NOT NULL,
-                              "updatedAt" timestamp with time zone NOT NULL,
-                              "deletedAt" timestamp with time zone,
-                              channels jsonb DEFAULT '{}'::jsonb
+    identifier character varying(250) NOT NULL,
+    path public.ltree NOT NULL,
+    name jsonb NOT NULL,
+    "typeId" integer NOT NULL,
+    "typeIdentifier" character varying(250) NOT NULL,
+    "parentIdentifier" character varying(250) NOT NULL,
+    "values" jsonb,
+    "fileOrigName" character varying(250) NOT NULL,
+    "storagePath" character varying(500) NOT NULL,
+    "mimeType" character varying(250) NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    channels jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -426,15 +426,15 @@ ALTER SEQUENCE public.items_id_seq OWNED BY public.items.id;
 --
 
 CREATE TABLE public.languages (
-                                  identifier character varying(250) NOT NULL,
-                                  name jsonb NOT NULL,
-                                  id integer NOT NULL,
-                                  "tenantId" character varying(50) NOT NULL,
-                                  "createdBy" character varying(250) NOT NULL,
-                                  "updatedBy" character varying(250) NOT NULL,
-                                  "createdAt" timestamp with time zone NOT NULL,
-                                  "updatedAt" timestamp with time zone NOT NULL,
-                                  "deletedAt" timestamp with time zone
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -467,16 +467,16 @@ ALTER SEQUENCE public.languages_id_seq OWNED BY public.languages.id;
 --
 
 CREATE TABLE public.lovs (
-                             identifier character varying(250) NOT NULL,
-                             name jsonb NOT NULL,
-                             "values" jsonb NOT NULL,
-                             id integer NOT NULL,
-                             "tenantId" character varying(50) NOT NULL,
-                             "createdBy" character varying(250) NOT NULL,
-                             "updatedBy" character varying(250) NOT NULL,
-                             "createdAt" timestamp with time zone NOT NULL,
-                             "updatedAt" timestamp with time zone NOT NULL,
-                             "deletedAt" timestamp with time zone
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    "values" jsonb NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -509,20 +509,21 @@ ALTER SEQUENCE public.lovs_id_seq OWNED BY public.lovs.id;
 --
 
 CREATE TABLE public.relations (
-                                  identifier character varying(250) NOT NULL,
-                                  name jsonb NOT NULL,
-                                  sources jsonb,
-                                  targets jsonb,
-                                  child boolean NOT NULL,
-                                  multi boolean NOT NULL,
-                                  id integer NOT NULL,
-                                  "tenantId" character varying(50) NOT NULL,
-                                  "createdBy" character varying(250) NOT NULL,
-                                  "updatedBy" character varying(250) NOT NULL,
-                                  "createdAt" timestamp with time zone NOT NULL,
-                                  "updatedAt" timestamp with time zone NOT NULL,
-                                  "deletedAt" timestamp with time zone,
-                                  "order" integer DEFAULT 0
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    sources jsonb,
+    targets jsonb,
+    child boolean NOT NULL,
+    multi boolean NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    "order" integer DEFAULT 0,
+    options jsonb DEFAULT '[]'::jsonb
 );
 
 
@@ -555,20 +556,21 @@ ALTER SEQUENCE public.relations_id_seq OWNED BY public.relations.id;
 --
 
 CREATE TABLE public.roles (
-                              identifier character varying(250) NOT NULL,
-                              name character varying(250) NOT NULL,
-                              "configAccess" jsonb NOT NULL,
-                              "relAccess" jsonb NOT NULL,
-                              "itemAccess" jsonb NOT NULL,
-                              "otherAccess" jsonb NOT NULL,
-                              id integer NOT NULL,
-                              "tenantId" character varying(50) NOT NULL,
-                              "createdBy" character varying(250) NOT NULL,
-                              "updatedBy" character varying(250) NOT NULL,
-                              "createdAt" timestamp with time zone NOT NULL,
-                              "updatedAt" timestamp with time zone NOT NULL,
-                              "deletedAt" timestamp with time zone,
-                              "channelAccess" jsonb DEFAULT '[]'::jsonb
+    identifier character varying(250) NOT NULL,
+    name character varying(250) NOT NULL,
+    "configAccess" jsonb NOT NULL,
+    "relAccess" jsonb NOT NULL,
+    "itemAccess" jsonb NOT NULL,
+    "otherAccess" jsonb NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    "channelAccess" jsonb DEFAULT '[]'::jsonb,
+    options jsonb DEFAULT '[]'::jsonb
 );
 
 
@@ -601,18 +603,18 @@ ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
 --
 
 CREATE TABLE public."savedColumns" (
-                                       identifier character varying(250) NOT NULL,
-                                       name jsonb NOT NULL,
-                                       public boolean NOT NULL,
-                                       columns jsonb NOT NULL,
-                                       "user" character varying(250) NOT NULL,
-                                       id integer NOT NULL,
-                                       "tenantId" character varying(50) NOT NULL,
-                                       "createdBy" character varying(250) NOT NULL,
-                                       "updatedBy" character varying(250) NOT NULL,
-                                       "createdAt" timestamp with time zone NOT NULL,
-                                       "updatedAt" timestamp with time zone NOT NULL,
-                                       "deletedAt" timestamp with time zone
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    public boolean NOT NULL,
+    columns jsonb NOT NULL,
+    "user" character varying(250) NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -645,20 +647,20 @@ ALTER SEQUENCE public."savedColumns_id_seq" OWNED BY public."savedColumns".id;
 --
 
 CREATE TABLE public."savedSearch" (
-                                      identifier character varying(250) NOT NULL,
-                                      name jsonb NOT NULL,
-                                      public boolean NOT NULL,
-                                      extended boolean NOT NULL,
-                                      filters jsonb NOT NULL,
-                                      "whereClause" jsonb NOT NULL,
-                                      "user" character varying(250) NOT NULL,
-                                      id integer NOT NULL,
-                                      "tenantId" character varying(50) NOT NULL,
-                                      "createdBy" character varying(250) NOT NULL,
-                                      "updatedBy" character varying(250) NOT NULL,
-                                      "createdAt" timestamp with time zone NOT NULL,
-                                      "updatedAt" timestamp with time zone NOT NULL,
-                                      "deletedAt" timestamp with time zone
+    identifier character varying(250) NOT NULL,
+    name jsonb NOT NULL,
+    public boolean NOT NULL,
+    extended boolean NOT NULL,
+    filters jsonb NOT NULL,
+    "whereClause" jsonb NOT NULL,
+    "user" character varying(250) NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -691,22 +693,23 @@ ALTER SEQUENCE public."savedSearch_id_seq" OWNED BY public."savedSearch".id;
 --
 
 CREATE TABLE public.types (
-                              path public.ltree NOT NULL,
-                              identifier character varying(250) NOT NULL,
-                              link integer NOT NULL,
-                              name jsonb NOT NULL,
-                              icon character varying(50),
-                              "iconColor" character varying(50),
-                              file boolean NOT NULL,
-                              "mainImage" integer NOT NULL,
-                              images jsonb NOT NULL,
-                              id integer NOT NULL,
-                              "tenantId" character varying(50) NOT NULL,
-                              "createdBy" character varying(250) NOT NULL,
-                              "updatedBy" character varying(250) NOT NULL,
-                              "createdAt" timestamp with time zone NOT NULL,
-                              "updatedAt" timestamp with time zone NOT NULL,
-                              "deletedAt" timestamp with time zone
+    path public.ltree NOT NULL,
+    identifier character varying(250) NOT NULL,
+    link integer NOT NULL,
+    name jsonb NOT NULL,
+    icon character varying(50),
+    "iconColor" character varying(50),
+    file boolean NOT NULL,
+    "mainImage" integer NOT NULL,
+    images jsonb NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    options jsonb DEFAULT '[]'::jsonb
 );
 
 
@@ -739,19 +742,20 @@ ALTER SEQUENCE public.types_id_seq OWNED BY public.types.id;
 --
 
 CREATE TABLE public.users (
-                              login character varying(250) NOT NULL,
-                              name character varying(250) NOT NULL,
-                              password character varying(250) NOT NULL,
-                              email character varying(250),
-                              props jsonb,
-                              roles jsonb NOT NULL,
-                              id integer NOT NULL,
-                              "tenantId" character varying(50) NOT NULL,
-                              "createdBy" character varying(250) NOT NULL,
-                              "updatedBy" character varying(250) NOT NULL,
-                              "createdAt" timestamp with time zone NOT NULL,
-                              "updatedAt" timestamp with time zone NOT NULL,
-                              "deletedAt" timestamp with time zone
+    login character varying(250) NOT NULL,
+    name character varying(250) NOT NULL,
+    password character varying(250) NOT NULL,
+    email character varying(250),
+    props jsonb,
+    roles jsonb NOT NULL,
+    id integer NOT NULL,
+    "tenantId" character varying(50) NOT NULL,
+    "createdBy" character varying(250) NOT NULL,
+    "updatedBy" character varying(250) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    options jsonb DEFAULT '[]'::jsonb
 );
 
 
@@ -970,7 +974,7 @@ COPY public.lovs (identifier, name, "values", id, "tenantId", "createdBy", "upda
 -- Data for Name: relations; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.relations (identifier, name, sources, targets, child, multi, id, "tenantId", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "order") FROM stdin;
+COPY public.relations (identifier, name, sources, targets, child, multi, id, "tenantId", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "order", options) FROM stdin;
 \.
 
 
@@ -978,9 +982,9 @@ COPY public.relations (identifier, name, sources, targets, child, multi, id, "te
 -- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.roles (identifier, name, "configAccess", "relAccess", "itemAccess", "otherAccess", id, "tenantId", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "channelAccess") FROM stdin;
-user	User	{"lovs": 0, "roles": 0, "types": 0, "users": 0, "actions": 0, "channels": 0, "languages": 0, "relations": 0, "attributes": 0, "dashboards": 0}	{"access": 0, "groups": [], "relations": []}	{"valid": [], "access": 0, "groups": [], "fromItems": []}	{"audit": false, "search": true, "exportCSV": true, "exportXLS": true, "importXLS": false}	2	default	system	system	2020-09-16 14:23:32.909034+03	2020-09-16 14:23:32.909034+03	\N	[]
-admin	Administrator	{"lovs": 2, "roles": 2, "types": 2, "users": 2, "actions": 2, "channels": 2, "languages": 2, "relations": 2, "attributes": 2, "dashboards": 2}	{"access": 0, "groups": [], "relations": []}	{"valid": [], "access": 0, "groups": [], "fromItems": []}	{"audit": true, "search": true, "exportCSV": true, "exportXLS": true, "importXLS": true}	1	default	system	system	2020-09-16 14:23:32.909034+03	2020-09-16 14:23:32.909034+03	\N	[]
+COPY public.roles (identifier, name, "configAccess", "relAccess", "itemAccess", "otherAccess", id, "tenantId", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", "channelAccess", options) FROM stdin;
+user	User	{"lovs": 0, "roles": 0, "types": 0, "users": 0, "actions": 0, "channels": 0, "languages": 0, "relations": 0, "attributes": 0, "dashboards": 0}	{"access": 0, "groups": [], "relations": []}	{"valid": [], "access": 0, "groups": [], "fromItems": []}	{"audit": false, "search": true, "exportCSV": true, "exportXLS": true, "importXLS": false}	2	default	system	system	2020-09-16 14:23:32.909034+03	2020-09-16 14:23:32.909034+03	\N	[]	[]
+admin	Administrator	{"lovs": 2, "roles": 2, "types": 2, "users": 2, "actions": 2, "channels": 2, "languages": 2, "relations": 2, "attributes": 2, "dashboards": 2}	{"access": 0, "groups": [], "relations": []}	{"valid": [], "access": 0, "groups": [], "fromItems": []}	{"audit": true, "search": true, "exportCSV": true, "exportXLS": true, "importXLS": true}	1	default	system	system	2020-09-16 14:23:32.909034+03	2020-09-16 14:23:32.909034+03	\N	[]	[]
 \.
 
 
@@ -1004,7 +1008,7 @@ COPY public."savedSearch" (identifier, name, public, extended, filters, "whereCl
 -- Data for Name: types; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.types (path, identifier, link, name, icon, "iconColor", file, "mainImage", images, id, "tenantId", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt") FROM stdin;
+COPY public.types (path, identifier, link, name, icon, "iconColor", file, "mainImage", images, id, "tenantId", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", options) FROM stdin;
 \.
 
 
@@ -1012,8 +1016,8 @@ COPY public.types (path, identifier, link, name, icon, "iconColor", file, "mainI
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.users (login, name, password, email, props, roles, id, "tenantId", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt") FROM stdin;
-admin	Administrator	$2b$10$WtKEm5gspljprGVuHAj4QeO.QwzWiDmdEFN9VzXRbxyrSpQi9m4Fq	\N	\N	[1]	1	default	system	system	2020-09-16 14:24:07.636836+03	2020-09-16 14:24:07.636836+03	\N
+COPY public.users (login, name, password, email, props, roles, id, "tenantId", "createdBy", "updatedBy", "createdAt", "updatedAt", "deletedAt", options) FROM stdin;
+admin	Administrator	$2b$10$WtKEm5gspljprGVuHAj4QeO.QwzWiDmdEFN9VzXRbxyrSpQi9m4Fq	\N	\N	[1]	1	default	system	system	2020-09-16 14:24:07.636836+03	2020-09-16 14:24:07.636836+03	\N	[]
 \.
 
 
@@ -1427,3 +1431,13 @@ ALTER TABLE ONLY public.group_attribute
 --
 -- PostgreSQL database dump complete
 --
+
+--
+-- v1.5
+--
+
+ALTER TABLE "actions" 
+    ADD COLUMN "order" integer;
+
+ALTER TABLE "savedSearch" 
+    ADD COLUMN "entity" varchar(50);

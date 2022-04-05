@@ -412,6 +412,7 @@ export default {
             if (values) {
                 if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values}, {name: name, values: values})
                 item.values = mergeValues(values, item.values)
+                item.changed("values", true)
             } else {
                 if (audit.auditEnabled()) itemDiff = diff({name: item.name}, {name: name})
             }

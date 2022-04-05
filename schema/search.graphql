@@ -7,7 +7,7 @@ type Query {
 }
 
 type Mutation {
-  saveSearch(identifier: String!, name: LanguageDependentString!, publicSearch: Boolean, extended: Boolean, filters: JSON, whereClause: JSONObject): ID!
+  saveSearch(identifier: String!, entity: String, name: LanguageDependentString!, publicSearch: Boolean, extended: Boolean, filters: JSON, whereClause: JSONObject): ID!
   removeSearch(identifier: String!): Boolean!
   saveColumns(identifier: String!, name: LanguageDependentString!, publicAccess: Boolean, columns: JSON): ID!
   removeColumns(identifier: String!): Boolean!
@@ -24,6 +24,7 @@ input SearchRequest {
 type SavedSearch {
   id: ID!
   identifier: String!
+  entity: String
   name: LanguageDependentString!
   public: Boolean!
   extended: Boolean!
