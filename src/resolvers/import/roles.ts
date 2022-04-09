@@ -4,7 +4,7 @@ import { sequelize } from "../../models"
 import { ModelsManager, ModelManager, AttrGroupWrapper } from "../../models/manager"
 import { Item } from "../../models/items"
 import { Role, User } from "../../models/users"
-import { Op } from 'sequelize'
+import { Op, literal } from 'sequelize'
 
 import logger from '../../logger'
 
@@ -67,7 +67,8 @@ export async function importRole(context: Context, config: IImportConfig, role: 
                 }
     
                 // check Users
-                const tst1 = await User.applyScope(context).findOne({where: {roles: { [Op.contains]: data.id}}})
+                // const tst1 = await User.applyScope(context).findOne({where: {roles: { [Op.contains]: data.id}}})
+                const tst1 = await User.applyScope(context).findOne({where: literal("roles @> '"+data.id+"'")})
                 if (tst1) {
                     result.addError(ReturnMessage.RoleDeleteFailed)
                     result.result = ImportResult.REJECTED

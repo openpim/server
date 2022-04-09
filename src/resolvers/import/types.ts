@@ -8,7 +8,7 @@ import e = require("express")
 import { Relation } from "../../models/relations"
 import { Attribute } from "../../models/attributes"
 import { Item } from "../../models/items"
-import { Op } from 'sequelize'
+import { Op, literal } from 'sequelize'
 
 import logger from '../../logger'
 
@@ -68,11 +68,15 @@ export async function importType(context: Context, config: IImportConfig, type: 
                     // check Roles
                     const tst4 = mng.getRoles().find(role => role.itemAccess.valid.includes(nId))
                     // check Relations
+                    //const tst3 = await Relation.applyScope(context).findOne({
+                    //    where: {[Op.or]: [{sources: { [Op.contains]: nId}}, {targets: { [Op.contains]: nId}}]}
+                    //})
                     const tst3 = await Relation.applyScope(context).findOne({
-                        where: {[Op.or]: [{sources: { [Op.contains]: nId}}, {targets: { [Op.contains]: nId}}]}
+                        where: {[Op.or]: [literal("sources @> '"+nId+"'"), literal("targets @> '"+nId+"'")]}
                     })
                     // check Attributes
-                    const tst2 = await Attribute.applyScope(context).findOne({where: {valid: { [Op.contains]: nId}}})
+                    // const tst2 = await Attribute.applyScope(context).findOne({where: {valid: { [Op.contains]: nId}}})
+                    const tst2 = await Attribute.applyScope(context).findOne({where: literal("valid @> '"+nId+"'")})
                     // check Items
                     const tst1 = await Item.applyScope(context).findOne({where: {typeId: nId}})
                     // check Linked types

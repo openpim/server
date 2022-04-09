@@ -23,7 +23,7 @@ export abstract class ChannelHandler {
             exec(cmd, function (error: any, stdout: string, stderr: string) {
                 resolve({ code: error ? error.code : 0, stdout:stdout, stderr: stderr } )
             })
-        } catch (err) {
+        } catch (err:any) {
             logger.error('External channel error: ', err)
             resolve({ code: -1, stdout: '', stderr: err.message } )
         }
@@ -178,7 +178,7 @@ export abstract class ChannelHandler {
     try {
       const func = new Function('item', 'utils', '"use strict"; return (async () => { return (' + expr + ')})()')
       return await func(item, utils)
-    } catch (err) {
+    } catch (err:any) {
       logger.error('Failed to execute expression :[' + expr + '] for item with id: ' + item.id + ' with error: ' + err.message)
       throw err
     }

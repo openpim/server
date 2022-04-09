@@ -173,7 +173,7 @@ export default {
                 }
     
                 return {failed: compileError ? true : false, log: log, error: error, message: message, compileError:compileError || ''}
-            } catch (error) {
+            } catch (error:any) {
                 return {failed: true, log: '', error: error.message, compileError:''}
             }
         }

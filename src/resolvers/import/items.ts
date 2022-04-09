@@ -2,7 +2,7 @@ import Context from '../../context'
 import { IItemImportRequest, ImportResponse, IImportConfig, ImportMode, ReturnMessage, ImportResult} from '../../models/import'
 import { Item } from '../../models/items'
 import { sequelize } from '../../models'
-import { QueryTypes } from 'sequelize'
+import { QueryTypes, literal } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
 import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit } from '../utils'
 import { Attribute } from '../../models/attributes'
@@ -68,7 +68,8 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 // check Roles
                 const tst1 = mng.getRoles().find(role => role.itemAccess.fromItems.includes(data.id))
                 // check Attributes
-                const tst2 = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: data.id}}})
+                // const tst2 = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: data.id}}})
+                const tst2:any = await Attribute.applyScope(context).findOne({where: literal("visible @> '"+data.id+"'") })
                 if (tst1 || tst2) {
                     result.addError(ReturnMessage.ItemDeleteFailed)
                     result.result = ImportResult.REJECTED
@@ -199,7 +200,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             filterValues(context.getEditItemAttributes2(type!.getValue().id, path), item.values)
             try {
                 checkValues(mng, item.values)
-            } catch (err) {
+            } catch (err: any) {
                 result.addError(new ReturnMessage(0, err.message))
                 result.result = ImportResult.REJECTED
                 return result
@@ -315,7 +316,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             filterValues(context.getEditItemAttributes(data), item.values)
             try {
                 checkValues(mng, item.values)
-            } catch (err) {
+            } catch (err:any) {
                 result.addError(new ReturnMessage(0, err.message))
                 result.result = ImportResult.REJECTED
                 return result

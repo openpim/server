@@ -3,7 +3,7 @@ import { ModelManager, ModelsManager } from '../models/manager'
 import { Relation } from '../models/relations'
 import { sequelize } from '../models'
 import { Attribute } from '../models/attributes'
-import { Op } from 'sequelize'
+import { literal } from 'sequelize'
 import { ItemRelation } from '../models/itemRelations'
 
 export default {
@@ -108,7 +108,8 @@ export default {
             }
 
             // check Attributes
-            const tst2 = await Attribute.applyScope(context).findOne({where: {relations: { [Op.contains]: nId}}})
+            // const tst2 = await Attribute.applyScope(context).findOne({where: {relations: { [Op.contains]: nId}}})
+            const tst2 = await Attribute.applyScope(context).findOne({where: literal("relations @> '"+nId+"'")})
             if (tst2) throw new Error('Can not remove this relation because there are attributes linked to it.');
             // check ItemRelations
             const tst1 = await ItemRelation.applyScope(context).findOne({where: {relationId: nId}})

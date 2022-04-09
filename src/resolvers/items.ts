@@ -1,6 +1,6 @@
 import Context from '../context'
 import { sequelize } from '../models'
-import { QueryTypes, Utils } from 'sequelize'
+import { QueryTypes, literal } from 'sequelize'
 import { Item } from '../models/items'
 import {  ModelManager, ModelsManager } from '../models/manager'
 import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit } from './utils'
@@ -49,7 +49,7 @@ function generateOrder(order: string[][], mng: ModelManager) {
 export default {
     ItemsResponse: {
         count: async ({ restrictSql, parentId, context, parentItem }: any) => {
-            let cnt = {count: '0'}
+            let cnt:{count: string}|null = {count: '0'}
             if (!parentId) {
                 cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 '+restrictSql, {
                     replacements: {
@@ -70,6 +70,7 @@ export default {
                     type: QueryTypes.SELECT
                 })
             }
+            if (!cnt) throw new Error("DB error")
             return parseInt(cnt.count)
         },
         rows: async ({ restrictSql, parentId, offset, limit, orderSql, context, parentItem }: any) => {
@@ -525,7 +526,8 @@ export default {
                 const tst1 = mng.getRoles().find(role => role.itemAccess.fromItems.includes(nId))
                 if (tst1) throw new Error('Can not remove this item because there are roles linked to it.');
                 // check Attributes
-                const tst2 = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: nId}}})
+                // const tst2:any = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: nId}}})
+                const tst2:any = await Attribute.applyScope(context).findOne({where: literal("visible @> '"+nId+"'")})
                 if (tst2) throw new Error('Can not remove this item because there are attributes linked to it.');
                 // check children
                 const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {

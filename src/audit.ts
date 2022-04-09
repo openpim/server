@@ -30,7 +30,7 @@ class Audit {
                     data: item
                 }
             })
-        } catch (err) {
+        } catch (err:any) {
             logger.error(err)
             logger.error("Error sending audit for item: " + err.meta.body.error.reason)
         }
@@ -50,7 +50,7 @@ class Audit {
                     data: item
                 }
             })
-        } catch (err) {
+        } catch (err:any) {
             logger.error("Error sending audit for item relation", err)
             logger.error("Error sending audit for item: " + err.meta.body.error.reason)
         }
@@ -60,7 +60,7 @@ class Audit {
     if (!this.auditEnabled()) return {count: 0, rows: []}
         try {
             const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
-            const response = await this.client!.search({
+            const response:any = await this.client!.search({
                 index: "items",
                 from: offset,
                 size: limit,
@@ -84,7 +84,7 @@ class Audit {
         if (!this.auditEnabled()) return {count: 0, rows: []}
             try {
                 const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
-                const response = await this.client!.search({
+                const response:any = await this.client!.search({
                     index: "item_relations",
                     from: offset,
                     size: limit,

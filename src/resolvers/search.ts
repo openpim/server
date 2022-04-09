@@ -1,7 +1,7 @@
 import Context, { ConfigAccess } from '../context'
 import { Type } from '../models/types'
 import { Item } from '../models/items'
-import { FindAndCountOptions, CountWithOptions, FindOptions, WhereOptions, Includeable } from 'sequelize/types'
+import { FindAndCountOptions, CountWithOptions, FindOptions, WhereOptions, Includeable } from 'sequelize'
 import { Attribute, AttrGroup } from '../models/attributes'
 import { Relation } from '../models/relations'
 import { ItemRelation } from '../models/itemRelations'
@@ -42,8 +42,8 @@ query { search(
     {"OP_or": [
 { "sourceRelation___relationId": 1 },
 { "targetRelation___relationId": 1 }]}
+*/
 
-    */
 function replaceOperations(obj: any) {
     let sourceRelation = false
     let targetRelation = false

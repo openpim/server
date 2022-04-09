@@ -134,7 +134,7 @@ export default {
 
             const restrictSql = context.generateRestrictionsInSQL('i.', true)
 
-            let cnt = {count: '0'}
+            let cnt:{count: string}|null = {count: '0'}
             cnt = await sequelize.query(
                 `SELECT Count(i.*) FROM "items" i, "itemRelations" r where
                     i."deletedAt" IS NULL and
@@ -152,6 +152,7 @@ export default {
                 raw: true,
                 type: QueryTypes.SELECT
             })
+            if (!cnt) throw new Error("DB error")
             let items: Item[] = await sequelize.query(
                 `SELECT i.* FROM "items" i, "itemRelations" r where 
                     i."deletedAt" IS NULL and 

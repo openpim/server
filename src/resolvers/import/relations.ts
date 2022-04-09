@@ -5,7 +5,7 @@ import { ModelsManager, TreeNode, ModelManager } from "../../models/manager"
 import { Relation } from "../../models/relations"
 import { Attribute } from "../../models/attributes"
 import { ItemRelation } from "../../models/itemRelations"
-import { Op } from 'sequelize'
+import { literal } from 'sequelize'
 
 import logger from '../../logger'
 
@@ -53,7 +53,8 @@ export async function importRelation(context: Context, config: IImportConfig, re
                 result.result = ImportResult.REJECTED
             } else {
                 // check Attributes
-                const tst2 = await Attribute.applyScope(context).findOne({where: {relations: { [Op.contains]: data.id}}})
+                // const tst2 = await Attribute.applyScope(context).findOne({where: {relations: { [Op.contains]: data.id}}})
+                const tst2 = await Attribute.applyScope(context).findOne({where: literal("relations @> '"+data.id+"'")})
                 // check ItemRelations
                 const tst1 = await ItemRelation.applyScope(context).findOne({where: {relationId: data.id}})
                 // check Roles

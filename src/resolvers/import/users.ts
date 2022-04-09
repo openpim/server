@@ -3,8 +3,8 @@ import { IImportConfig, ImportResponse, ReturnMessage, ImportResult, ImportMode,
 import { sequelize } from "../../models"
 import { ModelsManager, ModelManager, AttrGroupWrapper, UserWrapper } from "../../models/manager"
 import { User } from "../../models/users"
-import * as bcrypt from 'bcrypt';
-import { Op } from 'sequelize'
+import bcrypt from 'bcryptjs';
+import { Op, literal } from 'sequelize'
 
 import logger from '../../logger'
 
@@ -30,7 +30,8 @@ export async function importUser(context: Context, config: IImportConfig, user: 
                 const adminRole = wrapper.getRoles().find(role => role.identifier === 'admin')
                 if (adminRole) {
                     // check that we has another user with admin role
-                    const tst = await User.findOne({where: {id: {[Op.ne]:data.id}, roles: {[Op.contains]: adminRole.id}}})
+                    // const tst:User = await User.findOne({where: {id: {[Op.ne]:data.id}, roles: {[Op.contains]: adminRole.id}}})
+                    const tst = await User.findOne({where: {[Op.and]:[{id: {[Op.ne]:data.id}}, literal("roles @> '"+adminRole.id+"'")]}})
                     if (!tst) {
                         result.addError(ReturnMessage.UserDeleteFailed)
                         result.result = ImportResult.REJECTED

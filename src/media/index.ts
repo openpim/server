@@ -171,7 +171,7 @@ export async function processUpload(context: Context, req: Request, res: Respons
             }
 
             res.send(JSON.stringify(item))
-        } catch (error) {
+        } catch (error: any) {
             logger.error(error)
             res.status(400).send(error.message)
         }
@@ -361,7 +361,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             }
 
             res.send('OK')
-        } catch (error) {
+        } catch (error: any) {
             logger.error(error)
             res.status(400).send(error.message)
         }

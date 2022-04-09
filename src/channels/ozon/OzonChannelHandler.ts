@@ -383,7 +383,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         this.reportError(channel, item, msg)
                         return
                     }
-                } catch (err) {
+                } catch (err:any) {
                     const msg = 'Ошибка вычисления атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                     logger.error(msg, err)
                     context.log += msg + ': ' + err.message        

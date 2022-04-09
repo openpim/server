@@ -1,7 +1,7 @@
 import { Channel, ChannelExecution } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch from 'node-fetch'
-import * as FormData from 'form-data'
+const FormData = require('form-data')
 import NodeCache = require('node-cache')
 import { Item } from '../../models/items'
 import logger from "../../logger"
@@ -9,7 +9,6 @@ import { sequelize } from '../../models'
 import * as uuid from "uuid"
 import * as fs from 'fs'
 import { Op } from 'sequelize'
-import { type } from 'os'
 
 interface JobContext {
     log: string
@@ -416,7 +415,7 @@ export class WBChannelHandler extends ChannelHandler {
                         this.reportError(channel, item, msg)
                         return
                     }
-                } catch (err) {
+                } catch (err:any) {
                     const msg = 'Ошибка вычисления атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                     logger.error(msg, err)
                     context.log += msg + ': ' + err.message        

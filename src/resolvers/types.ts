@@ -5,7 +5,7 @@ import { sequelize } from '../models'
 import { QueryTypes } from 'sequelize'
 import { Item } from '../models/items'
 import { Attribute } from '../models/attributes'
-import { Op } from 'sequelize'
+import { Op, literal } from 'sequelize'
 import { Relation } from '../models/relations'
 
 export default {
@@ -146,12 +146,16 @@ export default {
             const tst4 = mng.getRoles().find(role => role.itemAccess.valid.includes(nId))
             if (tst4) throw new Error('Can not remove this type because there are roles linked to it.');
             // check Relations
+            //const tst3 = await Relation.applyScope(context).findOne({
+            //    where: {[Op.or]: [{sources: { [Op.contains]: nId}}, {targets: { [Op.contains]: nId}}]}
+            //})
             const tst3 = await Relation.applyScope(context).findOne({
-                where: {[Op.or]: [{sources: { [Op.contains]: nId}}, {targets: { [Op.contains]: nId}}]}
+                where: {[Op.or]: [literal("sources @> '"+nId+"'"), literal("targets @> '"+nId+"'")]}
             })
             if (tst3) throw new Error('Can not remove this type because there are relations linked to it.');
             // check Attributes
-            const tst2 = await Attribute.applyScope(context).findOne({where: {valid: { [Op.contains]: nId}}})
+            // const tst2 = await Attribute.applyScope(context).findOne({where: {valid: { [Op.contains]: nId}}})
+            const tst2 = await Attribute.applyScope(context).findOne({where: literal("valid @> '"+nId+"'")})
             if (tst2) throw new Error('Can not remove this type because there are attributes linked to it.');
             // check Items
             const tst1 = await Item.applyScope(context).findOne({where: {typeId: nId}})

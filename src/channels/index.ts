@@ -1,5 +1,5 @@
 import logger from "../logger"
-import { WhereOptions } from 'sequelize/types'
+import { WhereOptions } from 'sequelize'
 import { Channel } from "../models/channels"
 import { scheduleJob, Range, Job } from 'node-schedule'
 import { Item } from "../models/items"

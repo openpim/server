@@ -3,9 +3,9 @@ import * as jwt from 'jsonwebtoken';
 import { sequelize } from '../models'
 import { User, Role } from '../models/users'
 import { GraphQLError } from 'graphql';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { ModelsManager, UserWrapper } from '../models/manager';
-import { Op } from 'sequelize'
+import { Op, literal } from 'sequelize'
 
 import logger from '../logger'
 import audit from '../audit'
@@ -139,7 +139,8 @@ export default {
             }
 
             // check Users
-            const tst1 = await User.applyScope(context).findOne({where: {roles: { [Op.contains]: nId}}})
+            // const tst1 = await User.applyScope(context).findOne({where: {roles: { [Op.contains]: nId}}})
+            const tst1 = await User.applyScope(context).findOne({where: literal("roles @> '"+nId+"'")})
             if (tst1) throw new Error('Can not remove this role because there are users linked to it.');
 
             role.updatedBy = context.getCurrentUser()!.login
@@ -300,7 +301,8 @@ export default {
                     const tstRole = userRoles.find((role: Role) => role.identifier === 'admin')
                     if (!tstRole) {
                         // admin role was removed, need to check if we have more admins
-                        const tst = await User.findOne({where: {id: {[Op.ne]:nId}, roles: {[Op.contains]: adminRole.id}}})
+                        // const tst = await User.findOne({where: {id: {[Op.ne]:nId}, roles: {[Op.contains]: adminRole.id}}})
+                        const tst = await User.findOne({where: {[Op.and]: [{id: {[Op.ne]:nId}}, literal("roles @> '"+adminRole.id+"'")]}})
                         if (!tst) {
                             logger.error('Can not remove administrator role from last user, tenant: ' + context.getCurrentUser()!.tenantId)
                             throw new Error('Can not remove administrator role from last user who has it. Assign this role to another user first.')
@@ -335,7 +337,7 @@ export default {
             const adminRole = wrapper.getRoles().find(role => role.identifier === 'admin')
             if (adminRole) {
                 // check that we has another user with admin role
-                const tst = await User.findOne({where: {id: {[Op.ne]:nId}, roles: {[Op.contains]: adminRole.id}}})
+                const tst = await User.findOne({where: {[Op.and]: [{id: {[Op.ne]:nId}}, literal("roles @> '"+adminRole.id+"'")]}})
                 if (!tst) {
                     logger.error('Can not delete last user who has administrator role, tenant: ' + context.getCurrentUser()!.tenantId)
                     throw new Error('Can not remove administrator role from last user who has it. Assign this role to another user first.')

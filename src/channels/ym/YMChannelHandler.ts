@@ -94,7 +94,7 @@ export class YMChannelHandler extends ChannelHandler {
                 context.result = 3
                 context.log += 'Не задан заголовок YML файла'
             }
-        } catch (err) {
+        } catch (err:any) {
             context.result = 3
             context.log += "Ошибка: " + err.message
         } finally {
@@ -247,7 +247,7 @@ export class YMChannelHandler extends ChannelHandler {
             data.message = ''
             data.syncedAt = Date.now()
             item.changed('channels', true)
-        } catch (err) {
+        } catch (err:any) {
             const msg = 'Ошибка обработки записи: ' + err.message
             context.log += msg
             this.reportError(channel, item, msg)

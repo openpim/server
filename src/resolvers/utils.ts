@@ -24,7 +24,7 @@ import * as https from 'https'
 import logger from '../logger'
 import { LOV } from "../models/lovs"
 import { Attribute } from "../models/attributes"
-const dateFormat = require("dateformat")
+import dateFormat from "dateformat"
 
 export function filterChannels(context: Context, channels:any) {
     for (const prop in channels) {
@@ -367,7 +367,7 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                     script = new VMScript(code)
                     try {
                         script.compile()
-                    } catch (err) {
+                    } catch (err:any) {
                         retArr.push({identifier: action.identifier, compileError: err.message})
                         logger.error('Failed to compile script.', err);
                         script = {compileError: true, error: err.message}
@@ -418,6 +418,8 @@ function makeModelProxy(model: any, itemProxy: any) {
                     const arr = await target[ property ].apply( target, args )
                     return arr.map((elem: any) => itemProxy(elem))
                 }
+            } else {
+                return null
             }
         }
     })    

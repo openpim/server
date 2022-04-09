@@ -6,11 +6,11 @@ import { sequelize } from '../models'
 import { Role, User } from './users'
 import { Action } from './actions'
 import { Dashboard } from './dashboards'
-import { WhereOptions } from 'sequelize/types'
+import { WhereOptions } from 'sequelize'
 import { Channel } from './channels'
 
 import logger from '../logger'
-import * as NodeCache from 'node-cache'
+import NodeCache from 'node-cache'
 
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
@@ -157,12 +157,12 @@ export class ModelManager {
         let attrId = Date.now()
         this.attrGroups.forEach((grp) => {
             const attributes :any[] = []
-            const group = {attributes: attributes, internalId: 0, group: true, Attributes: []}
+            const group: {attributes:any[], internalId: number, group: boolean, Attributes?: []} = {attributes: attributes, internalId: 0, group: true, Attributes: []}
             Object.assign(group, grp.getGroup().get({ plain: true }))
             delete group.Attributes
             group.internalId = grp.getGroup().id
             group.attributes = grp.getAttributes().map( attr => {
-                const data = {internalId: 0, group: false, id:0, GroupsAttributes:''}
+                const data: {internalId: number, group: boolean, id:number, GroupsAttributes?:string} = {internalId: 0, group: false, id:0, GroupsAttributes:''}
                 Object.assign(data, attr.get({ plain: true }))
                 data.internalId = attr.id
                 data.id = attrId++ // we have to assign unique id

@@ -167,7 +167,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             filterValues(context.getEditItemRelationAttributes(relation.id), itemRelation.values)
             try {
                 checkValues(mng, itemRelation.values)
-            } catch (err) {
+            } catch (err:any) {
                 result.addError(new ReturnMessage(0, err.message))
                 result.result = ImportResult.REJECTED
                 return result
@@ -256,7 +256,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             filterValues(context.getEditItemRelationAttributes(data.relationId), itemRelation.values)
             try {
                 checkValues(mng, itemRelation.values)
-            } catch (err) {
+            } catch (err:any) {
                 result.addError(new ReturnMessage(0, err.message))
                 result.result = ImportResult.REJECTED
                 return result
