@@ -52,8 +52,8 @@ class Audit {
                 }
             })
         } catch (err:any) {
-            logger.error("Error sending audit for item relation", err)
-            logger.error("Error sending audit for item: " + err.meta.body.error.reason)
+            logger.error(err)
+            logger.error("Error sending audit for item relation" + err.meta.body.error.reason)
         }
     }
 
