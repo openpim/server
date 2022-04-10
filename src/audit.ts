@@ -4,12 +4,13 @@ import logger from "./logger"
 class Audit {
     private client: Client | null = null
 
-    public constructor() {
-        if (this.auditEnabled()) {
+    public getClient() {
+        if (!this.client) {
             this.client = new Client({
                 node: process.env.AUDIT_URL
             })
         }
+        return this.client
     }    
 
     public auditEnabled(): boolean {
@@ -19,7 +20,7 @@ class Audit {
     public async auditItem(change: ChangeType, id: number, identifier: string, item: AuditItem, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
         try {
-            await this.client!.index({
+            await this.getClient().index({
                 index: "items",
                 body: {
                     itemId: id,
@@ -39,7 +40,7 @@ class Audit {
     public async auditItemRelation(change: ChangeType, id: number, identifier: string, item: AuditItemRelation, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
             try {
-            await this.client!.index({
+            await this.getClient().index({
                 index: "item_relations",
                 body: {
                     itemRelationId: id,
@@ -57,10 +58,10 @@ class Audit {
     }
 
     public async getItemHistory(id: number, offset: number, limit: number, order: any) {
-    if (!this.auditEnabled()) return {count: 0, rows: []}
+        if (!this.auditEnabled()) return {count: 0, rows: []}
         try {
             const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
-            const response:any = await this.client!.search({
+            const response:any = await this.getClient().search({
                 index: "items",
                 from: offset,
                 size: limit,
@@ -73,7 +74,7 @@ class Audit {
                     sort: sort
                 }
             })
-            return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+            return { count: response.hits.total.value, rows: response.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
         } catch (err) {
             logger.error("Error getting audit for item", err)
             return { count: 0, rows: []}
@@ -84,7 +85,7 @@ class Audit {
         if (!this.auditEnabled()) return {count: 0, rows: []}
             try {
                 const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
-                const response:any = await this.client!.search({
+                const response:any = await this.getClient().search({
                     index: "item_relations",
                     from: offset,
                     size: limit,
@@ -97,7 +98,7 @@ class Audit {
                         sort: sort
                     }
                 })
-            return { count: response.body.hits.total.value, rows: response.body.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+            return { count: response.hits.total.value, rows: response.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
             } catch (err) {
                 logger.error("Error getting audit for item relation", err)
                 return { count: 0, rows: []}
