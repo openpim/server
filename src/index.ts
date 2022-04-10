@@ -1,4 +1,5 @@
 import { makeExecutableSchema } from '@graphql-tools/schema';
+import bodyParser from 'body-parser';
 import { Buffer } from 'buffer';
 import cors from 'cors';
 import * as crypto from "crypto";
@@ -26,6 +27,7 @@ if (process.env.OPENPIM_AUDIT_URL) process.env.AUDIT_URL = process.env.OPENPIM_A
 
 dotenv.config();
 const app = express();
+app.use(bodyParser.json({limit: '500mb'}));
 
 (async () => {
   logger.info(`Server version: ${  version.buildMajor  }.${  version.buildMinor  }.${  version.buildRevision}`)
