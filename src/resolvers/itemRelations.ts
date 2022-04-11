@@ -3,7 +3,7 @@ import { sequelize } from '../models'
 import { Item } from '../models/items'
 import { ItemRelation, IItemRelation } from '../models/itemRelations'
 import { ModelsManager } from '../models/manager'
-import { QueryTypes } from 'sequelize'
+import { QueryTypes, literal } from 'sequelize'
 import { filterValues, mergeValues, checkValues, processItemRelationActions, diff, isObjectEmpty } from './utils'
 import { EventType } from '../models/actions'
 import audit, { AuditItemRelation, ChangeType, ItemRelationChanges } from '../audit'
@@ -21,7 +21,7 @@ export default {
                     itemId: parseInt(itemId),
                     relationId: relId,
                 },
-                order: [['values._itemRelationOrder', 'ASC'],['id', 'ASC']],
+                order: [literal("values->'_itemRelationOrder'"), ['id', 'ASC']],
                 offset: offset,
                 limit: limit === -1 ? null : limit
             })
@@ -55,7 +55,7 @@ export default {
                     targetId: parseInt(itemId),
                     relationId: relId,
                 },
-                order: [['values._itemRelationOrder', 'ASC'],['id', 'ASC']],
+                order: [literal("values->'_itemRelationOrder'"),['id', 'ASC']],
                 offset: offset,
                 limit: limit === -1 ? null : limit
             })
