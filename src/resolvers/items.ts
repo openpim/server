@@ -238,11 +238,10 @@ export default {
             context.checkAuth()
             const arr = ids.map((elem:any) => parseInt(elem))
 
-            const data: any[] = await sequelize.query(
-                `SELECT distinct item."id" as "itemId", asset."id", asset."identifier"
+            let data: any[] = await sequelize.query(
+                `SELECT distinct item."id" as "itemId", asset."id", asset."identifier", ir.values->'_itemRelationOrder'
                     FROM "items" item, "items" asset, "itemRelations" ir, "types" itemType, "types" assetType where 
-                    item."tenantId"=:tenant and 
-                    item."id" in (:ids) and
+                    item."id" in (141,142,143,144,145,146,148,149,151,5676) and
                     item."typeId"=itemType."id" and
                     ir."itemId"=item."id" and
                     asset."id"=ir."targetId" and
@@ -253,12 +252,7 @@ export default {
                     ir."deletedAt" is null and
                     asset."deletedAt" is null and
                     item."deletedAt" is null
-                UNION SELECT item."id" as "itemId", item."id", item."identifier" FROM "items" item where 
-                    item."id" in (:ids) and
-                    item."storagePath" is not null and
-                    item."storagePath" != '' and
-                    item."mimeType" like 'image/%' and
-                    item."deletedAt" is null
+                    order by ir.values->'_itemRelationOrder', asset.id
                     `, {
                 replacements: { 
                     tenant: context.getCurrentUser()!.tenantId,
@@ -266,6 +260,23 @@ export default {
                 },
                 type: QueryTypes.SELECT
             })
+
+            if (data && data.length === 0) { // if this is a file object send itself as main image
+                let data: any[] = await sequelize.query(
+                    `SELECT item."id" as "itemId", item."id", item."identifier" FROM "items" item where 
+                        item."id" in (:ids) and
+                        item."storagePath" is not null and
+                        item."storagePath" != '' and
+                        item."mimeType" like 'image/%' and
+                        item."deletedAt" is null
+                        `, {
+                    replacements: { 
+                        tenant: context.getCurrentUser()!.tenantId,
+                        ids: ids
+                    },
+                    type: QueryTypes.SELECT
+                })
+            }
             return data
         }        
     },
