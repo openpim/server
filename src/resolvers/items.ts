@@ -194,7 +194,7 @@ export default {
                 const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
                 const type:Type = mng.getTypeById(item.typeId)?.getValue()
                 
-                const skipRelationIds = mng.getRelations().filter(rel => rel.options.some((option:any) => option.name === 'skipInAssets' && option.value === 'true')).map(rel => rel.id)
+                const skipRelationIds = mng.getRelations().filter(rel => !context.canViewItemRelation(rel.id) || rel.options.some((option:any) => option.name === 'skipInAssets' && option.value === 'true')).map(rel => rel.id)
 
                 const data: any[] = await sequelize.query(
                     `SELECT a."id", a."typeId", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName"
