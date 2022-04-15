@@ -3,7 +3,6 @@ import { ModelManager, ModelsManager } from '../models/manager'
 import { sequelize } from '../models'
 import { Channel, ChannelExecution } from '../models/channels'
 import { Item } from '../models/items'
-import { group } from 'console'
 import { fn, literal, Op } from 'sequelize'
 import { ChannelsManagerFactory } from '../channels'
 
@@ -18,7 +17,15 @@ export default {
             context.checkAuth()
             
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-            return mng.getChannels()
+            let cloned = JSON.parse(JSON.stringify(mng.getChannels()))
+            cloned.forEach((channel:Channel) => {
+                if (channel.type === 2 && channel.config.wbToken) { // WB
+                    channel.config.wbToken = '*****'
+                } else if (channel.type === 3 && channel.config.ozonApiKey) { // Ozon
+                    channel.config.ozonApiKey = '*****'
+                }
+            })
+            return cloned
         },
         getChannelStatus: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
@@ -225,7 +232,14 @@ export default {
             if (type != null) chan.type = type
             if (valid) chan.valid = valid.map((elem: string) => parseInt(elem))
             if (visible) chan.visible = visible.map((elem: string) => parseInt(elem))
-            if (config) chan.config = config
+            if (config) {
+                if (type === 2 && config.wbToken === '*****') { // WB
+                    config.wbToken = chan.config.wbToken
+                } else if (type === 3 && config.ozonApiKey === '*****') { // Ozon
+                    config.ozonApiKey = chan.config.ozonApiKey
+                }
+                chan.config = config
+            }
             if (mappings) chan.mappings = mappings
             if (runtime) chan.runtime = runtime
             chan.updatedBy = context.getCurrentUser()!.login
