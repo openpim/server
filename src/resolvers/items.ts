@@ -241,7 +241,7 @@ export default {
             let data: any[] = await sequelize.query(
                 `SELECT distinct item."id" as "itemId", asset."id", asset."identifier", ir.values->'_itemRelationOrder'
                     FROM "items" item, "items" asset, "itemRelations" ir, "types" itemType, "types" assetType where 
-                    item."id" in (141,142,143,144,145,146,148,149,151,5676) and
+                    item."id" in (:ids) and
                     item."typeId"=itemType."id" and
                     ir."itemId"=item."id" and
                     asset."id"=ir."targetId" and
