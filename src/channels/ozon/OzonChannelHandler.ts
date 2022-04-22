@@ -598,12 +598,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 return {dictionary_value_id: entry.id, value: value}
             }
         } else {
-            if (ozonAttrId === 11254 && value) { //rich content, send as json
-                const tst = JSON.parse(''+value)
-                return { value: tst }
-            } else {
-                return { value: ''+value }
-            }
+            return { value: ''+value }
         }
     }
 
