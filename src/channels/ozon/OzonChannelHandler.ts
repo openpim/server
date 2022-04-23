@@ -492,6 +492,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }
             const type:Type = typeNode.getValue()
 
+            const data:string[] = [] 
             if (type.mainImage && channel.config.imgRelations.includes(type.mainImage)) {
                 const images: Item[] = await sequelize.query(
                     `SELECT a.*
@@ -505,7 +506,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         ir."deletedAt" is null and
                         a."deletedAt" is null and
                         ir."relationId" = :relation
-                        order by a.id`, {
+                        order by ir.values->'_itemRelationOrder', a.id`, {
                     model: Item,
                     mapToModel: true,                     
                     replacements: { 
@@ -518,9 +519,10 @@ export class OzonChannelHandler extends ChannelHandler {
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
                         const url = image.values[channel.config.ozonImageAttr]
-                        if (url) {
+                        if (url && !product.primary_image) {
                             product.primary_image = url
-                            break
+                        } else {
+                            data.push(url)
                         }
                     }
                 }
@@ -540,7 +542,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         ir."deletedAt" is null and
                         a."deletedAt" is null and
                         ir."relationId" in (:relations)
-                        order by a.id`, {
+                        order by ir.values->'_itemRelationOrder', a.id`, {
                     model: Item,
                     mapToModel: true,                     
                     replacements: { 
@@ -550,14 +552,13 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 })
                 if (images) {
-                    const data:string[] = [] 
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
                         if (image.values[channel.config.ozonImageAttr]) data.push(image.values[channel.config.ozonImageAttr])
                     }
-                    if (data.length > 0) product.images = data
                 }
             }
+            if (data.length > 0) product.images = data
         }
     }    
     private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any, options: any) {
