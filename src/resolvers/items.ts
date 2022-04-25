@@ -262,7 +262,7 @@ export default {
             })
 
             if (data && data.length === 0) { // if this is a file object send itself as main image
-                let data: any[] = await sequelize.query(
+                data = await sequelize.query(
                     `SELECT item."id" as "itemId", item."id", item."identifier" FROM "items" item where 
                         item."id" in (:ids) and
                         item."storagePath" is not null and
