@@ -240,7 +240,13 @@ export default {
                 }
                 chan.config = config
             }
-            if (mappings) chan.mappings = mappings
+            if (mappings) {
+                const tmp = {...chan.mappings, ...mappings } // merge mappings to avoid deletion from another user
+                for (const prop in tmp) {
+                    if (tmp[prop].deleted) delete tmp[prop]
+                }
+                chan.mappings = tmp
+            }
             if (runtime) chan.runtime = runtime
             chan.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
