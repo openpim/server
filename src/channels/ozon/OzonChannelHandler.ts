@@ -362,9 +362,9 @@ export class OzonChannelHandler extends ChannelHandler {
                                     this.reportError(channel, item, msg)
                                     return
                                 }
-                                    data.values.push(ozonValue)
+                                data.values.push(ozonValue)
                             }
-                        } if (typeof value === 'object') {
+                        } else if (typeof value === 'object') {
                             data.values.push(value)
                         } else {
                             const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, value, attrConfig.options)

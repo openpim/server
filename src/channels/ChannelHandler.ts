@@ -237,8 +237,15 @@ export abstract class ChannelHandler {
           this.lovCache.set(attr.lov, lov, 180)
         }
         if (lov) {
-          const value = lov.values.find((elem:any) => elem.id === attrValue)
-          return value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
+          if (Array.isArray(attrValue)) {
+            return attrValue.map(val => {
+              const value = lov!.values.find((elem:any) => elem.id === val)
+              return value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
+            })
+          } else {
+            const value = lov.values.find((elem:any) => elem.id === attrValue)
+            return value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
+          }
         }
       }
     }
