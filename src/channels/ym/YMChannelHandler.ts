@@ -202,6 +202,14 @@ export class YMChannelHandler extends ChannelHandler {
                                 const option:any = {$: {cost: arr[0], days: arr[1]}}
                                 if (arr.length > 2) option.$['order-before'] = arr[2]
                                 offer['delivery-options'].option.push(option)
+                            } else if (attrConfig.id === 'outlets') {
+                                const outlets:any[] = []
+                                if (Array.isArray(value)) {
+                                    value.forEach(elem => {
+                                        if (Array.isArray(elem) && elem.length >= 2) outlets.push({outlet: {$: {id: ''+elem[0], instock: ''+elem[1]}}})
+                                    })
+                                }
+                                if (outlets.length > 0) offer.outlets = outlets
                             } else if (Array.isArray(value)) {
                                 if (offer[attrConfig.id]) offer[attrConfig.id] = [offer[attrConfig.id]]
                                     else offer[attrConfig.id] = []
