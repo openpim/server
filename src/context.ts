@@ -287,7 +287,7 @@ export default class Context {
                     role.itemAccess.groups.forEach((data: { access: number; groupId: number; }) => {
                         if (data.access === 0) {
                           forbiddenGroups.push(data.groupId)
-                        }  
+                        }
                     })
                 }
             }
@@ -306,19 +306,26 @@ export default class Context {
     public getEditItemAttributes2(typeId: number, path: string): string[] | null {
         if (!this.user) return []
 
+        const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId);
+        const groups = mng.getAttrGroups()
         const forbiddenGroups: number[] = []
-        for (let i = 0; i < this.user.getRoles().length; i++) {
-            const role = this.user.getRoles()[i]
-            if(role.itemAccess.valid.some((tId:number) => tId === typeId)) {
-                const pathArr = path.split('.').map((elem:string) => parseInt(elem))
-                const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
-                if (tst && (role.itemAccess.access === 1 || role.itemAccess.access === 2)) {
-                    role.itemAccess.groups.forEach((data: { access: number; groupId: number; }) => {
-                        if (data.access === 0 || data.access === 1) {
-                            forbiddenGroups.push(data.groupId)
-                        }  
-                    })
+
+        for (let j = 0; j < groups.length; j++) {
+            const group = groups[j].getGroup()
+            let access:number = -1
+            for (let i = 0; i < this.user.getRoles().length; i++) {
+                const role = this.user.getRoles()[i]
+                if(role.itemAccess.valid.some((tId:number) => tId === typeId)) {
+                    const pathArr = path.split('.').map((elem:string) => parseInt(elem))
+                    const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
+                    if (tst && (role.itemAccess.access === 1 || role.itemAccess.access === 2)) {
+                        const tst: { access: number; groupId: number; } = role.itemAccess.groups.find((elem: any) => elem.groupId === group.id)
+                        if (tst && tst.access > access) access = tst.access
+                    }
                 }
+            }
+            if (access === 0 || access === 1) {
+                forbiddenGroups.push(group.id)
             }
         }
         if (forbiddenGroups.length === 0) {
@@ -422,7 +429,6 @@ export default class Context {
                 
                 if (!start) sql += ' and '
                 const restrict = this.generateRestrictionsInSQL('check_item.', false, false)
-                console.log('['+restrict+']')
                 sql += 
                 ` ( not `+prefix+`"typeId" in (`+targetTypeIds+`) or exists ( select check_item.id from items check_item, "itemRelations" check_item_relations 
                     where check_item_relations."relationId" in (`+relationIds+`) and ` + (prefix?prefix: 'items.') + `id = check_item_relations."targetId" 
