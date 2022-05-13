@@ -20,6 +20,8 @@ import * as mailer from 'nodemailer'
 import * as http2 from 'http2'
 import * as http from 'http'
 import * as https from 'https'
+import * as fs from 'fs/promises'
+import AdmZip from 'adm-zip' 
 
 import logger from '../logger'
 import { LOV } from "../models/lovs"
@@ -265,13 +267,14 @@ export async function processItemActions(context: Context, event: EventType, ite
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
-            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            ItemRelation
         } 
     })
 }
@@ -299,13 +302,14 @@ export async function processItemButtonActions(context: Context, buttonText: str
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         buttonText: buttonText, 
         item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
-            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            ItemRelation
         } 
     })
     return {channels:channelsCopy, values:valuesCopy, result: ret[0]}
@@ -321,12 +325,13 @@ export async function testAction(context: Context, action: Action, item: Item) {
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         item: makeItemProxy(item), values: values, channels:channels, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
-            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            ItemRelation
         }},
         { 
             log: ((...args: any) => { log += '' + args + '\n'}),
@@ -504,13 +509,14 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
-            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            ItemRelation
         } 
     })
 }
@@ -720,13 +726,14 @@ class ActionUtils {
             user: context.getCurrentUser()?.login,
             roles: context.getUser()?.getRoles(),
             utils: new ActionUtils(context),
-            system: { exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+            system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
             isImport: isImport, 
             item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
             models: { 
                 item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
                 itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
-                lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy)
+                lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+                ItemRelation
             } 
         })
     }

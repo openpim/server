@@ -16,6 +16,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "^8.1.0",
     "@graphql-tools/schema": "^8.3.6",
+    "adm-zip": "^0.5.9",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "content-disposition": "^0.5.3",
@@ -50,6 +51,7 @@
     "xregexp": "^5.1.0"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.0",
     "@types/bcryptjs": "^2.4.2",
     "@types/content-disposition": "^0.5.4",
     "@types/cookie-parser": "^1.4.2",
