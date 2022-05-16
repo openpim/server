@@ -40,5 +40,7 @@ type ItemInfo {
   identifier: String!
   name: LanguageDependentString!
   typeId: ID!
+  fileOrigName: String
+  mimeType: String
   updatedAt: UTCDateTime!
 }
