@@ -14,7 +14,7 @@ import { ItemRelation } from '../models/itemRelations'
 import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
 import { ChannelExecution } from '../models/channels'
 import contentDisposition = require('content-disposition')
-import { checkValues, filterValues, mergeValues, processItemActions } from '../resolvers/utils'
+import { checkValues, filterValues, mergeValues, processItemActions, processItemRelationActions } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
@@ -331,7 +331,6 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 }
             }
 
-            // TODO: process item relation actions
             const itemRelation = await ItemRelation.build ({
                 identifier: relIdent,
                 tenantId: context.getCurrentUser()!.tenantId,
@@ -346,9 +345,19 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 values: {}
             })
 
+            const irValues = {}
+            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, irValues, false)
+
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
             })
+
+            if (irValues) {
+                filterValues(context.getEditItemRelationAttributes(itemRelation.relationId), irValues)
+                checkValues(mng, irValues)
+
+                itemRelation.values = irValues
+            }
 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
