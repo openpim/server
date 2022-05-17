@@ -47,6 +47,8 @@ query { search(
 function replaceOperations(obj: any) {
     let sourceRelation = false
     let targetRelation = false
+    let sourceItem = false
+    let targetItem = false
     for (const prop in obj) {
         let value = obj[prop]
 
@@ -94,26 +96,46 @@ function replaceOperations(obj: any) {
             targetRelation = true
         }
 
+        if (prop.startsWith('sourceItem___')) {
+            const field = prop.substr(13)
+            delete obj[prop]
+            const column = '$sourceItem.'+field+'$'
+            obj[column] = value
+            sourceItem = true
+        }
+
+        if (prop.startsWith('targetItem___')) {
+            const field = prop.substr(13)
+            delete obj[prop]
+            const column = '$targetItem.'+field+'$'
+            obj[column] = value
+            targetRelation = true
+        }
+
         if (value === Object(value)) {
             const ret = replaceOperations(value)
             if (ret.sourceRelation) sourceRelation = true
             if (ret.targetRelation) targetRelation = true
+            if (ret.sourceItem) sourceItem = true
+            if (ret.targetItem) targetItem = true
         }
     }
-    return {sourceRelation: sourceRelation, targetRelation: targetRelation}
+    return {sourceRelation: sourceRelation, targetRelation: targetRelation, sourceItem: sourceItem, targetItem: targetItem}
 }
 
 export function prepareWhere (context: Context, where: any) {
     const params: any = {}
-    let replaceResult = {sourceRelation: false, targetRelation: false}
+    let replaceResult = {sourceRelation: false, targetRelation: false, sourceItem: false, targetItem: false}
     if (where) {
         replaceResult = replaceOperations(where)
         params.where = where
     }
-    if (replaceResult.sourceRelation || replaceResult.targetRelation) {
+    if (replaceResult.sourceRelation || replaceResult.targetRelation || replaceResult.sourceItem || replaceResult.targetItem) {
         const arr = []
         if (replaceResult.sourceRelation) arr.push({model: ItemRelation, as: 'sourceRelation'})
         if (replaceResult.targetRelation) arr.push({model: ItemRelation, as: 'targetRelation'})
+        if (replaceResult.sourceItem) arr.push({model: Item, as: 'sourceItem'})
+        if (replaceResult.targetItem) arr.push({model: Item, as: 'targetItem'})
         params.include = arr
     }
     return params
@@ -138,17 +160,19 @@ export default {
                     offset: request.offset,
                     limit: request.limit
                 }
-                let replaceResult = {sourceRelation: false, targetRelation: false}
+                let replaceResult = {sourceRelation: false, targetRelation: false, sourceItem: false, targetItem: false}
                 if (request.where) {
                     replaceResult = replaceOperations(request.where)
                     params.where = request.where
                 }
                 if (request.order) params.order = request.order
                 if (request.entity === 'ITEM') {
-                    if (replaceResult.sourceRelation || replaceResult.targetRelation) {
+                    if (replaceResult.sourceRelation || replaceResult.targetRelation || replaceResult.sourceItem || replaceResult.targetItem) {
                         const arr = []
                         if (replaceResult.sourceRelation) arr.push({model: ItemRelation, as: 'sourceRelation'})
                         if (replaceResult.targetRelation) arr.push({model: ItemRelation, as: 'targetRelation'})
+                        if (replaceResult.sourceItem) arr.push({model: Item, as: 'sourceItem'})
+                        if (replaceResult.targetItem) arr.push({model: Item, as: 'targetItem'})
                         params.include = arr
                     }
 
