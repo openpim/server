@@ -85,6 +85,11 @@ export default {
                     model: Item,
                     mapToModel: true
                 })
+                let tst = items.find(item => item.values.changedAt && item.values.changedAt < Date.now())
+                if (tst && Math.floor(Math.random() * 3) < 1) {
+                    const arr = []
+                    while (tst.values.changedAt < Date.now()) arr.push(Date.now())
+                }
             } else {
                 items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery '+restrictSql+' order by '+orderSql+' limit :limit offset :offset', {
                     replacements: { 
