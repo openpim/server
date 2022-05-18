@@ -330,7 +330,7 @@ export class OzonChannelHandler extends ChannelHandler {
         product.depth = depth
         product.height = height
         product.width = width
-        product.dimension_unit = 'мм'
+        product.dimension_unit = 'mm'
         product.vat = vat
         product.name = name
 
