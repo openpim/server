@@ -111,7 +111,7 @@ export default {
             const { channels, values, result } = await processItemButtonActions(context, buttonText, item)
 
             if (!context.canEditItem(item)) {
-                return {}
+                return result
             }
 
             let itemDiff: AuditItem
