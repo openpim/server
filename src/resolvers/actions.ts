@@ -108,11 +108,11 @@ export default {
                 throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            if (!context.canEditItem(item)) {
-                throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
-            }
-
             const { channels, values, result } = await processItemButtonActions(context, buttonText, item)
+
+            if (!context.canEditItem(item)) {
+                return {}
+            }
 
             let itemDiff: AuditItem
             if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
