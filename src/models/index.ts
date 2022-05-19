@@ -23,6 +23,10 @@ let sequelize:Sequelize
 export { sequelize }
 
 export async function initModels() {
+    let dialectOptions = {}
+    if (process.env.OPENPIM_DATABASE_OPTIONS) {
+        dialectOptions = JSON.parse(process.env.OPENPIM_DATABASE_OPTIONS)
+    }
     sequelize = new Sequelize(
         <string>process.env.DATABASE_NAME,
         <string>process.env.DATABASE_USER,
@@ -30,6 +34,7 @@ export async function initModels() {
         host: process.env.DATABASE_URL,
         port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT) : 5432,
         dialect: 'postgres',
+        dialectOptions: dialectOptions,
         logging: logger.debug.bind(logger)
     })
 
