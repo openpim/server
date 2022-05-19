@@ -45,6 +45,7 @@ query { search(
 */
 
 function replaceOperations(obj: any) {
+    let include = []
     let sourceRelation = false
     let targetRelation = false
     let sourceItem = false
@@ -80,63 +81,32 @@ function replaceOperations(obj: any) {
             obj[Symbol.for(operation)] = value
         }
 
-        if (prop.startsWith('sourceRelation___')) {
-            const field = prop.substr(17)
+        if (prop === 'include' && Array.isArray(value)) {
+            include = value
             delete obj[prop]
-            const column = '$sourceRelation.'+field+'$'
-            obj[column] = value
-            sourceRelation = true
+            fillInclude(include)
         }
 
-        if (prop.startsWith('targetRelation___')) {
-            const field = prop.substr(17)
-            delete obj[prop]
-            const column = '$targetRelation.'+field+'$'
-            obj[column] = value
-            targetRelation = true
-        }
-
-        if (prop.startsWith('sourceItem___')) {
-            const field = prop.substr(13)
-            delete obj[prop]
-            const column = '$sourceItem.'+field+'$'
-            obj[column] = value
-            sourceItem = true
-        }
-
-        if (prop.startsWith('targetItem___')) {
-            const field = prop.substr(13)
-            delete obj[prop]
-            const column = '$targetItem.'+field+'$'
-            obj[column] = value
-            targetRelation = true
-        }
-
-        if (value === Object(value)) {
-            const ret = replaceOperations(value)
-            if (ret.sourceRelation) sourceRelation = true
-            if (ret.targetRelation) targetRelation = true
-            if (ret.sourceItem) sourceItem = true
-            if (ret.targetItem) targetItem = true
+        if (prop !== 'include' && value === Object(value)) {
+            replaceOperations(value)
         }
     }
-    return {sourceRelation: sourceRelation, targetRelation: targetRelation, sourceItem: sourceItem, targetItem: targetItem}
+    return include
+}
+function fillInclude(include: any[]) {
+    include.forEach(elem => {
+        if (elem.model === 'Item') elem.model = Item
+        if (elem.model === 'ItemRelation') elem.model = ItemRelation
+        if (elem.include && Array.isArray(elem.include)) fillInclude(elem.include)
+    })
 }
 
 export function prepareWhere (context: Context, where: any) {
     const params: any = {}
-    let replaceResult = {sourceRelation: false, targetRelation: false, sourceItem: false, targetItem: false}
     if (where) {
-        replaceResult = replaceOperations(where)
+        const include = replaceOperations(where)
         params.where = where
-    }
-    if (replaceResult.sourceRelation || replaceResult.targetRelation || replaceResult.sourceItem || replaceResult.targetItem) {
-        const arr = []
-        if (replaceResult.sourceRelation) arr.push({model: ItemRelation, as: 'sourceRelation'})
-        if (replaceResult.targetRelation) arr.push({model: ItemRelation, as: 'targetRelation'})
-        if (replaceResult.sourceItem) arr.push({model: Item, as: 'sourceItem'})
-        if (replaceResult.targetItem) arr.push({model: Item, as: 'targetItem'})
-        params.include = arr
+        if (include && include.length > 0) params.include = include
     }
     return params
 }
@@ -160,22 +130,14 @@ export default {
                     offset: request.offset,
                     limit: request.limit
                 }
-                let replaceResult = {sourceRelation: false, targetRelation: false, sourceItem: false, targetItem: false}
                 if (request.where) {
-                    replaceResult = replaceOperations(request.where)
+                    const include = replaceOperations(request.where)
                     params.where = request.where
+                    if (include && include.length > 0) params.include = include
+            
                 }
                 if (request.order) params.order = request.order
                 if (request.entity === 'ITEM') {
-                    if (replaceResult.sourceRelation || replaceResult.targetRelation || replaceResult.sourceItem || replaceResult.targetItem) {
-                        const arr = []
-                        if (replaceResult.sourceRelation) arr.push({model: ItemRelation, as: 'sourceRelation'})
-                        if (replaceResult.targetRelation) arr.push({model: ItemRelation, as: 'targetRelation'})
-                        if (replaceResult.sourceItem) arr.push({model: Item, as: 'sourceItem'})
-                        if (replaceResult.targetItem) arr.push({model: Item, as: 'targetItem'})
-                        params.include = arr
-                    }
-
                     // queries are processed in ItemsSearchResponse resolvers
                     const restrictSql = context.generateRestrictionsInSQL('"Item".', false)
                     if (restrictSql.length > 0) {
