@@ -51,11 +51,11 @@ export async function initModels() {
     dashboards.init(sequelize)
     channels.init(sequelize)
 
-    items.Item.belongsTo(itemRelations.ItemRelation, {targetKey: 'itemId', as: 'sourceRelation', foreignKey: 'id'})
-    itemRelations.ItemRelation.hasOne(items.Item,{sourceKey: 'itemId', as: 'sourceRelation', foreignKey: 'id'}) 
+    items.Item.hasMany(itemRelations.ItemRelation, {sourceKey: 'id', as: 'sourceRelation', foreignKey: 'itemId'})
+    itemRelations.ItemRelation.belongsTo(items.Item,{targetKey: 'id', as: 'sourceItem', foreignKey: 'itemId'}) 
 
-    items.Item.belongsTo(itemRelations.ItemRelation, {targetKey: 'targetId', as: 'targetRelation', foreignKey: 'id'})
-    itemRelations.ItemRelation.hasOne(items.Item,{sourceKey: 'targetId', as: 'targetRelation', foreignKey: 'id'})
+    items.Item.hasMany(itemRelations.ItemRelation, {sourceKey: 'id', as: 'targetRelation', foreignKey: 'targetId'})
+    itemRelations.ItemRelation.belongsTo(items.Item,{targetKey: 'id', as: 'targetItem', foreignKey: 'targetId'})
 
     await sequelize.sync();
 }
