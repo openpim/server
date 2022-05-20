@@ -97,6 +97,9 @@ function fillInclude(include: any[]) {
     include.forEach(elem => {
         if (elem.as && elem.as.endsWith('Item')) elem.model = Item
         if (elem.as && elem.as.endsWith('Relation')) elem.model = ItemRelation
+
+        if (elem.where) replaceOperations(elem.where)
+
         if (elem.include && Array.isArray(elem.include)) fillInclude(elem.include)
     })
 }
