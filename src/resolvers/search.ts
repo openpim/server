@@ -95,8 +95,8 @@ function replaceOperations(obj: any) {
 }
 function fillInclude(include: any[]) {
     include.forEach(elem => {
-        if (elem.model === 'Item') elem.model = Item
-        if (elem.model === 'ItemRelation') elem.model = ItemRelation
+        if (elem.as && elem.as.endsWith('Item')) elem.model = Item
+        if (elem.as && elem.as.endsWith('Relation')) elem.model = ItemRelation
         if (elem.include && Array.isArray(elem.include)) fillInclude(elem.include)
     })
 }
@@ -223,7 +223,24 @@ export default {
                     })
                     res.type = 'RelationsResponse'
                 } else if (request.entity === 'ITEM_RELATION') {
+                    let sequalizeBug = false
+                    let limitSave = 0
+                    const tst: any = params 
+                    if (tst.include && tst.include.length > 0 && tst.include[0].include && tst.include[0].include.length > 0) {
+                        if ( (tst.include[0].where || tst.include[0].required) && (tst.include[0].include[0].where || tst.include[0].include[0].required)) {
+                            // bug in sequalize limit is not working for include in include if both has where or required
+                            limitSave = params.limit!
+                            params.limit = undefined
+                            sequalizeBug = true
+                        }
+                    }
+        
                     res = await ItemRelation.applyScope(context).findAndCountAll(params)
+        
+                    if (sequalizeBug) {
+                        res.rows = res.rows.slice(0, limitSave)
+                    }
+        
 
                     res.rows = res.rows.filter( (itemRel: ItemRelation) => context.canViewItemRelation(itemRel.id))
                     for (let i = 0; i < res.rows.length; i++) {
@@ -323,7 +340,22 @@ export default {
             return await Item.applyScope(context).count(params)
         },
         rows: async ({context, params}: any) => {
+            let sequalizeBug = false
+            let limitSave = 0
+            if (params.include && params.include.length > 0 && params.include[0].include && params.include[0].include.length > 0) {
+                if ( (params.include[0].where || params.include[0].required) && (params.include[0].include[0].where || params.include[0].include[0].required)) {
+                    // bug in sequalize limit is not working for include in include if both has where or required
+                    limitSave = params.limit
+                    params.limit = undefined
+                    sequalizeBug = true
+                }
+            }
+
             let rows = await Item.applyScope(context).findAll(params)
+
+            if (sequalizeBug) {
+                rows = rows.slice(0, limitSave)
+            }
 
             for (let i = 0; i < rows.length; i++) {
                 const item = rows[i];

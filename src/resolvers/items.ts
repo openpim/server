@@ -441,15 +441,6 @@ export default {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }
 
-
-            const params = {"offset":10,"limit":null,where: {
-            }, include:[{model: ItemRelation, as: 'sourceRelation', where: {relationIdentifier: "mainImage"}, 
-                include:[{model: Item, as: 'targetItem', where: {"identifier":"image_13"}}]}
-               ]}
-            console.log(111, JSON.stringify(params))
-            const tst = await Item.applyScope(context).findAll(params)
-            console.log(tst.length)
-               
             return item
         },
         moveItem: async (parent: any, { id, parentId }: any, context: Context) => {
