@@ -738,7 +738,7 @@ class ActionUtils {
         })
     }
 
-    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any) {
+    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any, skipActions = false) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const tst = await Item.applyScope(this.#context).findOne({
@@ -814,7 +814,7 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false)
+        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false)
 
         filterValues(this.#context.getEditItemAttributes2(nTypeId, path), values)
         checkValues(mng, values)
@@ -825,7 +825,7 @@ class ActionUtils {
             await item.save({transaction: t})
         })
 
-        await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false)
+        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false)
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
@@ -840,7 +840,7 @@ class ActionUtils {
         return makeItemProxy(item)
     }
 
-    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any) {
+    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
@@ -905,7 +905,7 @@ class ActionUtils {
         })
 
         if (!values) values = {}
-        await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, values, false)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, values, false)
 
         filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
         checkValues(mng, values)
@@ -916,7 +916,7 @@ class ActionUtils {
             await itemRelation.save({transaction: t})
         })
 
-        await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, values, false)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, values, false)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {
