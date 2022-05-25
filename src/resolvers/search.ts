@@ -340,25 +340,13 @@ export default {
     },
     ItemsSearchResponse: {
         count: async ({context, params}: any) => {
+            params.subQuery = false // to avoid generation unnecessary subqueries on join
             return await Item.applyScope(context).count(params)
         },
         rows: async ({context, params}: any) => {
-            let sequalizeBug = false
-            let limitSave = 0
-            if (params.include && params.include.length > 0 && params.include[0].include && params.include[0].include.length > 0) {
-                if ( (params.include[0].where || params.include[0].required) && (params.include[0].include[0].where || params.include[0].include[0].required)) {
-                    // bug in sequalize limit is not working for include in include if both has where or required
-                    limitSave = params.limit
-                    params.limit = undefined
-                    sequalizeBug = true
-                }
-            }
+            params.subQuery = false // to avoid generation unnecessary subqueries on join
 
             let rows = await Item.applyScope(context).findAll(params)
-
-            if (sequalizeBug) {
-                rows = rows.slice(0, limitSave)
-            }
 
             for (let i = 0; i < rows.length; i++) {
                 const item = rows[i];
