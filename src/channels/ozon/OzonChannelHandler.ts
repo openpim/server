@@ -178,9 +178,9 @@ export class OzonChannelHandler extends ChannelHandler {
                     item.changed('channels', true)
                 }
             }
-            await sequelize.transaction(async (t) => {
-                await item.save({ transaction: t })
-            })
+
+            await this.saveItemIfChanged(channel, item)
+
             context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
         } else {
             context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
@@ -210,17 +210,22 @@ export class OzonChannelHandler extends ChannelHandler {
                     if (tst) {
                         try {
                             await this.processItemInCategory(channel, item, categoryConfig, language, context)
-                            await sequelize.transaction(async (t) => {
-                                await item.save({transaction: t})
-                            })
+
+                            await this.saveItemIfChanged(channel, item)
                         } catch (err) {
                             logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+
+                            const data = item.channels[channel.identifier]
+                            data.status = 3
+                            data.message = 'Ошибка обработки товара: ' + err
+                            context.log += data.message
+                            await this.saveItemIfChanged(channel, item)
                         }
                         return
                     }
                 }
             } else {
-                context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию категории: '+categoryConfig.name+' \n'
+                // context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию категории: '+categoryConfig.name+' \n'
                 // logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
             }
         }
@@ -229,10 +234,41 @@ export class OzonChannelHandler extends ChannelHandler {
         data.status = 3
         data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
         context.log += 'Запись с идентификатором:' + item.identifier + ' не подходит ни под одну категорию из этого канала.\n'
-        item.changed('channels', true)
-        await sequelize.transaction(async (t) => {
-            await item.save({transaction: t})
-        })
+        await this.saveItemIfChanged(channel, item)
+    }
+
+    async saveItemIfChanged(channel: Channel, item: Item) {
+        const reloadedItem = await Item.findByPk(item.id) // refresh item from DB (other channels can already change it)
+        let changed = false
+        const data = item.channels[channel.identifier]
+        const reloadedData = reloadedItem!.channels[channel.identifier]
+        if (reloadedData.status !== data.status || reloadedData.message !== data.message) {
+            changed = true
+            reloadedData.status = data.status
+            reloadedData.message = data.message
+            if (data.syncedAt) reloadedData.syncedAt = data.syncedAt
+            reloadedItem!.changed('channels', true)
+        }
+        if (reloadedItem!.values[channel.config.ozonIdAttr] !== item.values[channel.config.ozonIdAttr]) {
+            changed = true
+            reloadedItem!.values[channel.config.ozonIdAttr] = item.values[channel.config.ozonIdAttr]
+            reloadedItem!.changed('values', true)
+        }
+        if (reloadedItem!.values[channel.config.ozonFBSIdAttr] !== item.values[channel.config.ozonFBSIdAttr]) {
+            changed = true
+            reloadedItem!.values[channel.config.ozonFBSIdAttr] = item.values[channel.config.ozonFBSIdAttr]
+            reloadedItem!.changed('values', true)
+        }
+        if (reloadedItem!.values[channel.config.ozonFBOIdAttr] !== item.values[channel.config.ozonFBOIdAttr]) {
+            changed = true
+            reloadedItem!.values[channel.config.ozonFBOIdAttr] = item.values[channel.config.ozonFBOIdAttr]
+            reloadedItem!.changed('values', true)
+        }
+        if (changed) {
+            await sequelize.transaction(async (t) => {
+                await reloadedItem!.save({transaction: t})
+            })
+        }
     }
 
     async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext) {
@@ -256,6 +292,12 @@ export class OzonChannelHandler extends ChannelHandler {
 
         const vatConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#vat')
         const vat = await this.getValueByMapping(channel, vatConfig, item, language)
+        if (!vat) {
+            const msg = 'Не введена конфигурация или нет данных для "НДС" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
 
         const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
         const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
