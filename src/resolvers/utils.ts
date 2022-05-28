@@ -320,13 +320,14 @@ export async function testAction(context: Context, action: Action, item: Item) {
     const values = {...item.values}
     const channels = {...item.channels}
     let log = ''
+    const nameCopy = {...item.name}
     const ret = await processActionsWithLog(mng, [action], { Op: Op,
         event: 'Test', 
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
-        item: makeItemProxy(item), values: values, channels:channels, 
+        item: makeItemProxy(item), values: values, channels:channels, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
