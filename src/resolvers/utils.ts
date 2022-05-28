@@ -274,6 +274,7 @@ export async function processItemActions(context: Context, event: EventType, ite
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
             ItemRelation
         } 
     })
@@ -309,6 +310,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
             ItemRelation
         } 
     })
@@ -332,6 +334,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
             ItemRelation
         }},
         { 
@@ -517,6 +520,7 @@ export async function processItemRelationActions(context: Context, event: EventT
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
             ItemRelation
         } 
     })
@@ -734,6 +738,7 @@ class ActionUtils {
                 item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
                 itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
                 lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+                Item,
                 ItemRelation
             } 
         })
