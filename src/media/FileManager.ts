@@ -88,7 +88,7 @@ export class FileManager {
         return fullPath
     }
 
-    public async saveFile(tenantId: string, item: Item, file: File) {
+    public async saveFile(tenantId: string, item: Item, filepath: string, mimetype: string | null, originalFilename: string | null) {
         const folder = ~~(item.id/1000)
 
         const tst = '/' + tenantId
@@ -99,7 +99,7 @@ export class FileManager {
 
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
-        const uploadedFile = file.filepath
+        const uploadedFile = filepath
         try {
             fs.renameSync(uploadedFile, fullPath)
         } catch (e) { 
@@ -111,14 +111,14 @@ export class FileManager {
         item.storagePath = relativePath
 
         let values
-        if (this.isImage(file.mimetype||'')) {
+        if (this.isImage(mimetype||'')) {
             const image = await Jimp.read(fullPath)
             values = {
                 image_width: image.bitmap.width,
                 image_height: image.bitmap.height,
                 image_type: image.getExtension(),
                 file_type: image.getMIME(),
-                file_name: file.originalFilename||'',
+                file_name: originalFilename||'',
                 image_rgba: image._rgba
             }
 
@@ -128,8 +128,8 @@ export class FileManager {
             image.write(fullPath + '_thumb.jpg')    
         } else {
             values = {
-                file_name: file.originalFilename||'',
-                file_type: file.mimetype||''
+                file_name: originalFilename||'',
+                file_type: mimetype||''
             }
         }
         item.values = mergeValues(values, item.values)

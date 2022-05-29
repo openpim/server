@@ -139,7 +139,7 @@ export async function processUpload(context: Context, req: Request, res: Respons
             if (!type!.file) throw new Error('Item with id: ' + id + ' is not a file, user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
 
             const fm = FileManager.getInstance()
-            await fm.saveFile(context.getCurrentUser()!.tenantId, item, file)
+            await fm.saveFile(context.getCurrentUser()!.tenantId, item, file.filepath, file.mimetype, file.originalFilename)
 
             const mimeOld = item.mimeType
             const fileOld = item.fileOrigName
@@ -267,7 +267,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             if (!type!.file) throw new Error('Item with id: ' + id + ' is not a file, user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
 
             const fm = FileManager.getInstance()
-            await fm.saveFile(context.getCurrentUser()!.tenantId, item, file)
+            await fm.saveFile(context.getCurrentUser()!.tenantId, item, file.filepath, file.mimetype, file.originalFilename)
 
             item.fileOrigName = file.originalFilename || ''
             item.mimeType = file.mimetype || ''
