@@ -725,6 +725,10 @@ class ActionUtils {
         item.mimeType = mimetype || ''
     }
 
+    public getStoragePath(item: Item) {
+        return !item.storagePath ? null : '/filestorage' + item.storagePath
+    }
+
     public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
 
