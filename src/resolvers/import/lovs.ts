@@ -47,13 +47,13 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
 
         if (config.mode === ImportMode.CREATE_ONLY) {
             if (data) {
-                result.addError(ReturnMessage.UserExist)
+                result.addError(ReturnMessage.LOVExist)
                 result.result = ImportResult.REJECTED
                 return result
             }
         } else if (config.mode === ImportMode.UPDATE_ONLY) {
             if (!data) {
-                result.addError(ReturnMessage.UserNotFound)
+                result.addError(ReturnMessage.LOVNotFound)
                 result.result = ImportResult.REJECTED
                 return result
             }
