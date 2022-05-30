@@ -27,7 +27,7 @@ import logger from '../logger'
 import { LOV } from "../models/lovs"
 import { Attribute } from "../models/attributes"
 import dateFormat from "dateformat"
-import { FileManager } from "@/media/FileManager"
+import { FileManager } from "../media/FileManager"
 
 export function filterChannels(context: Context, channels:any) {
     for (const prop in channels) {
@@ -721,6 +721,8 @@ class ActionUtils {
     public async saveFile(item: Item, filepath: string, mimetype: string | null, originalFilename: string | null) {
         const fm = FileManager.getInstance()
         await fm.saveFile(this.#context.getCurrentUser()!.tenantId, item, filepath, mimetype, originalFilename)
+        item.fileOrigName = originalFilename || ''
+        item.mimeType = mimetype || ''
     }
 
     public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {
