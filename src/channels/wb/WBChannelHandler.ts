@@ -9,6 +9,7 @@ import { sequelize } from '../../models'
 import * as uuid from "uuid"
 import * as fs from 'fs'
 import { Op } from 'sequelize'
+import { ItemRelation } from '../../models/itemRelations'
 
 interface JobContext {
     log: string
@@ -187,7 +188,18 @@ export class WBChannelHandler extends ChannelHandler {
                 if (tstType) {
                     let tst = null
                     if (categoryConfig.visible && categoryConfig.visible.length > 0) {
-                        tst = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                        if (categoryConfig.visibleRelation) {
+                            let sources = await Item.findAll({ 
+                                where: { tenantId: channel.tenantId, '$sourceRelation.relationId$': categoryConfig.visibleRelation, '$sourceRelation.targetId$': item.id },
+                                include: [{model: ItemRelation, as: 'sourceRelation'}]
+                            })
+                            tst = sources.some(source => {
+                                const pathArr = source.path.split('.')
+                                return categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                            })
+                        } else {
+                            tst = categoryConfig.visible.find((elem:any) => pathArr.includes(''+elem))
+                        }
                     } else if (categoryConfig.categoryExpr) {
                         tst = await this.evaluateExpression(channel, item, categoryConfig.categoryExpr)
                     } else {
