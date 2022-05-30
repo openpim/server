@@ -484,6 +484,7 @@ function makeItemProxy(item: any) {
                 prop === 'name' ||
                 prop === 'values' ||
                 prop === 'channels' ||
+                prop === 'storagePath' ||
                 prop === 'fileOrigName' ||
                 prop === 'mimeType' ||
                 prop === 'updatedBy'
