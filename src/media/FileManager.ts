@@ -88,7 +88,7 @@ export class FileManager {
         return fullPath
     }
 
-    public async saveFile(tenantId: string, item: Item, filepath: string, mimetype: string | null, originalFilename: string | null) {
+    public async saveFile(tenantId: string, item: Item, filepath: string, mimetype: string | null, originalFilename: string | null, clean = true ) {
         const folder = ~~(item.id/1000)
 
         const tst = '/' + tenantId
@@ -99,13 +99,15 @@ export class FileManager {
 
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
-        const uploadedFile = filepath
-        try {
-            fs.renameSync(uploadedFile, fullPath)
-        } catch (e) { 
-            // logger.warn('Failed to rename file (will use copy instead): ', uploadedFile, fullPath, e)
-            fs.copyFileSync(uploadedFile, fullPath)
-            fs.unlinkSync(uploadedFile)
+        if (clean) {
+            const uploadedFile = filepath
+            try {
+                fs.renameSync(uploadedFile, fullPath)
+            } catch (e) { 
+                // logger.warn('Failed to rename file (will use copy instead): ', uploadedFile, fullPath, e)
+                fs.copyFileSync(uploadedFile, fullPath)
+                fs.unlinkSync(uploadedFile)
+            }
         }
 
         item.storagePath = relativePath

@@ -720,7 +720,7 @@ class ActionUtils {
 
     public async saveFile(item: Item, filepath: string, mimetype: string | null, originalFilename: string | null) {
         const fm = FileManager.getInstance()
-        await fm.saveFile(this.#context.getCurrentUser()!.tenantId, item, filepath, mimetype, originalFilename)
+        await fm.saveFile(this.#context.getCurrentUser()!.tenantId, item, filepath, mimetype, originalFilename, false)
         item.fileOrigName = originalFilename || ''
         item.mimeType = mimetype || ''
     }
