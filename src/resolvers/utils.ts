@@ -727,7 +727,7 @@ class ActionUtils {
     }
 
     public getStoragePath(item: Item) {
-        return !item.storagePath ? null : '/filestorage' + item.storagePath
+        return !item.storagePath ? null : FileManager.getInstance().getFilesRoot() + item.storagePath
     }
 
     public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {

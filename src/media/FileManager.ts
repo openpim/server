@@ -24,6 +24,10 @@ export class FileManager {
         return FileManager.instance
     }
 
+    public getFilesRoot() {
+        return this.filesRoot
+    }
+
     public async removeFile(item: Item) {
         const folder = ~~(item.id/1000)
 
@@ -100,14 +104,14 @@ export class FileManager {
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
         if (clean) {
-            const uploadedFile = filepath
             try {
-                fs.renameSync(uploadedFile, fullPath)
+                fs.renameSync(filepath, fullPath)
             } catch (e) { 
-                // logger.warn('Failed to rename file (will use copy instead): ', uploadedFile, fullPath, e)
-                fs.copyFileSync(uploadedFile, fullPath)
-                fs.unlinkSync(uploadedFile)
+                fs.copyFileSync(filepath, fullPath)
+                fs.unlinkSync(filepath)
             }
+        } else {
+            fs.copyFileSync(filepath, fullPath)
         }
 
         item.storagePath = relativePath
