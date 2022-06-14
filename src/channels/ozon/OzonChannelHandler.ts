@@ -641,6 +641,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     const json = await res.json()
                     dict = dict.concat(json.result)
                     next = json.has_next
+                    if (dict.length === 0) throw new Error('No data for attribute dictionary: '+ozonAttrId+', for category: '+ozonCategoryId)
                     last = dict[dict.length-1].id
                 } while (next)
     
