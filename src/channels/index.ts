@@ -60,6 +60,14 @@ export class ChannelsManager {
                 const handler = this.getHandler(channel)
                 if (count > 0) {
                     logger.info("Found " + count + " submitted items for channel " + channel.identifier + ", tenant: " + this.tenantId)
+                    if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'false') {
+                        // reload channel from DB
+                        const tst = await Channel.findByPk(channel.id)
+                        if (tst) {
+                            channel = tst
+                            logger.info("Channel reloaded: " + channel.identifier + ", tenant: " + this.tenantId)
+                        }
+                    }
                     await handler.processChannel(channel, language, data)
                 } else {
                     logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
@@ -70,6 +78,14 @@ export class ChannelsManager {
         } else {
             try {
                 const handler = this.getHandler(channel)
+                if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'false') {
+                    // reload channel from DB
+                    const tst = await Channel.findByPk(channel.id)
+                    if (tst) {
+                        channel = tst
+                        logger.info("Channel reloaded: " + channel.identifier + ", tenant: " + this.tenantId)
+                    }
+                }
                 await handler.processChannel(channel, language, data)
             } finally {
                 jobDetails[1] = false
