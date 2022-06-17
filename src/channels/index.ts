@@ -78,6 +78,7 @@ export class ChannelsManager {
     }
 
     public startChannel(channel: Channel) {
+        if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'true') return
         if (channel.active) {
             this.stopChannel(channel)
             if (!channel.config.start || channel.config.start === 1) {
