@@ -93,6 +93,15 @@ export class ChannelsManager {
                 } else {
                     logger.warn('Interval is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
+            } else if (channel.config.start === 4) { //cron
+                if(channel.config.cron) {
+                    const job = scheduleJob(channel.config.cron, () => {
+                        this.triggerChannel(channel, channel.config.language, null)
+                    })  
+                    this.jobMap[channel.identifier] = [job, false]
+                } else {
+                    logger.warn('Cron expression is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
+                }
             } else { // time
                 if(channel.config.time) {
                     const arr = channel.config.time.split(':')
@@ -113,6 +122,17 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
                     this.jobMap[channel.identifier+'_sync'] = [job, false]
+                } else {
+                    logger.warn('Interval is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
+                }
+            } else if (channel.config.start === 4) { //cron
+                if(channel.config.syncCron) {
+                    const job = scheduleJob(channel.config.syncCron, () => {
+                        this.triggerChannel(channel, channel.config.language, {sync:true})
+                    })  
+                    this.jobMap[channel.identifier+'_sync'] = [job, false]
+                } else {
+                    logger.warn('Cron expression is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             } else { // sync time
                 if(channel.config.syncTime) {
@@ -121,6 +141,8 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
                     this.jobMap[channel.identifier+'_sync'] = [job, false]
+                } else {
+                    logger.warn('Time expression is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             }
         }
