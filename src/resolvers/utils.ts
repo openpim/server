@@ -27,6 +27,7 @@ import logger from '../logger'
 import { LOV } from "../models/lovs"
 import { Attribute } from "../models/attributes"
 import dateFormat from "dateformat"
+import { FileManager } from "../media/FileManager"
 
 export function filterChannels(context: Context, channels:any) {
     for (const prop in channels) {
@@ -274,6 +275,7 @@ export async function processItemActions(context: Context, event: EventType, ite
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
             ItemRelation
         } 
     })
@@ -309,6 +311,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
             ItemRelation
         } 
     })
@@ -320,17 +323,19 @@ export async function testAction(context: Context, action: Action, item: Item) {
     const values = {...item.values}
     const channels = {...item.channels}
     let log = ''
+    const nameCopy = {...item.name}
     const ret = await processActionsWithLog(mng, [action], { Op: Op,
         event: 'Test', 
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
-        item: makeItemProxy(item), values: values, channels:channels, 
+        item: makeItemProxy(item), values: values, channels:channels, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
             ItemRelation
         }},
         { 
@@ -479,6 +484,7 @@ function makeItemProxy(item: any) {
                 prop === 'name' ||
                 prop === 'values' ||
                 prop === 'channels' ||
+                prop === 'storagePath' ||
                 prop === 'fileOrigName' ||
                 prop === 'mimeType' ||
                 prop === 'updatedBy'
@@ -516,6 +522,7 @@ export async function processItemRelationActions(context: Context, event: EventT
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
             ItemRelation
         } 
     })
@@ -712,6 +719,17 @@ class ActionUtils {
         this.#context = ctx
     }
 
+    public async saveFile(item: Item, filepath: string, mimetype: string | null, originalFilename: string | null) {
+        const fm = FileManager.getInstance()
+        await fm.saveFile(this.#context.getCurrentUser()!.tenantId, item, filepath, mimetype, originalFilename, false)
+        item.fileOrigName = originalFilename || ''
+        item.mimeType = mimetype || ''
+    }
+
+    public getStoragePath(item: Item) {
+        return !item.storagePath ? null : FileManager.getInstance().getFilesRoot() + item.storagePath
+    }
+
     public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
 
@@ -733,12 +751,13 @@ class ActionUtils {
                 item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
                 itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
                 lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+                Item,
                 ItemRelation
             } 
         })
     }
 
-    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any) {
+    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any, skipActions = false) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const tst = await Item.applyScope(this.#context).findOne({
@@ -814,7 +833,7 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false)
+        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false)
 
         filterValues(this.#context.getEditItemAttributes2(nTypeId, path), values)
         checkValues(mng, values)
@@ -825,7 +844,7 @@ class ActionUtils {
             await item.save({transaction: t})
         })
 
-        await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false)
+        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false)
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
@@ -840,7 +859,7 @@ class ActionUtils {
         return makeItemProxy(item)
     }
 
-    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any) {
+    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
@@ -905,7 +924,7 @@ class ActionUtils {
         })
 
         if (!values) values = {}
-        await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, values, false)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, values, false)
 
         filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
         checkValues(mng, values)
@@ -916,7 +935,7 @@ class ActionUtils {
             await itemRelation.save({transaction: t})
         })
 
-        await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, values, false)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, values, false)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {

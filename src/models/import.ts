@@ -93,7 +93,7 @@ export class ReturnMessage {
   public static WrongLogin = new ReturnMessage(702, "Login must not has spaces and must be in English")
   public static UserDeleteFailed = new ReturnMessage(703, "Can not remove last user with Administrator role")
 
-  public static LOVNotFound = new ReturnMessage(800, "Failed to find List of values by identifier")
+  public static LOVNotFound = new ReturnMessage(800, "Failed to find list of values by identifier")
   public static LOVExist = new ReturnMessage(801, "List of values with such identifier already exists")
   public static LOVDeleteFailed = new ReturnMessage(802, "Failed to remove list of value because there are attributes with links to it")
   

@@ -19,41 +19,43 @@ class Audit {
 
     public async auditItem(change: ChangeType, id: number, identifier: string, item: AuditItem, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
+        const body = {
+            itemId: id,
+            identifier: identifier,
+            operation: change,
+            user: login,
+            changedAt: changedAt,
+            data: item
+        }
         try {
             await this.getClient().index({
                 index: "items",
-                body: {
-                    itemId: id,
-                    identifier: identifier,
-                    operation: change,
-                    user: login,
-                    changedAt: changedAt,
-                    data: item
-                }
+                body: body
             })
         } catch (err:any) {
             logger.error(err)
-            logger.error("Error sending audit for item: " + err.meta.body.error.reason)
+            logger.error("Error sending audit for item: " + err.meta.body.error.reason+", body: "+JSON.stringify(body))
         }
     }
 
     public async auditItemRelation(change: ChangeType, id: number, identifier: string, item: AuditItemRelation, login: string, changedAt: Date) {
         if (!this.auditEnabled()) return
+            const body = {
+                itemRelationId: id,
+                identifier: identifier,
+                operation: change,
+                user: login,
+                changedAt: changedAt,
+                data: item
+            }
             try {
             await this.getClient().index({
                 index: "item_relations",
-                body: {
-                    itemRelationId: id,
-                    identifier: identifier,
-                    operation: change,
-                    user: login,
-                    changedAt: changedAt,
-                    data: item
-                }
+                body: body
             })
         } catch (err:any) {
             logger.error(err)
-            logger.error("Error sending audit for item relation" + err.meta.body.error.reason)
+            logger.error("Error sending audit for item relation" + err.meta.body.error.reason+", body: "+JSON.stringify(body))
         }
     }
 

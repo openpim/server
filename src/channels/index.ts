@@ -60,6 +60,14 @@ export class ChannelsManager {
                 const handler = this.getHandler(channel)
                 if (count > 0) {
                     logger.info("Found " + count + " submitted items for channel " + channel.identifier + ", tenant: " + this.tenantId)
+                    if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'false') {
+                        // reload channel from DB
+                        const tst = await Channel.findByPk(channel.id)
+                        if (tst) {
+                            channel = tst
+                            logger.info("Channel reloaded: " + channel.identifier + ", tenant: " + this.tenantId)
+                        }
+                    }
                     await handler.processChannel(channel, language, data)
                 } else {
                     logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
@@ -70,6 +78,14 @@ export class ChannelsManager {
         } else {
             try {
                 const handler = this.getHandler(channel)
+                if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'false') {
+                    // reload channel from DB
+                    const tst = await Channel.findByPk(channel.id)
+                    if (tst) {
+                        channel = tst
+                        logger.info("Channel reloaded: " + channel.identifier + ", tenant: " + this.tenantId)
+                    }
+                }
                 await handler.processChannel(channel, language, data)
             } finally {
                 jobDetails[1] = false
@@ -78,6 +94,7 @@ export class ChannelsManager {
     }
 
     public startChannel(channel: Channel) {
+        if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'true') return
         if (channel.active) {
             this.stopChannel(channel)
             if (!channel.config.start || channel.config.start === 1) {
@@ -91,6 +108,15 @@ export class ChannelsManager {
                     this.jobMap[channel.identifier] = [job, false]
                 } else {
                     logger.warn('Interval is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
+                }
+            } else if (channel.config.start === 4) { //cron
+                if(channel.config.cron) {
+                    const job = scheduleJob(channel.config.cron, () => {
+                        this.triggerChannel(channel, channel.config.language, null)
+                    })  
+                    this.jobMap[channel.identifier] = [job, false]
+                } else {
+                    logger.warn('Cron expression is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             } else { // time
                 if(channel.config.time) {
@@ -112,6 +138,17 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
                     this.jobMap[channel.identifier+'_sync'] = [job, false]
+                } else {
+                    logger.warn('Interval is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
+                }
+            } else if (channel.config.start === 4) { //cron
+                if(channel.config.syncCron) {
+                    const job = scheduleJob(channel.config.syncCron, () => {
+                        this.triggerChannel(channel, channel.config.language, {sync:true})
+                    })  
+                    this.jobMap[channel.identifier+'_sync'] = [job, false]
+                } else {
+                    logger.warn('Cron expression is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             } else { // sync time
                 if(channel.config.syncTime) {
@@ -120,6 +157,8 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
                     this.jobMap[channel.identifier+'_sync'] = [job, false]
+                } else {
+                    logger.warn('Time expression is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             }
         }
