@@ -21,6 +21,7 @@ import * as http2 from 'http2'
 import * as http from 'http'
 import * as https from 'https'
 import * as fs from 'fs/promises'
+import moment from 'moment'
 import AdmZip from 'adm-zip' 
 
 import logger from '../logger'
@@ -515,7 +516,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 

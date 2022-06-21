@@ -376,9 +376,14 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, false)
-
+            const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, false)
+            
             itemRelation.updatedBy = context.getCurrentUser()!.login
+            if(actionResponse.some((resp) => resp.result === 'cancelDelete')) {
+                await itemRelation.save()
+                return true
+            }
+
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
             const oldIdentifier = itemRelation.identifier
             itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now() 
