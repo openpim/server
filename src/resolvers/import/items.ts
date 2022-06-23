@@ -13,7 +13,7 @@ import { ItemRelation } from '../../models/itemRelations'
 import logger from '../../logger'
 import audit from '../../audit'
 import { ChangeType, ItemChanges, AuditItem } from '../../audit'
-import { FileManager } from '@/media/FileManager'
+import { FileManager } from '../../media/FileManager'
 
 /*
 
