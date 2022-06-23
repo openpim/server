@@ -13,6 +13,7 @@ import { ItemRelation } from '../../models/itemRelations'
 import logger from '../../logger'
 import audit from '../../audit'
 import { ChangeType, ItemChanges, AuditItem } from '../../audit'
+import { FileManager } from '@/media/FileManager'
 
 /*
 
@@ -114,6 +115,11 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     await data.destroy({transaction: t})
                 })
 
+                if (data.storagePath) {
+                    const fm = FileManager.getInstance()
+                    await fm.removeFile(data)
+                }
+    
                 if (!item.skipActions) await processItemActions(context, EventType.AfterDelete, data, "", "", null, null, true)
 
                 if (audit.auditEnabled()) {
