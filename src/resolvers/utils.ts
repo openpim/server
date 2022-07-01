@@ -387,15 +387,20 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                 }
                 if (script instanceof VMScript) {
                     const funct = vm.run(<VMScript>script)
-                    const ret = await funct()
-                    if (ret) {
-                        if (typeof ret === 'object') {
-                            retArr.push({identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data, result: ret.result})
+                    try {
+                        const ret = await funct()
+                        if (ret) {
+                            if (typeof ret === 'object') {
+                                retArr.push({identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data, result: ret.result})
+                            } else {
+                                retArr.push({identifier: action.identifier, message: ''+ret})
+                            }
                         } else {
-                            retArr.push({identifier: action.identifier, message: ''+ret})
+                            retArr.push({identifier: action.identifier})
                         }
-                    } else {
-                        retArr.push({identifier: action.identifier})
+                    } catch (err) {
+                        logger.error('Failed to run action: ' + action.identifier);
+                        throw err
                     }
                 } else {
                     retArr.push({identifier: action.identifier, compileError: script.error})
