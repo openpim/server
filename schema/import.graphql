@@ -141,6 +141,7 @@ input UserImportRequest {
   roles: [String]
   email: String
   props: JSONObject
+  options: JSON
 }
 
 input RoleImportRequest {
