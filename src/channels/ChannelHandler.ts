@@ -240,6 +240,10 @@ export abstract class ChannelHandler {
           if (Array.isArray(attrValue)) {
             return attrValue.map(val => {
               const value = lov!.values.find((elem:any) => elem.id === val)
+              if (!value) {
+                logger.error('Failed to find id '+val+' in lov '+attr.lov+' during evaluation of attribute '+attrIdent)
+                return val
+              }
               return value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
             })
           } else {
