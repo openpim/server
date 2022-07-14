@@ -282,7 +282,7 @@ export async function processItemActions(context: Context, event: EventType, ite
     })
 }
 
-export async function processItemButtonActions(context: Context, buttonText: string, item: Item) {
+export async function processItemButtonActions(context: Context, buttonText: string, item: Item, data: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -302,6 +302,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     const nameCopy = {...item.name}
     const ret = await processActions(mng, actions, { Op: Op,
         event: 'Button:'+buttonText,
+        data: data,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),

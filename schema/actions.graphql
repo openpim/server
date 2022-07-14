@@ -6,7 +6,7 @@ type Mutation {
   createAction(identifier: String!, name: LanguageDependentString!, code: String!, order: Int, triggers: JSON!): ID!
   updateAction(id: ID!, name: LanguageDependentString, code: String, order: Int, triggers: JSON) : ID!
   removeAction(id: ID!) : Boolean!
-  executeButtonAction(itemId: ID!, buttonText: String!) : ButtonActionResult!
+  executeButtonAction(itemId: ID!, buttonText: String!, data: String) : ButtonActionResult!
   testAction(itemId: ID!, actionId: ID!) : ActionTestResult
 }
 
