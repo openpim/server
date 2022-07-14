@@ -250,7 +250,7 @@ function checkInteger(attr: Attribute, value: any) {
     }
 }
 
-export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {
+export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean, isFileUpload: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -267,6 +267,7 @@ export async function processItemActions(context: Context, event: EventType, ite
     })
     return await processActions(mng, actions, { Op: Op,
         event: EventType[event],
+        fileUpload: isFileUpload,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
@@ -841,7 +842,7 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false)
+        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false)
 
         filterValues(this.#context.getEditItemAttributes2(nTypeId, path), values)
         checkValues(mng, values)
@@ -852,7 +853,7 @@ class ActionUtils {
             await item.save({transaction: t})
         })
 
-        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false)
+        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false)
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
