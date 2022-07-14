@@ -23,6 +23,7 @@ import * as https from 'https'
 import * as fs from 'fs/promises'
 import moment from 'moment'
 import AdmZip from 'adm-zip' 
+import XLSX from 'xlsx'
 
 import logger from '../logger'
 import { LOV } from "../models/lovs"
@@ -269,7 +270,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
         models: { 
@@ -306,7 +307,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
         buttonText: buttonText, 
         item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
@@ -522,7 +523,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
@@ -751,7 +752,7 @@ class ActionUtils {
             user: context.getCurrentUser()?.login,
             roles: context.getUser()?.getRoles(),
             utils: new ActionUtils(context),
-            system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+            system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
             isImport: isImport, 
             item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
             models: { 
