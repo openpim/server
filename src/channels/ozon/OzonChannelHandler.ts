@@ -665,7 +665,8 @@ export class OzonChannelHandler extends ChannelHandler {
         let tree:ChannelCategory | undefined = this.cache.get('categories')
         if (! tree) {
             tree  = {id: '', name: 'root', children: []}
-            const res = await fetch('https://api-seller.ozon.ru/v1/categories/tree?language=DEFAULT', {
+            const res = await fetch('https://api-seller.ozon.ru/v2/category/tree?language=DEFAULT', {
+                method: 'post',
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
             })
             const json = await res.json()
