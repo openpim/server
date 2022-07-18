@@ -98,7 +98,7 @@ export default {
 
             return true
         },
-        executeButtonAction: async (parent: any, { itemId, buttonText }: any, context: Context) => {
+        executeButtonAction: async (parent: any, { itemId, buttonText, data }: any, context: Context) => {
             context.checkAuth()
 
             const nId = parseInt(itemId)
@@ -108,7 +108,7 @@ export default {
                 throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const { channels, values, result } = await processItemButtonActions(context, buttonText, item)
+            const { channels, values, result } = await processItemButtonActions(context, buttonText, item, data)
 
             if (!context.canEditItem(item)) {
                 return result

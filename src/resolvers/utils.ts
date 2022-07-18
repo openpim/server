@@ -23,6 +23,7 @@ import * as https from 'https'
 import * as fs from 'fs/promises'
 import moment from 'moment'
 import AdmZip from 'adm-zip' 
+import XLSX from 'xlsx'
 
 import logger from '../logger'
 import { LOV } from "../models/lovs"
@@ -249,7 +250,7 @@ function checkInteger(attr: Attribute, value: any) {
     }
 }
 
-export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {
+export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean, isFileUpload: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -266,10 +267,11 @@ export async function processItemActions(context: Context, event: EventType, ite
     })
     return await processActions(mng, actions, { Op: Op,
         event: EventType[event],
+        fileUpload: isFileUpload,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
         models: { 
@@ -282,7 +284,7 @@ export async function processItemActions(context: Context, event: EventType, ite
     })
 }
 
-export async function processItemButtonActions(context: Context, buttonText: string, item: Item) {
+export async function processItemButtonActions(context: Context, buttonText: string, item: Item, data: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -302,10 +304,11 @@ export async function processItemButtonActions(context: Context, buttonText: str
     const nameCopy = {...item.name}
     const ret = await processActions(mng, actions, { Op: Op,
         event: 'Button:'+buttonText,
+        data: data,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
         buttonText: buttonText, 
         item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
@@ -521,7 +524,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
@@ -750,7 +753,7 @@ class ActionUtils {
             user: context.getCurrentUser()?.login,
             roles: context.getUser()?.getRoles(),
             utils: new ActionUtils(context),
-            system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+            system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
             isImport: isImport, 
             item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
             models: { 
@@ -839,7 +842,7 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false)
+        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false)
 
         filterValues(this.#context.getEditItemAttributes2(nTypeId, path), values)
         checkValues(mng, values)
@@ -850,7 +853,7 @@ class ActionUtils {
             await item.save({transaction: t})
         })
 
-        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false)
+        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false)
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
