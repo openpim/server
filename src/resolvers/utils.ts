@@ -125,14 +125,14 @@ export function diff(obj1: any, obj2: any) {
 
         // If type2 is undefined it has been removed
         if (type2 === '[object Undefined]') {
-            diffs.deleted[key] = item1;
+            diffs.deleted[key] = item1 !== null ? item1 + "" : null;
             return;
         }
 
         // If items are different types
         if (type1 !== type2) {
-            diffs.changed[key] = item2;
-            diffs.old[key] = item1;
+            diffs.changed[key] = item2 !== null ? item2 + "" : null;
+            diffs.old[key] = item1 !== null ? item1 + "" : null;
             return;
         }
 
@@ -148,10 +148,10 @@ export function diff(obj1: any, obj2: any) {
             return;
         }
 
-        if (item1 !== item2) {
-            diffs.changed[key] = item2;
-            diffs.old[key] = item1;
-        }
+        if ((!Array.isArray(item1) && item1 !== item2) || (Array.isArray(item1) && !(item1.length === item2.length && item1.every((elem:any) => item2.indexOf(elem) !== -1)))) {
+            diffs.changed[key] = item2 !== null ? item2 + "" : null;
+            diffs.old[key] = item1 !== null ? item1 + "" : null;
+        } 
     };
 
     //
@@ -168,7 +168,7 @@ export function diff(obj1: any, obj2: any) {
     for (key in obj2) {
         if (key in obj2) {
             if (!(key in obj1) && obj1[key] !== obj2[key]) {
-                diffs.added[key] = obj2[key];
+                diffs.added[key] = obj2[key] !== null ? obj2[key] + ""  : null;
             }
         }
     }
