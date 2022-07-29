@@ -333,7 +333,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2 },
+        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, XLSX },
         item: makeItemProxy(item), values: values, channels:channels, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
