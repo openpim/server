@@ -20,9 +20,12 @@ import * as mailer from 'nodemailer'
 import * as http2 from 'http2'
 import * as http from 'http'
 import * as https from 'https'
+import * as FS from 'node:fs'
 import * as fs from 'fs/promises'
 import moment from 'moment'
-import AdmZip from 'adm-zip' 
+const archiver = require('archiver')
+import * as stream from 'node:stream' 
+const pipe = util.promisify(stream.pipeline)
 import XLSX from 'xlsx'
 
 import logger from '../logger'
@@ -271,7 +274,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
         models: { 
@@ -308,7 +311,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS },
         buttonText: buttonText, 
         item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
@@ -333,7 +336,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, XLSX },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, XLSX, FS, pipe, stream, archiver },
         item: makeItemProxy(item), values: values, channels:channels, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
@@ -524,7 +527,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
         models: { 
@@ -753,7 +756,7 @@ class ActionUtils {
             user: context.getCurrentUser()?.login,
             roles: context.getUser()?.getRoles(),
             utils: new ActionUtils(context),
-            system: { AdmZip, fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX },
+            system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS },
             isImport: isImport, 
             item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
             models: { 
