@@ -9,6 +9,7 @@ import { Op, literal } from 'sequelize'
 
 import logger from '../logger'
 import audit from '../audit'
+import { AttrGroup } from '../models/attributes';
 
 export default {
     Query: {
@@ -158,13 +159,51 @@ export default {
 
             return true
         },
-        signIn: async (parent: any, { login, password }: any) => {
-            const user = await User.findOne({
+        signIn: async (parent: any, { login, password }: any, context: Context) => {
+            let user = await User.findOne({
                 where: { login: login }
             });
 
+            if (!user || user.password === '#external#') {
+                // external auth
+                const tst = await context.externalAuth(login, password)
+                if (tst) {
+                    // extrenal auth must return object {login: login, tenantId: 'default' , name: 'name', email: 'email', groups:['admin']}
+                    if (!user) {
+                        // create external user on the fly
+                        const mng = ModelsManager.getInstance().getModelManager(tst.tenantId)
+                        const userRoles = tst.groups ? tst.groups.map((grp:string) =>  mng.getRoles().find(elem => elem.identifier === grp)) : []
+                        const roles:any = userRoles.map((grp:AttrGroup) =>  grp.id)
+                        user= await sequelize.transaction(async (t) => {
+                            const user = await User.create({
+                                tenantId: tst.tenantId,
+                                createdBy: tst.login,
+                                updatedBy: '',
+                                login: login,
+                                name: tst.name,
+                                password: '#external#',
+                                email: tst.email,
+                                roles: roles,
+                                props: {},
+                                options: []
+                              }, {transaction: t});
+                            return user
+                        })
+                        mng.getUsers().push(new UserWrapper(user, userRoles))
+                    }
+                } else {
+                    if (user) {
+                        logger.error("Authentification failed for external user '" + login + "' with password '" + password + "'")
+                        throw new GraphQLError('Wrong login or password')
+                    } else {
+                        logger.error("No user found for login: " + login)
+                        throw new GraphQLError('Wrong login or password')
+                    }
+                }
+            }
+
             if (user && (user.tenantId==='0' || ModelsManager.getInstance().getModelManager(user.tenantId))) {
-                if (await bcrypt.compare(password, user.password)) {  
+                if ( user.password === '#external#' || await bcrypt.compare(password, user.password)) {  
                     const token = await jwt.sign({
                         id: user.id, 
                         tenantId: user.tenantId, 
@@ -284,7 +323,7 @@ export default {
             }
 
             if (name) user.name = name
-            if (password) user.password = await bcrypt.hash(password, 10)
+            if (password && user.password !== '#external#') user.password = await bcrypt.hash(password, 10)
             if (email) user.email = email
             if (roles && context.getCurrentUser()?.id === nId && !context.canEditConfig(ConfigAccess.USERS)) roles = null
             if (roles && wrapper) {

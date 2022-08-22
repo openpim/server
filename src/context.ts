@@ -3,14 +3,22 @@ import * as jwt from 'jsonwebtoken';
 import { LoggedUser, User } from './models/users'
 import { ModelsManager, UserWrapper } from './models/manager';
 import { Item } from './models/items';
-import { sequelize } from './models'
-import relations from './resolvers/relations';
+import * as fs from 'fs'
 
 export default class Context {
     private currentUser: LoggedUser | null = null
     private user: UserWrapper | undefined = undefined
+    private externalAuthFunction:any = null
 
     private constructor() {
+        const filesRoot = process.env.FILES_ROOT!
+        const extrenalAuthPath = filesRoot+'/modules/auth.js'
+        if (fs.existsSync(extrenalAuthPath)) {
+            (async ()=> {
+                const { default: auth } = await import(extrenalAuthPath)
+                this.externalAuthFunction = auth
+            })()
+        }
     }
 
     public getCurrentUser() {
@@ -23,6 +31,15 @@ export default class Context {
 
     public checkAuth() {
         if (!this.currentUser || (this.currentUser.tenantId !== '0' && !this.user)) throw new Error('User is not authenticated')
+    }
+
+    public async externalAuth(login: string, password: string) {
+        if (!this.externalAuthFunction) return null
+        try {
+            return await this.externalAuthFunction(login, password)
+        } catch (err) {
+            return null
+        }                        
     }
 
     public static create = async (req: IncomingMessage)  => {
