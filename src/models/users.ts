@@ -11,6 +11,7 @@ export class User extends Base {
     public props!: any
     public roles!: any
     public options!: any
+    public external!: boolean
     public static applyScope(context: Context) {
       return User.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
     }
@@ -67,7 +68,13 @@ export function init(sequelize: Sequelize):void {
           type: DataTypes.JSONB,
           allowNull: false,
         },
-        ...BaseColumns
+        external: {
+          type: DataTypes.VIRTUAL(DataTypes.BOOLEAN, ['password']),
+            get() {
+              return this.password === '#external#'
+            }
+          },
+          ...BaseColumns
       }, {
         tableName: 'users',
         paranoid: true,

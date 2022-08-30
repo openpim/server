@@ -35,6 +35,7 @@ type User {
   email: String
   props: JSONObject
   options: JSON!
+  external: Boolean!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!
