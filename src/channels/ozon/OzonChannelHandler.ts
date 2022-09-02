@@ -726,7 +726,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     id: 'attr_' + elem.id, 
                     name: elem.name + ' ('+ elem.type + ')',
                     required: elem.is_required,
-                    description: elem.description,
+                    description: elem.description+'\n id: '+elem.id+', category: '+categoryId,
                     dictionary: elem.dictionary_id !== 0,
                     dictionaryLinkPost: elem.dictionary_id !== 0 ? { body: {
                         attribute_id: elem.id,
