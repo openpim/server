@@ -63,6 +63,61 @@ export async function processDownload(context: Context, req: Request, res: Respo
     const id = parseInt(idStr)
     if (!id) throw new Error('Wrong "id" parameter')
 
+    await processDownloadById(context, id, res, thumbnail, inline)
+}
+
+export async function processDownloadMain(context: Context, req: Request, res: Response, thumbnail: boolean) {
+    let ident = req.params.identifier
+    const inline = req.query.inline
+
+    let data: any[] = await sequelize.query(
+        `SELECT distinct item."id" as "itemId", asset."id", asset."identifier", ir.values->'_itemRelationOrder'
+            FROM "items" item, "items" asset, "itemRelations" ir, "types" itemType, "types" assetType where 
+            item."identifier" = :ident and
+            item."typeId"=itemType."id" and
+            ir."itemId"=item."id" and
+            asset."id"=ir."targetId" and
+            asset."typeId"=assetType."id" and
+            ir."relationId"=itemType."mainImage" and
+            assetType."file"=true and
+            coalesce(asset."storagePath", '') != '' and
+            ir."deletedAt" is null and
+            asset."deletedAt" is null and
+            item."deletedAt" is null
+            order by ir.values->'_itemRelationOrder', asset.id
+            `, {
+        replacements: { 
+            ident: ident
+        },
+        type: QueryTypes.SELECT
+    })
+
+    if (data && data.length === 0) { // if this is a file object send itself as main image
+        data = await sequelize.query(
+            `SELECT item."id" as "itemId", item."id", item."identifier" FROM "items" item where 
+                item."identifier" = :ident and
+                item."storagePath" is not null and
+                item."storagePath" != '' and
+                item."mimeType" like 'image/%' and
+                item."deletedAt" is null
+                `, {
+            replacements: { 
+                ident: ident
+            },
+            type: QueryTypes.SELECT
+        })
+    }
+
+    if (data && data.length === 0) {
+        logger.error('Failed to find main image for identifier: ' + ident + ', user: ' + context.getCurrentUser()?.login + ", tenant: " + context.getCurrentUser()?.tenantId)
+        res.status(400).send('Failed to find main image')
+        return
+    } else {
+        await processDownloadById(context, data[0].id, res, thumbnail, inline)
+    }
+}
+
+export async function processDownloadById(context: Context, id: number, res: Response, thumbnail: boolean, inline: any) {
     const item = await Item.findByPk(id)
     if (!item) {
         logger.error('Failed to find item by id: ' + id + ', user: ' + context.getCurrentUser()?.login + ", tenant: " + context.getCurrentUser()?.tenantId)
