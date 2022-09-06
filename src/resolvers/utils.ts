@@ -677,9 +677,18 @@ class ActionUtils {
     public getItemAttributes(item: Item, groupIdentifier?: string) {
         return this.getItemAttributesForGroups(item, groupIdentifier ? [groupIdentifier]: undefined)
     }
-    
+
     public getItemAttributesForGroups(item: Item, groupIdentifiers?: string[]) {
-        const attrArr: string[] = []
+        const arr = this.getItemAttributesObjectForGroups(item, groupIdentifiers)
+        return arr.map(elem => elem.identifier)
+    }
+
+    public getItemAttributesObject(item: Item, groupIdentifier?: string) {
+        return this.getItemAttributesObjectForGroups(item, groupIdentifier ? [groupIdentifier]: undefined)
+    }
+    
+    public getItemAttributesObjectForGroups(item: Item, groupIdentifiers?: string[]) {
+        const attrArr: Attribute[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
         this.#mng.getAttrGroups().forEach(group => {
@@ -689,7 +698,7 @@ class ActionUtils {
                         for (let i=0; i<attr.visible.length; i++ ) {
                             const visible: number = attr.visible[i]
                             if (pathArr.includes(visible)) {
-                                if (!attrArr.find(tst => tst === attr.identifier)) attrArr.push(attr.identifier)
+                                if (!attrArr.find(tst => tst.identifier === attr.identifier)) attrArr.push(attr)
                                 break
                             }
                         }
