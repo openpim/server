@@ -39,7 +39,7 @@ export async function initModels() {
         pool: {
             max: 20,
             min: 0,
-            idle: 10000,
+            idle: 60000,
             acquire: 60000,
             evict: 1000
         }
