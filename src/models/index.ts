@@ -35,7 +35,14 @@ export async function initModels() {
         port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT) : 5432,
         dialect: 'postgres',
         dialectOptions: dialectOptions,
-        logging: logger.debug.bind(logger)
+        logging: logger.debug.bind(logger),
+        pool: {
+            max: 20,
+            min: 0,
+            idle: 10000,
+            acquire: 60000,
+            evict: 1000
+        }
     })
 
     users.init(sequelize)
