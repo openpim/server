@@ -624,21 +624,24 @@ export class OzonChannelHandler extends ChannelHandler {
                 const tst = options.find((elem:any) => elem.name === value)
                 if (tst) return {dictionary_value_id: tst.value, value: value}
             }
-            let dict: any[] | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId)
+            let dict: any[] | string | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId)
             if (!dict) {
                 dict = []
                 let next = false
                 let last = 0
+                let idx = 0
                 do {
+                    const body = {
+                        "attribute_id": ozonAttrId,
+                        "category_id": ozonCategoryId,
+                        "language": "DEFAULT",
+                        "last_value_id": last,
+                        "limit": 5000
+                    }
+                    // console.log('request to https://api-seller.ozon.ru/v2/category/attribute/values '+JSON.stringify(body))
                     const res = await fetch('https://api-seller.ozon.ru/v2/category/attribute/values', {
                         method: 'post',
-                        body:    JSON.stringify({
-                            "attribute_id": ozonAttrId,
-                            "category_id": ozonCategoryId,
-                            "language": "DEFAULT",
-                            "last_value_id": last,
-                            "limit": 5000
-                            }),
+                        body:    JSON.stringify(body),
                         headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
                     })
                     const json = await res.json()
@@ -646,10 +649,17 @@ export class OzonChannelHandler extends ChannelHandler {
                     next = json.has_next
                     if (dict.length === 0) throw new Error('No data for attribute dictionary: '+ozonAttrId+', for category: '+ozonCategoryId)
                     last = dict[dict.length-1].id
+                    if (idx++ > 10) {
+                        this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, 'big', 3600)
+                        throw new Error('Data dictionary for attribute: '+ozonAttrId+' is too big, for category: '+ozonCategoryId)
+                    }
                 } while (next)
     
                 this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, dict, 3600)
+            } else if (dict === 'big') {
+                throw new Error('Data dictionary for attribute: '+ozonAttrId+' is too big, for category: '+ozonCategoryId)
             }
+
             const entry = dict!.find((elem:any) => elem.value === value)
             if (!entry) {
                 return null
