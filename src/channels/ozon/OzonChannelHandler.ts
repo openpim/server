@@ -660,7 +660,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 throw new Error('Data dictionary for attribute: '+ozonAttrId+' is too big, for category: '+ozonCategoryId)
             }
 
-            const entry = dict!.find((elem:any) => elem.value === value)
+            const entry = (dict as any[])!.find((elem:any) => elem.value === value)
             if (!entry) {
                 return null
             } else {
