@@ -150,6 +150,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     }
   })
 
+  await Context.init()
   app.listen(process.env.PORT);
   logger.info('Running a GraphQL API server at http://localhost:' + process.env.PORT + '/graphql');
 })();

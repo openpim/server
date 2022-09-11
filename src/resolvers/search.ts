@@ -142,7 +142,7 @@ export default {
                 if (request.order) params.order = request.order
                 if (request.entity === 'ITEM') {
                     // queries are processed in ItemsSearchResponse resolvers
-                    const restrictSql = context.generateRestrictionsInSQL('"Item".', false)
+                    const restrictSql = await context.generateRestrictionsInSQL('"Item".', false)
                     if (restrictSql.length > 0) {
                         const andExpr = {[Op.and] : [
                             params.where,

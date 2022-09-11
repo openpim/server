@@ -115,7 +115,7 @@ export default {
         getItems: async (parent: any, params: any, context: Context) => {
             context.checkAuth()
 
-            params.restrictSql = context.generateRestrictionsInSQL('', true)
+            params.restrictSql = await context.generateRestrictionsInSQL('', true)
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             params.orderSql = generateOrder(params.order, mng)
             params.context = context

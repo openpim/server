@@ -3,21 +3,29 @@ import * as jwt from 'jsonwebtoken';
 import { LoggedUser, User } from './models/users'
 import { ModelsManager, UserWrapper } from './models/manager';
 import { Item } from './models/items';
+import { LOV } from './models/lovs';
 import * as fs from 'fs'
 
 export default class Context {
     private currentUser: LoggedUser | null = null
     private user: UserWrapper | undefined = undefined
-    private externalAuthFunction:any = null
+    private static externalAuthFunction:any = undefined
+    private static externalSecurityFunction:any = undefined
 
     private constructor() {
-        const filesRoot = process.env.FILES_ROOT!
-        const extrenalAuthPath = filesRoot+'/modules/auth.js'
-        if (fs.existsSync(extrenalAuthPath)) {
-            (async ()=> {
-                const { default: auth } = await import(extrenalAuthPath)
-                this.externalAuthFunction = auth
-            })()
+    }
+
+    public static async init() {
+        const filesRoot = process.env.FILES_ROOT!;
+        const externalAuthPath = filesRoot + '/modules/auth.js'
+        if (fs.existsSync(externalAuthPath)) {
+            const { default: auth } = await import(externalAuthPath)
+            Context.externalAuthFunction = auth
+        }
+        const externalSecurityPath = filesRoot + '/modules/security.js'
+        if (fs.existsSync(externalSecurityPath)) {
+            const { default: externalRestrictionsInSQL } = await import(externalSecurityPath)
+            Context.externalSecurityFunction = externalRestrictionsInSQL
         }
     }
 
@@ -34,9 +42,9 @@ export default class Context {
     }
 
     public async externalAuth(login: string, password: string) {
-        if (!this.externalAuthFunction) return null
+        if (!Context.externalAuthFunction) return null
         try {
-            return await this.externalAuthFunction(login, password)
+            return await Context.externalAuthFunction(login, password)
         } catch (err) {
             return null
         }                        
@@ -385,7 +393,7 @@ export default class Context {
         return res    
     }
 
-    public generateRestrictionsInSQL(prefix: string, putAnd: boolean, processRelations = true) {
+    public async generateRestrictionsInSQL(prefix: string, putAnd: boolean, processRelations = true) {
         if (!this.user) throw new Error('No user')
 
         let sql = putAnd ? ' and (' : ' ('
@@ -452,7 +460,7 @@ export default class Context {
                 const targetTypeIds = targetTypes.join(',')
                 
                 if (!start) sql += ' and '
-                const restrict = this.generateRestrictionsInSQL('check_item.', false, false)
+                const restrict = await this.generateRestrictionsInSQL('check_item.', false, false)
                 sql += 
                 ` ( not `+prefix+`"typeId" in (`+targetTypeIds+`) or exists ( select check_item.id from items check_item, "itemRelations" check_item_relations 
                     where check_item_relations."relationId" in (`+relationIds+`) and ` + (prefix?prefix: 'items.') + `id = check_item_relations."targetId" 
@@ -462,7 +470,11 @@ export default class Context {
             }
         }
 
-        if (restrictedTypes.length === 0 && relationsToCheck.length === 0) return ''
+        if (restrictedTypes.length === 0 && relationsToCheck.length === 0 && !Context.externalSecurityFunction) return ''
+
+        if (Context.externalSecurityFunction) {
+            sql += await Context.externalSecurityFunction(prefix, putAnd, this, LOV)
+        }
 
         sql += ')'
         return sql

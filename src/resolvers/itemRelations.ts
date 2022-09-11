@@ -132,7 +132,7 @@ export default {
 
             if (relationsWithChildren.length === 0) return { count: 0, rows: [] }
 
-            const restrictSql = context.generateRestrictionsInSQL('i.', true)
+            const restrictSql = await context.generateRestrictionsInSQL('i.', true)
 
             let cnt:{count: string}|null = {count: '0'}
             cnt = await sequelize.query(
