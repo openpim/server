@@ -6,7 +6,7 @@ import * as crypto from "crypto";
 import * as dotenv from 'dotenv';
 import express from 'express';
 import { graphqlHTTP } from 'express-graphql';
-import { GraphQLError } from 'graphql';
+import { GraphQLError, print } from 'graphql';
 import { importSchema } from 'graphql-import';
 import { IncomingMessage } from 'http';
 import { ChannelsManagerFactory } from './channels';
@@ -83,6 +83,10 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       logger.error('ERROR -', error, error.source);
       logger.error(`   request - ${ JSON.stringify((<any>request).body)}`);
       return (params);
+    },
+    extensions: ({ document, result }) => {
+      if (logger.transports[0].level === 'debug') logger.debug('Request:\n'+print(document)+'Response:\n'+JSON.stringify(result)+'\n\n')
+      return undefined
     }
   })));
 
