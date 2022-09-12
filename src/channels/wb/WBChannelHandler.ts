@@ -95,6 +95,12 @@ export class WBChannelHandler extends ChannelHandler {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.channels[channel.identifier]) {
+            const chanData = item.channels[channel.identifier]
+            if (chanData.status === 3) {
+                context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
+                return
+            }
+
             const article = item.values[channel.config.wbCodeAttr]
             if (!article) {
                 item.channels[channel.identifier].status = 3
