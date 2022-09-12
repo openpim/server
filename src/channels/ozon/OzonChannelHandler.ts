@@ -649,7 +649,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     next = json.has_next
                     if (dict.length === 0) throw new Error('No data for attribute dictionary: '+ozonAttrId+', for category: '+ozonCategoryId)
                     last = dict[dict.length-1].id
-                    if (idx++ > 10) {
+                    if (idx++ > 25) {
                         this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, 'big', 3600)
                         throw new Error('Data dictionary for attribute: '+ozonAttrId+' is too big, for category: '+ozonCategoryId)
                     }
