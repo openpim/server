@@ -75,7 +75,7 @@ export class WBChannelHandler extends ChannelHandler {
 
         if (data.item) {
             const item = await Item.findByPk(data.item)
-            await this.syncItem(channel, item!, context)
+            await this.syncItem(channel, item!, context, true)
         } else {
             const query:any = {}
             query[channel.identifier] = { [Op.ne]: '' }
@@ -85,18 +85,18 @@ export class WBChannelHandler extends ChannelHandler {
             context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
-                await this.syncItem(channel, item, context)
+                await this.syncItem(channel, item, context, false)
             }
         }
         context.log += 'Cинхронизация закончена'
     }
 
-    async syncItem(channel: Channel, item: Item, context: JobContext) {
+    async syncItem(channel: Channel, item: Item, context: JobContext, singleSync: boolean) {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.channels[channel.identifier]) {
             const chanData = item.channels[channel.identifier]
-            if (chanData.status === 3) {
+            if (!singleSync && chanData.status === 3) {
                 context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                 return
             }
