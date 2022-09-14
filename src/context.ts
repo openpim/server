@@ -473,7 +473,8 @@ export default class Context {
         if (restrictedTypes.length === 0 && relationsToCheck.length === 0 && !Context.externalSecurityFunction) return ''
 
         if (Context.externalSecurityFunction) {
-            sql += await Context.externalSecurityFunction(prefix, putAnd, this, LOV)
+            const useAnd = restrictedTypes.length === 0 && relationsToCheck.length === 0 ? putAnd : true
+            sql += await Context.externalSecurityFunction(prefix, useAnd, this, LOV)
         }
 
         sql += ')'
