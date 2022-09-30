@@ -742,6 +742,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     id: 'attr_' + elem.id, 
                     name: elem.name + ' ('+ elem.type + ')',
                     required: elem.is_required,
+                    category: categoryId,
                     description: elem.description+'\n id: '+elem.id+', category: '+categoryId,
                     dictionary: elem.dictionary_id !== 0,
                     dictionaryLinkPost: elem.dictionary_id !== 0 ? { body: {
@@ -759,5 +760,19 @@ export class OzonChannelHandler extends ChannelHandler {
             this.cache.set('attr_'+categoryId, data, 3600)
         }
         return <ChannelAttribute[]>data
+    }
+
+    public async getChannelAttributeValues(channel: Channel, categoryId: string, attributeId: string): Promise<any> {
+        const attrs = await this.getAttributes(channel, categoryId)
+        const attr = attrs.find(elem => elem.id === attributeId)
+        if (attr && attr.dictionaryLinkPost) {
+            const resp =await fetch(attr.dictionaryLink!, {
+                method: 'POST',
+                headers: attr.dictionaryLinkPost.headers,
+                body: JSON.stringify(attr.dictionaryLinkPost.body)
+              })
+            return await resp.json()
+        }
+        return {}
     }
 }

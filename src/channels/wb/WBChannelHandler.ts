@@ -646,6 +646,7 @@ export class WBChannelHandler extends ChannelHandler {
                     type: addin.type,
                     isNumber: addin.isNumber,
                     name: addin.type + (addin.units ? ' (' + addin.units[0] + ')' : '') + (addin.isNumber ? ' [число]' : ''),
+                    category: categoryId,
                     required: addin.required,
                     dictionary: !!addin.dictionary,
                     dictionaryLink: addin.dictionary ? 'https://content-suppliers.wildberries.ru/ns/characteristics-configurator-api/content-configurator/api/v1/directory/' + encodeURIComponent(addin.dictionary.substring(1)) + '?lang=ru&top=500' : null

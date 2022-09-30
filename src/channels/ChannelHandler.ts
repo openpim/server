@@ -17,6 +17,10 @@ export abstract class ChannelHandler {
 
   abstract getAttributes(channel: Channel, categoryId: string): Promise<{ id: string; name: string; required: boolean; dictionary: boolean, dictionaryLink?: string }[]>
 
+  async getChannelAttributeValues(channel: Channel, categoryId: string, attributeId: string): Promise<any> {
+    return {}
+  }
+
   asyncExec (cmd: string) {
     return new Promise(async (resolve) => {
         try {
@@ -285,5 +289,7 @@ export interface ChannelAttribute {
   name: string
   required: boolean
   dictionary: boolean
+  category: string
   dictionaryLink?: string
+  dictionaryLinkPost?: any
 }

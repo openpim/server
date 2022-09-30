@@ -6,6 +6,7 @@ type Query {
   getExecutions(channelId: ID!, offset: Int!, limit: Int!, order: JSON): ExecutionsResponse
   getChannelCategories(id: ID!) : ChannelCategoriesResponse
   getChannelAttributes(channelId: ID!, categoryId: ID!) : [ChannelAttribute]
+  getChannelAttributeValues(channelId: ID!, categoryId: ID!, attributeId: ID!) : JSONObject
 }
 
 type Mutation {
@@ -73,6 +74,7 @@ type ChannelCategory {
 type ChannelAttribute {
   id: ID!
   name: String!
+  category: String!
   required: Boolean!
   dictionary: Boolean!
   description: String

@@ -509,7 +509,7 @@ function makeItemProxy(item: any) {
         }
     })    
 }
-export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, newValues: any, isImport: boolean) {
+export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes:any, newValues: any, isImport: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
@@ -529,7 +529,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS },
         isImport: isImport, 
-        itemRelation: makeItemRelationProxy(itemRelation), values: newValues, 
+        itemRelation: makeItemRelationProxy(itemRelation), values: newValues, changes: changes,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -945,7 +945,7 @@ class ActionUtils {
         })
 
         if (!values) values = {}
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, values, false)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false)
 
         filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
         checkValues(mng, values)
@@ -956,7 +956,7 @@ class ActionUtils {
             await itemRelation.save({transaction: t})
         })
 
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, values, false)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {
