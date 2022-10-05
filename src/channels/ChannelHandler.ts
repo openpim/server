@@ -242,6 +242,7 @@ export abstract class ChannelHandler {
         }
         if (lov) {
           if (Array.isArray(attrValue)) {
+            if (attrValue.length === 0) return null
             return attrValue.map(val => {
               const value = lov!.values.find((elem:any) => elem.id === val)
               if (!value) {
