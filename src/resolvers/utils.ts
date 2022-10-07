@@ -302,6 +302,12 @@ export async function processItemButtonActions(context: Context, buttonText: str
         }
         return false
     })
+
+    return processItemButtonActions2(context, actions, item, data, buttonText)
+}
+
+export async function processItemButtonActions2(context: Context, actions: Action[], item: Item, data: string, buttonText: string) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const valuesCopy = {...item.values}
     const channelsCopy = {...item.channels}
     const nameCopy = {...item.name}
