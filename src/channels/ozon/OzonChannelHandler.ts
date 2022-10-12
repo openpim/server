@@ -261,6 +261,7 @@ export class OzonChannelHandler extends ChannelHandler {
     async saveItemIfChanged(channel: Channel, item: Item) {
         const reloadedItem = await Item.findByPk(item.id) // refresh item from DB (other channels can already change it)
         let changed = false
+        let valuesChanged = false
         const data = item.channels[channel.identifier]
         const reloadedData = reloadedItem!.channels[channel.identifier]
         if (reloadedData.status !== data.status || reloadedData.message !== data.message) {
@@ -272,20 +273,29 @@ export class OzonChannelHandler extends ChannelHandler {
         }
         if (reloadedItem!.values[channel.config.ozonIdAttr] !== item.values[channel.config.ozonIdAttr]) {
             changed = true
+            valuesChanged = true
             reloadedItem!.values[channel.config.ozonIdAttr] = item.values[channel.config.ozonIdAttr]
             reloadedItem!.changed('values', true)
         }
         if (reloadedItem!.values[channel.config.ozonFBSIdAttr] !== item.values[channel.config.ozonFBSIdAttr]) {
             changed = true
+            valuesChanged = true
             reloadedItem!.values[channel.config.ozonFBSIdAttr] = item.values[channel.config.ozonFBSIdAttr]
             reloadedItem!.changed('values', true)
         }
         if (reloadedItem!.values[channel.config.ozonFBOIdAttr] !== item.values[channel.config.ozonFBOIdAttr]) {
             changed = true
+            valuesChanged = true
             reloadedItem!.values[channel.config.ozonFBOIdAttr] = item.values[channel.config.ozonFBOIdAttr]
             reloadedItem!.changed('values', true)
         }
         if (changed) {
+            if (valuesChanged) { // hardcore for MS
+                if (reloadedItem!.channels['ms'] && reloadedItem!.channels['ms'].status) {
+                    reloadedItem!.channels['ms'] = {status: 1, submittedAt: Date.now(), submittedBy: "system", message: ""}
+                    reloadedItem!.changed('channels', true)
+                }
+            }
             await sequelize.transaction(async (t) => {
                 await reloadedItem!.save({transaction: t})
             })
