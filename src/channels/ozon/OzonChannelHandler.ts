@@ -407,6 +407,30 @@ export class OzonChannelHandler extends ChannelHandler {
         product.vat = vat
         product.name = name
 
+
+        const videoUrlsConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#videoUrls')
+        let videoUrlsValue = await this.getValueByMapping(channel, videoUrlsConfig, item, language)
+        if (videoUrlsValue) {
+            if (!Array.isArray(videoUrlsValue)) videoUrlsValue = [videoUrlsValue]
+            const videos = {
+                "complex_id": 4018,
+                "id": 4074,
+                "values": videoUrlsValue.map((elem:any) => { return { value: elem } })
+              }
+            product.attributes.push(videos)
+        }
+        const videoNamesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#videoNames')
+        let videoNamesValue = await this.getValueByMapping(channel, videoNamesConfig, item, language)
+        if (videoNamesValue) {
+            if (!Array.isArray(videoNamesValue)) videoNamesValue = [videoNamesValue]
+            const videoNames = {
+                "complex_id": 4018,
+                "id": 4068,
+                "values": videoNamesValue.map((elem:any) => { return { value: elem } })
+              }
+            product.attributes.push(videoNames)
+        }
+
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i];
@@ -414,6 +438,7 @@ export class OzonChannelHandler extends ChannelHandler {
             if (
                 attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && 
                 attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
+                && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames'
             ) {
                 const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
                 if (!attr) {
@@ -553,7 +578,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     item.changed('values', true)
                 }
             }
-        } 
+        }
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext, product: any) {
