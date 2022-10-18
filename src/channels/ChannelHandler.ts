@@ -188,6 +188,7 @@ export abstract class ChannelHandler {
     }
   }
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
+    if (!mapping) return null
     if (mapping.expr) {
       return await this.evaluateExpression(channel, item, mapping.expr)
     } else if (mapping.attrIdent) {
