@@ -309,7 +309,7 @@ export class OzonChannelHandler extends ChannelHandler {
         data.category = categoryConfig.id
 
         // request to Ozon
-        const product:any = {attributes:[]}
+        const product:any = {attributes:[], complex_attributes: [{attributes:[]}]}
         const request:any = {items:[product]}
 
         const productCodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#productCode')
@@ -407,7 +407,6 @@ export class OzonChannelHandler extends ChannelHandler {
         product.vat = vat
         product.name = name
 
-        const complex_attributes:any[] = []
         const videoUrlsConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#videoUrls')
         let videoUrlsValue = await this.getValueByMapping(channel, videoUrlsConfig, item, language)
         if (videoUrlsValue) {
@@ -417,7 +416,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 "id": 4074,
                 "values": videoUrlsValue.map((elem:any) => { return { value: elem } })
               }
-              complex_attributes.push(videos)
+              product.complex_attributes[0].attributes.push(videos)
         }
         const videoNamesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#videoNames')
         let videoNamesValue = await this.getValueByMapping(channel, videoNamesConfig, item, language)
@@ -428,9 +427,8 @@ export class OzonChannelHandler extends ChannelHandler {
                 "id": 4068,
                 "values": videoNamesValue.map((elem:any) => { return { value: elem } })
               }
-              complex_attributes.push(videoNames)
+              product.complex_attributes[0].attributes.push(videoNames)
         }
-        product.attributes.complex_attributes = complex_attributes
 
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
