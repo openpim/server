@@ -309,7 +309,7 @@ export class OzonChannelHandler extends ChannelHandler {
         data.category = categoryConfig.id
 
         // request to Ozon
-        const product:any = {attributes:[], complex_attributes: [{attributes:[]}]}
+        const product:any = {attributes:[]}
         const request:any = {items:[product]}
 
         const productCodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#productCode')
@@ -407,6 +407,9 @@ export class OzonChannelHandler extends ChannelHandler {
         product.vat = vat
         product.name = name
 
+        // video processing
+        const complex_attributes:any = [{attributes:[]}]
+        let wasData = false
         const videoUrlsConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#videoUrls')
         let videoUrlsValue = await this.getValueByMapping(channel, videoUrlsConfig, item, language)
         if (videoUrlsValue) {
@@ -416,7 +419,8 @@ export class OzonChannelHandler extends ChannelHandler {
                 "id": 4074,
                 "values": videoUrlsValue.map((elem:any) => { return { value: elem } })
               }
-              product.complex_attributes[0].attributes.push(videos)
+              complex_attributes[0].attributes.push(videos)
+              wasData = true
         }
         const videoNamesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#videoNames')
         let videoNamesValue = await this.getValueByMapping(channel, videoNamesConfig, item, language)
@@ -427,8 +431,10 @@ export class OzonChannelHandler extends ChannelHandler {
                 "id": 4068,
                 "values": videoNamesValue.map((elem:any) => { return { value: elem } })
               }
-              product.complex_attributes[0].attributes.push(videoNames)
+              complex_attributes[0].attributes.push(videoNames)
+              wasData = true
         }
+        if (wasData) product.complex_attributes = complex_attributes
 
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
