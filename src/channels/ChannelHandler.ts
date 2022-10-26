@@ -294,4 +294,5 @@ export interface ChannelAttribute {
   category: string
   dictionaryLink?: string
   dictionaryLinkPost?: any
+  maxCount?: number
 }
