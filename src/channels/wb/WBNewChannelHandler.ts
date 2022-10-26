@@ -33,8 +33,8 @@ export class WBNewChannelHandler extends ChannelHandler {
             return
         }
 
-        if (!channel.config.wbIdAttr) {
-            await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить Wildberries ID')
+        if (!channel.config.imtIDAttr) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить imtID')
             return
         }
 
@@ -273,10 +273,27 @@ export class WBNewChannelHandler extends ChannelHandler {
         }
 
         // request to WB
-        let request:any = {vendorCode:productCode, characteristics:[{"Предмет": categoryConfig.name}], sizes:[]}
+        let request:any = {vendorCode:productCode, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: [barcode]}]}
 
-        const size = {wbSize:"", price: price, skus: [barcode]}
-        request.sizes.push(size)
+        const create = item.values[channel.config.imtIDAttr] ? false : true
+        if (!create) {
+            const resExisting = await fetch("https://suppliers-api.wildberries.ru/content/v1/cards/filter", {
+                method: 'post',
+                body:    JSON.stringify({vendorCodes: [productCode]}),
+                headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+            })
+            if (resExisting.status !== 200) {
+                const msg = 'Ошибка запроса на Wildberries - https://suppliers-api.wildberries.ru/content/v1/cards/filter: ' + resExisting.statusText
+                context.log += msg                      
+                this.reportError(channel, item, msg)
+                return
+            } else {
+                const json = await resExisting.json()
+                if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json)+'\n'
+                request = json.data[0]
+            }
+            request.sizes[0].price = price
+        }
 
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
@@ -292,9 +309,10 @@ export class WBNewChannelHandler extends ChannelHandler {
                 }
                 try {
                     const value = await this.getValueByMapping(channel, attrConfig, item, language)
+                    if (!create) this.clearPreviousValue(request.characteristics, attr.type)
                     if (value) {
                         const data:any = {}
-                        data[attr.type] = attr.maxCount === 0 ? value : [value]
+                        data[attr.type] = attr.maxCount && attr.maxCount <=1 ? value : [value]
 
                         request.characteristics.push(data)
                     } else if (attr.required) {
@@ -313,21 +331,27 @@ export class WBNewChannelHandler extends ChannelHandler {
             }
         }        
 
-        await this.sendRequest(channel, item, [[request]], context)
+        await this.sendRequest(channel, item, request, context)
+    }
+
+    private clearPreviousValue(arr: any[], type: string) {
+        const tst = arr.findIndex((elem:any) => elem.hasOwnProperty(type))
+        console.log(222, type, tst)
+        if (tst != -1) arr.splice(tst, 1)
     }
 
     async sendRequest(channel: Channel, item: Item, request: any, context: JobContext) {
-        const create = item.values[channel.config.wbIdAttr] ? false : true
+        const create = item.values[channel.config.imtIDAttr] ? false : true
 
-        if (!create) request.params.card.imtId = parseInt(item.values[channel.config.wbIdAttr])
         const url = create ? 'https://suppliers-api.wildberries.ru/content/v1/cards/upload' : 'https://suppliers-api.wildberries.ru/content/v1/cards/update'
+        const req = create ? [[request]] : [request]
         let msg = "Sending request Windberries: " + url + " => " + JSON.stringify(request)
         logger.info(msg)
         if (channel.config.debug) context.log += msg+'\n'
 
         const res = await fetch(url, {
             method: 'post',
-            body:    JSON.stringify(request),
+            body:    JSON.stringify(req),
             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
         })
         msg = "Response status from Windberries: " + res.status
