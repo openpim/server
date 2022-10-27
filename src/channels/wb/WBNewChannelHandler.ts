@@ -38,6 +38,11 @@ export class WBNewChannelHandler extends ChannelHandler {
             return
         }
 
+        if (!channel.config.nmIDAttr) {
+            await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где хранить nmID')
+            return
+        }
+
         if (!channel.config.wbCodeAttr) {
             await this.finishExecution(channel, chanExec, 3, 'Не введен атрибут где находится артикул товара')
             return
@@ -217,6 +222,8 @@ export class WBNewChannelHandler extends ChannelHandler {
                             await sequelize.transaction(async (t) => {
                                 await item.save({transaction: t})
                             })
+
+                            // await new Promise(resolve => setTimeout(resolve, 5000))
                         } catch (err) {
                             logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
                         }
@@ -275,8 +282,8 @@ export class WBNewChannelHandler extends ChannelHandler {
         // request to WB
         let request:any = {vendorCode:productCode, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: [barcode]}]}
 
-        const create = item.values[channel.config.imtIDAttr] ? false : true
-        if (!create) {
+        const nmID = item.values[channel.config.nmIDAttr]
+        if (nmID) {
             const resExisting = await fetch("https://suppliers-api.wildberries.ru/content/v1/cards/filter", {
                 method: 'post',
                 body:    JSON.stringify({vendorCodes: [productCode]}),
@@ -289,18 +296,25 @@ export class WBNewChannelHandler extends ChannelHandler {
                 return
             } else {
                 const json = await resExisting.json()
-                if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json)+'\n'
-                request = json.data[0]
+                //if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json)+'\n'
+                const tst = json.data.find((elem:any) => elem.nmID == nmID)
+                if (tst) {
+                    request = tst
+                } else {
+                    logger.warn('Failed to find existing product by code: '+productCode)
+                }
+                request.sizes[0].price = price
             }
-            request.sizes[0].price = price
         }
 
         // atributes
+        const create = item.values[channel.config.imtIDAttr] ? false : true
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i];
             
             if (
                 attrConfig.id != '#productCode' && attrConfig.id != '#barcode' && attrConfig.id != '#price'
+                && attrConfig.id != '#images'
             ) {
                 const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
                 if (!attr) {
@@ -311,10 +325,15 @@ export class WBNewChannelHandler extends ChannelHandler {
                     const value = await this.getValueByMapping(channel, attrConfig, item, language)
                     if (!create) this.clearPreviousValue(request.characteristics, attr.type)
                     if (value) {
-                        const data:any = {}
-                        data[attr.type] = attr.maxCount && attr.maxCount <=1 ? value : [value]
-
-                        request.characteristics.push(data)
+                        if (Array.isArray(value) && value.length > 0) {
+                            const data:any = {}
+                            data[attr.type] = attr.maxCount == 0 || attr.maxCount == 1 ? value[0] : value
+                            request.characteristics.push(data)
+                        } else {
+                            const data:any = {}
+                            data[attr.type] = attr.maxCount == 0 || attr.maxCount == 1 ? value : [value]
+                            request.characteristics.push(data)
+                        }
                     } else if (attr.required) {
                         const msg = 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                         context.log += msg                      
@@ -332,20 +351,72 @@ export class WBNewChannelHandler extends ChannelHandler {
         }        
 
         await this.sendRequest(channel, item, request, context)
+
+        // images
+        const imageConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
+        if (!imageConfig) return
+        const images = await this.getValueByMapping(channel, imageConfig, item, language)
+        if (images && images.length > 0) {
+            const imgRequest = {
+                "vendorCode": productCode,
+                "data": images
+                }
+            const imgUrl = 'https://suppliers-api.wildberries.ru/content/v1/media/save'
+            let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
+            logger.info(msg)
+            if (channel.config.debug) context.log += msg+'\n'
+            const res = await fetch(imgUrl, {
+                method: 'post',
+                body:    JSON.stringify(imgRequest),
+                headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+            })
+            msg = "Response status from Windberries: " + res.status
+            logger.info(msg)
+            if (channel.config.debug) context.log += msg+'\n'
+            if (res.status !== 200) {
+                const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+                context.log += msg                      
+                this.reportError(channel, item, msg)
+                return
+            }
+        }
     }
 
     private clearPreviousValue(arr: any[], type: string) {
         const tst = arr.findIndex((elem:any) => elem.hasOwnProperty(type))
-        console.log(222, type, tst)
         if (tst != -1) arr.splice(tst, 1)
     }
 
     async sendRequest(channel: Channel, item: Item, request: any, context: JobContext) {
         const create = item.values[channel.config.imtIDAttr] ? false : true
 
-        const url = create ? 'https://suppliers-api.wildberries.ru/content/v1/cards/upload' : 'https://suppliers-api.wildberries.ru/content/v1/cards/update'
-        const req = create ? [[request]] : [request]
-        let msg = "Sending request Windberries: " + url + " => " + JSON.stringify(request)
+        let grpItem = null
+        if (channel.config.wbGroupAttr) {
+            const grp = item.values[channel.config.wbGroupAttr]
+            if (grp) {
+                // find all items in this group
+                const query:any = {}
+                query[channel.config.wbGroupAttr] = grp
+                let grpItems = await Item.findAll({where: { tenantId: channel.tenantId, values: query, id: {[Op.ne]: item.id} }})
+                // find item already at WB
+                grpItem = grpItems.find(elem => elem.values[channel.config.imtIDAttr])
+                // find item already send to WB but without imtID yet
+                if (!grpItem) grpItem = grpItems.find(elem => elem.channels[channel.identifier]?.status === 4 )
+            }
+        }
+
+        let url = ''
+        let req
+
+        if (grpItem) {
+            url = create ? 'https://suppliers-api.wildberries.ru/content/v1/cards/upload/add' : 'https://suppliers-api.wildberries.ru/content/v1/cards/update'
+            req = create ? { vendorCode: grpItem.values[channel.config.wbCodeAttr], cards: [request] } : [request]
+        } else {
+            url = create ? 'https://suppliers-api.wildberries.ru/content/v1/cards/upload' : 'https://suppliers-api.wildberries.ru/content/v1/cards/update'
+            req = create ? [[request]] : [request]
+        }
+        
+        let msg = "Sending request Windberries: " + url + " => " + JSON.stringify(req)
         logger.info(msg)
         if (channel.config.debug) context.log += msg+'\n'
 
