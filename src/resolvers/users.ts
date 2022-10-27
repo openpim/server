@@ -203,12 +203,14 @@ export default {
             }
 
             if (user && (user.tenantId==='0' || ModelsManager.getInstance().getModelManager(user.tenantId))) {
-                if ( user.password === '#external#' || await bcrypt.compare(password, user.password)) {  
+                if ( user.password === '#external#' || await bcrypt.compare(password, user.password)) {
+                    const tst = user.options.find((elem:any) => elem.name === 'expiresIn')
+                    const expiresIn = tst ? tst.value : '1d'
                     const token = await jwt.sign({
                         id: user.id, 
                         tenantId: user.tenantId, 
                         login: user.login }, 
-                        <string>process.env.SECRET, { expiresIn: '1d' }
+                        <string>process.env.SECRET, { expiresIn: expiresIn }
                     );            
 
                     (<any>user).internalId = user.id
@@ -236,11 +238,13 @@ export default {
             const user = await User.findByPk(nId)
 
             if (user && ModelsManager.getInstance().getModelManager(user.tenantId)) {
+                const tst = user.options.find((elem:any) => elem.name === 'expiresIn')
+                const expiresIn = tst ? tst.value : '1d'
                 const token = await jwt.sign({
                     id: user.id, 
                     tenantId: user.tenantId, 
                     login: user.login }, 
-                    <string>process.env.SECRET, { expiresIn: '1d' }
+                    <string>process.env.SECRET, { expiresIn: expiresIn }
                 );            
 
                 (<any>user).internalId = user.id
