@@ -498,6 +498,73 @@ export class OzonChannelHandler extends ChannelHandler {
         
         await this.processItemImages(channel, item, context, product)
 
+        const ozonProductId = item.values[channel.config.ozonIdAttr]
+        if (ozonProductId) {
+            // check if we have loaded videos that we should leave unchanged
+            const existingDataReq = {
+                "filter": {
+                    "product_id": [ozonProductId],
+                    "visibility": "ALL"
+                },
+                "limit": 1000
+            }
+            const existingDataUrl = 'https://api-seller.ozon.ru/v3/products/info/attributes'
+            const log = "Sending request to Ozon: " + existingDataUrl + " => " + JSON.stringify(existingDataReq)
+            logger.info(log)
+            if (channel.config.debug) context.log += log+'\n'
+            const existingDataRes = await fetch(existingDataUrl, {
+                method: 'post',
+                body:    JSON.stringify(existingDataReq),
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+            logger.info("Response status from Ozon: " + existingDataRes.status)
+            if (existingDataRes.status !== 200) {
+                const text = await existingDataRes.text()
+                const msg = 'Ошибка запроса на Ozon: ' + existingDataRes.statusText + "   " + text
+                context.log += msg                      
+                this.reportError(channel, item, msg)
+                logger.error(msg)
+                return
+            } else {
+                const existingDataJson = await existingDataRes.json()
+                // const log = "Response from Ozon: " + JSON.stringify(existingDataJson)
+                // logger.info(log)
+                // if (channel.config.debug) context.log += log+'\n'
+                let videoElem1
+                let videoElem2
+                if (existingDataJson.result[0].complex_attributes) {
+                    existingDataJson.result[0].complex_attributes.forEach((elem:any) => {
+                        const data1 = elem.attributes.find((elem1:any) => elem1.attribute_id === 21837)
+                        if (data1) {
+                            delete(data1.attribute_id)
+                            data1.id = 21837
+                            videoElem1 = data1
+                        }
+
+                        const data2 = elem.attributes.find((elem2:any) => elem2.attribute_id === 21841)
+                        if (data2) {
+                            delete(data2.attribute_id)
+                            data2.id = 21841
+                            videoElem2 = data2
+                        }
+
+                    })
+                }
+                if (videoElem1 && videoElem2) {
+                    const log = "Найдены загруженные видео: \n" + JSON.stringify(videoElem1) + "\n" + JSON.stringify(videoElem2)
+                    logger.info(log)
+                    if (channel.config.debug) context.log += log+'\n'
+                    if (!product.complex_attributes) product.complex_attributes = [{attributes:[]}]
+                    product.complex_attributes[0].attributes.push(videoElem1)
+                    product.complex_attributes[0].attributes.push(videoElem2)
+                } else {
+                    const log = "Загруженные видео не найдены"
+                    logger.info(log)
+                    if (channel.config.debug) context.log += log+'\n'
+                }
+            }
+        }
+
         const url = 'https://api-seller.ozon.ru/v2/product/import'
         const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
         logger.info(log)
@@ -694,7 +761,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     dict = dict.concat(json.result)
                     next = json.has_next
                     if (dict.length === 0) throw new Error('No data for attribute dictionary: '+ozonAttrId+', for category: '+ozonCategoryId)
-                    last = dict[dict.length-1].id
+                    last = dict[dict.length-1]?.id
                     if (idx++ > 25) {
                         this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, 'big', 3600)
                         throw new Error('Data dictionary for attribute: '+ozonAttrId+' is too big, for category: '+ozonCategoryId)
