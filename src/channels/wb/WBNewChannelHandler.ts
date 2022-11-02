@@ -95,7 +95,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             const query:any = {}
             query[wbCodeAttr] = error.vendorCode
             let item = await Item.findOne({ 
-                where: { tenantId: channel.tenantId, values: query} 
+                where: { tenantId: channel.tenantId, values: query, [Op.or] : channel.visible.map((parentId:any) => {return {path: {[Op.regexp]: '*.'+parentId+'.*'}}})} 
             })
             if (!item) {
                 let msg = "Ошибка, не найден товар по артикулу для синхронизации: " + error.vendorCode
@@ -167,13 +167,17 @@ export class WBNewChannelHandler extends ChannelHandler {
                 } else {
                     const json = await res.json()
                     if (channel.config.debug) context.log += 'Ответ от WB '+JSON.stringify(json)+'\n'
-                    if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.data[0].imtID
-                    if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.data[0].nmID
-                    item.changed('values', true)
-                    item.channels[channel.identifier].status = 2
-                    item.channels[channel.identifier].message = ""
-                    item.channels[channel.identifier].syncedAt = Date.now()
-                    item.changed('channels', true)
+                    if (json.data[0]?.imtID) {
+                        if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.data[0].imtID
+                        if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.data[0].nmID
+                        item.changed('values', true)
+                        item.channels[channel.identifier].status = 2
+                        item.channels[channel.identifier].message = ""
+                        item.channels[channel.identifier].syncedAt = Date.now()
+                        item.changed('channels', true)
+                    } else {
+                        context.log += 'новых данных не получено\n'
+                    }
                 }
             }
 
