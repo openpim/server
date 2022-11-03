@@ -3,6 +3,8 @@ import { ModelManager, ModelsManager, AttrGroupWrapper } from '../models/manager
 import { AttrGroup, Attribute, GroupsAttributes } from '../models/attributes'
 import { sequelize } from '../models'
 import { QueryTypes } from 'sequelize'
+import { processAttrGroupActions, processAttributeActions } from './utils'
+import { EventType } from '../models/actions'
 
 export default {
     Query: {
@@ -71,6 +73,9 @@ export default {
             })
 
             mng.getAttrGroups().push(new AttrGroupWrapper(grp))
+
+            await processAttrGroupActions(context, EventType.AfterCreate, grp, false)
+            
             return grp.id
         },
         updateAttributeGroup: async (parent: any, { id, name, order, visible, options }: any, context: Context) => {
@@ -96,6 +101,7 @@ export default {
             await sequelize.transaction(async (t) => {
                 await group.save({transaction: t})
             })
+            await processAttrGroupActions(context, EventType.AfterUpdate, group, false)
             return group.id
         },
         removeAttributeGroup: async (parent: any, { id }: any, context: Context) => {
@@ -130,6 +136,8 @@ export default {
             })
 
             mng.getAttrGroups().splice(idx, 1)
+
+            await processAttrGroupActions(context, EventType.AfterDelete, group, false)
 
             return true
         },
@@ -187,6 +195,7 @@ export default {
             })
 
             group.getAttributes().push(attr)
+            await processAttributeActions(context, EventType.AfterCreate, attr, false)
             return attr.id
         },
         updateAttribute: async (parent: any, { id, name, order, valid, visible, relations, languageDependent, type, pattern, errorMessage, lov, richText, multiLine, options }: any, context: Context) => {
@@ -230,6 +239,8 @@ export default {
                     grp.getAttributes()[idx] = attr
                 }
             }
+
+            await processAttributeActions(context, EventType.AfterUpdate, attr, false)
 
             return attr.id
         },
@@ -329,6 +340,8 @@ export default {
                     grp.getAttributes().splice(idx, 1)
                 }
             }
+
+            await processAttributeActions(context, EventType.AfterDelete, attr, false)
 
             return true
         }

@@ -14,7 +14,9 @@ export enum EventType {
 export enum TriggerType {
   Item = 1,
   ItemRelation,
-  Button
+  Button,
+  AttrGroup,
+  Attribute
 }
 
 export class Action extends Base {

@@ -7,6 +7,8 @@ import { Item } from "../../models/items"
 import { LOV } from "../../models/lovs"
 
 import logger from '../../logger'
+import { processAttributeActions } from "../utils"
+import { EventType } from "../../models/actions"
 
 /*
 mutation { import(
@@ -68,7 +70,9 @@ export async function importAttribute(context: Context, config: IImportConfig, a
                         grp.getAttributes().splice(idx, 1)
                     }
                 }
-                            
+                        
+                await processAttributeActions(context, EventType.AfterDelete, data, true)
+                
                 result.result = ImportResult.DELETED
             }
             return result
@@ -140,6 +144,9 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             })
 
             result.id = ""+data.id
+
+            await processAttributeActions(context, EventType.AfterCreate, data, true)
+
             result.result = ImportResult.CREATED
         } else {
             // update
@@ -205,6 +212,9 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             })
 
             result.id = ""+data.id
+
+            await processAttributeActions(context, EventType.AfterUpdate, data, true)
+
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {

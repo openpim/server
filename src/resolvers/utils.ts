@@ -30,7 +30,7 @@ import XLSX from 'xlsx'
 
 import logger from '../logger'
 import { LOV } from "../models/lovs"
-import { Attribute } from "../models/attributes"
+import { AttrGroup, Attribute } from "../models/attributes"
 import dateFormat from "dateformat"
 import { FileManager } from "../media/FileManager"
 
@@ -358,6 +358,65 @@ export async function testAction(context: Context, action: Action, item: Item) {
     )
     return { values, log, ...ret[0] }
 }
+
+export async function processAttrGroupActions(context: Context, event: EventType, grp: AttrGroup, isImport: boolean) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const actions = mng.getActions().filter(action => {
+        for (let i = 0; i < action.triggers.length; i++) {
+            const trigger = action.triggers[i]
+
+            const result = parseInt(trigger.type) === TriggerType.AttrGroup && parseInt(trigger.event) === event
+            if (result) return true
+        }
+        return false
+    })
+    return await processActions(mng, actions, { Op: Op,
+        event: EventType[event],
+        user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
+        utils: new ActionUtils(context),
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS },
+        isImport: isImport, 
+        group: grp,
+        models: { 
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
+            ItemRelation
+        } 
+    })
+}
+
+export async function processAttributeActions(context: Context, event: EventType, attr: Attribute, isImport: boolean) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const actions = mng.getActions().filter(action => {
+        for (let i = 0; i < action.triggers.length; i++) {
+            const trigger = action.triggers[i]
+
+            const result = parseInt(trigger.type) === TriggerType.Attribute && parseInt(trigger.event) === event
+            if (result) return true
+        }
+        return false
+    })
+    return await processActions(mng, actions, { Op: Op,
+        event: EventType[event],
+        user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
+        utils: new ActionUtils(context),
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS },
+        isImport: isImport, 
+        attribute: attr,
+        models: { 
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            Item,
+            ItemRelation
+        } 
+    })
+}
+
 
 async function processActions(mng: ModelManager, actions: Action[], sandbox: any) {
     const cons = { 

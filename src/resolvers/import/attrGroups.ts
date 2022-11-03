@@ -5,6 +5,8 @@ import { ModelsManager, TreeNode, ModelManager, AttrGroupWrapper } from "../../m
 import { AttrGroup } from "../../models/attributes"
 
 import logger from '../../logger'
+import { processAttrGroupActions } from "../utils"
+import { EventType } from "../../models/actions"
 
 /*
 mutation { import(
@@ -75,6 +77,8 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
                       
                 mng.getAttrGroups().splice(idx, 1)
                 
+                await processAttrGroupActions(context, EventType.AfterCreate, data, true)
+
                 result.result = ImportResult.DELETED
             }
             return result
@@ -113,6 +117,9 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
             mng.getAttrGroups().push(new AttrGroupWrapper(data))
 
             result.id = ""+data.id
+
+            await processAttrGroupActions(context, EventType.AfterCreate, data, true)
+
             result.result = ImportResult.CREATED
         } else {
             // update
@@ -127,6 +134,9 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
             })
 
             result.id = ""+data.id
+
+            await processAttrGroupActions(context, EventType.AfterUpdate, data, true)
+
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {
