@@ -76,6 +76,16 @@ export function filterValues(allowedAttributes: string[] | null, values:any) {
     }    
 }
 
+export function processDeletedChannels(channels:any) {
+    if (channels) {
+        for (const key in channels) {
+            if (channels[key].is_deleted) {
+                delete channels[key]
+            }
+        }
+    }
+}
+
 export function mergeValues(newValues: any, oldValues: any): any {
     if (newValues) {
         if (oldValues) {

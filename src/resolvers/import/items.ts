@@ -4,7 +4,7 @@ import { Item } from '../../models/items'
 import { sequelize } from '../../models'
 import { QueryTypes, literal } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit } from '../utils'
+import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit, processDeletedChannels } from '../utils'
 import { Attribute } from '../../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
@@ -337,6 +337,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
             data.values = mergeValues(item.values, data.values)
             data.channels = mergeValues(item.channels, data.channels)
+            processDeletedChannels(item.channels)
 
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {

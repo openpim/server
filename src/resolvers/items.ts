@@ -3,7 +3,7 @@ import { sequelize } from '../models'
 import { QueryTypes, literal } from 'sequelize'
 import { Item } from '../models/items'
 import {  ModelManager, ModelsManager } from '../models/manager'
-import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit } from './utils'
+import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit, processDeletedChannels } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
@@ -425,6 +425,7 @@ export default {
                 filterEditChannels(context, channels)
                 checkSubmit(context, channels)
                 item.channels = mergeValues(channels, item.channels)
+                processDeletedChannels(item.channels)
             }
             if (values) {
                 if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values}, {name: name, values: values})
