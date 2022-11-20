@@ -111,7 +111,7 @@ export default {
             if (icon) type.icon = icon
             if (iconColor) type.iconColor = iconColor
             if (file != null) type.file = file
-            if (mainImage != null) type.mainImage = mainImage
+            if (mainImage != null) type.mainImage = parseInt(mainImage)
             if (images) type.images = images.map((elem: string) => parseInt(elem))
             if (options != null) type.options = options
 

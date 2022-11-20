@@ -305,7 +305,7 @@ export default {
                 await tstGroup.getGroup().removeAttribute(tstAttr.attr, {transaction: t})
             })
 
-            const idx = tstGroup.getAttributes().findIndex((attr) => { attr.id == nId })
+            const idx = tstGroup.getAttributes().findIndex((attr) => attr.id === nId)
             tstGroup.getAttributes().splice(idx, 1)
 
             return true
