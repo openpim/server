@@ -1,5 +1,5 @@
 export default {
-    "buildMajor": 1,
-    "buildMinor": 5,
+    "buildMajor": 2,
+    "buildMinor": 0,
     "buildRevision": "123"
 }
