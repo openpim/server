@@ -357,31 +357,33 @@ export class WBNewChannelHandler extends ChannelHandler {
         await this.sendRequest(channel, item, request, context)
 
         // images
-        const imageConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
-        if (!imageConfig) return
-        const images = await this.getValueByMapping(channel, imageConfig, item, language)
-        if (images && images.length > 0) {
-            const imgRequest = {
-                "vendorCode": productCode,
-                "data": images
+        if (!create) { // send images on update only because product is not exists at WB just after create
+            const imageConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
+            if (!imageConfig) return
+            const images = await this.getValueByMapping(channel, imageConfig, item, language)
+            if (images && images.length > 0) {
+                const imgRequest = {
+                    "vendorCode": productCode,
+                    "data": images
+                    }
+                const imgUrl = 'https://suppliers-api.wildberries.ru/content/v1/media/save'
+                let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
+                logger.info(msg)
+                if (channel.config.debug) context.log += msg+'\n'
+                const res = await fetch(imgUrl, {
+                    method: 'post',
+                    body:    JSON.stringify(imgRequest),
+                    headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+                })
+                msg = "Response status from Windberries: " + res.status
+                logger.info(msg)
+                if (channel.config.debug) context.log += msg+'\n'
+                if (res.status !== 200) {
+                    const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+                    context.log += msg                      
+                    this.reportError(channel, item, msg)
+                    return
                 }
-            const imgUrl = 'https://suppliers-api.wildberries.ru/content/v1/media/save'
-            let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
-            logger.info(msg)
-            if (channel.config.debug) context.log += msg+'\n'
-            const res = await fetch(imgUrl, {
-                method: 'post',
-                body:    JSON.stringify(imgRequest),
-                headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
-            })
-            msg = "Response status from Windberries: " + res.status
-            logger.info(msg)
-            if (channel.config.debug) context.log += msg+'\n'
-            if (res.status !== 200) {
-                const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
-                context.log += msg                      
-                this.reportError(channel, item, msg)
-                return
             }
         }
     }
