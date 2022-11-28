@@ -20,6 +20,8 @@ export default {
         getRoles: async (parent: any, args: any, context: Context) => {
             context.checkAuth()
             
+            if (context.getCurrentUser()!.tenantId === '0') return [{id: 1, internalId: 1, identifier: 'admin', name: {}, configAccess: {"lovs": 2, "roles": 2, "types": 2, "users": 2, "actions": 2, "channels": 2, "languages": 2, "relations": 2, "attributes": 2, "dashboards": 2}, relAccess: {"access": 0, "groups": [], "relations": []}, itemAccess: {"valid": [], "access": 0, "groups": [], "fromItems": []}, otherAccess: {"audit": true, "search": true, "exportCSV": true, "exportXLS": true, "importXLS": true, "searchRelations": true, "exportRelationsXLS": true, "importRelationsXLS": true}, channelAccess: [], options: []}]
+
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             return mng.getRoles()
         },
