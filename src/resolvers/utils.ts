@@ -182,7 +182,7 @@ export function diff(obj1: any, obj2: any) {
     for (key in obj2) {
         if (key in obj2) {
             if (!(key in obj1) && obj1[key] !== obj2[key]) {
-                diffs.added[key] = obj2[key] !== null ? JSON.stringify(obj2[key])  : null;
+                diffs.added[key] = obj2[key] !== null ? obj2[key]  : null;
             }
         }
     }
