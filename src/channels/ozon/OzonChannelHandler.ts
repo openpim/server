@@ -407,6 +407,14 @@ export class OzonChannelHandler extends ChannelHandler {
         product.vat = vat
         product.name = name
 
+        const priceOldConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#oldprice')
+        const priceOld = await this.getValueByMapping(channel, priceOldConfig, item, language)
+        if (priceOld) product.old_price = priceOld
+
+        const pricePremConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#premprice')
+        const pricePrem = await this.getValueByMapping(channel, pricePremConfig, item, language)
+        if (pricePrem) product.premium_price = pricePrem
+
         // video processing
         const complex_attributes:any = [{attributes:[]}]
         let wasData = false
@@ -441,7 +449,7 @@ export class OzonChannelHandler extends ChannelHandler {
             const attrConfig = categoryConfig.attributes[i];
             
             if (
-                attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && 
+                attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && attrConfig.id != '#oldprice' && attrConfig.id != '#premprice' && 
                 attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
                 && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames'
             ) {
