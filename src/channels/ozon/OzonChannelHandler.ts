@@ -230,9 +230,9 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                     if (tst) {
                         try {
-                            await this.processItemInCategory(channel, item, categoryConfig, language, context)
+                            const changedValues = await this.processItemInCategory(channel, item, categoryConfig, language, context)
 
-                            await this.saveItemIfChanged(channel, item)
+                            await this.saveItemIfChanged(channel, item, changedValues)
                         } catch (err) {
                             logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
 
@@ -258,7 +258,7 @@ export class OzonChannelHandler extends ChannelHandler {
         await this.saveItemIfChanged(channel, item)
     }
 
-    async saveItemIfChanged(channel: Channel, item: Item) {
+    async saveItemIfChanged(channel: Channel, item: Item, changedValues:any = null) {
         const reloadedItem = await Item.findByPk(item.id) // refresh item from DB (other channels can already change it)
         let changed = false
         let valuesChanged = false
@@ -289,6 +289,14 @@ export class OzonChannelHandler extends ChannelHandler {
             reloadedItem!.values[channel.config.ozonFBOIdAttr] = item.values[channel.config.ozonFBOIdAttr]
             reloadedItem!.changed('values', true)
         }
+        if (changedValues && Object.keys(changedValues).length > 0) {
+            changed = true
+            valuesChanged = true
+            for (const prop in changedValues) {
+                reloadedItem!.values[prop] = changedValues[prop]
+            }
+            reloadedItem!.changed('values', true)
+        }
         if (changed) {
             if (valuesChanged) { // hardcore for MS
                 if (reloadedItem!.channels['ms'] && reloadedItem!.channels['ms'].status) {
@@ -304,6 +312,8 @@ export class OzonChannelHandler extends ChannelHandler {
 
     async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext) {
         context.log += 'Найдена категория "' + categoryConfig.name +'" для записи с идентификатором: ' + item.identifier + '\n'
+
+        const changedValues:any = {}
 
         const data = item.channels[channel.identifier]
         data.category = categoryConfig.id
@@ -508,6 +518,45 @@ export class OzonChannelHandler extends ChannelHandler {
 
         const ozonProductId = item.values[channel.config.ozonIdAttr]
         if (ozonProductId) {
+            // check if we have changed prices that we should leave unchanged
+            const existingPricesReq = {product_id: ozonProductId}
+            const existingPricesUrl = 'https://api-seller.ozon.ru/v2/product/info'
+            const logPr = "Sending request to Ozon: " + existingPricesUrl + " => " + JSON.stringify(existingPricesReq)
+            logger.info(logPr)
+            if (channel.config.debug) context.log += logPr+'\n'
+            const existingPricesRes = await fetch(existingPricesUrl, {
+                method: 'post',
+                body:    JSON.stringify(existingPricesReq),
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+            logger.info("Response status from Ozon: " + existingPricesRes.status)
+            if (existingPricesRes.status !== 200) {
+                const text = await existingPricesRes.text()
+                const msg = 'Ошибка запроса на Ozon: ' + existingPricesRes.statusText + "   " + text
+                context.log += msg                      
+                this.reportError(channel, item, msg)
+                logger.error(msg)
+                return
+            } else {
+                const existingPricesJson = await existingPricesRes.json()
+
+                const priceAttr = priceConfig.attrIdent
+                if (priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.result.price)) {
+                    changedValues[priceAttr] = parseFloat(existingPricesJson.result.price)
+                    product.price = existingPricesJson.result.price
+                }
+                const priceOldAttr = priceOldConfig?.attrIdent
+                if (priceOldAttr && existingPricesJson.result.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.result.old_price)) {
+                    changedValues[priceOldAttr] = parseFloat(existingPricesJson.result.old_price)
+                    product.old_price = existingPricesJson.result.old_price
+                }
+                const pricePremAttr = pricePremConfig?.attrIdent
+                if (pricePremAttr && existingPricesJson.result.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.result.premium_price)) {
+                    changedValues[pricePremAttr] = parseFloat(existingPricesJson.result.premium_price)
+                    product.premium_price = existingPricesJson.result.premium_price
+                }
+            }
+            
             // check if we have loaded videos that we should leave unchanged
             const existingDataReq = {
                 "filter": {
@@ -659,6 +708,8 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
             }
         }
+
+        return changedValues
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext, product: any) {
