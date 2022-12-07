@@ -744,6 +744,17 @@ class ActionUtils {
         return this.#mng.getAttrGroups()
     }
 
+    public getUserByLogin(login: string) {
+        const userWrapper = this.#mng.getUsers().find(user => login)
+        return userWrapper ? userWrapper.getUser() : null
+    }
+
+
+    public getTypeByIdentifier(typeIdent: string) {
+        const typeNode = this.#mng.getTypeByIdentifier(typeIdent)
+        return typeNode ? typeNode.getValue() : null
+    }
+
     public getRelations() {
         // TODO maybe we need to return copy of the data to avoid changing?
         return this.#mng.getRelations()
