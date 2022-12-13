@@ -461,7 +461,7 @@ export class OzonChannelHandler extends ChannelHandler {
             if (
                 attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && attrConfig.id != '#oldprice' && attrConfig.id != '#premprice' && 
                 attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
-                && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames'
+                && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames' && attrConfig.id != '#images360Urls'
             ) {
                 const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
                 if (!attr) {
@@ -515,6 +515,14 @@ export class OzonChannelHandler extends ChannelHandler {
         }
         
         await this.processItemImages(channel, item, context, product)
+
+        // images 360 processing
+        const images360UrlsConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images360Urls')
+        let images360UrlsValue = await this.getValueByMapping(channel, images360UrlsConfig, item, language)
+        if (images360UrlsValue) {
+            if (!Array.isArray(images360UrlsValue)) images360UrlsValue = [images360UrlsValue]
+            product.images360 = images360UrlsValue
+        }
 
         const ozonProductId = item.values[channel.config.ozonIdAttr]
         if (ozonProductId) {
