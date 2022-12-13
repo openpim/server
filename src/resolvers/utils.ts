@@ -745,7 +745,7 @@ class ActionUtils {
     }
 
     public getUserByLogin(login: string) {
-        const userWrapper = this.#mng.getUsers().find(user => login)
+        const userWrapper = this.#mng.getUsers().find(user => user.getUser().login === login)
         return userWrapper ? userWrapper.getUser() : null
     }
 
