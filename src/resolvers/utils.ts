@@ -294,6 +294,7 @@ export async function processItemActions(context: Context, event: EventType, ite
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
             Item,
             ItemRelation
         } 
@@ -337,6 +338,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
             Item,
             ItemRelation
         } 
@@ -361,6 +363,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
             Item,
             ItemRelation
         }},
@@ -395,6 +398,7 @@ export async function processAttrGroupActions(context: Context, event: EventType
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
             Item,
             ItemRelation
         } 
@@ -424,6 +428,7 @@ export async function processAttributeActions(context: Context, event: EventType
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
             Item,
             ItemRelation
         } 
@@ -612,6 +617,7 @@ export async function processItemRelationActions(context: Context, event: EventT
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
             Item,
             ItemRelation
         } 
@@ -850,6 +856,7 @@ class ActionUtils {
                 item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
                 itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
                 lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+                process: Process.applyScope(context),
                 Item,
                 ItemRelation
             } 
@@ -1053,12 +1060,9 @@ class ActionUtils {
         return procResolvers.Mutation.createProcess(null, {identifier, title, active, status, log, runtime}, this.#context)
     }
 
-    public async updateProcess( id: number, title: string = '', active: (boolean | null) = null, status: string = '', log: string = '', runtime: any = null) : Promise<Process> {
-        return procResolvers.Mutation.updateProcess(null, {id, title, active, status, log, runtime}, this.#context)
-    }
-
-    public async updateProcessLog( id: number, log: string, status: string = '') : Promise<Process> {
-        return procResolvers.Mutation.updateProcess(null, {id, title:null, active:null, status, log, runtime:null}, this.#context)
+    public async saveProcessFile(process: Process, filepath: string, mimetype: string | null, originalFilename: string | null, clean = false) {
+        const fm = FileManager.getInstance()
+        await fm.saveProcessFile(this.#context.getCurrentUser()!.tenantId, process, filepath, mimetype || '', originalFilename || '', clean)
     }
 
 }

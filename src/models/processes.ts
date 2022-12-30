@@ -10,6 +10,8 @@ export class Process extends Base {
   public status!: string
   public finishTime!: any
   public storagePath!: string
+  public mimeType!: string
+  public fileName!: string
   public log!: string
   public runtime!: any
   public static applyScope(context: Context) {
@@ -44,6 +46,14 @@ export function init(sequelize: Sequelize):void {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      mimeType: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      fileName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       log: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -62,6 +72,16 @@ export function init(sequelize: Sequelize):void {
       tableName: 'processes',
       paranoid: true,
       timestamps: true,
-      sequelize: sequelize
+      sequelize: sequelize,
+      scopes: {
+        tenant(value) {
+          return {
+            where: {
+              tenantId: value
+            }
+          }
+        }
+      }        
+  
   });     
 }

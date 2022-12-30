@@ -65,7 +65,9 @@ export default {
                     log: log || '',
                     runtime: runtime || {},
                     finishTime: null,
-                    storagePath: ''
+                    storagePath: '',
+                    mimeType: '',
+                    fileName: ''
                 }, {transaction: t})
                 return proc
             })

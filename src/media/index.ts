@@ -16,6 +16,7 @@ import { ChannelExecution } from '../models/channels'
 import contentDisposition = require('content-disposition')
 import { checkValues, filterValues, mergeValues, processItemActions, processItemRelationActions } from '../resolvers/utils'
 import { EventType } from '../models/actions'
+import { Process } from '../models/processes'
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -426,6 +427,56 @@ export async function processCreateUpload(context: Context, req: Request, res: R
 
             await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, itemRelation.values, false)
 
+
+            res.send('OK')
+        } catch (error: any) {
+            logger.error(error)
+            res.status(400).send(error.message)
+        }
+    });
+}
+
+export async function uploadProcessFile(context: Context, req: Request, res: Response) {
+    const form = new IncomingForm({maxFileSize: 500*1024*1024, keepExtensions: true})
+ 
+    form.parse(req, async (err, fields, files) => {
+        try {
+            if (err) {
+                logger.error(err)
+                res.status(400).send(err)
+                return
+            }
+
+            context.checkAuth();
+
+            let idStr =  <string>fields['id']
+            if (!idStr) { //try to find id as file
+                const tst = <File>files['id']
+                if (tst) {
+                    const tst2 = fs.readFileSync(tst.filepath, {encoding:'utf8'})
+                    if (tst2) idStr = tst2.trim()
+                }
+            }
+            if (!idStr) throw new Error('Failed to find "id" parameter')
+
+            const file = <File>files['file']
+            if (!file) throw new Error('Failed to find "file" parameter')
+
+            const id = parseInt(idStr)
+
+            const proc = await Process.applyScope(context).findByPk(id)
+            if (!proc) throw new Error('Failed to find process by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+
+            if (proc.createdBy !== context.getCurrentUser()?.login) 
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to upload file to process: '+proc.id+', tenant: ' + context.getCurrentUser()!.tenantId)
+        
+            const fm = FileManager.getInstance()
+            await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, file.filepath, file.mimetype || '', file.originalFilename || '')
+
+            proc.updatedBy = context.getCurrentUser()!.login
+            await sequelize.transaction(async (t) => {
+                await proc.save({transaction: t})
+            })
 
             res.send('OK')
         } catch (error: any) {

@@ -6,6 +6,7 @@ import { mergeValues } from '../resolvers/utils'
 import {File} from 'formidable'
 import logger from '../logger'
 import { ChannelExecution } from '../models/channels'
+import { Process } from '../models/processes'
 
 export class FileManager {
     private static instance: FileManager
@@ -88,6 +89,33 @@ export class FileManager {
         }
 
         exec.storagePath = relativePath
+
+        return fullPath
+    }
+
+    public async saveProcessFile(tenantId: string, process: Process, file: string, mimetype: string, filename: string, clean = true) {
+        const tst = '/' + tenantId
+        if (!fs.existsSync(this.filesRoot + tst)) fs.mkdirSync(this.filesRoot + tst)
+
+        const filesPath = '/' + tenantId + '/processes/'
+        if (!fs.existsSync(this.filesRoot + filesPath)) fs.mkdirSync(this.filesRoot + filesPath, {recursive: true})
+
+        const relativePath = filesPath  + process.id
+        const fullPath = this.filesRoot + relativePath
+        if (clean) {
+            try {
+                fs.renameSync(fullPath, fullPath)
+            } catch (e) { 
+                fs.copyFileSync(fullPath, fullPath)
+                fs.unlinkSync(fullPath)
+            }
+        } else {
+            fs.copyFileSync(fullPath, fullPath)
+        }
+
+        process.storagePath = relativePath
+        process.mimeType = mimetype
+        process.fileName = filename
 
         return fullPath
     }

@@ -154,6 +154,17 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     }
   })
 
+  app.post('/process-upload', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+
+      await processUpload(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
   await Context.init()
   app.listen(process.env.PORT);
   logger.info('Running a GraphQL API server at http://localhost:' + process.env.PORT + '/graphql');
