@@ -485,3 +485,31 @@ export async function uploadProcessFile(context: Context, req: Request, res: Res
         }
     });
 }
+
+export async function downloadProcessFile(context: Context, req: Request, res: Response, thumbnail: boolean) {
+    const idStr = req.params.id
+    const id = parseInt(idStr)
+    if (!id) throw new Error('Wrong "id" parameter')
+
+    const proc = await Process.applyScope(context).findByPk(id)
+    if (!proc) {
+        logger.error('Failed to find process by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find image')
+        return
+    }
+
+    if (proc.createdBy !== context.getCurrentUser()?.login) 
+    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to download file from process: '+proc.id+', tenant: ' + context.getCurrentUser()!.tenantId)
+
+    if (!proc.storagePath) {
+        logger.error('Failed to find image for item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find image')
+        return
+    }
+
+    const hdrs:any = {
+        'Content-Type': proc.mimeType || "application/octet-stream"
+    }
+    hdrs['Content-Disposition'] = proc.fileName ? contentDisposition(proc.fileName) : 'attachment; filename="result.bin"'
+    res.sendFile(process.env.FILES_ROOT! + proc.storagePath, {headers: hdrs})
+}
