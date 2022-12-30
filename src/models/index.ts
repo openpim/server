@@ -16,6 +16,7 @@ import * as dashboards from './dashboards'
 import * as channels from './channels'
 import * as collections from './collections'
 import * as collectionItems from './collectionItems'
+import * as processes from './processes'
 
 import logger from '../logger'
 
@@ -61,6 +62,7 @@ export async function initModels() {
     channels.init(sequelize)
     collections.init(sequelize)
     collectionItems.init(sequelize)
+    processes.init(sequelize)
 
     items.Item.hasMany(itemRelations.ItemRelation, {sourceKey: 'id', as: 'sourceRelation', foreignKey: 'itemId'})
     itemRelations.ItemRelation.belongsTo(items.Item,{targetKey: 'id', as: 'sourceItem', foreignKey: 'itemId'})

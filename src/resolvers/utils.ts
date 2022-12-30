@@ -34,6 +34,9 @@ import { AttrGroup, Attribute } from "../models/attributes"
 import dateFormat from "dateformat"
 import { FileManager } from "../media/FileManager"
 
+import procResolvers from './processes'
+import { Process } from "../models/processes"
+
 export function filterChannels(context: Context, channels:any) {
     for (const prop in channels) {
         if (!context.canViewChannel(prop)) {
@@ -1045,5 +1048,17 @@ class ActionUtils {
 
         return makeItemRelationProxy(itemRelation)
     }    
+
+    public async createProcess( identifier: string, title: string, active: boolean = true, status: string = '', log: string = '', runtime: any = {}) : Promise<Process> {
+        return procResolvers.Mutation.createProcess(null, {identifier, title, active, status, log, runtime}, this.#context)
+    }
+
+    public async updateProcess( id: number, title: string = '', active: (boolean | null) = null, status: string = '', log: string = '', runtime: any = null) : Promise<Process> {
+        return procResolvers.Mutation.updateProcess(null, {id, title, active, status, log, runtime}, this.#context)
+    }
+
+    public async updateProcessLog( id: number, log: string, status: string = '') : Promise<Process> {
+        return procResolvers.Mutation.updateProcess(null, {id, title:null, active:null, status, log, runtime:null}, this.#context)
+    }
 
 }

@@ -1,0 +1,31 @@
+type Query {
+  getProcesses(where: JSONObject, order: JSON, offset: Int!, limit: Int! ): GetProcessesResponse
+}
+
+type Mutation {
+  createProcess(identifier: String!, title: String!, active: Boolean, status: String, log: String, runtime: JSONObject): Process!
+  updateProcess(id: ID!, title: String, active: Boolean, status: String, log: String, runtime: JSONObject) : Process!
+  removeProcess(id: ID!) : Boolean!
+}
+
+type Process {
+  id: ID!
+  identifier: String!
+  title: String!
+  active: Boolean!
+  status:  String!
+  finishTime: UTCDateTime
+  storagePath: String
+  log: String
+  runtime: JSONObject!
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}
+
+type GetProcessesResponse {
+  count: Int
+  rows: [Process]
+}
+

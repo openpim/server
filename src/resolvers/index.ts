@@ -13,6 +13,7 @@ import lovResolvers from './lovs'
 import auditResolvers from './audit'
 import chanResolvers from './channels'
 import colResolvers from './collections'
+import procResolvers from './processes'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
 import LanguageDependentString from './utils/languageDependentString'
 import { GraphQLDateTime } from 'graphql-iso-date'
@@ -21,7 +22,6 @@ import { QueryTypes } from 'sequelize'
 import { sequelize } from '../models'
 
 import logger from '../logger'
-import { level } from 'winston'
 
 const resolver = {
     Query: {
@@ -72,7 +72,8 @@ export default {
         ...lovResolvers.Query,
         ...chanResolvers.Query,
         ...auditResolvers.Query,
-        ...colResolvers.Query
+        ...colResolvers.Query,
+        ...procResolvers.Query
     },
     Mutation: {
         ...resolver.Mutation,
@@ -89,7 +90,8 @@ export default {
         ...searchResolvers.Mutation,
         ...lovResolvers.Mutation,
         ...chanResolvers.Mutation,
-        ...colResolvers.Mutation
+        ...colResolvers.Mutation,
+        ...procResolvers.Mutation
     },
     SearchResponse: {
         ...searchResolvers.SearchResponse
