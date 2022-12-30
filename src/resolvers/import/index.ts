@@ -1,5 +1,5 @@
 import Context, { ConfigAccess } from '../../context'
-import { IItemImportRequest, IImportConfig, ImportResponses, IItemRelationImportRequest, ImportMode, ErrorProcessing, ITypeImportRequest, IRelationImportRequest, IAttrGroupImportRequest, IAttributeImportRequest, IRoleImportRequest, IUserImportRequest, ILOVImportRequest } from '../../models/import'
+import { IItemImportRequest, IImportConfig, ImportResponses, IItemRelationImportRequest, ImportMode, ErrorProcessing, ITypeImportRequest, IRelationImportRequest, IAttrGroupImportRequest, IAttributeImportRequest, IRoleImportRequest, IUserImportRequest, ILOVImportRequest, ICollectionImportRequest, ICollectionItemsImportRequest } from '../../models/import'
 import { importItem } from './items'
 import { importItemRelation } from './itemRelations'
 import { importType } from './types'
@@ -9,10 +9,12 @@ import { importAttribute } from './attributes'
 import { importRole } from './roles'
 import { importUser } from './users'
 import { importLOV } from './lovs'
+import { importCollection } from './collections'
+import { importCollectionItems } from './collections'
 
 export default {
     Mutation: {
-        import: async (parent: any, { config, types, relations, items, itemRelations, attrGroups, attributes, roles, users, lovs }: any, context: Context) => {
+        import: async (parent: any, { config, types, relations, items, itemRelations, attrGroups, attributes, roles, users, lovs, collections, collectionItems }: any, context: Context) => {
             context.checkAuth()
 
             config.mode = ImportMode[config.mode]
@@ -110,6 +112,28 @@ export default {
                     const lov = lovs[index];
                     const resp = await importLOV(context, <IImportConfig>config, <ILOVImportRequest>lov)
                     responses.lovs.push(resp)
+                }
+            }
+            if (collections && collections.length > 0) {
+                if (!context.canEditConfig(ConfigAccess.COLLECTIONS)) 
+                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit collection, tenant: ' + context.getCurrentUser()!.tenantId)
+
+                responses.collections = []
+                for (let index = 0; index < collections.length; index++) {
+                    const collection = collections[index];
+                    const resp = await importCollection(context, <IImportConfig>config, <ICollectionImportRequest>collection)
+                    responses.collections.push(resp)
+                }
+            }
+            if (collectionItems && collectionItems.length > 0) {
+                if (!context.canEditConfig(ConfigAccess.COLLECTIONITEMS)) 
+                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit collection, tenant: ' + context.getCurrentUser()!.tenantId)
+
+                responses.collectionItems = []
+                for (let index = 0; index < collectionItems.length; index++) {
+                    const collectionItem = collectionItems[index];
+                    const resp = await importCollectionItems(context, <IImportConfig>config, <ICollectionItemsImportRequest>collectionItem)
+                    responses.collectionItems.push(resp)
                 }
             }
 

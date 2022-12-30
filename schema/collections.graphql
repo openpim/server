@@ -1,0 +1,23 @@
+type Query {
+  getCollectionByIdentifier(identifier: String!): SavedCollection
+  getCollections: [SavedCollection]!
+}
+
+type Mutation {
+  saveCollections(identifier: String!, name: LanguageDependentString!, publicCollection: Boolean): ID!
+  removeCollection(identifier: String!): Boolean!
+  addToCollection(collectionId: ID!, items: [ID]!): Boolean!
+  removeFromCollection(collectionId: ID!, items: [ID]!): Boolean!
+}
+
+type SavedCollection {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  public: Boolean!
+  user: String!
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}

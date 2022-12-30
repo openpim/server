@@ -14,6 +14,8 @@ import * as search from './search'
 import * as actions from './actions'
 import * as dashboards from './dashboards'
 import * as channels from './channels'
+import * as collections from './collections'
+import * as collectionItems from './collectionItems'
 
 import logger from '../logger'
 
@@ -57,9 +59,13 @@ export async function initModels() {
     actions.init(sequelize)
     dashboards.init(sequelize)
     channels.init(sequelize)
+    collections.init(sequelize)
+    collectionItems.init(sequelize)
 
     items.Item.hasMany(itemRelations.ItemRelation, {sourceKey: 'id', as: 'sourceRelation', foreignKey: 'itemId'})
-    itemRelations.ItemRelation.belongsTo(items.Item,{targetKey: 'id', as: 'sourceItem', foreignKey: 'itemId'}) 
+    itemRelations.ItemRelation.belongsTo(items.Item,{targetKey: 'id', as: 'sourceItem', foreignKey: 'itemId'})
+
+    items.Item.hasMany(collectionItems.CollectionItems, {sourceKey: 'id', as: 'collectionItems', foreignKey: 'itemId'})
 
     items.Item.hasMany(itemRelations.ItemRelation, {sourceKey: 'id', as: 'targetRelation', foreignKey: 'targetId'})
     itemRelations.ItemRelation.belongsTo(items.Item,{targetKey: 'id', as: 'targetItem', foreignKey: 'targetId'})

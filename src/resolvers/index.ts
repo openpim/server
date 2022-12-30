@@ -12,6 +12,7 @@ import importResolvers from './import'
 import lovResolvers from './lovs'
 import auditResolvers from './audit'
 import chanResolvers from './channels'
+import colResolvers from './collections'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
 import LanguageDependentString from './utils/languageDependentString'
 import { GraphQLDateTime } from 'graphql-iso-date'
@@ -70,7 +71,8 @@ export default {
         ...searchResolvers.Query,
         ...lovResolvers.Query,
         ...chanResolvers.Query,
-        ...auditResolvers.Query
+        ...auditResolvers.Query,
+        ...colResolvers.Query
     },
     Mutation: {
         ...resolver.Mutation,
@@ -87,6 +89,7 @@ export default {
         ...searchResolvers.Mutation,
         ...lovResolvers.Mutation,
         ...chanResolvers.Mutation,
+        ...colResolvers.Mutation
     },
     SearchResponse: {
         ...searchResolvers.SearchResponse

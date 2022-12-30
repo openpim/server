@@ -9,6 +9,8 @@ type Mutation {
     roles: [RoleImportRequest]
     users: [UserImportRequest]
     lovs: [LOVImportRequest]
+    collections: [CollectionImportRequest]
+    collectionItems: [CollectionItemsImportRequest]
     ): ImportResponses!
 }
 
@@ -38,6 +40,8 @@ type ImportResponses {
   roles: [ImportResponse]
   users: [ImportResponse]
   lovs: [ImportResponse]
+  collections: [ImportResponse]
+  collectionItems: [ImportResponse]
 }
 
 enum ImportResult {
@@ -162,6 +166,7 @@ input ConfigAccessRequest {
   languages: Int!
   relations: Int!
   attributes: Int!
+  collections: Int!
 }
 
 input RelAccessRequest {
@@ -198,4 +203,17 @@ input LOVImportRequest {
   identifier: String!
   name: LanguageDependentString
   values: JSON
+}
+
+input CollectionImportRequest {
+  delete: Boolean
+  identifier: String!
+  name: LanguageDependentString
+  public: Boolean
+}
+
+input CollectionItemsImportRequest {
+  delete: Boolean
+  collectionIdentifier: String!
+  itemIdentifiers: [String]!
 }

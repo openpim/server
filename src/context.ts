@@ -123,6 +123,10 @@ export default class Context {
                     if (role.configAccess && role.configAccess.actions === 2) return true
                 case ConfigAccess.DASHBOARDS:
                     if (role.configAccess && role.configAccess.dashboards === 2) return true
+                case ConfigAccess.COLLECTIONS:
+                    return true
+                case ConfigAccess.COLLECTIONITEMS:
+                    return true
                 }
         }
         return false
@@ -155,6 +159,10 @@ export default class Context {
                     if (role.configAccess && (role.configAccess.actions === 1 || role.configAccess.actions === 2)) return true
                 case ConfigAccess.DASHBOARDS:
                     if (role.configAccess && (role.configAccess.dashboards === 1 || role.configAccess.dashboards === 2)) return true
+                case ConfigAccess.COLLECTIONS:
+                    return true
+                case ConfigAccess.COLLECTIONITEMS:
+                    return true
                 }
         }
         return false
@@ -492,5 +500,7 @@ export enum ConfigAccess {
     LOVS,
     CHANNELS,
     ACTIONS,
-    DASHBOARDS
+    DASHBOARDS,
+    COLLECTIONS,
+    COLLECTIONITEMS
 }

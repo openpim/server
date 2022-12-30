@@ -17,6 +17,7 @@ scalar UTCDateTime
 # import Query.*, Mutation.* from "channels.graphql"
 # import Mutation.* from "import.graphql"
 # import Query.* from "audit.graphql"
+# import Query.*, Mutation.* from "collections.graphql"
 
 type Query {
   ping: String

@@ -96,6 +96,10 @@ export class ReturnMessage {
   public static LOVNotFound = new ReturnMessage(800, "Failed to find list of values by identifier")
   public static LOVExist = new ReturnMessage(801, "List of values with such identifier already exists")
   public static LOVDeleteFailed = new ReturnMessage(802, "Failed to remove list of value because there are attributes with links to it")
+
+  public static CollectionNotFound = new ReturnMessage(900, "Failed to find collection by identifier")
+  public static CollectionExist = new ReturnMessage(901, "Collection with such identifier already exists")
+  public static CollectionItemsAddFailed = new ReturnMessage(902, "User does not has permissions to add items from collection")
   
   code: number
   message: string
@@ -138,6 +142,8 @@ export class ImportResponses {
   roles: ImportResponse[] = []
   users: ImportResponse[] = []
   lovs: ImportResponse[] = []
+  collections: ImportResponse[] = []
+  collectionItems: ImportResponse[] = []
 }
 
 export interface IItemRelationImportRequest {
@@ -223,6 +229,7 @@ export interface IConfigAccessRequest {
   languages: number
   relations: number
   attributes: number
+  collections: number
 }
 
 export interface IRelAccessRequest {
@@ -271,3 +278,15 @@ export interface ILOVImportRequest {
   values: any
 }
 
+export interface ICollectionImportRequest {
+  delete: boolean
+  identifier: string
+  name: any
+  public: boolean
+}
+
+export interface ICollectionItemsImportRequest {
+  delete: boolean
+  collectionIdentifier: String
+  itemIdentifiers: [string]
+}

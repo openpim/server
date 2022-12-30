@@ -5,6 +5,7 @@ import { FindAndCountOptions, CountWithOptions, FindOptions, WhereOptions, Inclu
 import { Attribute, AttrGroup } from '../models/attributes'
 import { Relation } from '../models/relations'
 import { ItemRelation } from '../models/itemRelations'
+import { CollectionItems } from '../models/collectionItems'
 import { ModelsManager } from '../models/manager'
 import { filterChannels, filterValues } from './utils'
 import { User, Role } from '../models/users'
@@ -13,6 +14,7 @@ import { SavedColumns, SavedSearch } from '../models/search'
 import { sequelize } from '../models'
 import { Op, literal } from 'sequelize'
 import moment = require('moment')
+import e = require('cors')
 
 /* sample search request
 query { search(
@@ -50,6 +52,7 @@ function replaceOperations(obj: any) {
     let targetRelation = false
     let sourceItem = false
     let targetItem = false
+    let collectionItems = false
     for (const prop in obj) {
         let value = obj[prop]
 
@@ -81,12 +84,18 @@ function replaceOperations(obj: any) {
             obj[Symbol.for(operation)] = value
         }
 
+        if (prop === 'collectionId') {
+            include = [{as: "collectionItems", where: {"collectionId": value}}]
+            delete obj[prop]
+            fillInclude(include)
+        }
+
         if (prop === 'include' && Array.isArray(value)) {
             include = value
             delete obj[prop]
             fillInclude(include)
         }
-
+        
         if (prop !== 'include' && value === Object(value)) {
             replaceOperations(value)
         }
@@ -97,8 +106,9 @@ function fillInclude(include: any[]) {
     include.forEach(elem => {
         if (elem.as && elem.as.endsWith('Item')) elem.model = Item
         if (elem.as && elem.as.endsWith('Relation')) elem.model = ItemRelation
+        if (elem.as && elem.as.endsWith('collectionItems')) elem.model = CollectionItems
 
-        if (elem.where) replaceOperations(elem.where)
+        if (elem.where && elem.model !== CollectionItems) replaceOperations(elem.where)
 
         if (elem.include && Array.isArray(elem.include)) fillInclude(elem.include)
     })
