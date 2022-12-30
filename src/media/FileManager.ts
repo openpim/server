@@ -104,13 +104,13 @@ export class FileManager {
         const fullPath = this.filesRoot + relativePath
         if (clean) {
             try {
-                fs.renameSync(fullPath, fullPath)
+                fs.renameSync(file, fullPath)
             } catch (e) { 
-                fs.copyFileSync(fullPath, fullPath)
-                fs.unlinkSync(fullPath)
+                fs.copyFileSync(file, fullPath)
+                fs.unlinkSync(file)
             }
         } else {
-            fs.copyFileSync(fullPath, fullPath)
+            fs.copyFileSync(file, fullPath)
         }
 
         process.storagePath = relativePath
