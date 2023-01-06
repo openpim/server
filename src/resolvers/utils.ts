@@ -185,7 +185,7 @@ export function diff(obj1: any, obj2: any) {
     for (key in obj2) {
         if (key in obj2) {
             if (!(key in obj1) && obj1[key] !== obj2[key]) {
-                diffs.added[key] = obj2[key] !== null ? obj2[key] + ""  : null;
+                diffs.added[key] = obj2[key] !== null ? obj2[key]  : null;
             }
         }
     }
@@ -751,6 +751,17 @@ class ActionUtils {
     public getAttrGroups() {
         // TODO maybe we need to return copy of the data to avoid changing?
         return this.#mng.getAttrGroups()
+    }
+
+    public getUserByLogin(login: string) {
+        const userWrapper = this.#mng.getUsers().find(user => user.getUser().login === login)
+        return userWrapper ? userWrapper.getUser() : null
+    }
+
+
+    public getTypeByIdentifier(typeIdent: string) {
+        const typeNode = this.#mng.getTypeByIdentifier(typeIdent)
+        return typeNode ? typeNode.getValue() : null
     }
 
     public getRelations() {
