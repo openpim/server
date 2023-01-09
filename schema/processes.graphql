@@ -16,6 +16,8 @@ type Process {
   status:  String!
   finishTime: UTCDateTime
   storagePath: String
+  mimeType: String
+  fileName: String
   log: String
   runtime: JSONObject!
   createdBy: String!
