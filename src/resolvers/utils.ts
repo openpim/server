@@ -828,7 +828,8 @@ class ActionUtils {
 
     public async saveFile(item: Item, filepath: string, mimetype: string | null, originalFilename: string | null, clean = false) {
         const fm = FileManager.getInstance()
-        await fm.saveFile(this.#context.getCurrentUser()!.tenantId, item, filepath, mimetype, originalFilename, clean)
+        var stats = FS.statSync(filepath)
+        await fm.saveFile(this.#context.getCurrentUser()!.tenantId, item, filepath, mimetype, originalFilename, stats.size, clean)
         item.fileOrigName = originalFilename || ''
         item.mimeType = mimetype || ''
     }
