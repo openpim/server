@@ -136,7 +136,8 @@ export class FileManager {
         } else {
             values = {
                 file_name: originalFilename||'',
-                file_type: mimetype||''
+                file_type: mimetype||'',
+                file_size: size
             }
         }
         item.values = mergeValues(values, item.values)
