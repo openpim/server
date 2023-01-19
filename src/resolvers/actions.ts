@@ -3,7 +3,7 @@ import { ModelsManager } from '../models/manager'
 import { sequelize } from '../models'
 import { Action } from '../models/actions'
 import { Item } from '../models/items'
-import { diff, isObjectEmpty, processItemButtonActions, processItemButtonActions2, testAction } from './utils'
+import { diff, isObjectEmpty, processItemButtonActions, processItemButtonActions2, processTableButtonActions, testAction } from './utils'
 import audit, { AuditItem, ChangeType } from '../audit'
 
 export default {
@@ -128,6 +128,47 @@ export default {
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+            }
+
+            return result
+        },
+        executeTableButtonAction: async (parent: any, { itemId, buttonText, data }: any, context: Context) => {
+            context.checkAuth()
+
+            let item:(Item | null) = null
+
+            if (itemId) {
+                const nId = parseInt(itemId)
+                item = await Item.applyScope(context).findByPk(nId)
+                if (!item) {
+                    throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+                }
+            }
+
+            const { channels, values, result } = await processTableButtonActions(context, buttonText, item, data)
+
+            console.log(222, result)
+
+            if (item && !context.canEditItem(item)) {
+                return result
+            }
+
+            if (item) {
+                let itemDiff: AuditItem
+                if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
+
+                item.values = values
+                item.changed("values", true)
+                item.channels = channels
+
+                item.updatedBy = context.getCurrentUser()!.login
+                await sequelize.transaction(async (t) => {
+                    await item!.save({transaction: t})
+                })
+
+                if (audit.auditEnabled()) {
+                    if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+                }
             }
 
             return result
