@@ -132,7 +132,7 @@ export default {
 
             return result
         },
-        executeTableButtonAction: async (parent: any, { itemId, buttonText, data }: any, context: Context) => {
+        executeTableButtonAction: async (parent: any, { itemId, buttonText, where }: any, context: Context) => {
             context.checkAuth()
 
             let item:(Item | null) = null
@@ -145,7 +145,7 @@ export default {
                 }
             }
 
-            const { channels, values, result } = await processTableButtonActions(context, buttonText, item, data)
+            const { channels, values, result } = await processTableButtonActions(context, buttonText, item, where)
 
             if (item && !context.canEditItem(item)) {
                 return result

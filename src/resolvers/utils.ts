@@ -320,7 +320,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     return await processItemButtonActions2(context, actions, item, data, buttonText)
 }
 
-export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string) {
+export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const valuesCopy = item ? {...item.values} : {}
     const channelsCopy = item ? {...item.channels} : {}
@@ -328,6 +328,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
     const ret = await processActions(mng, actions, { Op: Op,
         event: 'Button:'+buttonText,
         data: data,
+        where: where,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
@@ -346,7 +347,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
     return {channels:channelsCopy, values:valuesCopy, result: ret[0]}
 }
 
-export async function processTableButtonActions(context: Context, buttonText: string, item: Item | null, data: string) {
+export async function processTableButtonActions(context: Context, buttonText: string, item: Item | null, where: any) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item ? item.path.split('.').map((elem:string) => parseInt(elem)) : null
     const actions = mng.getActions().filter(action => {
@@ -362,7 +363,7 @@ export async function processTableButtonActions(context: Context, buttonText: st
         return false
     })
 
-    return await processItemButtonActions2(context, actions, item, data, buttonText)
+    return await processItemButtonActions2(context, actions, item, null, buttonText, where)
 }
 
 
