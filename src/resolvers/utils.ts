@@ -353,18 +353,15 @@ export async function processTableButtonActions(context: Context, buttonText: st
         for (let i = 0; i < action.triggers.length; i++) {
             const trigger = action.triggers[i]
 
-            console.log(111, action.identifier, parseInt(trigger.type) === TriggerType.TableButton, trigger.itemButton === buttonText, item)
             const result = parseInt(trigger.type) === TriggerType.TableButton &&
                 trigger.itemButton === buttonText &&
-                ( (!item) ||
-                (item && item.typeId === parseInt(trigger.itemType) &&
-                pathArr!.includes(parseInt(trigger.itemFrom))))
+                ( (!trigger.itemType && !trigger.itemFrom) ||
+                (item && item.typeId === parseInt(trigger.itemType) && pathArr!.includes(parseInt(trigger.itemFrom))))
             if (result) return true
         }
         return false
     })
 
-    console.log(999, actions)
     return await processItemButtonActions2(context, actions, item, data, buttonText)
 }
 

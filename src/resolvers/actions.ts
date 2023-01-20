@@ -147,8 +147,6 @@ export default {
 
             const { channels, values, result } = await processTableButtonActions(context, buttonText, item, data)
 
-            console.log(222, result)
-
             if (item && !context.canEditItem(item)) {
                 return result
             }
