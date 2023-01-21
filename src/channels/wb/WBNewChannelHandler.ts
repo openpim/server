@@ -288,9 +288,13 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
-            const resExisting = await fetch("https://suppliers-api.wildberries.ru/content/v1/cards/filter", {
+            const existUrl = 'https://suppliers-api.wildberries.ru/content/v1/cards/filter'
+            const existsBody = {vendorCodes: [productCode]}
+            let msg = "Sending request Windberries: " + existUrl + " => " + JSON.stringify(existsBody)
+            logger.info(msg)
+            const resExisting = await fetch(existUrl, {
                 method: 'post',
-                body:    JSON.stringify({vendorCodes: [productCode]}),
+                body:    JSON.stringify(existsBody),
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             if (resExisting.status !== 200) {
@@ -300,7 +304,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 return
             } else {
                 const json = await resExisting.json()
-                //if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json)+'\n'
+                // if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json)+'\n'
                 const tst = json.data.find((elem:any) => elem.nmID == nmID)
                 if (tst) {
                     request = tst
@@ -394,7 +398,7 @@ export class WBNewChannelHandler extends ChannelHandler {
     }
 
     async sendRequest(channel: Channel, item: Item, request: any, context: JobContext) {
-        const create = item.values[channel.config.imtIDAttr] ? false : true
+        const create = item.values[channel.config.nmIDAttr] ? false : true
 
         let grpItem = null
         if (channel.config.wbGroupAttr) {
