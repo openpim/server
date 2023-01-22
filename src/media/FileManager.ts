@@ -120,7 +120,7 @@ export class FileManager {
         return fullPath
     }
 
-    public async saveFile(tenantId: string, item: Item, filepath: string, mimetype: string | null, originalFilename: string | null, clean = true ) {
+    public async saveFile(tenantId: string, item: Item, filepath: string, mimetype: string | null, originalFilename: string | null, size: number, clean = true ) {
         const folder = ~~(item.id/1000)
 
         const tst = '/' + tenantId
@@ -153,6 +153,7 @@ export class FileManager {
                 image_type: image.getExtension(),
                 file_type: image.getMIME(),
                 file_name: originalFilename||'',
+                file_size: size,
                 image_rgba: image._rgba
             }
 
@@ -163,7 +164,8 @@ export class FileManager {
         } else {
             values = {
                 file_name: originalFilename||'',
-                file_type: mimetype||''
+                file_type: mimetype||'',
+                file_size: size
             }
         }
         item.values = mergeValues(values, item.values)
