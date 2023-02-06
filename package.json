@@ -38,6 +38,7 @@
     "jimp": "^0.16.1",
     "jpeg-js": "^0.4.3",
     "jsonwebtoken": "^8.5.1",
+    "kafkajs": "^2.2.3",
     "moment": "^2.29.1",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.1",
