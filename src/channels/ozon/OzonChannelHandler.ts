@@ -130,6 +130,9 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
             }
 
+            const tst2 = ''+item.values[channel.config.ozonIdAttr]
+            if (tst2.startsWith('task_id=')) return
+
             // try to find current status
             const url = 'https://api-seller.ozon.ru/v2/product/info'
             const request = {
