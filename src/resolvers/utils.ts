@@ -140,7 +140,11 @@ export function diff(obj1: any, obj2: any) {
 
         // If type2 is undefined it has been removed
         if (type2 === '[object Undefined]') {
-            diffs.deleted[key] = item1 !== null ? item1 + "" : null;
+            if (type1 !== '[object Object]') {
+                diffs.deleted[key] = item1 !== null ? item1 + "" : null;
+            } else {
+                diffs.deleted[key] = item1 !== null ? item1 : null;
+            }
             return;
         }
 
