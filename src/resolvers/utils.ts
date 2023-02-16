@@ -317,23 +317,24 @@ export async function processItemButtonActions(context: Context, buttonText: str
         return false
     })
 
-    return processItemButtonActions2(context, actions, item, data, buttonText)
+    return await processItemButtonActions2(context, actions, item, data, buttonText)
 }
 
-export async function processItemButtonActions2(context: Context, actions: Action[], item: Item, data: string, buttonText: string) {
+export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-    const valuesCopy = {...item.values}
-    const channelsCopy = {...item.channels}
-    const nameCopy = {...item.name}
+    const valuesCopy = item ? {...item.values} : {}
+    const channelsCopy = item ? {...item.channels} : {}
+    const nameCopy = item ? {...item.name} : {}
     const ret = await processActions(mng, actions, { Op: Op,
         event: 'Button:'+buttonText,
         data: data,
+        where: where,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS },
         buttonText: buttonText, 
-        item: makeItemProxy(item), values: valuesCopy, channels:channelsCopy, name: nameCopy,
+        item: item ? makeItemProxy(item) : null, values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -345,6 +346,26 @@ export async function processItemButtonActions2(context: Context, actions: Actio
     })
     return {channels:channelsCopy, values:valuesCopy, result: ret[0]}
 }
+
+export async function processTableButtonActions(context: Context, buttonText: string, item: Item | null, where: any) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const pathArr = item ? item.path.split('.').map((elem:string) => parseInt(elem)) : null
+    const actions = mng.getActions().filter(action => {
+        for (let i = 0; i < action.triggers.length; i++) {
+            const trigger = action.triggers[i]
+
+            const result = parseInt(trigger.type) === TriggerType.TableButton &&
+                trigger.itemButton === buttonText &&
+                ( (!trigger.itemType && !trigger.itemFrom) ||
+                (item && item.typeId === parseInt(trigger.itemType) && pathArr!.includes(parseInt(trigger.itemFrom))))
+            if (result) return true
+        }
+        return false
+    })
+
+    return await processItemButtonActions2(context, actions, item, null, buttonText, where)
+}
+
 
 export async function testAction(context: Context, action: Action, item: Item) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
@@ -837,7 +858,8 @@ class ActionUtils {
 
     public async saveFile(item: Item, filepath: string, mimetype: string | null, originalFilename: string | null, clean = false) {
         const fm = FileManager.getInstance()
-        await fm.saveFile(this.#context.getCurrentUser()!.tenantId, item, filepath, mimetype, originalFilename, clean)
+        var stats = FS.statSync(filepath)
+        await fm.saveFile(this.#context.getCurrentUser()!.tenantId, item, filepath, mimetype, originalFilename, stats.size, clean)
         item.fileOrigName = originalFilename || ''
         item.mimeType = mimetype || ''
     }
