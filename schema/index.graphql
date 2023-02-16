@@ -8,6 +8,7 @@ scalar UTCDateTime
 # import Query.*, Mutation.* from "attributes.graphql"
 # import Query.*, Mutation.* from "relations.graphql"
 # import Query.*, Mutation.* from "items.graphql"
+# import Query.*, Mutation.* from "importConfigs.graphql"
 # import Query.*, Mutation.* from "languages.graphql"
 # import Query.*, Mutation.* from "itemRelations.graphql"
 # import Query.*, Mutation.* from "lovs.graphql"

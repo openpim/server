@@ -8,6 +8,7 @@ import { Action } from './actions'
 import { Dashboard } from './dashboards'
 import { WhereOptions } from 'sequelize'
 import { Channel } from './channels'
+import { ImportConfig } from './importConfigs'
 
 import logger from '../logger'
 import NodeCache from 'node-cache'
@@ -19,6 +20,7 @@ export class ModelManager {
     private relations: Relation[] = []
     private languages: Language[] = []
     private channels: Channel[] = []
+    private importConfigs: ImportConfig[] = []
     private actions: Action[] = []
     private dashboards: Dashboard[] = []
     private actionsCache:any = {}
@@ -43,6 +45,10 @@ export class ModelManager {
 
     public getChannels(): Channel[] {
         return this.channels
+    }
+
+    public getImportConfigs(): ImportConfig[] {
+        return this.importConfigs
     }
 
     public getActions(): Action[] {
@@ -302,6 +308,7 @@ export class ModelsManager {
         await this.initActions(where)
         await this.initDashboards(where)
         await this.initChannels(where)
+        await this.initImportConfigs(where)
 
         logger.info('Data models were loaded')
     }
@@ -422,6 +429,22 @@ export class ModelsManager {
                 mng = this.tenantMap[chan.tenantId]
             }
             mng.getChannels().push(chan)
+        }
+    }
+
+    public async initImportConfigs(where: WhereOptions | undefined) {
+        const items = await ImportConfig.findAll({
+            where: where,
+            order: [['tenantId', 'DESC']]})
+        if (!items) return
+
+        let mng: ModelManager | null = null
+        for (var i = 0; i < items.length; i++) {
+            const importConfig = items[i];
+            if (!mng || mng.getTenantId() !== importConfig.tenantId) {
+                mng = this.tenantMap[importConfig.tenantId]
+            }
+            mng.getImportConfigs().push(importConfig)
         }
     }
 

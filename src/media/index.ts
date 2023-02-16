@@ -17,6 +17,8 @@ import contentDisposition = require('content-disposition')
 import { checkValues, filterValues, mergeValues, processItemActions, processItemRelationActions } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 import { Process } from '../models/processes'
+import { ImportConfig } from '../models/importConfigs'
+import { ImportManager } from './ImportManager'
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -512,4 +514,56 @@ export async function downloadProcessFile(context: Context, req: Request, res: R
     }
     hdrs['Content-Disposition'] = proc.fileName ? contentDisposition(proc.fileName) : 'attachment; filename="result.bin"'
     res.sendFile(process.env.FILES_ROOT! + proc.storagePath, {headers: hdrs})
+}
+
+export async function uploadImportFile(context: Context, req: Request, res: Response) {
+    const form = new IncomingForm({maxFileSize: 500*1024*1024, keepExtensions: true})
+    form.parse(req, async (err, fields, files) => {
+        try {
+            if (err) {
+                logger.error(err)
+                res.status(400).send(err)
+                return
+            }
+            context.checkAuth()
+
+            const mappingId =  <string>fields['mappingId']
+            if (!mappingId) throw new Error('Failed to find "mappingId" parameter')
+
+            const importConfig = await ImportConfig.findByPk(mappingId)
+            if (!importConfig) throw new Error('Failed to find importConfig with id ' + mappingId)
+
+            const file = <File>files['file']
+            if (!file) throw new Error('Failed to find "file" parameter')
+
+            const proc = await Process.build ({
+                identifier: 'importProcess' + Date.now(),
+                tenantId: context.getCurrentUser()!.tenantId,
+                createdBy: context.getCurrentUser()!.login,
+                updatedBy: context.getCurrentUser()!.login,
+                // todo: check this name
+                title: 'Import process for mapping ' + importConfig.name.en,
+                active: true,
+                status: 'active',
+                log: 'started',
+                runtime: {},
+                finishTime: null,
+                storagePath: '',
+                mimeType: '',
+                fileName: ''
+            })
+
+            const fm = FileManager.getInstance()
+            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, file.filepath, file.mimetype || '', file.originalFilename || '')
+            await proc.save()
+
+            const im = ImportManager.getInstance()
+            im.processFile(proc, importConfig, path)
+
+            res.status(200).send('OK')
+        } catch(error: any) {
+            logger.error(error)
+            res.status(400).send(error.message)
+        }
+    })
 }

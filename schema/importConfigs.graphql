@@ -1,0 +1,21 @@
+type Query {
+  getImportConfigs: [ImportConfiguration]
+}
+
+type Mutation {
+  createImportConfig(identifier: String!, name: LanguageDependentString!, type: Int!, mappings: [JSONObject]): ID!
+  updateImportConfig(id: ID!, name: LanguageDependentString, type: Int, mappings: [JSONObject]) : ID!
+  removeImportConfig(id: ID!) : Boolean!
+}
+
+type ImportConfiguration {
+  id: ID!
+  identifier: String!
+  name: LanguageDependentString!
+  type: Int!
+  mappings: [JSONObject]!
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}

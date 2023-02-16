@@ -14,12 +14,12 @@ import * as search from './search'
 import * as actions from './actions'
 import * as dashboards from './dashboards'
 import * as channels from './channels'
+import * as importConfigs from './importConfigs'
 import * as collections from './collections'
 import * as collectionItems from './collectionItems'
 import * as processes from './processes'
 
 import logger from '../logger'
-
 
 let sequelize:Sequelize
 
@@ -60,6 +60,7 @@ export async function initModels() {
     actions.init(sequelize)
     dashboards.init(sequelize)
     channels.init(sequelize)
+    importConfigs.init(sequelize)
     collections.init(sequelize)
     collectionItems.init(sequelize)
     processes.init(sequelize)
