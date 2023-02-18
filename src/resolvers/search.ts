@@ -449,7 +449,7 @@ export default {
             })
 
             if (data) {
-                if (data.user !== context.getCurrentUser()?.login) {
+                if (!data.public && data.user !== context.getCurrentUser()?.login) {
                     throw new Error('Failed to update columns configuration that belogs to another user by identifier: ' + identifier + ', tenant: ' + context.getCurrentUser()?.tenantId)
                 }
                 if (name) data.name = name

@@ -130,6 +130,9 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
             }
 
+            const tst2 = ''+item.values[channel.config.ozonIdAttr]
+            if (tst2.startsWith('task_id=')) return
+
             // try to find current status
             const url = 'https://api-seller.ozon.ru/v2/product/info'
             const request = {
@@ -469,13 +472,15 @@ export class OzonChannelHandler extends ChannelHandler {
                     continue
                 }
                 try {
-                    const value = await this.getValueByMapping(channel, attrConfig, item, language)
+                    let value = await this.getValueByMapping(channel, attrConfig, item, language)
                     if (value) {
+                        if (typeof value === 'string' || value instanceof String) value = value.trim()
                         const ozonAttrId = parseInt(attrConfig.id.substring(5))
                         const data = {complex_id:0, id: ozonAttrId, values: <any[]>[]}
                         if (Array.isArray(value)) {
                             for (let j = 0; j < value.length; j++) {
-                                const elem = value[j];
+                                let elem = value[j];
+                                if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
                                 const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, elem, attrConfig.options)
                                 if (!ozonValue) {
                                     const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
@@ -825,6 +830,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
                     })
                     const json = await res.json()
+                    // console.log('response: '+JSON.stringify(json))
                     dict = dict.concat(json.result)
                     next = json.has_next
                     if (dict.length === 0) throw new Error('No data for attribute dictionary: '+ozonAttrId+', for category: '+ozonCategoryId)

@@ -1,3 +1,4 @@
+import compression from 'compression'
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import bodyParser from 'body-parser';
 import { Buffer } from 'buffer';
@@ -27,6 +28,7 @@ if (process.env.OPENPIM_AUDIT_URL) process.env.AUDIT_URL = process.env.OPENPIM_A
 
 dotenv.config();
 const app = express();
+app.use(compression())
 app.use(bodyParser.json({limit: '500mb'}));
 
 (async () => {

@@ -11,7 +11,7 @@ export class ExtChannelHandler extends ChannelHandler {
             const chanExec = await this.createExecution(channel)
     
             const tempName = temp.path({prefix: 'openpim'})
-            const cmd = channel.config.extCmd.replace('{channelIdentifier}', channel.identifier).replace('{outputFile}', tempName).replace('{language}', language)
+            const cmd = channel.config.extCmd.replaceAll('{channelIdentifier}', channel.identifier).replaceAll('{outputFile}', tempName).replaceAll('{language}', language)
             logger.info('Starting program :' + cmd + ' channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
             const result: any = await this.asyncExec(cmd)
             logger.debug('exec finished for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)

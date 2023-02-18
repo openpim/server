@@ -69,6 +69,8 @@ export async function processDownload(context: Context, req: Request, res: Respo
 
 export async function processDownloadMain(context: Context, req: Request, res: Response, thumbnail: boolean) {
     let ident = req.params.identifier
+    const tst = ident.lastIndexOf('.')
+    if (tst !== -1) ident = ident.substring(0,tst)
     const inline = req.query.inline
 
     let data: any[] = await sequelize.query(
