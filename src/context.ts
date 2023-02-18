@@ -119,6 +119,8 @@ export default class Context {
                     if (role.configAccess && role.configAccess.lovs === 2) return true
                 case ConfigAccess.CHANNELS:
                     if (role.configAccess && role.configAccess.channels === 2) return true
+                case ConfigAccess.IMPORTCONFIGS:
+                    if (role.configAccess && role.configAccess.importConfigs === 2) return true
                 case ConfigAccess.ACTIONS:
                     if (role.configAccess && role.configAccess.actions === 2) return true
                 case ConfigAccess.DASHBOARDS:
@@ -155,6 +157,8 @@ export default class Context {
                     if (role.configAccess && (role.configAccess.lovs === 1 || role.configAccess.lovs === 2)) return true
                 case ConfigAccess.CHANNELS:
                     if (role.configAccess && (role.configAccess.channels === 1 || role.configAccess.channels === 2)) return true
+                case ConfigAccess.IMPORTCONFIGS:
+                    if (role.configAccess && (role.configAccess.importConfigs === 1 || role.configAccess.importConfigs === 2)) return true
                 case ConfigAccess.ACTIONS:
                     if (role.configAccess && (role.configAccess.actions === 1 || role.configAccess.actions === 2)) return true
                 case ConfigAccess.DASHBOARDS:
@@ -501,6 +505,7 @@ export enum ConfigAccess {
     CHANNELS,
     ACTIONS,
     DASHBOARDS,
+    IMPORTCONFIGS,
     COLLECTIONS,
     COLLECTIONITEMS
 }

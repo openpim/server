@@ -9,6 +9,7 @@ import dashResolvers from './dashboards'
 import searchResolvers from './search'
 import itemrelationsResolvers from './itemRelations'
 import importResolvers from './import'
+import importConfigResolvers from './importConfigs'
 import lovResolvers from './lovs'
 import auditResolvers from './audit'
 import chanResolvers from './channels'
@@ -72,6 +73,7 @@ export default {
         ...lovResolvers.Query,
         ...chanResolvers.Query,
         ...auditResolvers.Query,
+        ...importConfigResolvers.Query,
         ...colResolvers.Query,
         ...procResolvers.Query
     },
@@ -91,7 +93,8 @@ export default {
         ...lovResolvers.Mutation,
         ...chanResolvers.Mutation,
         ...colResolvers.Mutation,
-        ...procResolvers.Mutation
+        ...procResolvers.Mutation,
+        ...importConfigResolvers.Mutation
     },
     SearchResponse: {
         ...searchResolvers.SearchResponse
