@@ -366,7 +366,7 @@ export async function processTableButtonActions(context: Context, buttonText: st
         return false
     })
 
-    return await processItemButtonActions2(context, actions, item, null, buttonText, where)
+    return await processItemButtonActions2(context, actions, item, '', buttonText, where)
 }
 
 
