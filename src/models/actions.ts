@@ -17,7 +17,8 @@ export enum TriggerType {
   Button,
   AttrGroup,
   Attribute,
-  TableButton
+  TableButton,
+  ImportConfig
 }
 
 export class Action extends Base {
