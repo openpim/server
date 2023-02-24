@@ -142,7 +142,8 @@ export default {
                 where: {
                     itemId: {
                         [Op.in]: items
-                    }
+                    },
+                    collectionId
                 }    
             })
             return data
