@@ -538,13 +538,13 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
             const file = <File>files['file']
             if (!file) throw new Error('Failed to find "file" parameter')
 
-            const proc = await Process.build ({
+            const process = await Process.build ({
                 identifier: 'importProcess' + Date.now(),
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,
                 updatedBy: context.getCurrentUser()!.login,
-                // todo: check this name
-                title: 'Import process for mapping ' + importConfig.name.en,
+                // todo: check this name, should use correct language identifier
+                title: 'Import process for mapping ' + importConfig.name.ru,
                 active: true,
                 status: 'active',
                 log: 'started',
@@ -556,13 +556,13 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
             })
 
             const fm = FileManager.getInstance()
-            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, file.filepath, file.mimetype || '', file.originalFilename || '')
-            await proc.save()
+            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, process, file.filepath, file.mimetype || '', file.originalFilename || '')
+            await process.save()
 
             const im = ImportManager.getInstance()
-            im.processFile(proc, importConfig, path)
+            im.processImportFile(context, process, importConfig, path)
 
-            res.status(200).send('OK')
+            res.status(200).send({ result: 'OK'})
         } catch(error: any) {
             logger.error(error)
             res.status(400).send(error.message)

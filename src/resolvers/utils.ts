@@ -38,6 +38,8 @@ import { FileManager } from "../media/FileManager"
 import procResolvers from './processes'
 import { Process } from "../models/processes"
 
+import { ImportConfig } from '../models/importConfigs'
+
 export function filterChannels(context: Context, channels:any) {
     for (const prop in channels) {
         if (!context.canViewChannel(prop)) {
@@ -304,6 +306,35 @@ export async function processItemActions(context: Context, event: EventType, ite
     })
 }
 
+export async function processImportConfigActions(context: Context, event: EventType, importConfig: ImportConfig, rowData: string) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const actions = mng.getActions().filter(action => {
+        for (let i = 0; i < action.triggers.length; i++) {
+            const trigger = action.triggers[i]
+            const result = parseInt(trigger.type) === TriggerType.ImportConfig && 
+                parseInt(trigger.event) === event && 
+                importConfig.identifier === trigger.mappingIdentifier
+            if (result) return true
+        }
+        return false
+    })
+    return await processActions(mng, actions, { Op: Op,
+        event: EventType[event],
+        user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
+        utils: new ActionUtils(context),
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS },
+        importConfig,
+        rowData,
+        models: { 
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
+            Item,
+            ItemRelation
+        } 
+    })
+}
+
 export async function processItemButtonActions(context: Context, buttonText: string, item: Item, data: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
@@ -368,7 +399,6 @@ export async function processTableButtonActions(context: Context, buttonText: st
 
     return await processItemButtonActions2(context, actions, item, '', buttonText, where)
 }
-
 
 export async function testAction(context: Context, action: Action, item: Item) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
