@@ -2,20 +2,7 @@ import Context from '../context'
 import { sequelize } from '../models'
 import { Process } from '../models/processes'
 import { FindAndCountOptions, fn, literal, Op } from 'sequelize'
-
-function replaceOperations(obj: any) {
-    for (const prop in obj) {
-        let value = obj[prop]
-
-        if (prop.startsWith('OP_')) {
-            const operation = prop.substring(3)
-            delete obj[prop]
-            obj[Symbol.for(operation)] = value
-        }
-
-    }
-    return obj
-}
+import { replaceOperations } from './utils'
 
 export default {
     Query: {
@@ -28,7 +15,9 @@ export default {
             }
             const whereAdd = {createdBy: context.getCurrentUser()!.login}
             if (request.where) {
-                params.where = { [Op.and]: [whereAdd, replaceOperations(request.where)] }
+                const include = replaceOperations(request.where)
+                params.where = { [Op.and]: [whereAdd, request.where] }
+                if (include && include.length > 0) params.include = include
             } else {
                 params.where = whereAdd
             }

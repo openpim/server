@@ -6,7 +6,7 @@ import {VM, VMScript} from 'vm2'
 import Context from "../context"
 import { ItemRelation } from "../models/itemRelations"
 import { exec } from 'child_process'
-const { Op } = require("sequelize");
+const { Op, literal } = require("sequelize");
 import { sequelize } from '../models'
 import { QueryTypes } from 'sequelize'
 import audit, { ChangeType, ItemChanges, ItemRelationChanges } from '../audit'
@@ -39,6 +39,70 @@ import procResolvers from './processes'
 import { Process } from "../models/processes"
 
 import { ImportConfig } from '../models/importConfigs'
+import { CollectionItems } from "../models/collectionItems"
+
+export function replaceOperations(obj: any) {
+    let include = []
+    for (const prop in obj) {
+        let value = obj[prop]
+
+        if (typeof value === 'string' && value.startsWith('###:')) {
+            value = literal(value.substring(4))
+        }
+
+        if (typeof value === 'string' && value.startsWith('#DAY#')) {
+            const tst = value.substring(5)
+            const days = parseInt(tst)
+            if (!Number.isNaN(days)) value = moment().startOf('day').add(days, 'days').utc().format()
+        }
+
+        if (typeof value === 'string' && value.startsWith('#HOUR#')) {
+            const tst = value.substring(6)
+            const hours = parseInt(tst)
+            if (!Number.isNaN(hours)) value = moment().add(hours, 'hours').utc().format()
+        }
+
+        if (typeof value === 'string' && value.startsWith('#MIN#')) {
+            const tst = value.substring(5)
+            const min = parseInt(tst)
+            if (!Number.isNaN(min)) value = moment().add(min, 'minutes').utc().format()
+        }
+
+        if (prop.startsWith('OP_')) {
+            const operation = prop.substr(3)
+            delete obj[prop]
+            obj[Symbol.for(operation)] = value
+        }
+
+        if (prop === 'collectionId') {
+            include = [{as: "collectionItems", where: {"collectionId": value}}]
+            delete obj[prop]
+            fillInclude(include)
+        }
+
+        if (prop === 'include' && Array.isArray(value)) {
+            include = value
+            delete obj[prop]
+            fillInclude(include)
+        }
+        
+        if (prop !== 'include' && value === Object(value)) {
+            replaceOperations(value)
+        }
+    }
+    return include
+}
+function fillInclude(include: any[]) {
+    include.forEach(elem => {
+        if (elem.as && elem.as.endsWith('Item')) elem.model = Item
+        if (elem.as && elem.as.endsWith('Relation')) elem.model = ItemRelation
+        if (elem.as && elem.as.endsWith('collectionItems')) elem.model = CollectionItems
+
+        if (elem.where && elem.model !== CollectionItems) replaceOperations(elem.where)
+
+        if (elem.include && Array.isArray(elem.include)) fillInclude(elem.include)
+    })
+}
 
 export function filterChannels(context: Context, channels:any) {
     for (const prop in channels) {
@@ -355,6 +419,13 @@ export async function processItemButtonActions(context: Context, buttonText: str
 }
 
 export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null) {
+    let search:any
+    if (where) {
+        const include = replaceOperations(where)
+        search = {where: where}
+        if (include && include.length > 0) search.include = include
+    }
+
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const valuesCopy = item ? {...item.values} : {}
     const channelsCopy = item ? {...item.channels} : {}
@@ -362,7 +433,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
     const ret = await processActions(mng, actions, { Op: Op,
         event: 'Button:'+buttonText,
         data: data,
-        where: where,
+        where: search,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),

@@ -7,7 +7,7 @@ import { Relation } from '../models/relations'
 import { ItemRelation } from '../models/itemRelations'
 import { CollectionItems } from '../models/collectionItems'
 import { ModelsManager } from '../models/manager'
-import { filterChannels, filterValues } from './utils'
+import { filterChannels, filterValues, replaceOperations } from './utils'
 import { User, Role } from '../models/users'
 import { LOV } from '../models/lovs'
 import { SavedColumns, SavedSearch } from '../models/search'
@@ -46,73 +46,7 @@ query { search(
 { "targetRelation___relationId": 1 }]}
 */
 
-function replaceOperations(obj: any) {
-    let include = []
-    let sourceRelation = false
-    let targetRelation = false
-    let sourceItem = false
-    let targetItem = false
-    let collectionItems = false
-    for (const prop in obj) {
-        let value = obj[prop]
 
-        if (typeof value === 'string' && value.startsWith('###:')) {
-            value = literal(value.substring(4))
-        }
-
-        if (typeof value === 'string' && value.startsWith('#DAY#')) {
-            const tst = value.substring(5)
-            const days = parseInt(tst)
-            if (days != NaN) value = moment().startOf('day').add(days, 'days').utc().format()
-        }
-
-        if (typeof value === 'string' && value.startsWith('#HOUR#')) {
-            const tst = value.substring(6)
-            const hours = parseInt(tst)
-            if (hours != NaN) value = moment().add(hours, 'hours').utc().format()
-        }
-
-        if (typeof value === 'string' && value.startsWith('#MIN#')) {
-            const tst = value.substring(5)
-            const min = parseInt(tst)
-            if (min != NaN) value = moment().add(min, 'minutes').utc().format()
-        }
-
-        if (prop.startsWith('OP_')) {
-            const operation = prop.substr(3)
-            delete obj[prop]
-            obj[Symbol.for(operation)] = value
-        }
-
-        if (prop === 'collectionId') {
-            include = [{as: "collectionItems", where: {"collectionId": value}}]
-            delete obj[prop]
-            fillInclude(include)
-        }
-
-        if (prop === 'include' && Array.isArray(value)) {
-            include = value
-            delete obj[prop]
-            fillInclude(include)
-        }
-        
-        if (prop !== 'include' && value === Object(value)) {
-            replaceOperations(value)
-        }
-    }
-    return include
-}
-function fillInclude(include: any[]) {
-    include.forEach(elem => {
-        if (elem.as && elem.as.endsWith('Item')) elem.model = Item
-        if (elem.as && elem.as.endsWith('Relation')) elem.model = ItemRelation
-        if (elem.as && elem.as.endsWith('collectionItems')) elem.model = CollectionItems
-
-        if (elem.where && elem.model !== CollectionItems) replaceOperations(elem.where)
-
-        if (elem.include && Array.isArray(elem.include)) fillInclude(elem.include)
-    })
-}
 
 export function prepareWhere (context: Context, where: any) {
     const params: any = {}
