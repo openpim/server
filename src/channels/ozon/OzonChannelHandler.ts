@@ -640,6 +640,13 @@ export class OzonChannelHandler extends ChannelHandler {
         logger.info(log)
         if (channel.config.debug) context.log += log+'\n'
 
+        if (process.env.OPENPIM_OZON_EMULATION === 'true') {
+            const msg = 'Включена эмуляция работы, сообщение не было послано на Озон'
+            if (channel.config.debug) context.log += msg+'\n'
+            logger.info(msg)
+            return changedValues
+        }
+
         const res = await fetch(url, {
             method: 'post',
             body:    JSON.stringify(request),

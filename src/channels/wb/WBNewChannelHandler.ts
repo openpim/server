@@ -374,6 +374,14 @@ export class WBNewChannelHandler extends ChannelHandler {
                 let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
                 logger.info(msg)
                 if (channel.config.debug) context.log += msg+'\n'
+
+                if (process.env.OPENPIM_WB_EMULATION === 'true') {
+                    const msg = 'Включена эмуляция работы, сообщение не было послано на WB'
+                    if (channel.config.debug) context.log += msg+'\n'
+                    logger.info(msg)
+                    return
+                }
+        
                 const res = await fetch(imgUrl, {
                     method: 'post',
                     body:    JSON.stringify(imgRequest),
@@ -430,6 +438,13 @@ export class WBNewChannelHandler extends ChannelHandler {
         logger.info(msg)
         if (channel.config.debug) context.log += msg+'\n'
 
+        if (process.env.OPENPIM_WB_EMULATION === 'true') {
+            const msg = 'Включена эмуляция работы, сообщение не было послано на WB'
+            if (channel.config.debug) context.log += msg+'\n'
+            logger.info(msg)
+            return
+        }
+
         const res = await fetch(url, {
             method: 'post',
             body:    JSON.stringify(req),
@@ -462,64 +477,6 @@ export class WBNewChannelHandler extends ChannelHandler {
             }
         }
     }
-
-    async processItemImages(channel: Channel, item: Item, context: JobContext) {
-        const data:{value: string, units:string}[] = [] 
-        if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
-            const images: Item[] = await sequelize.query(
-                `SELECT a.*
-                    FROM "items" a, "itemRelations" ir, "types" t where 
-                    a."tenantId"=:tenant and 
-                    ir."itemId"=:itemId and
-                    a."id"=ir."targetId" and
-                    a."typeId"=t."id" and
-                    t."file"=true and
-                    coalesce(a."storagePath", '') != '' and
-                    ir."deletedAt" is null and
-                    a."deletedAt" is null and
-                    ir."relationId" in (:relations)
-                    order by a.id`, {
-                model: Item,
-                mapToModel: true,                     
-                replacements: { 
-                    tenant: channel.tenantId,
-                    itemId: item.id,
-                    relations: channel.config.imgRelations
-                }
-            })
-            if (images) {
-                for (let i = 0; i < images.length; i++) {
-                    const image = images[i];
-                    const form = new FormData()
-                    form.append('uploadfile', fs.createReadStream(process.env.FILES_ROOT + image.storagePath), {
-                        contentType: image.mimeType,
-                        filename: image.fileOrigName,
-                    })
-                    const headers = form.getHeaders()
-                    headers.Authorization = channel.config.wbToken
-                    const fileId = uuid.v4()
-                    headers['X-File-Id'] = fileId 
-                    context.log += 'Загружаю файл '+image.identifier+'\n'
-                    logger.info('Загружаю файл '+image.identifier)                
-                    const res = await fetch('https://suppliers-api.wildberries.ru/card/upload/file/multipart', {
-                        method: 'post',
-                        body:    form,
-                        headers: headers
-                    })
-                    if (res.status !== 200) {
-                        const msg = 'Ошибка загрузки файла на Wildberries: ' + res.statusText
-                        context.log += msg                      
-                        this.reportError(channel, item, msg)
-                        return
-                    } else {
-                        data.push({value: fileId, units:image.mimeType})
-                    }                                        
-                }
-            }
-        }
-        return data
-    }
-
 
     public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
         let data = this.cache.get('categories')
