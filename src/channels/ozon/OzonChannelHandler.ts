@@ -269,12 +269,14 @@ export class OzonChannelHandler extends ChannelHandler {
         let changed = false
         let valuesChanged = false
         const data = item.channels[channel.identifier]
-        const newChannels = JSON.parse(JSON.stringify(reloadedItem!.channels[channel.identifier]))
-        if (newChannels.status !== data.status || newChannels.message !== data.message) {
+        const newChannels:any = {}
+        newChannels[channel.identifier] = JSON.parse(JSON.stringify(reloadedItem!.channels[channel.identifier]))
+        const tmp = newChannels[channel.identifier]
+        if (tmp.status !== data.status || tmp.message !== data.message) {
             changed = true
-            newChannels.status = data.status
-            newChannels.message = data.message
-            if (data.syncedAt) newChannels.syncedAt = data.syncedAt
+            tmp.status = data.status
+            tmp.message = data.message
+            if (data.syncedAt) tmp.syncedAt = data.syncedAt
         }
         if (reloadedItem!.values[channel.config.ozonIdAttr] !== item.values[channel.config.ozonIdAttr]) {
             changed = true
