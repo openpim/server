@@ -10,6 +10,9 @@ import { ModelsManager } from '../../models/manager'
 import { Type } from '../../models/types'
 import { Op } from 'sequelize'
 import { ItemRelation } from '../../models/itemRelations'
+import Context from '../../context'
+import { processItemActions } from '../../resolvers/utils'
+import { EventType } from '../../models/actions'
 
 interface JobContext {
     log: string
@@ -266,50 +269,50 @@ export class OzonChannelHandler extends ChannelHandler {
         let changed = false
         let valuesChanged = false
         const data = item.channels[channel.identifier]
-        const reloadedData = reloadedItem!.channels[channel.identifier]
-        if (reloadedData.status !== data.status || reloadedData.message !== data.message) {
+        const newChannels = JSON.parse(JSON.stringify(reloadedItem!.channels[channel.identifier]))
+        if (newChannels.status !== data.status || newChannels.message !== data.message) {
             changed = true
-            reloadedData.status = data.status
-            reloadedData.message = data.message
-            if (data.syncedAt) reloadedData.syncedAt = data.syncedAt
-            reloadedItem!.changed('channels', true)
+            newChannels.status = data.status
+            newChannels.message = data.message
+            if (data.syncedAt) newChannels.syncedAt = data.syncedAt
         }
         if (reloadedItem!.values[channel.config.ozonIdAttr] !== item.values[channel.config.ozonIdAttr]) {
             changed = true
             valuesChanged = true
-            reloadedItem!.values[channel.config.ozonIdAttr] = item.values[channel.config.ozonIdAttr]
-            reloadedItem!.changed('values', true)
+            changedValues[channel.config.ozonIdAttr] = item.values[channel.config.ozonIdAttr]
         }
         if (reloadedItem!.values[channel.config.ozonFBSIdAttr] !== item.values[channel.config.ozonFBSIdAttr]) {
             changed = true
             valuesChanged = true
-            reloadedItem!.values[channel.config.ozonFBSIdAttr] = item.values[channel.config.ozonFBSIdAttr]
-            reloadedItem!.changed('values', true)
+            changedValues[channel.config.ozonFBSIdAttr] = item.values[channel.config.ozonFBSIdAttr]
         }
         if (reloadedItem!.values[channel.config.ozonFBOIdAttr] !== item.values[channel.config.ozonFBOIdAttr]) {
             changed = true
             valuesChanged = true
-            reloadedItem!.values[channel.config.ozonFBOIdAttr] = item.values[channel.config.ozonFBOIdAttr]
-            reloadedItem!.changed('values', true)
+            changedValues[channel.config.ozonFBOIdAttr] = item.values[channel.config.ozonFBOIdAttr]
         }
         if (changedValues && Object.keys(changedValues).length > 0) {
             changed = true
             valuesChanged = true
-            for (const prop in changedValues) {
-                reloadedItem!.values[prop] = changedValues[prop]
-            }
-            reloadedItem!.changed('values', true)
         }
         if (changed) {
-            if (valuesChanged) { // hardcore for MS
-                if (reloadedItem!.channels['ms'] && reloadedItem!.channels['ms'].status) {
-                    reloadedItem!.channels['ms'] = {status: 1, submittedAt: Date.now(), submittedBy: "system", message: ""}
-                    reloadedItem!.changed('channels', true)
-                }
+            const ctx = Context.createAs("admin", channel.tenantId)
+
+            await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.identifier, reloadedItem!.name, changedValues, newChannels, false, false)
+
+            if (valuesChanged) { 
+                reloadedItem!.values = {...reloadedItem!.values, ...changedValues}
+                reloadedItem!.changed('values', true)
             }
+
+            reloadedItem!.channels = {...reloadedItem!.channels, ...newChannels}
+            reloadedItem!.changed('channels', true)
+        
             await sequelize.transaction(async (t) => {
                 await reloadedItem!.save({transaction: t})
             })
+
+            await processItemActions(ctx, EventType.AfterUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, reloadedItem!.values, reloadedItem!.channels, false, false)
         }
     }
 
