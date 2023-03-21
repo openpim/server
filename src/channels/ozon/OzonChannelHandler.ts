@@ -264,7 +264,7 @@ export class OzonChannelHandler extends ChannelHandler {
         await this.saveItemIfChanged(channel, item)
     }
 
-    async saveItemIfChanged(channel: Channel, item: Item, changedValues:any = null) {
+    async saveItemIfChanged(channel: Channel, item: Item, changedValues:any = {}) {
         const reloadedItem = await Item.findByPk(item.id) // refresh item from DB (other channels can already change it)
         let changed = false
         let valuesChanged = false
