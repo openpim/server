@@ -211,7 +211,7 @@ export class ModelManager {
 export class ModelsManager {
     private static instance: ModelsManager
     private tenantMap: Record<string, ModelManager> = {}
-    private channelTypes: number[] = [1, 5] // external and external with mapping by default
+    private channelTypes: number[] = [1, 5, 6] // external and external with mapping and MDM by default
     
     private constructor() { }
    
