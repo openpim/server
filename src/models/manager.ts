@@ -191,7 +191,7 @@ export class ModelManager {
         return attr ? {attr:attr, groups:groups} : null
     }
 
-    public getAttributeByIdentifier(identifier: string) : { attr: Attribute, groups: AttrGroup[] } | null {
+    public getAttributeByIdentifier(identifier: string, firstOnly: boolean = false) : { attr: Attribute, groups: AttrGroup[] } | null {
         const groups: AttrGroup[] = []
         let attr: Attribute | null = null
         for (var i = 0; i < this.attrGroups.length; i++) {
@@ -200,6 +200,7 @@ export class ModelManager {
             for (var j = 0; j < attributes.length; j++) {
                 if (attributes[j].identifier === identifier) {
                     attr = attributes[j]
+                    if (firstOnly) return {attr:attr, groups: [group.getGroup()]}
                     groups.push(group.getGroup())
                 }
             }

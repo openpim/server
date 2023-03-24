@@ -200,7 +200,7 @@ export function isObjectEmpty(obj:any) {
 
 export function checkValues(mng: ModelManager, values: any) {
     for(const prop in values) {
-        const attr = mng.getAttributeByIdentifier(prop)?.attr
+        const attr = mng.getAttributeByIdentifier(prop, true)?.attr
         if (attr && attr.pattern) {
             const regex = XRegExp(attr.pattern, 'g')
             if (attr.languageDependent) {
