@@ -28,7 +28,7 @@ function generateOrder(order: string[][], mng: ModelManager) {
             const prop = field.substring(idx+1)
             result += '('+obj+"->>'"+prop+"')"
             if (obj === 'values') {
-                const attr = mng.getAttributeByIdentifier(prop)
+                const attr = mng.getAttributeByIdentifier(prop, true)
                 if (attr && (attr.attr.type === 3 || attr.attr.type === 4 || attr.attr.type === 7) ) { // integer, float, lov
                     result += '::numeric'
                 }

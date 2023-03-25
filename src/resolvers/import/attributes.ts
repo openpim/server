@@ -49,7 +49,7 @@ export async function importAttribute(context: Context, config: IImportConfig, a
 
     try {
         const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-        const attribute = mng.getAttributeByIdentifier(attr.identifier)
+        const attribute = mng.getAttributeByIdentifier(attr.identifier, true)
         if (attr.delete) {
             if (!attribute) {
                 result.addError(ReturnMessage.AttributeNotFound)
