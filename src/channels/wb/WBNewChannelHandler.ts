@@ -168,13 +168,17 @@ export class WBNewChannelHandler extends ChannelHandler {
                     const json = await res.json()
                     if (channel.config.debug) context.log += 'Ответ от WB '+JSON.stringify(json)+'\n'
                     if (json.data[0]?.imtID) {
-                        if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.data[0].imtID
-                        if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.data[0].nmID
-                        item.changed('values', true)
-                        item.channels[channel.identifier].status = 2
+                        let status = 2
+                        // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
+                        if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) status = 1
+                        item.channels[channel.identifier].status = status
                         item.channels[channel.identifier].message = ""
                         item.channels[channel.identifier].syncedAt = Date.now()
                         item.changed('channels', true)
+                        
+                        if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.data[0].imtID
+                        if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.data[0].nmID
+                        item.changed('values', true)
                     } else {
                         context.log += 'новых данных не получено\n'
                     }
