@@ -155,7 +155,7 @@ export default {
                 throw new Error('Failed to find attribute group by id: ' + nGroupId + ', tenant: ' + mng.getTenantId())
             }
 
-            if (mng.getAttributeByIdentifier(identifier) !== null) {
+            if (mng.getAttributeByIdentifier(identifier, true) !== null) {
                 throw new Error('Identifier already exists: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 

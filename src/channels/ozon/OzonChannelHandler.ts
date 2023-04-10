@@ -10,6 +10,9 @@ import { ModelsManager } from '../../models/manager'
 import { Type } from '../../models/types'
 import { Op } from 'sequelize'
 import { ItemRelation } from '../../models/itemRelations'
+import Context from '../../context'
+import { processItemActions } from '../../resolvers/utils'
+import { EventType } from '../../models/actions'
 
 interface JobContext {
     log: string
@@ -261,55 +264,57 @@ export class OzonChannelHandler extends ChannelHandler {
         await this.saveItemIfChanged(channel, item)
     }
 
-    async saveItemIfChanged(channel: Channel, item: Item, changedValues:any = null) {
+    async saveItemIfChanged(channel: Channel, item: Item, changedValues:any = {}) {
         const reloadedItem = await Item.findByPk(item.id) // refresh item from DB (other channels can already change it)
         let changed = false
         let valuesChanged = false
         const data = item.channels[channel.identifier]
-        const reloadedData = reloadedItem!.channels[channel.identifier]
-        if (reloadedData.status !== data.status || reloadedData.message !== data.message) {
+        const newChannels:any = {}
+        newChannels[channel.identifier] = JSON.parse(JSON.stringify(reloadedItem!.channels[channel.identifier]))
+        const tmp = newChannels[channel.identifier]
+        if (tmp.status !== data.status || tmp.message !== data.message) {
             changed = true
-            reloadedData.status = data.status
-            reloadedData.message = data.message
-            if (data.syncedAt) reloadedData.syncedAt = data.syncedAt
-            reloadedItem!.changed('channels', true)
+            tmp.status = data.status
+            tmp.message = data.message
+            if (data.syncedAt) tmp.syncedAt = data.syncedAt
         }
         if (reloadedItem!.values[channel.config.ozonIdAttr] !== item.values[channel.config.ozonIdAttr]) {
             changed = true
             valuesChanged = true
-            reloadedItem!.values[channel.config.ozonIdAttr] = item.values[channel.config.ozonIdAttr]
-            reloadedItem!.changed('values', true)
+            changedValues[channel.config.ozonIdAttr] = item.values[channel.config.ozonIdAttr]
         }
         if (reloadedItem!.values[channel.config.ozonFBSIdAttr] !== item.values[channel.config.ozonFBSIdAttr]) {
             changed = true
             valuesChanged = true
-            reloadedItem!.values[channel.config.ozonFBSIdAttr] = item.values[channel.config.ozonFBSIdAttr]
-            reloadedItem!.changed('values', true)
+            changedValues[channel.config.ozonFBSIdAttr] = item.values[channel.config.ozonFBSIdAttr]
         }
         if (reloadedItem!.values[channel.config.ozonFBOIdAttr] !== item.values[channel.config.ozonFBOIdAttr]) {
             changed = true
             valuesChanged = true
-            reloadedItem!.values[channel.config.ozonFBOIdAttr] = item.values[channel.config.ozonFBOIdAttr]
-            reloadedItem!.changed('values', true)
+            changedValues[channel.config.ozonFBOIdAttr] = item.values[channel.config.ozonFBOIdAttr]
         }
         if (changedValues && Object.keys(changedValues).length > 0) {
             changed = true
             valuesChanged = true
-            for (const prop in changedValues) {
-                reloadedItem!.values[prop] = changedValues[prop]
-            }
-            reloadedItem!.changed('values', true)
         }
         if (changed) {
-            if (valuesChanged) { // hardcore for MS
-                if (reloadedItem!.channels['ms'] && reloadedItem!.channels['ms'].status) {
-                    reloadedItem!.channels['ms'] = {status: 1, submittedAt: Date.now(), submittedBy: "system", message: ""}
-                    reloadedItem!.changed('channels', true)
-                }
+            const ctx = Context.createAs("admin", channel.tenantId)
+
+            await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.identifier, reloadedItem!.name, changedValues, newChannels, false, false)
+
+            if (valuesChanged) { 
+                reloadedItem!.values = {...reloadedItem!.values, ...changedValues}
+                reloadedItem!.changed('values', true)
             }
+
+            reloadedItem!.channels = {...reloadedItem!.channels, ...newChannels}
+            reloadedItem!.changed('channels', true)
+        
             await sequelize.transaction(async (t) => {
                 await reloadedItem!.save({transaction: t})
             })
+
+            await processItemActions(ctx, EventType.AfterUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, reloadedItem!.values, reloadedItem!.channels, false, false)
         }
     }
 
@@ -639,6 +644,13 @@ export class OzonChannelHandler extends ChannelHandler {
         const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
         logger.info(log)
         if (channel.config.debug) context.log += log+'\n'
+
+        if (process.env.OPENPIM_OZON_EMULATION === 'true') {
+            const msg = 'Включена эмуляция работы, сообщение не было послано на Озон'
+            if (channel.config.debug) context.log += msg+'\n'
+            logger.info(msg)
+            return changedValues
+        }
 
         const res = await fetch(url, {
             method: 'post',

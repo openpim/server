@@ -232,7 +232,7 @@ export abstract class ChannelHandler {
     if (!attrValue) return attrValue
 
     const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
-    const attrNode = mng.getAttributeByIdentifier(attrIdent)
+    const attrNode = mng.getAttributeByIdentifier(attrIdent, true)
     if (attrNode) {
       const attr = attrNode.attr
       if (attr.lov) {

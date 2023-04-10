@@ -99,7 +99,7 @@ export default {
 
                     const attrIdentifier = path[0]
                     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-                    const attr = mng.getAttributeByIdentifier(attrIdentifier)?.attr
+                    const attr = mng.getAttributeByIdentifier(attrIdentifier, true)?.attr
 
                     if (attr) {
                         if (attr.lov) {
