@@ -8,6 +8,8 @@ import { sequelize } from '../../models'
 import { FileManager } from "../../media/FileManager"
 import * as fs from 'fs'
 import { ItemRelation } from "../../models/itemRelations"
+import { ModelManager, ModelsManager } from "../../models/manager"
+import { Attribute } from "../../models/attributes"
 
 const dateFormat = require("dateformat")
 
@@ -249,6 +251,31 @@ export class YMChannelHandler extends ChannelHandler {
                 }
             }
 
+            if (categoryConfig.attrGroups && categoryConfig.attrGroups.length > 0) {
+                // TODO
+                const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
+                const groupIds = categoryConfig.attrGroups.map((elem:any) => parseInt(elem))
+                const attrs = this.getAttributesForGroups(mng, item, groupIds)
+                for (let i = 0; i < attrs.length; i++) {
+                    const attr = attrs[i]
+                    let name = attr.name.ru
+                    const idx = name.indexOf(' (')
+                    if (idx != -1) name = name.substring(0, idx)
+                    const paramConfig = {id:name, attrIdent: attr.identifier}
+                    const value = await this.getValueByMapping(channel, paramConfig, item, language)
+                    if (value) {
+                        if (!offer.param) offer.param =[]
+                        if (Array.isArray(value)) {
+                            value.forEach(elem => {
+                                offer.param.push({$:{name: paramConfig.id}, _: elem})
+                            })
+                        } else {
+                            offer.param.push({$:{name: paramConfig.id}, _: value})
+                        }
+                    }
+                }
+            }
+
             offers.push(offer)
             context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
             data.status = 2
@@ -261,6 +288,29 @@ export class YMChannelHandler extends ChannelHandler {
             this.reportError(channel, item, msg)
         }
     }
+
+    private getAttributesForGroups(mng: ModelManager, item: Item, groupIds?: number[]) {
+        const attrArr: Attribute[] = []
+        const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
+
+        mng.getAttrGroups().forEach(group => {
+            if (group.getGroup().visible && (!groupIds || groupIds.includes(group.getGroup().id))) {
+                group.getAttributes().forEach(attr => {
+                    if (attr.valid.includes(item.typeId)) {
+                        for (let i=0; i<attr.visible.length; i++ ) {
+                            const visible: number = attr.visible[i]
+                            if (pathArr.includes(visible)) {
+                                if (!attrArr.find(tst => tst.identifier === attr.identifier)) attrArr.push(attr)
+                                break
+                            }
+                        }
+                    }
+                })
+            }
+        })
+        return attrArr
+    }
+
 
     private async processCategories(channel: Channel, yml: any, language: string, context: JobContext) {
         if (!channel.config.ymCategoryFrom) {
