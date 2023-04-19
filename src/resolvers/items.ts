@@ -420,7 +420,7 @@ export default {
                 return item
             }
 
-            let itemDiff: AuditItem
+            let itemDiff: AuditItem | null = null
             if (channels) {
                 filterEditChannels(context, channels)
                 checkSubmit(context, channels)
@@ -443,7 +443,7 @@ export default {
 
             await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false)
 
-            if (audit.auditEnabled()) {
+            if (audit.auditEnabled() && itemDiff) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }
 
