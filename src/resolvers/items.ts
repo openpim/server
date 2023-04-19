@@ -428,11 +428,11 @@ export default {
                 processDeletedChannels(item.channels)
             }
             if (values) {
-                if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values}, {name: name, values: values})
+                if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values}, {name: name || item.name, values: values})
                 item.values = mergeValues(values, item.values)
                 item.changed("values", true)
             } else {
-                if (audit.auditEnabled()) itemDiff = diff({name: item.name}, {name: name})
+                if (audit.auditEnabled() && name) itemDiff = diff({name: item.name}, {name: name})
             }
 
             if (name) item.name = name

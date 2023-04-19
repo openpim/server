@@ -28,7 +28,7 @@ class Audit {
             data: item
         }
         try {
-            await this.getClient().index({
+            this.getClient().index({
                 index: "items",
                 body: body
             })
@@ -49,7 +49,7 @@ class Audit {
                 data: item
             }
             try {
-            await this.getClient().index({
+            this.getClient().index({
                 index: "item_relations",
                 body: body
             })
