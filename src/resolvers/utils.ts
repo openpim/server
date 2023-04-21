@@ -40,6 +40,7 @@ import { Process } from "../models/processes"
 
 import { ImportConfig } from '../models/importConfigs'
 import { CollectionItems } from "../models/collectionItems"
+import { ChannelExecution } from "../models/channels"
 
 export function replaceOperations(obj: any) {
     let include = []
@@ -1202,4 +1203,21 @@ class ActionUtils {
         await fm.saveProcessFile(this.#context.getCurrentUser()!.tenantId, process, filepath, mimetype || '', originalFilename || '', clean)
     }
 
+    public async createChannelExecution(channelId: number, status: number, startTime: Date, finishTime: Date, log: string) {
+        const chanExec = await sequelize.transaction(async (t:any) => {
+            return await ChannelExecution.create({
+                tenantId: this.#context.getCurrentUser()!.tenantId,
+                channelId: channelId,
+                status: status,
+                startTime: startTime,
+                finishTime: finishTime,
+                storagePath: '',
+                log: log,
+                createdBy: 'system',
+                updatedBy: 'system',
+            }, { transaction: t })
+        })
+        chanExec.save()
+        return chanExec
+    }
 }
