@@ -171,14 +171,14 @@ export class OzonChannelHandler extends ChannelHandler {
                     if (channel.config.ozonFBSIdAttr) {
                         const fbs = result.sources.find((elem: any) => elem.source === 'fbs')
                         if (fbs) {
-                            item.values[channel.config.ozonFBSIdAttr] = fbs.sku
+                            item.values[channel.config.ozonFBSIdAttr] = ''+fbs.sku
                             item.changed('values', true)
                         }
                     }
                     if (channel.config.ozonFBOIdAttr) {
                         const fbo = result.sources.find((elem: any) => elem.source === 'fbo')
                         if (fbo) {
-                            item.values[channel.config.ozonFBOIdAttr] = fbo.sku
+                            item.values[channel.config.ozonFBOIdAttr] = ''+fbo.sku
                             item.changed('values', true)
                         }
                     }
