@@ -21,6 +21,8 @@ type Asset {
   typeId: ID!
   identifier: String!
   name: LanguageDependentString!
+  relationName: LanguageDependentString!
+  relationId: ID!
   image: Boolean!
   mainImage: Boolean!
   mimeType: String!

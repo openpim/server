@@ -202,7 +202,8 @@ export default {
                 const skipRelationIds = mng.getRelations().filter(rel => !context.canViewItemRelation(rel.id) || rel.options.some((option:any) => option.name === 'skipInAssets' && option.value === 'true')).map(rel => rel.id)
 
                 const data: any[] = await sequelize.query(
-                    `SELECT a."id", a."typeId", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName"
+                    `SELECT a."id", a."typeId", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName",
+                        r."name" as "relationName", r.id as "relationId"
                         FROM "items" a, "itemRelations" ir, "types" t, "relations" r where 
                         a."tenantId"=:tenant and 
                         ir."itemId"=:itemId and
@@ -229,6 +230,8 @@ export default {
                         typeId: elem.typeId, 
                         identifier: elem.identifier,
                         name: elem.name,
+                        relationName: elem.relationName,
+                        relationId: elem.relationId,
                         mimeType: elem.mimeType,
                         fileOrigName: elem.fileOrigName,
                         mainImage: type.mainImage === elem.relationId, 
