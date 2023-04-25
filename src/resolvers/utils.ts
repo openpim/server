@@ -421,12 +421,15 @@ export async function processItemButtonActions(context: Context, buttonText: str
 
 export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null) {
     let search:any
+    console.log(111, where, JSON.stringify(where))
     if (where) {
-        const include = replaceOperations(where)
-        search = {where: where}
+        const whereObj = JSON.parse(where)
+        const include = replaceOperations(whereObj)
+        search = {where: whereObj}
         if (include && include.length > 0) search.include = include
     }
 
+    console.log(222, search, JSON.stringify(search))
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const valuesCopy = item ? {...item.values} : {}
     const channelsCopy = item ? {...item.channels} : {}
@@ -435,6 +438,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
         event: 'Button:'+buttonText,
         data: data,
         where: search,
+        whereAsString: where,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
