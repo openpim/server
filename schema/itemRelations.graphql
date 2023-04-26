@@ -7,8 +7,8 @@ type Query {
 }
 
 type Mutation {
-  createItemRelation(identifier: String!, itemId: ID!, relationId: ID!, targetId: ID!, values: JSONObject): ID!
-  updateItemRelation(id: ID!, itemId: ID, targetId: ID, values: JSONObject) : ID!
+  createItemRelation(identifier: String!, itemId: ID!, relationId: ID!, targetId: ID!, values: JSONObject): ItemRelation!
+  updateItemRelation(id: ID!, itemId: ID, targetId: ID, values: JSONObject) : ItemRelation!
   removeItemRelation(id: ID!) : Boolean!
 }
 

@@ -271,7 +271,7 @@ export default {
                 audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
             }
 
-            return itemRelation.id
+            return itemRelation
         },
         updateItemRelation: async (parent: any, { id, itemId, targetId, values }: any, context: Context) => {
             context.checkAuth()
@@ -372,7 +372,7 @@ export default {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
 
-            return itemRelation.id
+            return itemRelation
         },
         removeItemRelation: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
