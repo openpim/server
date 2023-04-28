@@ -288,7 +288,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         }
 
         // request to WB
-        let request:any = {vendorCode:productCode, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: [barcode]}]}
+        let request:any = {vendorCode:productCode, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: [''+barcode]}]}
 
         const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
