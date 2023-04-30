@@ -457,7 +457,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
     return {channels:channelsCopy, values:valuesCopy, result: ret[0]}
 }
 
-export async function processTableButtonActions(context: Context, buttonText: string, item: Item | null, where: any) {
+export async function processTableButtonActions(context: Context, buttonText: string, item: Item | null, where: any, data: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item ? item.path.split('.').map((elem:string) => parseInt(elem)) : null
     const actions = mng.getActions().filter(action => {
@@ -473,7 +473,7 @@ export async function processTableButtonActions(context: Context, buttonText: st
         return false
     })
 
-    return await processItemButtonActions2(context, actions, item, '', buttonText, where)
+    return await processItemButtonActions2(context, actions, item, data, buttonText, where)
 }
 
 export async function testAction(context: Context, action: Action, item: Item) {

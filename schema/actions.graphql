@@ -7,7 +7,7 @@ type Mutation {
   updateAction(id: ID!, name: LanguageDependentString, code: String, order: Int, triggers: JSON) : ID!
   removeAction(id: ID!) : Boolean!
   executeButtonAction(itemId: ID!, buttonText: String!, data: String) : ButtonActionResult!
-  executeTableButtonAction(itemId: ID, buttonText: String!, where: String!) : ButtonActionResult!
+  executeTableButtonAction(itemId: ID, buttonText: String!, where: String!, data: String) : ButtonActionResult!
   executeAction(itemId: ID!, actionIdentifier: ID!, data: String) : ButtonActionResult!
   testAction(itemId: ID!, actionId: ID!) : ActionTestResult
 }
