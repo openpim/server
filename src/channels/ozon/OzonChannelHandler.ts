@@ -300,16 +300,21 @@ export class OzonChannelHandler extends ChannelHandler {
         if (changed) {
             const ctx = Context.createAs("admin", channel.tenantId)
 
-            await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.identifier, reloadedItem!.name, changedValues, newChannels, false, false)
+            try {
+                await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.identifier, reloadedItem!.name, changedValues, newChannels, false, false)
 
-            if (valuesChanged) { 
-                reloadedItem!.values = {...reloadedItem!.values, ...changedValues}
-                reloadedItem!.changed('values', true)
+                if (valuesChanged) { 
+                    reloadedItem!.values = {...reloadedItem!.values, ...changedValues}
+                    reloadedItem!.changed('values', true)
+                }
+
+            } catch (err:any) {
+                tmp.status = 3
+                tmp.message = 'Ошибка: '+err.message
             }
-
             reloadedItem!.channels = {...reloadedItem!.channels, ...newChannels}
             reloadedItem!.changed('channels', true)
-        
+    
             await sequelize.transaction(async (t) => {
                 await reloadedItem!.save({transaction: t})
             })
