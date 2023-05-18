@@ -427,7 +427,7 @@ export class OzonChannelHandler extends ChannelHandler {
         product.height = height
         product.width = width
         product.dimension_unit = 'mm'
-        product.vat = vat
+        product.vat = ''+vat
         product.name = name
 
         const priceOldConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#oldprice')
