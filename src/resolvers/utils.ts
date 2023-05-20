@@ -276,12 +276,12 @@ export function checkValues(mng: ModelManager, values: any) {
             if (attr.languageDependent) {
                 for(const lang in values[prop]) {
                     const value = values[prop][lang] ? '' + values[prop][lang] : ''
-                    if (!regex.test(value)) {
-                        let str = 'Wrong value: ' + value + ' for pattern: ' + attr.pattern
+                    if (value && !regex.test(value)) {
+                        let str = 'Wrong value: ' + value + ' for pattern: ' + attr.pattern + ', for attribute: ' + attr.identifier
                         if (attr.errorMessage) {
                             for (const prop in attr.errorMessage) {
                                 if (attr.errorMessage[prop]) {
-                                    str = attr.errorMessage[prop]
+                                    str = attr.identifier + ' - ' + attr.errorMessage[prop]
                                     break
                                 }
                             }
@@ -291,12 +291,12 @@ export function checkValues(mng: ModelManager, values: any) {
                 }
             } else {
                 const value = values[prop] ? '' + values[prop] : ''
-                if (!regex.test(value)) {
-                    let str = 'Wrong value: ' + value + ' for pattern: ' + attr.pattern
+                if (value && !regex.test(value)) {
+                    let str = 'Wrong value: ' + value + ' for pattern: ' + attr.pattern + ', for attribute: ' + attr.identifier
                     if (attr.errorMessage) {
                         for (const prop in attr.errorMessage) {
                             if (attr.errorMessage[prop]) {
-                                str = attr.errorMessage[prop]
+                                str = attr.identifier + ' - ' + attr.errorMessage[prop]
                                 break
                             }
                         }
