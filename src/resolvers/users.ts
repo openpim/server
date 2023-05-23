@@ -6,6 +6,7 @@ import { GraphQLError } from 'graphql';
 import bcrypt from 'bcryptjs';
 import { ModelsManager, UserWrapper } from '../models/manager';
 import { Op, literal } from 'sequelize'
+import { cleaningDatabase } from './utils/cleaningDatabase'
 
 import logger from '../logger'
 import audit from '../audit'
@@ -306,7 +307,7 @@ export default {
 
             return user.id
         },
-        updateUser: async (parent: any, { id, name, password, email, roles, options }: any, context: Context) => {
+        updateUser: async (parent: any, { id, name, password, email, roles, props, options }: any, context: Context) => {
             context.checkAuth()
             const nId = parseInt(id)
             if (context.getCurrentUser()?.id !== nId && !context.canEditConfig(ConfigAccess.USERS)) 
@@ -357,6 +358,7 @@ export default {
 
                 wrapper.setRoles(userRoles)
             }
+            if (props != null) user.props = props
             if (options != null) user.options = options
             user.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
