@@ -80,6 +80,11 @@ export class cleaningDatabase {
 
                 if (fs.existsSync(file+'_thumb.jpg')) fs.unlinkSync(file+'_thumb.jpg')
                 if (fs.existsSync(file)) fs.unlinkSync(file)
+                else {
+                    msg = 'Failed to find file: ' + file
+                    log += msg + '\n'
+                    logger.info(msg)
+                }
                 ids.push(item.id)
             }
 
@@ -107,6 +112,11 @@ export class cleaningDatabase {
                 if (item.storagePath === '') continue
                 const file = openpimDir + item.storagePath
                 if (fs.existsSync(file)) fs.unlinkSync(file)
+                else {
+                    msg = 'Failed to find file: ' + file
+                    log += msg + '\n'
+                    logger.info(msg)
+                }
                 execIds.push(item.id)
             }
 
@@ -134,6 +144,11 @@ export class cleaningDatabase {
                 if (item.storagePath === '') continue
                 const file = openpimDir + item.storagePath
                 if (fs.existsSync(file)) fs.unlinkSync(file)
+                else {
+                    msg = 'Failed to find file: ' + file
+                    log += msg + '\n'
+                    logger.info(msg)
+                }
                 procIds.push(item.id)
             }
 
