@@ -341,7 +341,7 @@ export class ModelsManager {
         for (var i = 0; i < users.length; i++) {
             const user = users[i];
 
-            if (user?.props?.startClean) cleaningDatabase.Job(user)
+            if (user?.props?.startClean) cleaningDatabase.RunJob(user)
 
             if (user.tenantId === '0') continue // super user, skip it
 

@@ -364,6 +364,9 @@ export default {
             await sequelize.transaction(async (t) => {
                 await user.save({transaction: t})
             })
+
+            cleaningDatabase.RunJob(user)
+
             return user.id
         },
         removeUser: async (parent: any, { id }: any, context: Context) => {
