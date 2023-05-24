@@ -88,12 +88,12 @@ export class cleaningDatabase {
                 ids.push(item.id)
             }
 
-            for (let i in ids) {
+            for (let i = 0; i < ids.length; i++) {    
                 const items3 : any = await sequelize.query(`delete from "items" where id = ` + ids[i])
-                msg = items3[1].rowCount + ' items with files were deleted'
-                log += msg + '\n'
-                logger.info(msg)
             }
+            msg = 'Items with files were deleted'
+            log += msg + '\n'
+            logger.info(msg)
 
             // channel executions without files
             const exec1 : any = await sequelize.query(`delete from "channels_exec" where ("storagePath" is null or trim("storagePath") = '')`+queryAdd2)
@@ -120,12 +120,12 @@ export class cleaningDatabase {
                 execIds.push(item.id)
             }
 
-            for (let i in execIds) {
+            for (let i = 0; i < execIds.length; i++) {    
                 const exec3 : any = await sequelize.query(`delete from "channels_exec" where id = ` + execIds[i])
-                msg = exec3[1].rowCount + ' channel executions with files were deleted'
-                log += msg + '\n'
-                logger.info(msg)
             }
+            msg = 'Channel executions with files were deleted'
+            log += msg + '\n'
+            logger.info(msg)
 
             // processes without files
             const proc1 : any = await sequelize.query(`delete from "processes" where ("storagePath" is null or trim("storagePath") = '')`+queryAdd2)
@@ -152,12 +152,12 @@ export class cleaningDatabase {
                 procIds.push(item.id)
             }
 
-            for (let i in procIds) {
+            for (let i = 0; i < procIds.length; i++) {    
                 const proc3 : any = await sequelize.query(`delete from "processes" where id = ` + procIds[i])
-                msg = proc3[1].rowCount + ' processes with files were deleted'
-                log += msg + '\n'
-                logger.info(msg)
             }
+            msg = 'Processes with files were deleted'
+            log += msg + '\n'
+            logger.info(msg)
 
             msg = 'Cleanup job finished: ' + new Date()
             log += msg + '\n'
