@@ -446,8 +446,8 @@ export class OzonChannelHandler extends ChannelHandler {
         if (videoUrlsValue) {
             if (!Array.isArray(videoUrlsValue)) videoUrlsValue = [videoUrlsValue]
             const videos = {
-                "complex_id": 4018,
-                "id": 4074,
+                "complex_id": 100001,
+                "id": 21841,
                 "values": videoUrlsValue.map((elem:any) => { return { value: elem } })
               }
               complex_attributes[0].attributes.push(videos)
@@ -458,8 +458,8 @@ export class OzonChannelHandler extends ChannelHandler {
         if (videoNamesValue) {
             if (!Array.isArray(videoNamesValue)) videoNamesValue = [videoNamesValue]
             const videoNames = {
-                "complex_id": 4018,
-                "id": 4068,
+                "complex_id": 100001,
+                "id": 21837,
                 "values": videoNamesValue.map((elem:any) => { return { value: elem } })
               }
               complex_attributes[0].attributes.push(videoNames)
@@ -580,67 +580,69 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
             }
             
-            // check if we have loaded videos that we should leave unchanged
-            const existingDataReq = {
-                "filter": {
-                    "product_id": [ozonProductId],
-                    "visibility": "ALL"
-                },
-                "limit": 1000
-            }
-            const existingDataUrl = 'https://api-seller.ozon.ru/v3/products/info/attributes'
-            const log = "Sending request to Ozon: " + existingDataUrl + " => " + JSON.stringify(existingDataReq)
-            logger.info(log)
-            if (channel.config.debug) context.log += log+'\n'
-            const existingDataRes = await fetch(existingDataUrl, {
-                method: 'post',
-                body:    JSON.stringify(existingDataReq),
-                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
-            logger.info("Response status from Ozon: " + existingDataRes.status)
-            if (existingDataRes.status !== 200) {
-                const text = await existingDataRes.text()
-                const msg = 'Ошибка запроса на Ozon: ' + existingDataRes.statusText + "   " + text
-                context.log += msg                      
-                this.reportError(channel, item, msg)
-                logger.error(msg)
-                return
-            } else {
-                const existingDataJson = await existingDataRes.json()
-                // const log = "Response from Ozon: " + JSON.stringify(existingDataJson)
-                // logger.info(log)
-                // if (channel.config.debug) context.log += log+'\n'
-                let videoElem1
-                let videoElem2
-                if (existingDataJson.result[0].complex_attributes) {
-                    existingDataJson.result[0].complex_attributes.forEach((elem:any) => {
-                        const data1 = elem.attributes.find((elem1:any) => elem1.attribute_id === 21837)
-                        if (data1) {
-                            delete(data1.attribute_id)
-                            data1.id = 21837
-                            videoElem1 = data1
-                        }
-
-                        const data2 = elem.attributes.find((elem2:any) => elem2.attribute_id === 21841)
-                        if (data2) {
-                            delete(data2.attribute_id)
-                            data2.id = 21841
-                            videoElem2 = data2
-                        }
-
-                    })
+            if (channel.config.saveVideos) {
+                // check if we have loaded videos that we should leave unchanged
+                const existingDataReq = {
+                    "filter": {
+                        "product_id": [ozonProductId],
+                        "visibility": "ALL"
+                    },
+                    "limit": 1000
                 }
-                if (videoElem1 && videoElem2) {
-                    const log = "Найдены загруженные видео: \n" + JSON.stringify(videoElem1) + "\n" + JSON.stringify(videoElem2)
-                    logger.info(log)
-                    if (channel.config.debug) context.log += log+'\n'
-                    if (!product.complex_attributes) product.complex_attributes = [{attributes:[]}]
-                    product.complex_attributes[0].attributes.push(videoElem1)
-                    product.complex_attributes[0].attributes.push(videoElem2)
+                const existingDataUrl = 'https://api-seller.ozon.ru/v3/products/info/attributes'
+                const log = "Sending request to Ozon: " + existingDataUrl + " => " + JSON.stringify(existingDataReq)
+                logger.info(log)
+                if (channel.config.debug) context.log += log+'\n'
+                const existingDataRes = await fetch(existingDataUrl, {
+                    method: 'post',
+                    body:    JSON.stringify(existingDataReq),
+                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                })
+                logger.info("Response status from Ozon: " + existingDataRes.status)
+                if (existingDataRes.status !== 200) {
+                    const text = await existingDataRes.text()
+                    const msg = 'Ошибка запроса на Ozon: ' + existingDataRes.statusText + "   " + text
+                    context.log += msg                      
+                    this.reportError(channel, item, msg)
+                    logger.error(msg)
+                    return
                 } else {
-                    const log = "Загруженные видео не найдены"
-                    logger.info(log)
-                    if (channel.config.debug) context.log += log+'\n'
+                    const existingDataJson = await existingDataRes.json()
+                    // const log = "Response from Ozon: " + JSON.stringify(existingDataJson)
+                    // logger.info(log)
+                    // if (channel.config.debug) context.log += log+'\n'
+                    let videoElem1
+                    let videoElem2
+                    if (existingDataJson.result[0].complex_attributes) {
+                        existingDataJson.result[0].complex_attributes.forEach((elem:any) => {
+                            const data1 = elem.attributes.find((elem1:any) => elem1.attribute_id === 21837)
+                            if (data1) {
+                                delete(data1.attribute_id)
+                                data1.id = 21837
+                                videoElem1 = data1
+                            }
+
+                            const data2 = elem.attributes.find((elem2:any) => elem2.attribute_id === 21841)
+                            if (data2) {
+                                delete(data2.attribute_id)
+                                data2.id = 21841
+                                videoElem2 = data2
+                            }
+
+                        })
+                    }
+                    if (videoElem1 && videoElem2) {
+                        const log = "Найдены загруженные видео: \n" + JSON.stringify(videoElem1) + "\n" + JSON.stringify(videoElem2)
+                        logger.info(log)
+                        if (channel.config.debug) context.log += log+'\n'
+                        if (!product.complex_attributes) product.complex_attributes = [{attributes:[]}]
+                        product.complex_attributes[0].attributes.push(videoElem1)
+                        product.complex_attributes[0].attributes.push(videoElem2)
+                    } else {
+                        const log = "Загруженные видео не найдены"
+                        logger.info(log)
+                        if (channel.config.debug) context.log += log+'\n'
+                    }
                 }
             }
         }
