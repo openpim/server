@@ -364,6 +364,7 @@ export default {
             })
 
             if (!values) values = {}
+            if (!channels) channels = {}
 
             await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, channels, false, false)
 

@@ -198,6 +198,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             })
 
             if (!item.values) item.values = {}
+            if (!item.channels) item.channels = {}
             if (!item.skipActions) await processItemActions(context, EventType.BeforeCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             filterEditChannels(context, item.channels)
@@ -259,6 +260,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             if (!item.values) item.values = {}
+            if (!item.channels) item.channels = {}
             if (!item.skipActions) await processItemActions(context, EventType.BeforeUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             if (item.parentIdentifier && data.parentIdentifier !== item.parentIdentifier) {
