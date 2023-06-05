@@ -28,6 +28,7 @@ const archiver = require('archiver')
 import * as stream from 'node:stream' 
 const pipe = util.promisify(stream.pipeline)
 import XLSX from 'xlsx'
+const extractzip = require('extract-zip')
 
 import logger from '../logger'
 import { LOV } from "../models/lovs"
@@ -357,7 +358,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         isImport: isImport, 
         item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
         models: { 
@@ -388,7 +389,7 @@ export async function processImportConfigActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         importConfig,
         rowData,
         models: { 
@@ -440,7 +441,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         buttonText: buttonText, 
         item: item ? makeItemProxy(item) : null, values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
@@ -485,7 +486,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, XLSX, FS, pipe, stream, archiver },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, XLSX, FS, pipe, stream, archiver, extractzip },
         item: makeItemProxy(item), values: values, channels:channels, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
@@ -519,7 +520,7 @@ export async function processAttrGroupActions(context: Context, event: EventType
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         isImport: isImport, 
         group: grp,
         models: { 
@@ -549,7 +550,7 @@ export async function processAttributeActions(context: Context, event: EventType
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         isImport: isImport, 
         attribute: attr,
         models: { 
@@ -738,7 +739,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         isImport: isImport, 
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, changes: changes,
         models: { 
@@ -989,7 +990,7 @@ class ActionUtils {
             user: context.getCurrentUser()?.login,
             roles: context.getUser()?.getRoles(),
             utils: new ActionUtils(context),
-            system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS },
+            system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
             isImport: isImport, 
             item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
             models: { 
