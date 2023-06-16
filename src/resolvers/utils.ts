@@ -933,6 +933,33 @@ class ActionUtils {
         return attrArr
     }
 
+    public getItemAttributesGroupsObject(item: Item, groupIdentifiers?: string[]) {
+        const attrArr: Attribute[] = []
+        const groupArr: Record<string, any> = {}
+        const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
+
+        this.#mng.getAttrGroups().forEach(group => {
+            if (group.getGroup().visible && (!groupIdentifiers || groupIdentifiers.includes(group.getGroup().identifier))) {
+                const group_: string = group.getGroup().identifier
+                group.getAttributes().forEach(attr => {
+                    if (attr.valid.includes(item.typeId)) {
+                        for (let i=0; i<attr.visible.length; i++ ) {
+                            const visible: number = attr.visible[i]
+                            if (pathArr.includes(visible)) {
+                                if (!attrArr.find(tst => tst.identifier === attr.identifier)) {
+                                    attrArr.push(attr)
+                                    groupArr[`${group_}`] = attrArr
+                                }
+                                break
+                            }
+                        }
+                    }
+                })
+            }
+        })
+        return groupArr
+    }
+
     public getRelationAttributes(rel: ItemRelation, groupIdentifier?: string) {
         const attrArr: string[] = []
 
