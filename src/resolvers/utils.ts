@@ -934,7 +934,7 @@ class ActionUtils {
     }
 
     public getItemAttributesGroupsObject(item: Item, groupIdentifiers?: string[]) {
-        const attrArr: Attribute[] = []
+        let attrArr: Attribute[] = []
         const groupArr: Record<string, any> = {}
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
@@ -947,8 +947,10 @@ class ActionUtils {
                             const visible: number = attr.visible[i]
                             if (pathArr.includes(visible)) {
                                 if (!attrArr.find(tst => tst.identifier === attr.identifier)) {
+                                    attrArr = typeof groupArr[`${group_}`] !== 'undefined' ? groupArr[`${group_}`] : []
                                     attrArr.push(attr)
                                     groupArr[`${group_}`] = attrArr
+                                    attrArr = []
                                 }
                                 break
                             }
