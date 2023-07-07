@@ -152,7 +152,7 @@ export async function processDownloadById(context: Context, id: number, res: Res
     const hdrs:any = {
         'Content-Type': item.mimeType
     }
-    if (!thumbnail && inline === undefined) {
+    if (!thumbnail && (inline === undefined || item.fileOrigName.toLowerCase().endsWith('.ai') || item.fileOrigName.toLowerCase().endsWith('.otf'))) {
         hdrs['Content-Disposition'] = contentDisposition(item.fileOrigName)
 
     }
