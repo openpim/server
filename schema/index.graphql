@@ -23,7 +23,7 @@ scalar UTCDateTime
 
 type Query {
   ping: String
-  nextId: String
+  nextId(seqName:String): String
 }
 
 type Mutation {

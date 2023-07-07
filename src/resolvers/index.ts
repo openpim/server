@@ -29,9 +29,10 @@ const resolver = {
         ping: () => {
             return 'pong'
         },
-        nextId: async (parent: any, params: any, context: Context) => {
+        nextId: async (parent: any, {seqName}: any, context: Context) => {
             context.checkAuth()
-            const results:any = await sequelize.query("SELECT nextval('identifier_seq')", { 
+            const sequence = seqName ? seqName : 'identifier_seq'
+            const results:any = await sequelize.query("SELECT nextval('"+sequence+"')", { 
                 type: QueryTypes.SELECT
             });
             const id = (results[0]).nextval
