@@ -419,7 +419,7 @@ export class OzonChannelHandler extends ChannelHandler {
         const ozonCategoryId = parseInt(categoryConfig.id.substring(4))
         product.category_id = ozonCategoryId
         product.offer_id = productCode
-        product.barcode = barcode
+        product.barcode = ''+barcode
         product.price = price
         product.weight = weight
         product.weight_unit = 'g'
