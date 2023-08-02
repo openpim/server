@@ -160,7 +160,7 @@ export async function processDownloadById(context: Context, id: number, res: Res
 }
 
 export async function processUpload(context: Context, req: Request, res: Response) {
-    const form = new IncomingForm({maxFileSize: 500*1024*1024, keepExtensions: true})
+    const form = new IncomingForm({maxFileSize: 6*1024*1024*1024, keepExtensions: true})
  
     form.parse(req, async (err, fields, files) => {
         try {
@@ -239,7 +239,7 @@ export async function processUpload(context: Context, req: Request, res: Respons
 }
 
 export async function processCreateUpload(context: Context, req: Request, res: Response) {
-    const form = new IncomingForm({maxFileSize: 500*1024*1024, keepExtensions: true})
+    const form = new IncomingForm({maxFileSize: 6*1024*1024*1024, keepExtensions: true})
  
     form.parse(req, async (err, fields, files) => {
         try {
@@ -441,7 +441,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
 }
 
 export async function uploadProcessFile(context: Context, req: Request, res: Response) {
-    const form = new IncomingForm({maxFileSize: 500*1024*1024, keepExtensions: true})
+    const form = new IncomingForm({maxFileSize: 6*1024*1024*1024, keepExtensions: true})
  
     form.parse(req, async (err, fields, files) => {
         try {
@@ -519,7 +519,7 @@ export async function downloadProcessFile(context: Context, req: Request, res: R
 }
 
 export async function uploadImportFile(context: Context, req: Request, res: Response) {
-    const form = new IncomingForm({maxFileSize: 500*1024*1024, keepExtensions: true})
+    const form = new IncomingForm({maxFileSize: 6*1024*1024*1024, keepExtensions: true})
     form.parse(req, async (err, fields, files) => {
         try {
             if (err) {
