@@ -56,6 +56,9 @@ export async function importAttribute(context: Context, config: IImportConfig, a
                 result.result = ImportResult.REJECTED
             } else {
                 const data = attribute.attr
+
+                await processAttributeActions(context, EventType.BeforeDelete, data, true)
+
                 data.updatedBy = context.getCurrentUser()!.login
                 data.identifier = data.identifier + '_d_' + Date.now() 
                 await sequelize.transaction(async (t) => {
@@ -114,33 +117,34 @@ export async function importAttribute(context: Context, config: IImportConfig, a
 
             const lov = attr.lov ? (await LOV.applyScope(context).findOne({where: {identifier: attr.lov}}))?.id : 0
 
-            const data = await sequelize.transaction(async (t) => {
-                const data = await Attribute.create ({
-                    identifier: attr.identifier,
-                    tenantId: context.getCurrentUser()!.tenantId,
-                    createdBy: context.getCurrentUser()!.login,
-                    updatedBy: context.getCurrentUser()!.login,
-                    name: attr.name || null,
-                    order: attr.order != null? attr.order : 0,
-                    valid: valid,
-                    visible: visible,
-                    relations: relations,
-                    languageDependent: attr.languageDependent || false,
-                    type: attr.type || 1,
-                    pattern: attr.pattern || '',
-                    errorMessage: attr.errorMessage || {ru:""},
-                    lov: lov,
-                    richText: attr.richText != null ? attr.richText : false,
-                    multiLine: attr.multiLine != null ? attr.multiLine : false,
-                    options: attr.options ?  attr.options : []
-                }, {transaction: t})
+            const data = await Attribute.build ({
+                identifier: attr.identifier,
+                tenantId: context.getCurrentUser()!.tenantId,
+                createdBy: context.getCurrentUser()!.login,
+                updatedBy: context.getCurrentUser()!.login,
+                name: attr.name || null,
+                order: attr.order != null? attr.order : 0,
+                valid: valid,
+                visible: visible,
+                relations: relations,
+                languageDependent: attr.languageDependent || false,
+                type: attr.type || 1,
+                pattern: attr.pattern || '',
+                errorMessage: attr.errorMessage || {ru:""},
+                lov: lov,
+                richText: attr.richText != null ? attr.richText : false,
+                multiLine: attr.multiLine != null ? attr.multiLine : false,
+                options: attr.options ?  attr.options : []
+            })
 
+            await processAttributeActions(context, EventType.BeforeCreate, data, true)
+
+            await sequelize.transaction(async (t) => {
+                await data.save({transaction: t})
                 for (let i = 0; i < groups.length; i++) {
                     await groups[i].getGroup().addAttribute(data, {transaction: t})
                     groups[i].getAttributes().push(data)
                 }
-
-                return data
             })
 
             result.id = ""+data.id
@@ -168,6 +172,24 @@ export async function importAttribute(context: Context, config: IImportConfig, a
                 result.result = ImportResult.REJECTED
                 return result
             }
+
+            const changes = {
+                name: attr.name,
+                valid: valid,
+                visible: visible,
+                relations: relations,
+                order: attr.order,
+                languageDependent: attr.languageDependent,
+                type: attr.type,
+                pattern: attr.pattern,
+                errorMessage: attr.errorMessage,
+                lov: attr.lov,
+                richText: attr.richText,
+                multiLine: attr.multiLine,
+                options: attr.options,
+                groups: attr.groups
+            }
+            await processAttributeActions(context, EventType.BeforeUpdate, data, true, changes)
 
             if (attr.name) data.name = attr.name
             if (attr.languageDependent != null) data.languageDependent = attr.languageDependent

@@ -534,7 +534,7 @@ export async function processAttrGroupActions(context: Context, event: EventType
     })
 }
 
-export async function processAttributeActions(context: Context, event: EventType, attr: Attribute, isImport: boolean) {
+export async function processAttributeActions(context: Context, event: EventType, attr: Attribute, isImport: boolean, changes: any = null) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
@@ -553,6 +553,7 @@ export async function processAttributeActions(context: Context, event: EventType
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         isImport: isImport, 
         attribute: attr,
+        changes: changes,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  

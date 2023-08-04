@@ -168,30 +168,32 @@ export default {
             const vis = visible ? visible.map((elem: string) => parseInt(elem)) : []
             const rels = relations ? relations.map((elem: string) => parseInt(elem)) : []
 
-            const attr = await sequelize.transaction(async (t) => {
-                const attr = await Attribute.create ({
-                    id: id,
-                    identifier: identifier,
-                    tenantId: context.getCurrentUser()!.tenantId,
-                    createdBy: context.getCurrentUser()!.login,
-                    updatedBy: context.getCurrentUser()!.login,
-                    name: name,
-                    order: order != null? order : 0,
-                    valid: val,
-                    visible: vis,
-                    relations: rels,
-                    languageDependent: languageDependent || false,
-                    type: type,
-                    pattern: pattern || '',
-                    errorMessage: errorMessage || {ru:""},
-                    lov: lov ? parseInt(lov) : null,
-                    richText: richText != null ? richText : false,
-                    multiLine: multiLine != null ? multiLine : false,
-                    options: options ? options : []
-                }, {transaction: t})
-                await group.getGroup().addAttribute(attr, {transaction: t})
+            const attr = await Attribute.build ({
+                id: id,
+                identifier: identifier,
+                tenantId: context.getCurrentUser()!.tenantId,
+                createdBy: context.getCurrentUser()!.login,
+                updatedBy: context.getCurrentUser()!.login,
+                name: name,
+                order: order != null? order : 0,
+                valid: val,
+                visible: vis,
+                relations: rels,
+                languageDependent: languageDependent || false,
+                type: type,
+                pattern: pattern || '',
+                errorMessage: errorMessage || {ru:""},
+                lov: lov ? parseInt(lov) : null,
+                richText: richText != null ? richText : false,
+                multiLine: multiLine != null ? multiLine : false,
+                options: options ? options : []
+            })
 
-                return attr
+            await processAttributeActions(context, EventType.BeforeCreate, attr, false)
+
+            await sequelize.transaction(async (t) => {
+                await attr.save({transaction: t})
+                await group.getGroup().addAttribute(attr, {transaction: t})
             })
 
             group.getAttributes().push(attr)
@@ -213,6 +215,24 @@ export default {
             }
 
             const attr = tst.attr
+
+            const changes = {
+                name: name,
+                valid: valid,
+                visible: visible,
+                relations: relations,
+                order: order,
+                languageDependent: languageDependent,
+                type: type,
+                pattern: pattern,
+                errorMessage: errorMessage,
+                lov: lov,
+                richText: richText,
+                multiLine: multiLine,
+                options: options
+            }
+            await processAttributeActions(context, EventType.BeforeUpdate, attr, false, changes)
+
             if (name) attr.name = name
             if (valid) attr.valid = valid.map((elem: string) => parseInt(elem))
             if (visible) attr.visible = visible.map((elem: string) => parseInt(elem))
@@ -262,6 +282,9 @@ export default {
             if (!tstGroup) {
                 throw new Error('Failed to find attribute group by id: ' + nGroupId + ', tenant: ' + mng.getTenantId())
             }
+
+            await processAttributeActions(context, EventType.BeforeUpdate, tstAttr.attr, false, {assignGroup: tstGroup})
+                
             const save = tstAttr.attr // we must save a link to attr here because after addAttribute we will have clone of object
             await sequelize.transaction(async (t) => {
                 await tstGroup.getGroup().addAttribute(tstAttr.attr, {transaction: t})
@@ -289,6 +312,8 @@ export default {
             if (!tstGroup) {
                 throw new Error('Failed to find attribute group by id: ' + nGroupId + ', tenant: ' + mng.getTenantId())
             }
+
+            await processAttributeActions(context, EventType.BeforeUpdate, tstAttr.attr, false, {unassignGroup: tstGroup})
 
             let num: number = 0
             for (let i=0; i < mng.getAttrGroups().length; i++) {
@@ -325,6 +350,9 @@ export default {
             }
 
             const attr = tst.attr
+
+            await processAttributeActions(context, EventType.BeforeDelete, attr, false)
+
             attr.updatedBy = context.getCurrentUser()!.login
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
             attr.identifier = attr.identifier + '_d_' + Date.now() 
