@@ -171,7 +171,7 @@ export class ChannelsManager {
     private ozonChannelHandler = new OzonChannelHandler()
     private ymChannelHandler = new YMChannelHandler()
     public getHandler(channel: Channel): ChannelHandler {
-        if (channel.type === 1 || channel.type === 5 || channel.type === 6) return this.extChannelHandler
+        if (channel.type === 1 || channel.type === 5 || channel.type === 6 || channel.type === 7) return this.extChannelHandler
         // if (channel.type === 2) return this.wbChannelHandler
         if (channel.type === 2) return this.wbNewChannelHandler
         if (channel.type === 3) return this.ozonChannelHandler
