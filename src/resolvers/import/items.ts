@@ -126,7 +126,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     const itemChanges: ItemChanges = {
                         typeIdentifier: data.typeIdentifier,
                         parentIdentifier: data.parentIdentifier,
-                        name: data.name,
+                        name: ''+data.name,
                         values: data.values
                     }
                     audit.auditItem(ChangeType.DELETE, data.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)

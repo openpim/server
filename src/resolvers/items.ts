@@ -593,7 +593,7 @@ export default {
                     const itemChanges: ItemChanges = {
                         typeIdentifier: item.typeIdentifier,
                         parentIdentifier: item.parentIdentifier,
-                        name: item.name,
+                        name: ''+item.name,
                         values: item.values
                     }
                     audit.auditItem(ChangeType.DELETE, item.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
