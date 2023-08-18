@@ -360,7 +360,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         isImport: isImport, 
-        item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
+        item: makeItemProxy(item, EventType[event]), values: newValues, channels: newChannels, name: newName, parent: newParent,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -443,7 +443,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         buttonText: buttonText, 
-        item: item ? makeItemProxy(item) : null, values: valuesCopy, channels:channelsCopy, name: nameCopy,
+        item: item ? makeItemProxy(item, 'Button:'+buttonText) : null, values: valuesCopy, channels:channelsCopy, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -487,7 +487,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, XLSX, FS, pipe, stream, archiver, extractzip },
-        item: makeItemProxy(item), values: values, channels:channels, name: nameCopy,
+        item: makeItemProxy(item, 'Test'), values: values, channels:channels, name: nameCopy,
         models: { 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -660,10 +660,11 @@ function makeModelProxy(model: any, itemProxy: any) {
     })    
 }
 
-function makeItemProxy(item: any) {
+function makeItemProxy(item: any, event: string) {
     return new Proxy( item, {
         get: function( target, property, receiver ) {
             if ((<string>property) =='save') {
+                if (event === 'BeforeCreate') throw new Error('It is forbidden to call method save() during BeforeCreate')
                 return async(...args: any) => {
                     return await target[ property ].apply( target, args )
                 }
@@ -1022,7 +1023,7 @@ class ActionUtils {
             utils: new ActionUtils(context),
             system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
             isImport: isImport, 
-            item: makeItemProxy(item), values: newValues, channels: newChannels, name: newName, parent: newParent,
+            item: makeItemProxy(item, event), values: newValues, channels: newChannels, name: newName, parent: newParent,
             models: { 
                 item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
                 itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
@@ -1133,7 +1134,7 @@ class ActionUtils {
             audit.auditItem(ChangeType.CREATE, item.id, item.identifier, {added: itemChanges}, this.#context.getCurrentUser()!.login, item.createdAt)
         }
 
-        return makeItemProxy(item)
+        return makeItemProxy(item, 'createItem')
     }
 
     public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false) {
