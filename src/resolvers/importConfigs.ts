@@ -13,7 +13,7 @@ export default {
         }
     },
     Mutation: {
-        createImportConfig: async (parent: any, {identifier, name, type, mappings}: any, context: Context) => {
+        createImportConfig: async (parent: any, {identifier, name, type, mappings, filedata, config}: any, context: Context) => {
             context.checkAuth()
 
             if (!context.canEditConfig(ConfigAccess.IMPORTCONFIGS)) 
@@ -37,7 +37,9 @@ export default {
                     updatedBy: context.getCurrentUser()!.login,
                     name: name,
                     type: type,
-                    mappings: mappings ? mappings : [],
+                    mappings: mappings ? mappings : {},
+                    filedata: filedata ? filedata : {},
+                    config: config ? config : {}
                 }, {transaction: t})
                 return importConfig
             })
@@ -45,7 +47,7 @@ export default {
             mng.getImportConfigs().push(importConfig)
             return importConfig.id
         },
-        updateImportConfig: async (parent: any, { id, name, type, mappings }: any, context: Context) => {
+        updateImportConfig: async (parent: any, { id, name, type, mappings, filedata, config }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.IMPORTCONFIGS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update import config, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -62,6 +64,8 @@ export default {
             if (name) importConfig.name = name
             if (type != null) importConfig.type = type
             if (mappings) importConfig.mappings = mappings
+            if (filedata) importConfig.filedata = filedata
+            if (config) importConfig.config = config
             /* if (mappings) {
                 const tmp = {...importConfig.mappings, ...mappings } // merge mappings to avoid deletion from another user
                 for (const prop in tmp) {

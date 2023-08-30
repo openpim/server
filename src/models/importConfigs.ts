@@ -7,6 +7,8 @@ export class ImportConfig extends Base {
   public name!: any
   public type!: number
   public mappings!: any
+  public filedata!: any
+  public config!: any
 }
 
 export function init(sequelize: Sequelize):void {
@@ -25,6 +27,14 @@ export function init(sequelize: Sequelize):void {
         allowNull: false,
       },
       mappings: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      filedata: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      config: {
         type: DataTypes.JSONB,
         allowNull: false,
       },
