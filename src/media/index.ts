@@ -528,7 +528,7 @@ export async function downloadImportConfigTemplateFile(context: Context, req: Re
         return
     }
 
-    const { mimeType, fileName, storagePath } = importConfig.filedata.fileData
+    const { mimeType, fileName, storagePath } = importConfig.filedata.info
 
     const headers:any = {
         'Content-Type': mimeType || "application/octet-stream"
