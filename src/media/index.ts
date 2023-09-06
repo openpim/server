@@ -518,6 +518,78 @@ export async function downloadProcessFile(context: Context, req: Request, res: R
     res.sendFile(process.env.FILES_ROOT! + proc.storagePath, {headers: hdrs})
 }
 
+export async function downloadImportConfigTemplateFile(context: Context, req: Request, res: Response, thumbnail: boolean) {
+    const id = req.params.id
+    const importConfig = await ImportConfig.applyScope(context).findByPk(id)
+
+    if (!importConfig || !importConfig.filedata) {
+        logger.error('Failed to find importConfig by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find importConfig template')
+        return
+    }
+
+    const { mimeType, fileName, storagePath } = importConfig.filedata.fileData
+
+    const headers:any = {
+        'Content-Type': mimeType || "application/octet-stream"
+    }
+
+    headers['Content-Disposition'] = fileName ? contentDisposition(fileName) : 'attachment; filename="result.bin"'
+    res.sendFile(process.env.FILES_ROOT! + storagePath, {headers: headers})
+}
+
+export async function getImportConfigTemplateData(context: Context, req: Request, res: Response, thumbnail: boolean) {
+    const id = req.params.id
+    const importConfig = await ImportConfig.applyScope(context).findByPk(id)
+
+    if (!importConfig || !importConfig.filedata) {
+        logger.error('Failed to find importConfig by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find importConfig template')
+        return
+    }
+
+    const { mimeType, fileName, storagePath } = importConfig.filedata
+
+    const im = ImportManager.getInstance()
+    const data = await im.getImportConfigTemplateData(process.env.FILES_ROOT! + storagePath)
+    
+    const response = {
+        filedata: {
+            mimeType,
+            storagePath,
+            fileName
+        },
+        data
+     }
+
+    res.send(response)
+}
+
+export async function uploadImportConfigTemplateFile(context: Context, req: Request, res: Response) {
+    const form = new IncomingForm({maxFileSize: 6*1024*1024*1024, keepExtensions: true})
+    form.parse(req, async (err, fields, files) => {
+        try {
+            if (err) {
+                logger.error(err)
+                res.status(400).send(err)
+                return
+            }
+            context.checkAuth()
+
+            const file = <File>files['file']
+            if (!file) throw new Error('Failed to find "file" parameter')
+
+            const fm = ImportManager.getInstance()
+            const result = await fm.saveImportConfigTemplateFile(context.getCurrentUser()!.tenantId, file)
+            res.status(200).send(result)
+            
+        } catch(error: any) {
+            logger.error(error)
+            res.status(400).send(error.message)
+        }
+    })
+}
+
 export async function uploadImportFile(context: Context, req: Request, res: Response) {
     const form = new IncomingForm({maxFileSize: 6*1024*1024*1024, keepExtensions: true})
     form.parse(req, async (err, fields, files) => {
