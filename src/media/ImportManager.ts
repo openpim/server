@@ -101,14 +101,14 @@ export class ImportManager {
             fs.copyFileSync(file.filepath, fullPath)
         }
 
-        const fileData = {
+        const info = {
             storagePath: relativePath,
             mimeType: file.mimetype,
             fileName: file.originalFilename
         }
 
         const data = await this.getImportConfigTemplateData(fullPath) 
-        const res = { fileData, data }
+        const res = { info, data }
 
         return res
     }
