@@ -10,17 +10,19 @@ import audit, { AuditItemRelation, ChangeType, ItemRelationChanges } from '../au
 
 export default {
     Query: {
-        getSourceRelations: async (parent: any, { itemId, relationId, offset, limit }: any, context: Context) => {
+        getSourceRelations: async (parent: any, { itemId, relationId, offset, limit, where }: any, context: Context) => {
             context.checkAuth()
 
             const relId = parseInt(relationId)
             if (!context.canViewItemRelation(relId)) return {count: 0, rows: []}
             
+            let whereClause = {
+                itemId: parseInt(itemId),
+                relationId: relId,
+                ...where
+            } 
             const res = await ItemRelation.applyScope(context).findAndCountAll({
-                where: {
-                    itemId: parseInt(itemId),
-                    relationId: relId,
-                },
+                where: whereClause,
                 order: [literal("values->'_itemRelationOrder'"), ['id', 'ASC']],
                 offset: offset,
                 limit: limit === -1 ? null : limit
@@ -44,17 +46,19 @@ export default {
 
             return res
         },
-        getTargetRelations: async (parent: any, { itemId, relationId, offset, limit }: any, context: Context) => {
+        getTargetRelations: async (parent: any, { itemId, relationId, offset, limit, where }: any, context: Context) => {
             context.checkAuth()
             
             const relId = parseInt(relationId)
             if (!context.canViewItemRelation(relId)) return {count: 0, rows: []}
 
+            let whereClause = {
+                targetId: parseInt(itemId),
+                relationId: relId,
+                ...where
+            } 
             const res = await ItemRelation.applyScope(context).findAndCountAll({
-                where: {
-                    targetId: parseInt(itemId),
-                    relationId: relId,
-                },
+                where: whereClause,
                 order: [literal("values->'_itemRelationOrder'"),['id', 'ASC']],
                 offset: offset,
                 limit: limit === -1 ? null : limit

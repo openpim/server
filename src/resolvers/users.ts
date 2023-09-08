@@ -163,6 +163,10 @@ export default {
             return true
         },
         signIn: async (parent: any, { login, password }: any, context: Context) => {
+            if (!password) {
+                logger.error("Password was not provided for: " + login)
+                throw new GraphQLError('Wrong login or password')
+            }
             let user = await User.findOne({
                 where: { login: login }
             });

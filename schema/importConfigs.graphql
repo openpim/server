@@ -3,8 +3,8 @@ type Query {
 }
 
 type Mutation {
-  createImportConfig(identifier: String!, name: LanguageDependentString!, type: Int!, mappings: [JSONObject]): ID!
-  updateImportConfig(id: ID!, name: LanguageDependentString, type: Int, mappings: [JSONObject]) : ID!
+  createImportConfig(identifier: String!, name: LanguageDependentString!, type: Int!, mappings: JSON, filedata: JSONObject, config: JSONObject): ID!
+  updateImportConfig(id: ID!, name: LanguageDependentString, type: Int, mappings: JSON, filedata: JSONObject, config: JSONObject) : ID!
   removeImportConfig(id: ID!) : Boolean!
 }
 
@@ -13,7 +13,9 @@ type ImportConfiguration {
   identifier: String!
   name: LanguageDependentString!
   type: Int!
-  mappings: [JSONObject]!
+  mappings: JSON!
+  filedata: JSONObject!
+  config: JSONObject!
   createdBy: String!
   createdAt: UTCDateTime!
   updatedBy: String!

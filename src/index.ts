@@ -13,7 +13,7 @@ import { IncomingMessage } from 'http';
 import { ChannelsManagerFactory } from './channels';
 import Context from './context';
 import logger from './logger';
-import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile, processUploadXlsxTemplate } from './media';
+import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile } from './media';
 import { initModels } from './models';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
@@ -184,6 +184,37 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       context.checkAuth()
 
       await uploadImportFile(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.post('/import-config-template-upload', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+      await uploadImportConfigTemplateFile(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.get('/import-config-template/:id', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+      await downloadImportConfigTemplateFile(context, req, res, false)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.get('/import-config-data/:id', async (req, res) => {
+    console.log('import-config-data')
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+      await getImportConfigTemplateData(context, req, res, false)
     } catch (error: any) {
       res.status(400).send(error.message)
     }
