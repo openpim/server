@@ -13,7 +13,7 @@ import { IncomingMessage } from 'http';
 import { ChannelsManagerFactory } from './channels';
 import Context from './context';
 import logger from './logger';
-import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile } from './media';
+import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile, processUploadXlsxTemplate } from './media';
 import { initModels } from './models';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
@@ -102,6 +102,17 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       context.checkAuth()
 
       await processUpload(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.post('/xlsx-template-upload', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+	  
+      await processUploadXlsxTemplate(context, req, res)
     } catch (error: any) {
       res.status(400).send(error.message)
     }

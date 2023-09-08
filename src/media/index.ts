@@ -12,7 +12,7 @@ import logger from '../logger'
 import { Type } from '../models/types'
 import { ItemRelation } from '../models/itemRelations'
 import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
-import { ChannelExecution } from '../models/channels'
+import { Channel, ChannelExecution } from '../models/channels'
 import contentDisposition = require('content-disposition')
 import { checkValues, filterValues, mergeValues, processItemActions, processItemRelationActions } from '../resolvers/utils'
 import { EventType } from '../models/actions'
@@ -157,6 +157,47 @@ export async function processDownloadById(context: Context, id: number, res: Res
 
     }
     res.sendFile(process.env.FILES_ROOT! + item.storagePath + (thumbnail ? '_thumb.jpg': ''), {headers: hdrs})
+}
+
+export async function processUploadXlsxTemplate(context: Context, req: Request, res: Response) {
+    const form = new IncomingForm({maxFileSize: 6*1024*1024*1024, keepExtensions: true})
+ 
+    form.parse(req, async (err, fields, files) => {
+        try {
+            if (err) {
+                logger.error(err)
+                res.status(400).send(err)
+                return
+            }
+
+            context.checkAuth();
+
+            let idStr =  <string>fields['id']
+            if (!idStr) throw new Error('Failed to find "id" parameter')
+
+            const file = <File>files['file']
+            if (!file) throw new Error('Failed to find "file" parameter')
+
+            const id = parseInt(idStr)
+
+            const channel = await Channel.findByPk(id)
+            if (!channel) throw new Error('Failed to find item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+
+            const fm = FileManager.getInstance()
+            await fm.saveChannelXlsxTemplate(context.getCurrentUser()!.tenantId, channel, file)
+
+            channel.updatedBy = context.getCurrentUser()!.login
+            await sequelize.transaction(async (t) => {
+                await channel.save({transaction: t})
+            })
+
+            // res.send('OK')
+			res.send(JSON.stringify(channel))
+        } catch (error: any) {
+            logger.error(error)
+            res.status(400).send(error.message)
+        }
+    });
 }
 
 export async function processUpload(context: Context, req: Request, res: Response) {

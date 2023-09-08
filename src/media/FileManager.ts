@@ -5,7 +5,7 @@ import * as Jimp from 'jimp'
 import { mergeValues } from '../resolvers/utils'
 import {File} from 'formidable'
 import logger from '../logger'
-import { ChannelExecution } from '../models/channels'
+import { Channel, ChannelExecution } from '../models/channels'
 import { Process } from '../models/processes'
 
 export class FileManager {
@@ -89,6 +89,34 @@ export class FileManager {
         }
 
         exec.storagePath = relativePath
+
+        return fullPath
+    }
+
+	public async saveChannelXlsxTemplate(tenantId: string, channel: Channel, file: File) {
+        const tst = '/' + tenantId
+        if (!fs.existsSync(this.filesRoot + tst)) {
+			fs.mkdirSync(this.filesRoot + tst)
+		}
+
+        const filesPath = '/' + tenantId + '/excelTemplateChannel'
+        if (!fs.existsSync(this.filesRoot + filesPath)) {
+			fs.mkdirSync(this.filesRoot + filesPath, {recursive: true})
+		}
+
+        const relativePath = filesPath + '/' + channel.identifier
+        const fullPath = this.filesRoot + relativePath
+        try {
+            fs.renameSync(file.filepath, fullPath)
+        } catch (e) { 
+            // logger.error('Failed to rename file (will use copy instead): ', file, fullPath)
+            // logger.error(e)
+            fs.copyFileSync(file.filepath, fullPath)
+            fs.unlinkSync(file.filepath)
+        }
+
+		channel.config.template = fullPath
+		channel.changed('config', true)
 
         return fullPath
     }
