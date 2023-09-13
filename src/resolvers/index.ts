@@ -23,11 +23,15 @@ import { QueryTypes } from 'sequelize'
 import { sequelize } from '../models'
 
 import logger from '../logger'
+import { ModelManager } from '../models/manager'
 
 const resolver = {
     Query: {
         ping: () => {
             return 'pong'
+        },
+        serverConfig: () =>  {
+            return ModelManager.getServerConfig()
         },
         nextId: async (parent: any, {seqName}: any, context: Context) => {
             context.checkAuth()
