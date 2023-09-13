@@ -13,7 +13,7 @@ import { IncomingMessage } from 'http';
 import { ChannelsManagerFactory } from './channels';
 import Context from './context';
 import logger from './logger';
-import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile, processUploadXlsxTemplate, downloadImportConfigXlsxTemplateFile } from './media';
+import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile, processUploadXlsxTemplate, uploadImportConfigTemplateFile, downloadImportConfigTemplateFile, getImportConfigTemplateData, downloadImportConfigXlsxTemplateFile } from './media';
 import { initModels } from './models';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
