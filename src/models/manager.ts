@@ -13,6 +13,8 @@ import { cleaningDatabase } from '../resolvers/utils/cleaningDatabase'
 
 import logger from '../logger'
 import NodeCache from 'node-cache'
+import { FileManager } from '../media/FileManager'
+import * as fs from 'fs'
 
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
@@ -28,6 +30,7 @@ export class ModelManager {
     private roles: Role[] = []
     private users: UserWrapper[] = []
     private cache = new NodeCache()
+    private static serverConfig: any = null
 
     public constructor(tenantId: string) { this.tenantId = tenantId }
 
@@ -89,6 +92,19 @@ export class ModelManager {
         const result:any[] = []
         this.dumpChildren(result, this.typeRoot.getChildren())
         return result
+    }
+
+    public static getServerConfig() : any {
+        if (!this.serverConfig) {
+            const filesRoot = FileManager.getInstance().getFilesRoot()
+            const configFile = filesRoot + '/server.config'
+            if (fs.existsSync(configFile)) {
+                this.serverConfig = JSON.parse(fs.readFileSync(configFile).toString())
+            } else {
+                this.serverConfig = {}
+            }
+        }
+        return this.serverConfig
     }
 
     private dumpChildren(arr:any[], children: TreeNode<Type>[]) {
