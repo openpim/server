@@ -104,7 +104,9 @@ export class FileManager {
 			fs.mkdirSync(this.filesRoot + filesPath, {recursive: true})
 		}
 
-        const relativePath = filesPath + '/' + channel.identifier
+		const extNum = file.originalFilename?.lastIndexOf('.')
+		const ext = extNum !== -1 ? file.originalFilename?.substring(extNum!) : ''
+        const relativePath = filesPath + '/' + channel.identifier + ext
         const fullPath = this.filesRoot + relativePath
         try {
             fs.renameSync(file.filepath, fullPath)

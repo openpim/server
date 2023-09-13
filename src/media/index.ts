@@ -579,6 +579,29 @@ export async function downloadImportConfigTemplateFile(context: Context, req: Re
     res.sendFile(process.env.FILES_ROOT! + storagePath, {headers: headers})
 }
 
+export async function downloadImportConfigXlsxTemplateFile(context: Context, req: Request, res: Response, thumbnail: boolean) {
+    const id = req.params.id
+	
+	const channel = await Channel.findByPk(id)
+    if (!channel) {
+		throw new Error('Failed to find item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+	}
+
+    const { template } = channel.config
+
+    const headers:any = {
+        'Content-Type': "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    }
+
+	const extNum = template?.lastIndexOf('/')
+	const fileName = extNum !== -1 ? template?.substring(extNum! + 1) : ''
+	console.log('template=' + template)
+	console.log('fileName=' + fileName)
+
+    headers['Content-Disposition'] = fileName ? contentDisposition(fileName) : 'attachment; filename="template.xlsx"'
+    res.sendFile(template, {headers: headers})
+}
+
 export async function getImportConfigTemplateData(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const id = req.params.id
     const importConfig = await ImportConfig.applyScope(context).findByPk(id)
