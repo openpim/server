@@ -209,7 +209,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     }
   })
 
-  app.get('/import-config-xslx-template/:id', async (req, res) => {
+  app.get('/import-config-xslx-template/:id', async (req, res) => { 
     try {
       const context = await Context.create(req)
       context.checkAuth()
