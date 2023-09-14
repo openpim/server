@@ -579,7 +579,7 @@ export async function downloadImportConfigTemplateFile(context: Context, req: Re
     res.sendFile(process.env.FILES_ROOT! + storagePath, {headers: headers})
 }
 
-export async function downloadImportConfigXlsxTemplateFile(context: Context, req: Request, res: Response, thumbnail: boolean) {
+export async function downloadXlsxTemplateFile(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const id = req.params.id
 	
 	const channel = await Channel.findByPk(id)

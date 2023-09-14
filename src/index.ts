@@ -13,7 +13,7 @@ import { IncomingMessage } from 'http';
 import { ChannelsManagerFactory } from './channels';
 import Context from './context';
 import logger from './logger';
-import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile, processUploadXlsxTemplate, uploadImportConfigTemplateFile, downloadImportConfigTemplateFile, getImportConfigTemplateData, downloadImportConfigXlsxTemplateFile } from './media';
+import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile, processUploadXlsxTemplate, uploadImportConfigTemplateFile, downloadImportConfigTemplateFile, getImportConfigTemplateData, downloadXlsxTemplateFile } from './media';
 import { initModels } from './models';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
@@ -118,6 +118,16 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     }
   })
 
+  app.get('/xlsx-template/:id', async (req, res) => { 
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+      await downloadXlsxTemplateFile(context, req, res, false)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
   app.post('/asset-create-upload', async (req, res) => {
     try {
       const context = await Context.create(req)
@@ -204,16 +214,6 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       const context = await Context.create(req)
       context.checkAuth()
       await downloadImportConfigTemplateFile(context, req, res, false)
-    } catch (error: any) {
-      res.status(400).send(error.message)
-    }
-  })
-
-  app.get('/import-config-xslx-template/:id', async (req, res) => { 
-    try {
-      const context = await Context.create(req)
-      context.checkAuth()
-      await downloadImportConfigXlsxTemplateFile(context, req, res, false)
     } catch (error: any) {
       res.status(400).send(error.message)
     }
