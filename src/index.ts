@@ -13,21 +13,7 @@ import { IncomingMessage } from 'http';
 import { ChannelsManagerFactory } from './channels';
 import Context from './context';
 import logger from './logger';
-import { 
-  processChannelDownload, 
-  processCreateUpload, 
-  processDownload, 
-  processUpload, 
-  processDownloadMain, 
-  uploadProcessFile, 
-  downloadProcessFile, 
-  uploadImportFile, 
-  uploadImportConfigTemplateFile, 
-  downloadImportConfigTemplateFile, 
-  getImportConfigFileData,
-  processUploadXlsxTemplate,
-  testImportConfig
-} from './media';
+import { processChannelDownload, processCreateUpload, processDownload, processUpload, processDownloadMain, uploadProcessFile, downloadProcessFile, uploadImportFile, processUploadXlsxTemplate, uploadImportConfigTemplateFile, downloadImportConfigTemplateFile, getImportConfigTemplateData, downloadXlsxTemplateFile } from './media';
 import { initModels } from './models';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
@@ -127,6 +113,16 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       context.checkAuth()
 	  
       await processUploadXlsxTemplate(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.get('/xlsx-template/:id', async (req, res) => { 
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+      await downloadXlsxTemplateFile(context, req, res, false)
     } catch (error: any) {
       res.status(400).send(error.message)
     }

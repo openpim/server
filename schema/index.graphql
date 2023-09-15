@@ -23,6 +23,7 @@ scalar UTCDateTime
 
 type Query {
   ping: String
+  serverConfig: JSONObject
   nextId(seqName:String): String
 }
 
