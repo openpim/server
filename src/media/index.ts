@@ -579,7 +579,7 @@ export async function downloadImportConfigTemplateFile(context: Context, req: Re
     res.sendFile(process.env.FILES_ROOT! + storagePath, {headers: headers})
 }
 
-export async function getImportConfigTemplateData(context: Context, req: Request, res: Response, thumbnail: boolean) {
+ export async function getImportConfigFileData(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const id = req.params.id
     const importConfig = await ImportConfig.applyScope(context).findByPk(id)
 
@@ -592,7 +592,7 @@ export async function getImportConfigTemplateData(context: Context, req: Request
     const { mimeType, fileName, storagePath } = importConfig.filedata
 
     const im = ImportManager.getInstance()
-    const data = await im.getImportConfigTemplateData(process.env.FILES_ROOT! + storagePath)
+    const data = await im.getImportConfigFileData(process.env.FILES_ROOT! + storagePath)
     
     const response = {
         filedata: {
@@ -623,7 +623,7 @@ export async function uploadImportConfigTemplateFile(context: Context, req: Requ
             const fm = ImportManager.getInstance()
             const result = await fm.saveImportConfigTemplateFile(context.getCurrentUser()!.tenantId, file)
             res.status(200).send(result)
-            
+
         } catch(error: any) {
             logger.error(error)
             res.status(400).send(error.message)
@@ -652,7 +652,7 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
             if (!file) throw new Error('Failed to find "file" parameter')
 
             const process = await Process.build ({
-                identifier: 'importProcess' + Date.now(),
+                identifier: 'importConfigProcess' + Date.now(),
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,
                 updatedBy: context.getCurrentUser()!.login,
@@ -667,11 +667,10 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
                 mimeType: '',
                 fileName: ''
             })
-
-            const fm = FileManager.getInstance()
-            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, process, file.filepath, file.mimetype || '', file.originalFilename || '')
             await process.save()
 
+            const fm = FileManager.getInstance()
+            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, process, file.filepath, file.mimetype || '', file.originalFilename || '', false)
             const im = ImportManager.getInstance()
             im.processImportFile(context, process, importConfig, path)
 
@@ -681,4 +680,45 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
             res.status(400).send(error.message)
         }
     })
+}
+
+export async function testImportConfig(context: Context, req: Request, res: Response) {
+
+    const id = req.params.id
+
+    const importConfig = await ImportConfig.applyScope(context).findByPk(id)
+
+    if (!importConfig || !importConfig.filedata) {
+        logger.error('Failed to find importConfig by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+        res.status(400).send('Failed to find importConfig template')
+        return
+    }
+
+    const { mimeType, fileName, storagePath } = importConfig.filedata.info
+
+    const proc = await Process.build ({
+        identifier: 'importProcess' + Date.now(),
+        tenantId: context.getCurrentUser()!.tenantId,
+        createdBy: context.getCurrentUser()!.login,
+        updatedBy: context.getCurrentUser()!.login,
+        // todo: check this name, should use correct language identifier
+        title: 'Import process for mapping ' + importConfig.name.ru,
+        active: true,
+        status: 'active',
+        log: 'started',
+        runtime: {},
+        finishTime: null,
+        storagePath: '',
+        mimeType: '',
+        fileName: ''
+    })
+    await proc.save()
+
+    const fm = FileManager.getInstance()
+    const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, process.env.FILES_ROOT! + storagePath, mimeType || '', fileName || '', false)
+
+    const im = ImportManager.getInstance()
+    im.processImportFile(context, proc, importConfig, path)
+
+    res.status(200).send({ result: 'OK'})
 }

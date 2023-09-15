@@ -372,7 +372,7 @@ export async function processItemActions(context: Context, event: EventType, ite
     })
 }
 
-export async function processImportConfigActions(context: Context, event: EventType, importConfig: ImportConfig, rowData: string) {
+/* export async function processImportConfigActions(context: Context, event: EventType, importConfig: ImportConfig, rowData: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
@@ -399,7 +399,7 @@ export async function processImportConfigActions(context: Context, event: EventT
             ItemRelation
         } 
     })
-}
+} */
 
 export async function processItemButtonActions(context: Context, buttonText: string, item: Item, data: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
