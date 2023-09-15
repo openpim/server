@@ -25,6 +25,7 @@ import {
   uploadImportConfigTemplateFile, 
   downloadImportConfigTemplateFile, 
   getImportConfigFileData, 
+  testImportConfig,
   processUploadXlsxTemplate, 
   downloadXlsxTemplateFile } from './media';
 import { initModels } from './models';
@@ -242,7 +243,6 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   })
 
   app.get('/import-config-data/:id', async (req, res) => {
-    console.log('import-config-data')
     try {
       const context = await Context.create(req)
       context.checkAuth()

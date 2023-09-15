@@ -24,12 +24,7 @@ export class ImportManager {
     }
 
     public async processImportFile(context: Context, process: Process, importConfig: ImportConfig, filepath: any) {
-
-        // public async processImportFile(context: Context, process: Process, importConfig: ImportConfig, filepath: any): Promise<ImportResponse> {
-
         const config = importConfig.config
-
-        // TODO: тут должен быть метод, который обрабатывает разные типы, с возможностью добавлять типы
         const data: any = await this.getImportConfigFileData(filepath)
 
         let { selectedTab, headerLineNumber, dataLineNumber, limit } = config
@@ -57,8 +52,12 @@ export class ImportManager {
                     try {
                         const item = await this.mapLine(headers, importConfig, rowData)
                         process.log += '\n Item: ' + JSON.stringify(item)
-                        const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
-                        process.log += '\n Import result: ' + JSON.stringify(importRes)
+                        if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
+                            const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
+                            process.log += '\n Import result: ' + JSON.stringify(importRes)
+                        } else {
+                            process.log += '\n Can not map item. Item identifier is empty.'
+                        }
                     } catch (e) {
                         process.log += '\n Error updating item: ' + e
                     }
@@ -97,7 +96,7 @@ export class ImportManager {
                 }
     
                 if ((idx !== -1 || (idx === -1 && mapping.expression)) && mapping.attribute && mapping.attribute.length) {
-                    const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data[idx], mapping.expression) : data[idx]
+                    const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, data[idx], mapping.expression) : data[idx]
                     if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
                         result.values[mapping.attribute] = mappedData
                     } else if (mapping.attribute.startsWith('$name#')) {
@@ -115,12 +114,12 @@ export class ImportManager {
         return result
     }
 
-    private async evaluateExpression(data: any, expression: string): Promise<any> {
+    private async evaluateExpression(row:Array<any>, data: any, expression: string): Promise<any> {
         try {
-            const func = new Function('data', '"use strict"; return (async () => { return (' + expression + ')})()')
-            return await func(data)
+            const func = new Function('row', 'data', '"use strict"; return (async () => { return (' + expression + ')})()')
+            return await func(row, data)
         } catch (err: any) {
-            logger.error('Failed to execute expression :[' + expression + '] for row: ' + data + ' with error: ' + err.message)
+            logger.error('Failed to execute expression :[' + expression + '] for data: ' + data + ' with error: ' + err.message)
             throw err
         }
     }

@@ -693,7 +693,7 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
             await process.save()
 
             const fm = FileManager.getInstance()
-            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, process, file.filepath, file.mimetype || '', file.originalFilename || '', false)
+            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, process, file.filepath, file.mimetype || '', file.originalFilename || '', true)
             const im = ImportManager.getInstance()
             im.processImportFile(context, process, importConfig, path)
 
