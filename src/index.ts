@@ -28,7 +28,7 @@ import {
   testImportConfig,
   processUploadXlsxTemplate, 
   downloadXlsxTemplateFile, 
-  testImportConfig} from './media';
+} from './media';
 import { initModels } from './models';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
