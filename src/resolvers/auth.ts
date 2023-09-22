@@ -47,8 +47,6 @@ export default {
             })
             if (!user) {
                 // create external user on the fly
-                const mng = ModelsManager.getInstance().getModelManager('default')
-                const userRoles : any = []
                 user = await sequelize.transaction(async (t) => {
                     const user = await User.create({
                         tenantId: serverConfig.tenantId,
@@ -64,6 +62,8 @@ export default {
                         }, {transaction: t});
                     return user
                 })
+                const mng = ModelsManager.getInstance().getModelManager(serverConfig.tenantId)
+                const userRoles : any = serverConfig.roles.map((id:number) =>  mng.getRoles().find(elem => elem.id === id))
                 mng.getUsers().push(new UserWrapper(user, userRoles))
             }
             const tst = user.options.find((elem:any) => elem.name === 'expiresIn')
