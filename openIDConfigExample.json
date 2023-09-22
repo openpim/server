@@ -1,0 +1,13 @@
+{
+	"auth": [
+		{
+			"id": "google",
+			"name": " Google",
+			"IssuerURL": "https://accounts.google.com",
+			"CLIENT_ID": "CLIENT_ID",
+			"CLIENT_SECRET": "CLIENT_ID",
+			"tenantId": "default",
+			"roles": [1]
+		}
+	]
+}
