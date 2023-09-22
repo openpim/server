@@ -79,7 +79,7 @@ export default {
 
             logger.info("User " + userinfo.email + " was logged on.")
 
-            return {token, user, auditEnabled: audit.auditEnabled()}
+            return {token, user, auditEnabled: audit.auditEnabled(), locale: serverConfig.locale}
         },
     }
 }

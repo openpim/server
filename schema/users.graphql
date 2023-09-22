@@ -23,6 +23,7 @@ type LoginResponse {
   token: String!
   user: User!
   auditEnabled: Boolean!
+  locale: String
 }
 
 type User {
