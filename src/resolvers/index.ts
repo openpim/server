@@ -101,8 +101,7 @@ export default {
         ...chanResolvers.Mutation,
         ...colResolvers.Mutation,
         ...procResolvers.Mutation,
-        ...importConfigResolvers.Mutation,
-        ...authResolvers.Mutation
+        ...importConfigResolvers.Mutation
     },
     SearchResponse: {
         ...searchResolvers.SearchResponse
