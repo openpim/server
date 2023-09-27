@@ -493,7 +493,7 @@ export class OzonChannelHandler extends ChannelHandler {
                                 if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
                                 const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, elem, attrConfig.options)
                                 if (!ozonValue) {
-                                    const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                                    const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + ')'
                                     context.log += msg                      
                                     this.reportError(channel, item, msg)
                                     return
@@ -505,7 +505,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         } else {
                             const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, value, attrConfig.options)
                             if (!ozonValue) {
-                                const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                                const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + ')'
                                 context.log += msg                      
                                 this.reportError(channel, item, msg)
                                 return
