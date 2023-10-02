@@ -10,5 +10,6 @@
 			"roles": [1],
 			"locale": "en"
 		}
-	]
+	],
+	"disableWebLogin": true
 }
