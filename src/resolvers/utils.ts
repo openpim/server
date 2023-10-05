@@ -965,13 +965,18 @@ class ActionUtils {
     }
 
     public getRelationAttributes(rel: ItemRelation, groupIdentifier?: string) {
-        const attrArr: string[] = []
+        const attrArr = this.getRelationAttributeObjects(rel, groupIdentifier)
+        return attrArr.map(elem => elem.identifier)
+    }
+
+    public getRelationAttributeObjects(rel: ItemRelation, groupIdentifier?: string) {
+        const attrArr: Attribute[] = []
 
         this.#mng.getAttrGroups().forEach(group => {
             if (group.getGroup().visible && (!groupIdentifier || group.getGroup().identifier === groupIdentifier)) {
                 group.getAttributes().forEach(attr => {
                     if (attr.relations.includes(rel.relationId)) {
-                        if (!attrArr.find(tst => tst === attr.identifier)) attrArr.push(attr.identifier)
+                        if (!attrArr.find(tst => tst.identifier === attr.identifier)) attrArr.push(attr)
                     }
                 })
             }
@@ -1033,6 +1038,13 @@ class ActionUtils {
                 ItemRelation
             } 
         })
+    }
+
+    public async nextId(seqName: string) {
+        const results:any = await sequelize.query("SELECT nextval('"+seqName+"')", { 
+            type: QueryTypes.SELECT
+        });
+        return (results[0]).nextval
     }
 
     public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any, skipActions = false) {
