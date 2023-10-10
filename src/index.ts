@@ -89,10 +89,12 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
   
-  app.use('/graphql', graphqlHTTP(async (request: IncomingMessage ) => ({
+  app.use('/graphql', graphqlHTTP(async (request: IncomingMessage ) => { 
+    const ctx = await Context.create(request)
+    return {
     schema,
     graphiql: false,
-    context: await Context.create(request),
+    context: ctx,
     customFormatErrorFn: (error: GraphQLError) => {
       const params = {
         message: error.message
@@ -102,10 +104,10 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       return (params);
     },
     extensions: ({ document, result }) => {
-      if (logger.transports[0].level === 'debug') logger.debug('Request:\n'+print(document)+'Response:\n'+JSON.stringify(result)+'\n\n')
+      if (logger.transports[0].level === 'debug') logger.debug('Request ('+ctx.getCurrentUser()?.login+'):\n'+print(document)+'Response:\n'+JSON.stringify(result)+'\n\n')
       return undefined
     }
-  })));
+  }}));
 
   app.get('/healthcheck', async (req, res) => {
     res.json({result: "OK"})
