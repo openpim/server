@@ -295,4 +295,5 @@ export interface ChannelAttribute {
   dictionaryLink?: string
   dictionaryLinkPost?: any
   maxCount?: number
+  isAspect?: boolean
 }

@@ -416,8 +416,18 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }
 
-        const ozonCategoryId = parseInt(categoryConfig.id.substring(4))
-        product.category_id = ozonCategoryId
+        let ozonCategoryId: number|null = null
+        let ozonTypeId: number|null = null
+        if (categoryConfig.id.includes('.')) { // new API version
+            const tmp = categoryConfig.id.substring(4)
+            const arr = tmp.split('.')
+            ozonCategoryId = parseInt(arr[0])
+            ozonTypeId = parseInt(arr[1])
+            product.description_category_id = ozonCategoryId
+        } else {
+            ozonCategoryId = parseInt(categoryConfig.id.substring(4))
+            product.category_id = ozonCategoryId
+        }
         product.offer_id = ''+productCode
         product.barcode = ''+barcode
         product.price = price
@@ -491,7 +501,7 @@ export class OzonChannelHandler extends ChannelHandler {
                             for (let j = 0; j < value.length; j++) {
                                 let elem = value[j];
                                 if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
-                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, elem, attrConfig.options)
+                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem, attrConfig.options)
                                 if (!ozonValue) {
                                     const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/' + ozonCategoryId + ')'
                                     context.log += msg                      
@@ -503,7 +513,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         } else if (typeof value === 'object') {
                             data.values.push(value)
                         } else {
-                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonAttrId, attr.dictionary, value, attrConfig.options)
+                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value, attrConfig.options)
                             if (!ozonValue) {
                                 const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/'  + ozonCategoryId + ')'
                                 context.log += msg                      
@@ -822,7 +832,7 @@ export class OzonChannelHandler extends ChannelHandler {
             if (data.length > 0) product.images = data
         }
     }    
-    private async generateValue(channel: Channel, ozonCategoryId: number, ozonAttrId: number, dictionary: boolean, value: any, options: any) {
+    private async generateValue(channel: Channel, ozonCategoryId: number, ozonTypeId: number|null, ozonAttrId: number, dictionary: boolean, value: any, options: any) {
         if (dictionary) {
             if (options) {
                 const tst = options.find((elem:any) => elem.name === value)
@@ -835,19 +845,37 @@ export class OzonChannelHandler extends ChannelHandler {
                 let last = 0
                 let idx = 0
                 do {
-                    const body = {
-                        "attribute_id": ozonAttrId,
-                        "category_id": ozonCategoryId,
-                        "language": "DEFAULT",
-                        "last_value_id": last,
-                        "limit": 5000
+                    let res
+                    if (ozonTypeId) {
+                        const body = {
+                            "attribute_id": ozonAttrId,
+                            "category_id": ozonCategoryId,
+                            "type_id": ozonTypeId,
+                            "language": "DEFAULT",
+                            "last_value_id": last,
+                            "limit": 5000
+                        }
+                        // console.log('request to https://api-seller.ozon.ru/v1/description-category/attribute/values '+JSON.stringify(body))
+                        res = await fetch('https://api-seller.ozon.ru/v1/description-category/attribute/values', {
+                            method: 'post',
+                            body:    JSON.stringify(body),
+                            headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                        })
+                    } else {
+                        const body = {
+                            "attribute_id": ozonAttrId,
+                            "category_id": ozonCategoryId,
+                            "language": "DEFAULT",
+                            "last_value_id": last,
+                            "limit": 5000
+                        }
+                        // console.log('request to https://api-seller.ozon.ru/v2/category/attribute/values '+JSON.stringify(body))
+                        res = await fetch('https://api-seller.ozon.ru/v2/category/attribute/values', {
+                            method: 'post',
+                            body:    JSON.stringify(body),
+                            headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                        })
                     }
-                    // console.log('request to https://api-seller.ozon.ru/v2/category/attribute/values '+JSON.stringify(body))
-                    const res = await fetch('https://api-seller.ozon.ru/v2/category/attribute/values', {
-                        method: 'post',
-                        body:    JSON.stringify(body),
-                        headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-                    })
                     const json = await res.json()
                     // console.log('response: '+JSON.stringify(json))
                     dict = dict.concat(json.result)
@@ -877,6 +905,23 @@ export class OzonChannelHandler extends ChannelHandler {
     }
 
     public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
+        if (process.env.OPENPIM_OZON_V4 === 'true') {
+            return await this.getCategoriesNew(channel)
+        } else {
+            return await this.getCategoriesOld(channel)
+        }
+    }
+
+    public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
+        const newVersion = categoryId.indexOf('.') > 0
+        if (newVersion) {
+            return await this.getAttributesNew(channel, categoryId)
+        } else {
+            return await this.getAttributesOld(channel, categoryId)
+        }
+    }
+
+    public async getCategoriesOld(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
         if (!channel.config.ozonClientId) throw new Error('Не введен Client Id в конфигурации канала.')
         if (!channel.config.ozonApiKey) throw new Error('Не введен Api Key в конфигурации канала.')
 
@@ -888,35 +933,23 @@ export class OzonChannelHandler extends ChannelHandler {
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
             })
             const json = await res.json()
-            this.collectTree(json.result, tree)
+            this.collectTreeOld(json.result, tree)
             this.cache.set('categories', tree, 3600)
         }
         return {list: null, tree: tree}
     }
-    private collectAllLeafs(arr: any[], data: ChannelCategory[]) {
-        arr.forEach(elem => {
-          if (elem.children) {
-              if (elem.children.length > 0) {
-                this.collectAllLeafs(elem.children, data)
-              } else {
-                data.push({id: 'cat_' + elem.category_id, name: elem.title})
-              }
-          }  
-        })
-    }
-    private collectTree(arr: any[], treeNode: ChannelCategory) {
+    private collectTreeOld(arr: any[], treeNode: ChannelCategory) {
         arr.forEach(elem => {
             const child = {id: 'cat_' + elem.category_id, name: elem.title, children: []}
             treeNode.children!.push(child)
             if (elem.children) {
                 if (elem.children.length > 0) {
-                    this.collectTree(elem.children, child)
+                    this.collectTreeOld(elem.children, child)
                 }
             }  
         })
     }
-    
-    public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
+    public async getAttributesOld(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_'+categoryId)
         if (! data) {
             const query = {
@@ -952,6 +985,86 @@ export class OzonChannelHandler extends ChannelHandler {
                         limit: 1000
                       }, headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey } } : null,
                     dictionaryLink: elem.dictionary_id !== 0 ? 'https://api-seller.ozon.ru/v2/category/attribute/values' : null
+                } 
+            } )
+
+
+            this.cache.set('attr_'+categoryId, data, 3600)
+        }
+        return <ChannelAttribute[]>data
+    }
+
+    public async getCategoriesNew(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
+        if (!channel.config.ozonClientId) throw new Error('Не введен Client Id в конфигурации канала.')
+        if (!channel.config.ozonApiKey) throw new Error('Не введен Api Key в конфигурации канала.')
+
+        let tree:ChannelCategory | undefined = this.cache.get('categories_new')
+        if (! tree) {
+            tree  = {id: '', name: 'root', children: []}
+            const res = await fetch('https://api-seller.ozon.ru/v1/description-category/tree', {
+                method: 'post',
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+            const json = await res.json()
+            this.collectTreeNew(json.result, tree, null)
+            this.cache.set('categories_new', tree, 3600)
+        }
+        return {list: null, tree: tree}
+    }
+    private collectTreeNew(arr: any[], treeNode: ChannelCategory, parent: any) {
+        arr.forEach(elem => {
+            const child = elem.type_id ? {id: 'cat_' + parent.category_id + '.' + elem.type_id, name: elem.type_name, children: []} : {id: 'cat_' + elem.category_id, name: elem.category_name, children: []}
+            treeNode.children!.push(child)
+            if (elem.children) {
+                if (elem.children.length > 0) {
+                    this.collectTreeNew(elem.children, child, elem)
+                }
+            }  
+        })
+    }
+
+    public async getAttributesNew(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
+        let data = this.cache.get('attr_'+categoryId)
+        if (! data) {
+            const tmp = categoryId.substring(4)
+            const arr = tmp.split('.')
+            const ozonCategoryId = arr[0]
+            const ozonTypeId = arr[1]
+            const query = {
+                category_id: ozonCategoryId,
+                type_id: ozonTypeId,
+                language: "DEFAULT"
+              }
+              logger.info("Sending request to Ozon: https://api-seller.ozon.ru/v1/description-category/attribute => " + JSON.stringify(query))
+              const res = await fetch('https://api-seller.ozon.ru/v1/description-category/attribute', {
+                method: 'post',
+                body:    JSON.stringify(query),
+                headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+            if (res.status !== 200) {
+                const text = await res.text()
+                throw new Error("Failed to query attributes with error: " + res.statusText+", text: " + text)
+            }
+            const json = await res.json()
+
+            data = json.result.map((elem:any) => { 
+                return { 
+                    id: 'attr_' + elem.id, 
+                    name: elem.name + ' ('+ elem.type + ')',
+                    required: elem.is_required,
+                    category: categoryId,
+                    description: elem.description+'\n id: '+elem.id+', category: '+categoryId,
+                    dictionary: elem.dictionary_id !== 0,
+                    isAspect: elem.is_aspect,
+                    dictionaryLinkPost: elem.dictionary_id !== 0 ? { body: {
+                        attribute_id: elem.id,
+                        category_id: ozonCategoryId,
+                        type_id: ozonTypeId,
+                        language: "DEFAULT",
+                        last_value_id: 0,
+                        limit: 1000
+                      }, headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey } } : null,
+                    dictionaryLink: elem.dictionary_id !== 0 ? 'https://api-seller.ozon.ru/v1/description-category/attribute/values' : null
                 } 
             } )
 
