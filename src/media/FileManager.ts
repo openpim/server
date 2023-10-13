@@ -7,6 +7,7 @@ import {File} from 'formidable'
 import logger from '../logger'
 import { Channel, ChannelExecution } from '../models/channels'
 import { Process } from '../models/processes'
+import * as hasha from 'hasha'
 
 export class FileManager {
     private static instance: FileManager
@@ -161,6 +162,12 @@ export class FileManager {
 
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
+
+        let values:any = {}
+        if (process.env.OPENPIM_FILE_HASH) {
+            values.file_hash = await hasha.fromFile(filepath, {algorithm: process.env.OPENPIM_FILE_HASH})
+        }
+
         if (clean) {
             try {
                 fs.renameSync(filepath, fullPath)
@@ -174,29 +181,24 @@ export class FileManager {
 
         item.storagePath = relativePath
 
-        let values
         if (this.isImage(mimetype||'')) {
             const image = await Jimp.read(fullPath)
-            values = {
-                image_width: image.bitmap.width,
-                image_height: image.bitmap.height,
-                image_type: image.getExtension(),
-                file_type: image.getMIME(),
-                file_name: originalFilename||'',
-                file_size: size,
-                image_rgba: image._rgba
-            }
+            values.image_width=image.bitmap.width
+            values.image_height=image.bitmap.height
+            values.image_type=image.getExtension()
+            values.file_type=image.getMIME()
+            values.file_name=originalFilename||''
+            values.file_size=size
+            values.image_rgba=image._rgba
 
             const w = image.bitmap.width > image.bitmap.height ? 300 : Jimp.AUTO
             const h = image.bitmap.width > image.bitmap.height ? Jimp.AUTO: 300
             image.resize(w, h).quality(70).background(0xffffffff)
             image.write(fullPath + '_thumb.jpg')    
         } else {
-            values = {
-                file_name: originalFilename||'',
-                file_type: mimetype||'',
-                file_size: size
-            }
+            values.file_name=originalFilename||''
+            values.file_type=mimetype||''
+            values.file_size=size
         }
         item.values = mergeValues(values, item.values)
     }
