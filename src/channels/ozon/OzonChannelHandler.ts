@@ -14,6 +14,8 @@ import Context from '../../context'
 import { processItemActions } from '../../resolvers/utils'
 import { EventType } from '../../models/actions'
 
+const NEW_VER_DELIMETER = '-'
+
 interface JobContext {
     log: string
 }
@@ -170,15 +172,15 @@ export class OzonChannelHandler extends ChannelHandler {
 
                     if (channel.config.ozonFBSIdAttr) {
                         const fbs = result.sources.find((elem: any) => elem.source === 'fbs')
-                        if (fbs) {
-                            item.values[channel.config.ozonFBSIdAttr] = ''+fbs.sku
+                        if (fbs || result.sku) {
+                            item.values[channel.config.ozonFBSIdAttr] = ''+(fbs?.sku || result.sku)
                             item.changed('values', true)
                         }
                     }
                     if (channel.config.ozonFBOIdAttr) {
                         const fbo = result.sources.find((elem: any) => elem.source === 'fbo')
-                        if (fbo) {
-                            item.values[channel.config.ozonFBOIdAttr] = ''+fbo.sku
+                        if (fbo || result.sku) {
+                            item.values[channel.config.ozonFBOIdAttr] = ''+(fbo?.sku || result.sku)
                             item.changed('values', true)
                         }
                     }
@@ -418,9 +420,9 @@ export class OzonChannelHandler extends ChannelHandler {
 
         let ozonCategoryId: number|null = null
         let ozonTypeId: number|null = null
-        if (categoryConfig.id.includes('.')) { // new API version
+        if (categoryConfig.id.includes(NEW_VER_DELIMETER)) { // new API version
             const tmp = categoryConfig.id.substring(4)
-            const arr = tmp.split('.')
+            const arr = tmp.split(NEW_VER_DELIMETER)
             ozonCategoryId = parseInt(arr[0])
             ozonTypeId = parseInt(arr[1])
             product.description_category_id = ozonCategoryId
@@ -913,7 +915,7 @@ export class OzonChannelHandler extends ChannelHandler {
     }
 
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
-        const newVersion = categoryId.indexOf('.') > 0
+        const newVersion = categoryId.indexOf(NEW_VER_DELIMETER) > 0
         if (newVersion) {
             return await this.getAttributesNew(channel, categoryId)
         } else {
@@ -1013,7 +1015,7 @@ export class OzonChannelHandler extends ChannelHandler {
     }
     private collectTreeNew(arr: any[], treeNode: ChannelCategory, parent: any) {
         arr.forEach(elem => {
-            const child = elem.type_id ? {id: 'cat_' + parent.category_id + '.' + elem.type_id, name: elem.type_name, children: []} : {id: 'cat_' + elem.category_id, name: elem.category_name, children: []}
+            const child = elem.type_id ? {id: 'cat_' + parent.category_id + NEW_VER_DELIMETER + elem.type_id, name: elem.type_name, children: []} : {id: 'cat_' + elem.category_id, name: elem.category_name, children: []}
             treeNode.children!.push(child)
             if (elem.children) {
                 if (elem.children.length > 0) {
@@ -1027,7 +1029,7 @@ export class OzonChannelHandler extends ChannelHandler {
         let data = this.cache.get('attr_'+categoryId)
         if (! data) {
             const tmp = categoryId.substring(4)
-            const arr = tmp.split('.')
+            const arr = tmp.split(NEW_VER_DELIMETER)
             const ozonCategoryId = arr[0]
             const ozonTypeId = arr[1]
             const query = {
