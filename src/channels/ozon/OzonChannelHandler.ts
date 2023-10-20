@@ -505,7 +505,7 @@ export class OzonChannelHandler extends ChannelHandler {
                                 if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
                                 const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem, attrConfig.options)
                                 if (!ozonValue) {
-                                    const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/' + ozonCategoryId + ')'
+                                    const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/' + ozonCategoryId + '/' + ozonTypeId + ')'
                                     context.log += msg                      
                                     this.reportError(channel, item, msg)
                                     return
@@ -517,7 +517,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         } else {
                             const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value, attrConfig.options)
                             if (!ozonValue) {
-                                const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/'  + ozonCategoryId + ')'
+                                const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/'  + ozonCategoryId + '/' + ozonTypeId + ')'
                                 context.log += msg                      
                                 this.reportError(channel, item, msg)
                                 return
@@ -886,13 +886,13 @@ export class OzonChannelHandler extends ChannelHandler {
                     last = dict[dict.length-1]?.id
                     if (idx++ > 25) {
                         this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, 'big', 3600)
-                        throw new Error('Data dictionary for attribute: '+ozonAttrId+' is too big, for category: '+ozonCategoryId)
+                        throw new Error('Data dictionary for attribute: '+ozonAttrId+ ', typeId:' + ozonTypeId + ' is too big, for category: '+ozonCategoryId)
                     }
                 } while (next)
     
                 this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, dict, 3600)
             } else if (dict === 'big') {
-                throw new Error('Data dictionary for attribute: '+ozonAttrId+' is too big, for category: '+ozonCategoryId)
+                throw new Error('Data dictionary for attribute: '+ozonAttrId+ ', typeId:' + ozonTypeId + ' is too big, for category: '+ozonCategoryId)
             }
 
             const entry = (dict as any[])!.find((elem:any) => elem.value === value)
