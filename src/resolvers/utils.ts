@@ -565,6 +565,41 @@ export async function processAttributeActions(context: Context, event: EventType
     })
 }
 
+export async function processImportActions(context: Context, event: EventType, process: Process, importConfig: ImportConfig, filepath: any) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const actions:Action[] = []
+
+    if (event === EventType.ImportBeforeStart && importConfig.config.beforeStartAction) {
+        const identifier = importConfig.identifier+event
+        const action = Action.build({ identifier: identifier, code: importConfig.config.beforeStartAction, order:0 })
+        actions.push(action)
+    }
+    if (event === EventType.ImportAfterEnd && importConfig.config.afterEndAction) {
+        const identifier = importConfig.identifier+event
+        const action = Action.build({ identifier: identifier, code: importConfig.config.afterEndAction, order:0 })
+        actions.push(action)
+    }
+
+    return await processActions(mng, actions, { Op: Op,
+        event: EventType[event],
+        user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
+        utils: new ActionUtils(context),
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
+        process: process, 
+        importConfig: importConfig,
+        filepath: filepath,
+        models: { 
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
+            Item,
+            ItemRelation
+        } 
+    })
+}
+
 
 async function processActions(mng: ModelManager, actions: Action[], sandbox: any) {
     const cons = { 

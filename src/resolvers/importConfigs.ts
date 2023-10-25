@@ -3,6 +3,7 @@ import { ModelsManager } from '../models/manager'
 import { sequelize } from '../models'
 import { ImportConfig } from '../models/importConfigs'
 import logger from '../logger'
+import { EventType } from '../models/actions'
 
 export default {
     Query: {
@@ -65,7 +66,11 @@ export default {
             if (type != null) importConfig.type = type
             if (mappings) importConfig.mappings = mappings
             if (filedata) importConfig.filedata = filedata
-            if (config) importConfig.config = config
+            if (config) {
+                if (importConfig.config.beforeStartAction !== config.beforeStartAction) delete mng.getActionsCache()[importConfig.identifier+EventType.ImportBeforeStart]
+                if (importConfig.config.afterEndAction !== config.afterEndAction) delete mng.getActionsCache()[importConfig.identifier+EventType.ImportAfterEnd]
+                importConfig.config = config
+            }
             /* if (mappings) {
                 const tmp = {...importConfig.mappings, ...mappings } // merge mappings to avoid deletion from another user
                 for (const prop in tmp) {
@@ -95,6 +100,8 @@ export default {
             }
 
             const importConfig  = mng.getImportConfigs()[idx]
+            delete mng.getActionsCache()[importConfig.identifier+EventType.ImportBeforeStart]
+            delete mng.getActionsCache()[importConfig.identifier+EventType.ImportAfterEnd]
             importConfig.updatedBy = context.getCurrentUser()!.login
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
             importConfig.identifier = importConfig.identifier + '_d_' + Date.now() 

@@ -7,6 +7,8 @@ import Context from '../context'
 import XLSX from 'xlsx'
 import { File } from 'formidable'
 import logger from "../logger"
+import { processImportActions } from '../resolvers/utils'
+import { EventType } from '../models/actions'
 
 export class ImportManager {
     private static instance: ImportManager
@@ -24,8 +26,10 @@ export class ImportManager {
     }
 
     public async processImportFile(context: Context, process: Process, importConfig: ImportConfig, filepath: any) {
+        const result:any = await processImportActions(context, EventType.ImportBeforeStart, process, importConfig, filepath)
+
         const config = importConfig.config
-        const data: any = await this.getImportConfigFileData(filepath)
+        const data: any = await this.getImportConfigFileData(result[0].data?.filepath || filepath)
 
         let { selectedTab, headerLineNumber, dataLineNumber, limit } = config
 
@@ -67,10 +71,13 @@ export class ImportManager {
                     await process.save()
                 }
             }
+           
             process.log += '\n File processing finished!'
         } else {
             process.log += '\n Uploaded file has invalid format. Check template and current file!'
         }
+
+        processImportActions(context, EventType.ImportAfterEnd, process, importConfig, filepath)
 
         process.active = false
         process.status = 'finished'

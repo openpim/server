@@ -8,7 +8,9 @@ export enum EventType {
   BeforeUpdate,
   AfterUpdate,
   BeforeDelete,
-  AfterDelete
+  AfterDelete,
+  ImportBeforeStart,
+  ImportAfterEnd
 }
 
 export enum TriggerType {
