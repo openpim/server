@@ -262,7 +262,7 @@ export class YMChannelHandler extends ChannelHandler {
                     const idx = name.indexOf(' (')
                     if (idx != -1) name = name.substring(0, idx)
                     const paramConfig = {id:name, attrIdent: attr.identifier}
-                    const value = await this.getValueByMapping(channel, paramConfig, item, language)
+                    let value = await this.getValueByMapping(channel, paramConfig, item, language)
                     if (value) {
                         if (!offer.param) offer.param =[]
                         if (Array.isArray(value)) {
@@ -270,7 +270,8 @@ export class YMChannelHandler extends ChannelHandler {
                                 offer.param.push({$:{name: paramConfig.id}, _: elem})
                             })
                         } else {
-                            offer.param.push({$:{name: paramConfig.id}, _: value})
+                            if (value instanceof Object) value = value[language]
+                            if (value) offer.param.push({$:{name: paramConfig.id}, _: value})
                         }
                     }
                 }
