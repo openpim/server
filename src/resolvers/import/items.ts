@@ -127,7 +127,8 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                         typeIdentifier: data.typeIdentifier,
                         parentIdentifier: data.parentIdentifier,
                         name: data.name,
-                        values: data.values
+                        values: data.values,
+                        channels: data.channels
                     }
                     audit.auditItem(ChangeType.DELETE, data.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)
                 }
@@ -227,7 +228,8 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     typeIdentifier: data.typeIdentifier,
                     parentIdentifier: data.parentIdentifier,
                     name: data.name,
-                    values: data.values
+                    values: data.values,
+                    channels: data.channels
                 }
                 audit.auditItem(ChangeType.CREATE, data.id, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, data.createdAt)
             }
@@ -331,7 +333,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             if (audit.auditEnabled()) {
-                const valuesDiff: AuditItem = diff({values:data.values}, {values:item.values})
+                const valuesDiff: AuditItem = diff({values:data.values, channels:data.channels}, {values:item.values, channels:item.channels})
                 itemDiff.added = {...itemDiff.added, ...valuesDiff.added}
                 itemDiff.changed = {...itemDiff.changed, ...valuesDiff.changed}
                 itemDiff.old = {...itemDiff.old, ...valuesDiff.old}

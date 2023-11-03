@@ -27,7 +27,7 @@ class Audit {
             changedAt: changedAt,
             data: item
         }
-        logger.debug('Sending data to the audit: ' + JSON.stringify(body))
+        logger.debug('Sending item to the audit: ' + JSON.stringify(body))
         try {
             this.getClient().index({
                 index: "items",
@@ -49,6 +49,7 @@ class Audit {
                 changedAt: changedAt,
                 data: item
             }
+            logger.debug('Sending item relation to the audit: ' + JSON.stringify(body))
             try {
             this.getClient().index({
                 index: "item_relations",
@@ -128,6 +129,7 @@ export interface ItemChanges {
     parentIdentifier?: string
     name?: any
     values?: any
+    channels?: any
     fileOrigName?: string
     mimeType?: string
 }

@@ -388,7 +388,8 @@ export default {
                     typeIdentifier: item.typeIdentifier,
                     parentIdentifier: item.parentIdentifier,
                     name: item.name,
-                    values: values
+                    values: values,
+                    channels: channels
                 }
                 audit.auditItem(ChangeType.CREATE, item.id, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, item.createdAt)
             }
@@ -425,6 +426,8 @@ export default {
             }
 
             let itemDiff: AuditItem | null = null
+            if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values, channels: item.channels}, {name: name || item.name, values: values || item.values, channels: channels || item.channels})
+
             if (channels) {
                 filterEditChannels(context, channels)
                 checkSubmit(context, channels)
@@ -432,11 +435,8 @@ export default {
                 processDeletedChannels(item.channels)
             }
             if (values) {
-                if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values}, {name: name || item.name, values: values})
                 item.values = mergeValues(values, item.values)
                 item.changed("values", true)
-            } else {
-                if (audit.auditEnabled() && name) itemDiff = diff({name: item.name}, {name: name})
             }
 
             if (name) item.name = name
@@ -594,7 +594,8 @@ export default {
                         typeIdentifier: item.typeIdentifier,
                         parentIdentifier: item.parentIdentifier,
                         name: item.name,
-                        values: item.values
+                        values: item.values,
+                        channels: item.channels
                     }
                     audit.auditItem(ChangeType.DELETE, item.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
                 }
