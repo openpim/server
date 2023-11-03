@@ -126,7 +126,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     const itemChanges: ItemChanges = {
                         typeIdentifier: data.typeIdentifier,
                         parentIdentifier: data.parentIdentifier,
-                        name: ''+data.name,
+                        name: data.name,
                         values: data.values
                     }
                     audit.auditItem(ChangeType.DELETE, data.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)
@@ -335,6 +335,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 itemDiff.added = {...itemDiff.added, ...valuesDiff.added}
                 itemDiff.changed = {...itemDiff.changed, ...valuesDiff.changed}
                 itemDiff.old = {...itemDiff.old, ...valuesDiff.old}
+                itemDiff.deleted = {...itemDiff.deleted, ...valuesDiff.deleted}
             }
 
             data.values = mergeValues(item.values, data.values)

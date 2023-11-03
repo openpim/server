@@ -210,35 +210,35 @@ export function diff(obj1: any, obj2: any) {
         var type2 = Object.prototype.toString.call(item2);
 
         // If type2 is undefined it has been removed
-        if (type2 === '[object Undefined]') {
-            if (type1 !== '[object Object]') {
-                diffs.deleted[key] = item1 !== null ? item1 + "" : null;
+        if (item2 === null) {
+            if (item1 && type1 !== '[object Object]') {
+                diffs.deleted[key] = item1;
                 return;
             }
-        }
-
-        // If items are different types
-        if (type1 !== type2) {
-            diffs.changed[key] = item2 !== null ? item2 + "" : null;
-            diffs.old[key] = item1 !== null ? item1 + "" : null;
-            return;
         }
 
         // If an object, compare recursively
         if (type1 === '[object Object]') {
             var objDiff = diff(item1, item2);
             if (Object.keys(objDiff).length > 0) {
-                if (Object.keys(objDiff.added).length > 0) diffs.added[key] = objDiff.added;
-                if (Object.keys(objDiff.changed).length > 0) diffs.changed[key] = objDiff.changed;
-                if (Object.keys(objDiff.old).length > 0) diffs.old[key] = objDiff.old;
-                if (Object.keys(objDiff.deleted).length > 0) diffs.deleted[key] = objDiff.deleted;
+                if (objDiff.added && Object.keys(objDiff.added).length > 0) diffs.added[key] = objDiff.added;
+                if (objDiff.changed && Object.keys(objDiff.changed).length > 0) diffs.changed[key] = objDiff.changed;
+                if (objDiff.old && Object.keys(objDiff.old).length > 0) diffs.old[key] = objDiff.old;
+                if (objDiff.deleted && Object.keys(objDiff.deleted).length > 0) diffs.deleted[key] = objDiff.deleted;
             }
             return;
         }
 
-        if ((!Array.isArray(item1) && item1 !== item2) || (Array.isArray(item1) && !(item1.length === item2.length && item1.every((elem:any) => item2.indexOf(elem) !== -1)))) {
-            diffs.changed[key] = item2 !== null ? item2 + "" : null;
-            diffs.old[key] = item1 !== null ? item1 + "" : null;
+        // If items are different types
+        if (item1 !== undefined && item2 !== undefined  && type1 !== type2) {
+            diffs.changed[key] = item2;
+            diffs.old[key] = item1;
+            return;
+        }
+
+        if ((!Array.isArray(item1) && item1 !== item2 && item2 !== undefined) || (Array.isArray(item1) && !(item1.length === item2.length && item1.every((elem:any) => item2.indexOf(elem) !== -1)))) {
+            diffs.changed[key] = item2;
+            diffs.old[key] = item1;
         } 
     };
 

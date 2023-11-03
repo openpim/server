@@ -1,4 +1,4 @@
-import { Client } from '@elastic/elasticsearch'
+import { Client, ClientOptions } from '@elastic/elasticsearch'
 import logger from "./logger"
 
 class Audit {
@@ -6,9 +6,9 @@ class Audit {
 
     public getClient() {
         if (!this.client) {
-            this.client = new Client({
-                node: process.env.AUDIT_URL
-            })
+            const config:ClientOptions = { node: process.env.AUDIT_URL }
+            if (process.env.AUDIT_USER && process.env.AUDIT_PASSWORD) config.auth = { username: process.env.AUDIT_USER, password: process.env.AUDIT_PASSWORD }
+            this.client = new Client(config)
         }
         return this.client
     }    
@@ -27,6 +27,7 @@ class Audit {
             changedAt: changedAt,
             data: item
         }
+        logger.debug('Sending data to the audit: ' + JSON.stringify(body))
         try {
             this.getClient().index({
                 index: "items",
