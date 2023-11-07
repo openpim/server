@@ -236,7 +236,7 @@ export function diff(obj1: any, obj2: any) {
             return;
         }
 
-        if ((!Array.isArray(item1) && item1 !== item2 && item2 !== undefined) || (Array.isArray(item1) && !(item1.length === item2.length && item1.every((elem:any) => item2.indexOf(elem) !== -1)))) {
+        if ((!Array.isArray(item1) && item1 !== item2 && item2 !== undefined) || (Array.isArray(item1) && Array.isArray(item2) && !(item1.length === item2.length && item1.every((elem:any) => item2.indexOf(elem) !== -1)))) {
             diffs.changed[key] = item2;
             diffs.old[key] = item1;
         } 
