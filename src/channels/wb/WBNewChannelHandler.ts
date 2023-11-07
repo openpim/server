@@ -261,13 +261,14 @@ export class WBNewChannelHandler extends ChannelHandler {
         data.category = categoryConfig.id
         
         const productCodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#productCode')
-        const productCode = await this.getValueByMapping(channel, productCodeConfig, item, language)
+        let productCode = await this.getValueByMapping(channel, productCodeConfig, item, language)
         if (!productCode) {
             const msg = 'Не введена конфигурация для "Артикула товара" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
         }
+        productCode = ''+productCode
 
         const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
         const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
