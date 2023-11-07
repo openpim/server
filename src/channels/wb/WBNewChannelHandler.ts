@@ -150,7 +150,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 item.channels[channel.identifier].message = 'Не найдено значение артикула товара в атрибуте: ' + channel.config.wbCodeAttr
             } else {
                 const url = 'https://suppliers-api.wildberries.ru/content/v1/cards/filter'
-                const request = {vendorCodes: [article]}
+                const request = {vendorCodes: [''+article]}
                 let msg = "Запрос на WB: " + url + " => " + JSON.stringify(request)
                 logger.info(msg)
                 if (channel.config.debug) context.log += msg+'\n'
