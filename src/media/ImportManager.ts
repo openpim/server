@@ -26,7 +26,7 @@ export class ImportManager {
         return ImportManager.instance
     }
 
-    public async processImportFile(context: Context, process: Process, importConfig: ImportConfig, filepath: any) {
+    public async processImportFile(context: Context, process: Process, importConfig: ImportConfig, filepath: any, language: string) {
         const result:any = await processImportActions(context, EventType.ImportBeforeStart, process, importConfig, filepath)
 
         const config = importConfig.config
@@ -56,41 +56,41 @@ export class ImportManager {
                 if (rowData) {
                     const res = (config.beforeEachRow && config.beforeEachRow.length) ? await this.evaluateExpression(rowData, null, config.beforeEachRow) : null
                     if (res && typeof res == 'boolean') {
-                        process.log += '\n' + `${i18next.t('ImportManagerValueSkipped')} ${JSON.stringify(rowData)}`
+                        process.log += '\n' + `${i18next.t('ImportManagerValueSkipped', { lng: language })} ${JSON.stringify(rowData)}`
                         continue
                     }
                     if (res) {
-                        process.log += '\n' + `${i18next.t('ImportManagerRowSkipped')} ${JSON.stringify(rowData)}`
+                        process.log += '\n' + `${i18next.t('ImportManagerRowSkipped', { lng: language })} ${JSON.stringify(rowData)}`
                         continue
                     }
                     try {
                         const item = await this.mapLine(headers, importConfig, rowData)
-                        process.log += '\n' + `${i18next.t('ImportManagerItem')} ` + JSON.stringify(item)
+                        process.log += '\n' + `${i18next.t('ImportManagerItem', { lng: language })} ` + JSON.stringify(item)
                         if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
                             const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
-                            process.log += '\n' + `${i18next.t('ImportManagerImportResult')} ${JSON.stringify(importRes)}`
+                            process.log += '\n' + `${i18next.t('ImportManagerImportResult', { lng: language })} ${JSON.stringify(importRes)}`
                         } else {
-                            process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty')}`
+                            process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty', { lng: language })}`
                         }
                     } catch (e) {
-                        process.log += '\n' + `${i18next.t('ImportManagerErrorUpdatingItem')} ${e}`
+                        process.log += '\n' + `${i18next.t('ImportManagerErrorUpdatingItem', { lng: language })} ${e}`
                     }
                     await process.save()
                 } else {
-                    process.log += '\n' + `${i18next.t('ImportManagerThereIsNoDataForLine')} ${i}}`
+                    process.log += '\n' + `${i18next.t('ImportManagerThereIsNoDataForLine', { lng: language })} ${i}}`
                     await process.save()
                 }
             }
            
-            process.log += '\n' + `${i18next.t('ImportManagerFileProcessingFinished')}`
+            process.log += '\n' + `${i18next.t('ImportManagerFileProcessingFinished', { lng: language })}`
         } else {
-            process.log += '\n' + `${i18next.t('ImportManagerUploadedFileHasInvalidFormat')}`
+            process.log += '\n' + `${i18next.t('ImportManagerUploadedFileHasInvalidFormat', { lng: language })}`
         }
 
         processImportActions(context, EventType.ImportAfterEnd, process, importConfig, filepath)
 
         process.active = false
-        process.status = i18next.t('Finished')
+        process.status = i18next.t('Finished', { lng: language })
         process.finishTime = Date.now()
         await process.save()
     }

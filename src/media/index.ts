@@ -677,7 +677,6 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
 
             let language = <string>fields['language']
             if (!language) language = 'en'
-            i18next.changeLanguage(language)
 
             const proc = await Process.build ({
                 identifier: 'importConfigProcess' + Date.now(),
@@ -685,10 +684,10 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
                 createdBy: context.getCurrentUser()!.login,
                 updatedBy: context.getCurrentUser()!.login,
                 // todo: check this name, should use correct language identifier
-                title: `${i18next.t('ImportProcessForMapping')}` + importConfig.name[`${language}`],
+                title: `${i18next.t('ImportProcessForMapping', { lng: language })}` + importConfig.name[language],
                 active: true,
-                status: i18next.t('Active'),
-                log: i18next.t('Started'),
+                status: i18next.t('Active', { lng: language }),
+                log: i18next.t('Started', { lng: language }),
                 runtime: {},
                 finishTime: null,
                 storagePath: '',
@@ -700,7 +699,7 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
             const fm = FileManager.getInstance()
             const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, file.filepath, file.mimetype || '', file.originalFilename || '', true)
             const im = ImportManager.getInstance()
-            im.processImportFile(context, proc, importConfig, path)
+            im.processImportFile(context, proc, importConfig, path, language)
 
             res.status(200).send({ result: 'OK'})
         } catch(error: any) {
@@ -726,7 +725,6 @@ export async function testImportConfig(context: Context, req: Request, res: Resp
 
             let language = <string>fields['language']
             if (!language) language = 'en'
-            i18next.changeLanguage(language)
 
             const { mimeType, fileName, storagePath } = importConfig.filedata.info
 
@@ -736,10 +734,10 @@ export async function testImportConfig(context: Context, req: Request, res: Resp
                 createdBy: context.getCurrentUser()!.login,
                 updatedBy: context.getCurrentUser()!.login,
                 // todo: check this name, should use correct language identifier
-                title: `${i18next.t('ImportProcessForMapping')}` + importConfig.name[`${language}`],
+                title: `${i18next.t('ImportProcessForMapping', { lng: language })}` + importConfig.name[language],
                 active: true,
-                status: i18next.t('Active'),
-                log: i18next.t('Started'),
+                status: i18next.t('Active', { lng: language }),
+                log: i18next.t('Started', { lng: language }),
                 runtime: {},
                 finishTime: null,
                 storagePath: '',
@@ -752,7 +750,7 @@ export async function testImportConfig(context: Context, req: Request, res: Resp
             const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, process.env.FILES_ROOT! + storagePath, mimeType || '', fileName || '', false)
 
             const im = ImportManager.getInstance()
-            im.processImportFile(context, proc, importConfig, path)
+            im.processImportFile(context, proc, importConfig, path, language)
 
             res.status(200).send({ result: 'OK' })
         } catch (error: any) {
