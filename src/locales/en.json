@@ -1,0 +1,21 @@
+{
+    "RunningaGraphQLAPIserver": "Running a GraphQL API server at",
+    "Serverversion": "Server version",
+    "Arguments": "Arguments",
+    "FoundKeyForCompany": "Found key for company: {{ split }} with data: {{ channelTypes }}",
+    "WrongKey": "Wrong key",
+    "Data models were loaded": "Data models were loaded",
+    "ImportManagerValueSkipped": "Value skipped:",
+    "ImportManagerRowSkipped": "Row skipped:",
+    "ImportManagerItem": "Item:",
+    "ImportManagerImportResult": "Import result:",
+    "ImportManagerItemIdentifierIsEmpty": "Can not map item. Item identifier is empty.",
+    "ImportManagerErrorUpdatingItem": "Error updating item:",
+    "ImportManagerThereIsNoDataForLine": "There is no data for line:",
+    "ImportManagerFileProcessingFinished": "File processing finished!",
+    "ImportManagerUploadedFileHasInvalidFormat": "Uploaded file has invalid format. Check template and current file!",
+    "Started": "Started",
+    "Active": "Active",
+    "Finished": "Finished",
+    "ImportProcessForMapping": "Import process for mapping "
+}

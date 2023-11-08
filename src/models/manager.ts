@@ -15,6 +15,7 @@ import logger from '../logger'
 import NodeCache from 'node-cache'
 import { FileManager } from '../media/FileManager'
 import * as fs from 'fs'
+import i18next from '../i18n';
 
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
@@ -328,7 +329,7 @@ export class ModelsManager {
         await this.initChannels(where)
         await this.initImportConfigs(where)
 
-        logger.info('Data models were loaded')
+        logger.info(i18next.t('Data models were loaded'))
     }
 
     public async initRoles(where: WhereOptions | undefined) {

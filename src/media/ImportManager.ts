@@ -9,6 +9,7 @@ import { File } from 'formidable'
 import logger from "../logger"
 import { processImportActions } from '../resolvers/utils'
 import { EventType } from '../models/actions'
+import i18next from '../i18n'
 
 export class ImportManager {
     private static instance: ImportManager
@@ -53,34 +54,43 @@ export class ImportManager {
             for (let i = startRowNumber; i < endRowNumber; i++) {
                 const rowData = selectedData[i] || null
                 if (rowData) {
+                    const res = (config.beforeEachRow && config.beforeEachRow.length) ? await this.evaluateExpression(rowData, null, config.beforeEachRow) : null
+                    if (res && typeof res == 'boolean') {
+                        process.log += '\n' + `${i18next.t('ImportManagerValueSkipped')} ${JSON.stringify(rowData)}`
+                        continue
+                    }
+                    if (res) {
+                        process.log += '\n' + `${i18next.t('ImportManagerRowSkipped')} ${JSON.stringify(rowData)}`
+                        continue
+                    }
                     try {
                         const item = await this.mapLine(headers, importConfig, rowData)
-                        process.log += '\n Item: ' + JSON.stringify(item)
+                        process.log += '\n' + `${i18next.t('ImportManagerItem')} ` + JSON.stringify(item)
                         if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
                             const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
-                            process.log += '\n Import result: ' + JSON.stringify(importRes)
+                            process.log += '\n' + `${i18next.t('ImportManagerImportResult')} ${JSON.stringify(importRes)}`
                         } else {
-                            process.log += '\n Can not map item. Item identifier is empty.'
+                            process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty')}`
                         }
                     } catch (e) {
-                        process.log += '\n Error updating item: ' + e
+                        process.log += '\n' + `${i18next.t('ImportManagerErrorUpdatingItem')} ${e}`
                     }
                     await process.save()
                 } else {
-                    process.log += '\n There is no data for line: ' + i
+                    process.log += '\n' + `${i18next.t('ImportManagerThereIsNoDataForLine')} ${i}}`
                     await process.save()
                 }
             }
            
-            process.log += '\n File processing finished!'
+            process.log += '\n' + `${i18next.t('ImportManagerFileProcessingFinished')}`
         } else {
-            process.log += '\n Uploaded file has invalid format. Check template and current file!'
+            process.log += '\n' + `${i18next.t('ImportManagerUploadedFileHasInvalidFormat')}`
         }
 
         processImportActions(context, EventType.ImportAfterEnd, process, importConfig, filepath)
 
         process.active = false
-        process.status = 'finished'
+        process.status = i18next.t('Finished')
         process.finishTime = Date.now()
         await process.save()
     }

@@ -19,6 +19,7 @@ import { EventType } from '../models/actions'
 import { Process } from '../models/processes'
 import { ImportConfig } from '../models/importConfigs'
 import { ImportManager } from './ImportManager'
+import i18next from '../i18n'
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -674,28 +675,32 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
             const file = <File>files['file']
             if (!file) throw new Error('Failed to find "file" parameter')
 
-            const process = await Process.build ({
+            let language = <string>fields['language']
+            if (!language) language = 'en'
+            i18next.changeLanguage(language)
+
+            const proc = await Process.build ({
                 identifier: 'importConfigProcess' + Date.now(),
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,
                 updatedBy: context.getCurrentUser()!.login,
                 // todo: check this name, should use correct language identifier
-                title: 'Import process for mapping ' + importConfig.name.ru,
+                title: `${i18next.t('ImportProcessForMapping')}` + importConfig.name[`${language}`],
                 active: true,
-                status: 'active',
-                log: 'started',
+                status: i18next.t('Active'),
+                log: i18next.t('Started'),
                 runtime: {},
                 finishTime: null,
                 storagePath: '',
                 mimeType: '',
                 fileName: ''
             })
-            await process.save()
+            await proc.save()
 
             const fm = FileManager.getInstance()
-            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, process, file.filepath, file.mimetype || '', file.originalFilename || '', true)
+            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, file.filepath, file.mimetype || '', file.originalFilename || '', true)
             const im = ImportManager.getInstance()
-            im.processImportFile(context, process, importConfig, path)
+            im.processImportFile(context, proc, importConfig, path)
 
             res.status(200).send({ result: 'OK'})
         } catch(error: any) {
@@ -706,42 +711,53 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
 }
 
 export async function testImportConfig(context: Context, req: Request, res: Response) {
+    const form = new IncomingForm({ maxFileSize: 6 * 1024 * 1024 * 1024, keepExtensions: true })
+    form.parse(req, async (err, fields, files) => {
+        try {
+            const id = req.params.id
 
-    const id = req.params.id
+            const importConfig = await ImportConfig.applyScope(context).findByPk(id)
 
-    const importConfig = await ImportConfig.applyScope(context).findByPk(id)
+            if (!importConfig || !importConfig.filedata) {
+                logger.error('Failed to find importConfig by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
+                res.status(400).send('Failed to find importConfig template')
+                return
+            }
 
-    if (!importConfig || !importConfig.filedata) {
-        logger.error('Failed to find importConfig by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
-        res.status(400).send('Failed to find importConfig template')
-        return
-    }
+            let language = <string>fields['language']
+            if (!language) language = 'en'
+            i18next.changeLanguage(language)
 
-    const { mimeType, fileName, storagePath } = importConfig.filedata.info
+            const { mimeType, fileName, storagePath } = importConfig.filedata.info
 
-    const proc = await Process.build ({
-        identifier: 'importProcess' + Date.now(),
-        tenantId: context.getCurrentUser()!.tenantId,
-        createdBy: context.getCurrentUser()!.login,
-        updatedBy: context.getCurrentUser()!.login,
-        // todo: check this name, should use correct language identifier
-        title: 'Import process for mapping ' + importConfig.name.ru,
-        active: true,
-        status: 'active',
-        log: 'started',
-        runtime: {},
-        finishTime: null,
-        storagePath: '',
-        mimeType: '',
-        fileName: ''
+            const proc = await Process.build({
+                identifier: 'importProcess' + Date.now(),
+                tenantId: context.getCurrentUser()!.tenantId,
+                createdBy: context.getCurrentUser()!.login,
+                updatedBy: context.getCurrentUser()!.login,
+                // todo: check this name, should use correct language identifier
+                title: `${i18next.t('ImportProcessForMapping')}` + importConfig.name[`${language}`],
+                active: true,
+                status: i18next.t('Active'),
+                log: i18next.t('Started'),
+                runtime: {},
+                finishTime: null,
+                storagePath: '',
+                mimeType: '',
+                fileName: ''
+            })
+            await proc.save()
+
+            const fm = FileManager.getInstance()
+            const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, process.env.FILES_ROOT! + storagePath, mimeType || '', fileName || '', false)
+
+            const im = ImportManager.getInstance()
+            im.processImportFile(context, proc, importConfig, path)
+
+            res.status(200).send({ result: 'OK' })
+        } catch (error: any) {
+            logger.error(error)
+            res.status(400).send(error.message)
+        }
     })
-    await proc.save()
-
-    const fm = FileManager.getInstance()
-    const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, process.env.FILES_ROOT! + storagePath, mimeType || '', fileName || '', false)
-
-    const im = ImportManager.getInstance()
-    im.processImportFile(context, proc, importConfig, path)
-
-    res.status(200).send({ result: 'OK'})
 }

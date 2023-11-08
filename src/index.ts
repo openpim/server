@@ -13,6 +13,8 @@ import { IncomingMessage } from 'http';
 import { ChannelsManagerFactory } from './channels';
 import Context from './context';
 import logger from './logger';
+import i18next from './i18n';
+import i18nextMiddleware from 'i18next-express-middleware';
 import { 
   processChannelDownload, 
   processCreateUpload, 
@@ -45,16 +47,16 @@ dotenv.config();
 const app = express();
 app.use(compression())
 app.use(bodyParser.json({limit: '500mb'}));
+app.use(i18nextMiddleware.handle(i18next));
 
 (async () => {
-  logger.info(`Server version: ${  version.buildMajor  }.${  version.buildMinor  }.${  version.buildRevision}`)
-  logger.info(`Arguments: ${  process.argv}`)
+  await initModels();
+  logger.info(`${i18next.t('Serverversion')}: ${  version.buildMajor  }.${  version.buildMinor  }.${  version.buildRevision}`)
+  logger.info(`${i18next.t('Arguments')}: ${  process.argv}`)
   
   // Construct a schema, using GraphQL schema language
   const typeDefs = await importSchema('./schema/index.graphql'); 
   const schema = await makeExecutableSchema({ typeDefs, resolvers })
-
-  await initModels();
 
   let channelTypes = undefined
   
@@ -75,9 +77,9 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     const isVerified = crypto.verify( "sha256", Buffer.from(data), options, Buffer.from(sign, 'base64'))
     if (isVerified) {
       channelTypes = JSON.parse("[" + split[0] + "]")
-      logger.info('Found key for company: ' + split[1]+' with data: '+channelTypes)
+      logger.info(`${i18next.t('FoundKeyForCompany', { split: split[1], channelTypes: channelTypes })}`)
     } else {
-      logger.error('Wrong key')
+      logger.error(`${i18next.t('WrongKey')}`)
       channelTypes = []
     }
   }
@@ -267,5 +269,5 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   await Context.init()
   app.listen(process.env.PORT);
-  logger.info('Running a GraphQL API server at http://localhost:' + process.env.PORT + '/graphql');
+  logger.info(`${i18next.t('RunningaGraphQLAPIserver')} at http://localhost:${process.env.PORT}/graphql`);
 })();
