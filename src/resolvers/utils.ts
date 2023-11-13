@@ -42,6 +42,7 @@ import { Process } from "../models/processes"
 import { ImportConfig } from '../models/importConfigs'
 import { CollectionItems } from "../models/collectionItems"
 import { ChannelExecution } from "../models/channels"
+import { ChannelsManagerFactory } from "../channels"
 
 export function replaceOperations(obj: any) {
     let include = []
@@ -1300,5 +1301,18 @@ class ActionUtils {
         })
         chanExec.save()
         return chanExec
+    }
+
+    public async triggerChannel (channelIdentifier: string, language: string, data: any = null) {
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+        const chan = mng.getChannels().find( chan => chan.identifier === channelIdentifier)
+        if (!chan) {
+            throw new Error('Failed to find channel by identifier: ' + channelIdentifier + ', tenant: ' + mng.getTenantId())
+        }
+        if (!this.#context.canEditChannel(chan.identifier) || chan.tenantId !== this.#context.getCurrentUser()?.tenantId) {
+            throw new Error('User '+ this.#context.getCurrentUser()?.id+ ' does not has permissions to triger channel, tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+        const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(this.#context.getCurrentUser()!.tenantId)
+        await channelMng.triggerChannel(chan, language, data)
     }
 }
