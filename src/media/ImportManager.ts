@@ -30,7 +30,7 @@ export class ImportManager {
         const result:any = await processImportActions(context, EventType.ImportBeforeStart, process, importConfig, filepath)
 
         const config = importConfig.config
-        const data: any = await this.getImportConfigFileData(result[0].data?.filepath || filepath)
+        const data: any = await this.getImportConfigFileData(result?.[0]?.data?.filepath || filepath)
 
         let { selectedTab, headerLineNumber, dataLineNumber, limit } = config
 
