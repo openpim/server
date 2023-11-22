@@ -5,6 +5,7 @@ import { ModelsManager, UserWrapper } from './models/manager';
 import { Item } from './models/items';
 import { LOV } from './models/lovs';
 import * as fs from 'fs'
+import logger from './logger'
 
 export default class Context {
     private currentUser: LoggedUser | null = null
@@ -66,6 +67,7 @@ export default class Context {
                     ctx.user = mng?.getUsers().find(user => user.getUser().id === ctx.currentUser!.id)
                 }
             } catch (e) {
+                logger.error('Failed to validate token: '+ token + ', error:' + (e as Error).toString())
                 throw new jwt.JsonWebTokenError('Your session expired. Sign in again.');
             }
         }
