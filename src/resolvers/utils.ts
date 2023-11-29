@@ -957,6 +957,7 @@ class ActionUtils {
         const attrArr: Attribute[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
+        const unique: any = {}
         this.#mng.getAttrGroups().forEach(group => {
             if (group.getGroup().visible && (!groupIdentifiers || groupIdentifiers.includes(group.getGroup().identifier))) {
                 group.getAttributes().forEach(attr => {
@@ -964,7 +965,10 @@ class ActionUtils {
                         for (let i=0; i<attr.visible.length; i++ ) {
                             const visible: number = attr.visible[i]
                             if (pathArr.includes(visible)) {
-                                if (!attrArr.find(tst => tst.identifier === attr.identifier)) attrArr.push(attr)
+                                if (!unique[attr.identifier]) {
+                                    unique[attr.identifier] = true
+                                    attrArr.push(attr)
+                                }
                                 break
                             }
                         }
@@ -980,6 +984,7 @@ class ActionUtils {
         const groupArr: Record<string, any> = {}
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
 
+        const unique: any = {}
         this.#mng.getAttrGroups().forEach(group => {
             if (group.getGroup().visible && (!groupIdentifiers || groupIdentifiers.includes(group.getGroup().identifier))) {
                 const group_: string = group.getGroup().identifier
@@ -988,7 +993,8 @@ class ActionUtils {
                         for (let i=0; i<attr.visible.length; i++ ) {
                             const visible: number = attr.visible[i]
                             if (pathArr.includes(visible)) {
-                                if (!attrArr.find(tst => tst.identifier === attr.identifier)) {
+                                if (!unique[attr.identifier]) {
+                                    unique[attr.identifier] = true
                                     attrArr = typeof groupArr[`${group_}`] !== 'undefined' ? groupArr[`${group_}`] : []
                                     attrArr.push(attr)
                                     groupArr[`${group_}`] = attrArr
