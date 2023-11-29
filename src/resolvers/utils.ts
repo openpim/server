@@ -622,6 +622,8 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
         actions.sort((a, b) => a.order - b.order)
         for (let i = 0; i < actions.length; i++) {
             const action = actions[i]
+            const startTS = Date.now()
+            logger.debug(`Starting action ${action.identifier} at ${startTS}`)
             let script:VMScript | {compileError: boolean, error: string} | undefined = mng.getActionsCache()[action.identifier]
             if (script instanceof VMScript || script === undefined) {
                 if (script === undefined) {
@@ -663,6 +665,8 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
             } else {
                 retArr.push({identifier: action.identifier, compileError: script.error})
             }
+            const finishTS = Date.now()
+            logger.debug(`Finished action ${action.identifier} at ${finishTS}, duration is ${finishTS-startTS}`)
         }
     }
     return retArr
