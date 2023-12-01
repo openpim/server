@@ -1,12 +1,16 @@
 import { Base } from './base'
 import BaseColumns from './base'
 import { Sequelize, DataTypes } from 'sequelize'
+import Context from '../context'
 
 export class Dashboard extends Base {
   public identifier!: string
   public name!: any
   public users!: string[]
   public components!: any
+  public static applyScope(context: Context) {
+    return Dashboard.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
+  }
 }
 
 export function init(sequelize: Sequelize):void {
@@ -38,6 +42,15 @@ export function init(sequelize: Sequelize):void {
       tableName: 'dashboards',
       paranoid: true,
       timestamps: true,
-      sequelize: sequelize
-  });    
+      sequelize: sequelize,
+      scopes: {
+        tenant(value) {
+          return {
+            where: {
+              tenantId: value
+            }
+          }
+        }
+      }
+  });
 }

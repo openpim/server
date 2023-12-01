@@ -74,6 +74,8 @@ export async function importRelation(context: Context, config: IImportConfig, re
     
                 const idx = mng.getRelations().findIndex( (rel) => rel.id === data.id)    
                 mng.getRelations().splice(idx, 1)
+
+                await mng.reloadModelRemotely(data.id, null, 'RELATION', true, context.getUserToken())
                     
                 result.result = ImportResult.DELETED
             }
@@ -121,6 +123,7 @@ export async function importRelation(context: Context, config: IImportConfig, re
             mng.getRelations().push(data)
 
             result.id = ""+data.id
+            await mng.reloadModelRemotely(data.id, null, 'RELATION', false, context.getUserToken())
             result.result = ImportResult.CREATED
         } else {
             // update
@@ -143,6 +146,7 @@ export async function importRelation(context: Context, config: IImportConfig, re
             })
 
             result.id = ""+data.id
+            await mng.reloadModelRemotely(data.id, null, 'RELATION', false, context.getUserToken())
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {

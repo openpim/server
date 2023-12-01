@@ -226,6 +226,7 @@ export default {
             mng.getChannels().push(chan)
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
             channelMng.startChannel(chan)
+            await mng.reloadModelRemotely(chan.id, null, 'CHANNEL', false, context.getUserToken())
             return chan.id
         },
         updateChannel: async (parent: any, { id, name, active, type, valid, visible, config, mappings, runtime }: any, context: Context) => {
@@ -274,6 +275,7 @@ export default {
             } else {
                 channelMng.stopChannel(chan)
             }
+            await mng.reloadModelRemotely(chan.id, null, 'CHANNEL', false, context.getUserToken())
             return chan.id
         },
         removeChannel: async (parent: any, { id }: any, context: Context) => {
@@ -304,6 +306,7 @@ export default {
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
             channelMng.stopChannel(chan)
 
+            await mng.reloadModelRemotely(chan.id, null, 'CHANNEL', true, context.getUserToken())
             return true
         }
     }

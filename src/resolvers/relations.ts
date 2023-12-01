@@ -64,6 +64,7 @@ export default {
             })
 
             mng.getRelations().push(rel)
+            await mng.reloadModelRemotely(rel.id, null, 'RELATION', false, context.getUserToken())
             return rel.id
         },
         updateRelation: async (parent: any, { id, name, sources, targets, child, multi, order, options}: any, context: Context) => {
@@ -91,6 +92,7 @@ export default {
             await sequelize.transaction(async (t) => {
                 await rel!.save({transaction: t})
             })
+            await mng.reloadModelRemotely(rel.id, null, 'RELATION', false, context.getUserToken())
             return rel.id
         },
         removeRelation: async (parent: any, { id }: any, context: Context) => {
@@ -128,6 +130,7 @@ export default {
             })
 
             mng.getRelations().splice(idx, 1)
+            await mng.reloadModelRemotely(rel.id, null, 'RELATION', true, context.getUserToken())
 
             return true
         }

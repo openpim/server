@@ -73,8 +73,8 @@ export default {
             })
 
             mng.getAttrGroups().push(new AttrGroupWrapper(grp))
-
             await processAttrGroupActions(context, EventType.AfterCreate, grp, false)
+            await mng.reloadModelRemotely(grp.id, null, 'ATTRIBUTE_GROUP', false, context.getUserToken())
             
             return grp.id
         },
@@ -102,6 +102,7 @@ export default {
                 await group.save({transaction: t})
             })
             await processAttrGroupActions(context, EventType.AfterUpdate, group, false)
+            await mng.reloadModelRemotely(group.id, null, 'ATTRIBUTE_GROUP', false, context.getUserToken())
             return group.id
         },
         removeAttributeGroup: async (parent: any, { id }: any, context: Context) => {
@@ -138,6 +139,8 @@ export default {
             mng.getAttrGroups().splice(idx, 1)
 
             await processAttrGroupActions(context, EventType.AfterDelete, group, false)
+
+            await mng.reloadModelRemotely(group.id, null, 'ATTRIBUTE_GROUP', true, context.getUserToken())
 
             return true
         },
@@ -198,6 +201,7 @@ export default {
 
             group.getAttributes().push(attr)
             await processAttributeActions(context, EventType.AfterCreate, attr, false)
+            await mng.reloadModelRemotely(attr.id, group.getGroup().id, 'ATTRIBUTE', false, context.getUserToken())
             return attr.id
         },
         updateAttribute: async (parent: any, { id, name, order, valid, visible, relations, languageDependent, type, pattern, errorMessage, lov, richText, multiLine, options }: any, context: Context) => {
@@ -257,6 +261,7 @@ export default {
                 const idx = grp.getAttributes().findIndex((attr) => { return attr.id === nId })
                 if (idx !== -1) {
                     grp.getAttributes()[idx] = attr
+                    await mng.reloadModelRemotely(attr.id, grp.getGroup().id, 'ATTRIBUTE', false, context.getUserToken())
                 }
             }
 
@@ -291,6 +296,7 @@ export default {
             })
 
             tstGroup.getAttributes().push(save)
+            await mng.reloadModelRemotely(id, tstGroup.getGroup().id, 'ATTRIBUTE', false, context.getUserToken())
 
             return true
         },
@@ -332,6 +338,7 @@ export default {
 
             const idx = tstGroup.getAttributes().findIndex((attr) => attr.id === nId)
             tstGroup.getAttributes().splice(idx, 1)
+            await mng.reloadModelRemotely(id, tstGroup.getGroup().id, 'ATTRIBUTE', true, context.getUserToken())
 
             return true
         },
@@ -366,11 +373,10 @@ export default {
                 const idx = grp.getAttributes().findIndex((attr) => { return attr.id === nId })
                 if (idx !== -1) {
                     grp.getAttributes().splice(idx, 1)
+                    await mng.reloadModelRemotely(id, grp.getGroup().id, 'ATTRIBUTE', true, context.getUserToken())
                 }
             }
-
             await processAttributeActions(context, EventType.AfterDelete, attr, false)
-
             return true
         }
     }

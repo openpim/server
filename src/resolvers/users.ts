@@ -91,6 +91,8 @@ export default {
 
             (<any>role).internalId = role.id
             
+            await mng.reloadModelRemotely(role.id, null, 'ROLE', false, context.getUserToken())
+
             return role.id
         },
         updateRole: async (parent: any, { id, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess, options }: any, context: Context) => {
@@ -121,6 +123,7 @@ export default {
             await sequelize.transaction(async (t) => {
                 await role.save({transaction: t})
             })
+            await mng.reloadModelRemotely(role.id, null, 'ROLE', false, context.getUserToken())
             return role.id
         },
         removeRole: async (parent: any, { id }: any, context: Context) => {
@@ -159,6 +162,8 @@ export default {
                 const idx = wrapper.getRoles().findIndex(data => data.id === role.id)
                 if (idx !== -1) wrapper.getRoles().splice(idx, 1)
             })
+
+            await mng.reloadModelRemotely(role.id, null, 'ROLE', true, context.getUserToken())
 
             return true
         },
@@ -309,6 +314,8 @@ export default {
 
             (<any>user).internalId = user.id
 
+            await mng.reloadModelRemotely(user.id, null, 'USER', false, context.getUserToken())
+
             return user.id
         },
         updateUser: async (parent: any, { id, name, password, email, roles, props, options }: any, context: Context) => {
@@ -371,6 +378,9 @@ export default {
 
             cleaningDatabase.RunJob(user)
 
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            await mng.reloadModelRemotely(user.id, null, 'USER', false, context.getUserToken())
+
             return user.id
         },
         removeUser: async (parent: any, { id }: any, context: Context) => {
@@ -409,6 +419,7 @@ export default {
 
             mng.getUsers().splice(idx, 1)
 
+            await mng.reloadModelRemotely(user.id, null, 'USER', true, context.getUserToken())
             return true
         },    
     }

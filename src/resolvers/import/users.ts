@@ -47,7 +47,7 @@ export async function importUser(context: Context, config: IImportConfig, user: 
                 })
     
                 mng.getUsers().splice(idx, 1)
-                                
+                await mng.reloadModelRemotely(data.id, null, 'USER', true, context.getUserToken())
                 result.result = ImportResult.DELETED
             }
             return result
@@ -98,6 +98,7 @@ export async function importUser(context: Context, config: IImportConfig, user: 
             mng.getUsers().push(new UserWrapper(data, userRoles));
 
             result.id = ""+data.id
+            await mng.reloadModelRemotely(data.id, null, 'USER', false, context.getUserToken())
             result.result = ImportResult.CREATED
         } else {
             // update
@@ -124,6 +125,7 @@ export async function importUser(context: Context, config: IImportConfig, user: 
             })
 
             result.id = ""+data.id
+            await mng.reloadModelRemotely(data.id, null, 'USER', false, context.getUserToken())
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {

@@ -16,6 +16,7 @@ import chanResolvers from './channels'
 import colResolvers from './collections'
 import procResolvers from './processes'
 import authResolvers from './auth'
+import reloadResolvers from './reload'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
 import LanguageDependentString from './utils/languageDependentString'
 import { GraphQLDateTime } from 'graphql-iso-date'
@@ -82,7 +83,8 @@ export default {
         ...importConfigResolvers.Query,
         ...colResolvers.Query,
         ...procResolvers.Query,
-        ...authResolvers.Query
+        ...authResolvers.Query,
+        ...reloadResolvers.Query
     },
     Mutation: {
         ...resolver.Mutation,

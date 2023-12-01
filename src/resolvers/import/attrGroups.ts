@@ -78,7 +78,7 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
                 mng.getAttrGroups().splice(idx, 1)
                 
                 await processAttrGroupActions(context, EventType.AfterCreate, data, true)
-
+                await mng.reloadModelRemotely(data.id, null, 'ATTRIBUTE_GROUP', true, context.getUserToken())
                 result.result = ImportResult.DELETED
             }
             return result
@@ -115,11 +115,10 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
             })
 
             mng.getAttrGroups().push(new AttrGroupWrapper(data))
-
             result.id = ""+data.id
 
             await processAttrGroupActions(context, EventType.AfterCreate, data, true)
-
+            await mng.reloadModelRemotely(data.id, null, 'ATTRIBUTE_GROUP', false, context.getUserToken())
             result.result = ImportResult.CREATED
         } else {
             // update
@@ -136,7 +135,7 @@ export async function importAttrGroup(context: Context, config: IImportConfig, g
             result.id = ""+data.id
 
             await processAttrGroupActions(context, EventType.AfterUpdate, data, true)
-
+            await mng.reloadModelRemotely(data.id, null, 'ATTRIBUTE_GROUP', false, context.getUserToken())
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {

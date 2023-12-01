@@ -1,0 +1,17 @@
+type Query {
+  reloadModelRemotely(id: ID!, parentId: ID, entity: Entity!, del:Boolean): Boolean
+}
+
+enum Entity {
+  ACTION,
+  ATTRIBUTE,
+  ATTRIBUTE_GROUP,
+  CHANNEL,
+  DASHBOARD,
+  IMPORT_CONFIG,
+  LANGUAGE,
+  RELATION,
+  ROLE,
+  TYPE,
+  USER
+}

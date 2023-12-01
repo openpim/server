@@ -16,6 +16,7 @@ import NodeCache from 'node-cache'
 import { FileManager } from '../media/FileManager'
 import * as fs from 'fs'
 import i18next from '../i18n';
+import fetch from 'node-fetch'
 
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
@@ -38,6 +39,10 @@ export class ModelManager {
     public getTenantId() { return this.tenantId }
 
     public getRoot() { return this.typeRoot }
+    public resetRoot() {
+        this.typeRoot = new TreeNode<void>()
+        return this.typeRoot
+    }
 
     public getRoles() { return this.roles }
     public getUsers() { return this.users }
@@ -106,6 +111,31 @@ export class ModelManager {
             }
         }
         return this.serverConfig
+    }
+
+    public async reloadModelRemotely(id: number, parentId: number | null, entity: string, del:boolean, xToken: string | null) {
+        const servers = process.env.OPENPIM_SERVERS
+        if (servers && servers.length && xToken) {
+            const serversArr = servers.split(';')
+            for (let i=0; i<serversArr.length; i++) {
+                const server = serversArr[i]
+                const request = `query { reloadModelRemotely( id: "${id}", parentId: "${parentId}" entity: ${entity}, del: ${del} ) }`
+                const query = { query: request }
+                logger.debug(`Reloading model remotely for server ${server}`)
+                try {
+                    const res = await fetch(server + '/graphql', {
+                        method: 'post',
+                        body: JSON.stringify(query),
+                        headers: { 'Content-Type': 'application/json', 'x-token': xToken },
+                    })
+                    const json = await res.json()
+                    logger.debug(JSON.stringify(json))
+                } catch(err) {
+                    logger.error(`Failed to reload model remotely for server ${server}`)
+                    logger.error(err)
+                }
+            }
+        }
     }
 
     private dumpChildren(arr:any[], children: TreeNode<Type>[]) {

@@ -250,6 +250,7 @@ export default {
             })
 
             mng.getDashboards().push(dash)
+            await mng.reloadModelRemotely(dash.id, null, 'DASHBOARD', false, context.getUserToken())
             return dash.id
         },
         updateDashboard: async (parent: any, { id, name, users, components }: any, context: Context) => {
@@ -273,6 +274,7 @@ export default {
             await sequelize.transaction(async (t) => {
                 await dash!.save({transaction: t})
             })
+            await mng.reloadModelRemotely(dash.id, null, 'DASHBOARD', false, context.getUserToken())
             return dash.id
         },
         removeDashboard: async (parent: any, { id }: any, context: Context) => {
@@ -299,7 +301,7 @@ export default {
             })
 
             mng.getDashboards().splice(idx, 1)
-
+            await mng.reloadModelRemotely(dash.id, null, 'DASHBOARD', true, context.getUserToken())
             return true
         }
     }

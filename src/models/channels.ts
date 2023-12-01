@@ -13,6 +13,9 @@ export class Channel extends Base {
   public config!: any
   public mappings!: any
   public runtime!: any
+  public static applyScope(context: Context) {
+    return Channel.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
+  }
 }
 
 export class ChannelExecution extends Base {
@@ -76,7 +79,16 @@ export function init(sequelize: Sequelize):void {
       tableName: 'channels',
       paranoid: true,
       timestamps: true,
-      sequelize: sequelize
+      sequelize: sequelize,
+      scopes: {
+        tenant(value) {
+          return {
+            where: {
+              tenantId: value
+            }
+          }
+        }
+      }
   });
   ChannelExecution.init({
     channelId: {
@@ -117,6 +129,6 @@ export function init(sequelize: Sequelize):void {
           }
         }
       }
-    }        
-});      
+    }
+});
 }

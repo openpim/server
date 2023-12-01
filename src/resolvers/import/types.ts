@@ -94,7 +94,7 @@ export async function importType(context: Context, config: IImportConfig, type: 
                         await type.save({transaction: t})
                         await type.destroy({transaction: t})
                     })
-        
+                    await mng.reloadModelRemotely(type.id, null, 'TYPE', false, context.getUserToken())
                     result.result = ImportResult.DELETED
                 }
             }
@@ -187,6 +187,7 @@ export async function importType(context: Context, config: IImportConfig, type: 
             mng.addType(parentId, data)
 
             result.id = ""+data.id
+            await mng.reloadModelRemotely(data.id, null, 'TYPE', false, context.getUserToken())
             result.result = ImportResult.CREATED
         } else {
             // update
@@ -233,6 +234,7 @@ export async function importType(context: Context, config: IImportConfig, type: 
             })
 
             result.id = ""+data.id
+            await mng.reloadModelRemotely(data.id, null, 'TYPE', false, context.getUserToken())
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {

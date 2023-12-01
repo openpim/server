@@ -39,6 +39,7 @@ export default {
             })
 
             mng.getLanguages().push(lang)
+            await mng.reloadModelRemotely(lang.id, null, 'LANGUAGE', false, context.getUserToken())
             return lang.id
         },
         updateLanguage: async (parent: any, { id, name }: any, context: Context) => {
@@ -60,6 +61,7 @@ export default {
             await sequelize.transaction(async (t) => {
                 await lang!.save({transaction: t})
             })
+            await mng.reloadModelRemotely(lang.id, null, 'LANGUAGE', false, context.getUserToken())
             return lang.id
         },
         removeLanguage: async (parent: any, { id }: any, context: Context) => {
@@ -86,7 +88,7 @@ export default {
             })
 
             mng.getLanguages().splice(idx, 1)
-
+            await mng.reloadModelRemotely(lang.id, null, 'LANGUAGE', true, context.getUserToken())
             return true
         }
     }

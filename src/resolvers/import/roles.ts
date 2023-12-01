@@ -83,11 +83,24 @@ export async function importRole(context: Context, config: IImportConfig, role: 
                 })
     
                 mng.getRoles().splice(idx, 1)
-                mng.getUsers().forEach(wrapper => {
+                await mng.reloadModelRemotely(data.id, null, 'ROLE', true, context.getUserToken())
+
+                const users = mng.getUsers()
+                for(let i=0; i<users.length; i++) {
+                    const wrapper = users[i]
+                    const idx = wrapper.getRoles().findIndex(r => r.id === data.id)
+                    if (idx !== -1) {
+                        wrapper.getRoles().splice(idx, 1)
+                        await mng.reloadModelRemotely(data.id, null, 'ROLE', true, context.getUserToken())
+                        
+                    }
+                }
+
+                /* mng.getUsers().forEach(wrapper => {
                     const idx = wrapper.getRoles().findIndex(r => r.id === data.id)
                     if (idx !== -1) wrapper.getRoles().splice(idx, 1)
-                })
-                                
+                }) */
+
                 result.result = ImportResult.DELETED
             }
             return result
@@ -141,6 +154,7 @@ export async function importRole(context: Context, config: IImportConfig, role: 
             mng.getRoles().push(data);
 
             result.id = ""+data.id
+            await mng.reloadModelRemotely(data.id, null, 'ROLE', true, context.getUserToken())
             result.result = ImportResult.CREATED
         } else {
             // update
@@ -176,6 +190,7 @@ export async function importRole(context: Context, config: IImportConfig, role: 
             })
 
             result.id = ""+data.id
+            await mng.reloadModelRemotely(data.id, null, 'ROLE', true, context.getUserToken())
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {

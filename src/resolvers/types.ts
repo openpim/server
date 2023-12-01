@@ -90,6 +90,7 @@ export default {
             })
 
             mng.addType(pId, type)
+            await mng.reloadModelRemotely(type.id, pId, 'TYPE', false, context.getUserToken())
             return type.id
         },
         updateType: async (parent: any, { id, name, icon, iconColor, file, mainImage, images, options  }: any, context: Context) => {
@@ -119,6 +120,9 @@ export default {
             await sequelize.transaction(async (t) => {
                 await type.save({transaction: t})
             })
+
+            const parentNode = typeNode.getParent()!
+            await mng.reloadModelRemotely(type.id, parentNode.getValue() ? parentNode.getValue().id : null, 'TYPE', false, context.getUserToken())
             return type.id
         },
         removeType: async (parent: any, { id }: any, context: Context) => {
@@ -167,12 +171,13 @@ export default {
             const type:Type = typeNode.getValue()
             type.updatedBy = context.getCurrentUser()!.login
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
-            type.identifier = type.identifier + '_deleted_' + Date.now() 
+            type.identifier = type.identifier + '_deleted_' + Date.now()
             await sequelize.transaction(async (t) => {
                 await type.save({transaction: t})
                 await type.destroy({transaction: t})
             })
 
+            await mng.reloadModelRemotely(type.id, parentNode.getValue() ? parentNode.getValue().id : null, 'TYPE', true, context.getUserToken())
             return true
         },
         linkType: async (parent: any, { id, parentId }: any, context: Context) => {
@@ -226,6 +231,7 @@ export default {
             })
 
             mng.addType(nParentId, type)
+            await mng.reloadModelRemotely(type.id, nParentId, 'TYPE', true, context.getUserToken())
             return type.id
         }
     }

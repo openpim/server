@@ -8,6 +8,7 @@ import * as fs from 'fs'
 
 export default class Context {
     private currentUser: LoggedUser | null = null
+    private token: string | null = null
     private user: UserWrapper | undefined = undefined
     private static externalAuthFunction:any = undefined
     private static externalSecurityFunction:any = undefined
@@ -37,6 +38,10 @@ export default class Context {
         return this.user
     }
 
+    public getUserToken() {
+        return this.token
+    }
+
     public checkAuth() {
         if (!this.currentUser || (this.currentUser.tenantId !== '0' && !this.user)) throw new Error('User is not authenticated')
     }
@@ -61,6 +66,7 @@ export default class Context {
             try {
                 const res = await jwt.verify(token, <string>process.env.SECRET);
                 ctx.currentUser = <LoggedUser>res
+                ctx.token = token
                 if (ctx.currentUser.tenantId !== '0') {
                     const mng = ModelsManager.getInstance().getModelManager(ctx.currentUser.tenantId)
                     ctx.user = mng?.getUsers().find(user => user.getUser().id === ctx.currentUser!.id)

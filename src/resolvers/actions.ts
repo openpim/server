@@ -44,6 +44,7 @@ export default {
             })
 
             mng.getActions().push(action)
+            await mng.reloadModelRemotely(action.id, null, 'ACTION', false, context.getUserToken())
             return action.id
         },
         updateAction: async (parent: any, { id, name, code, order, triggers }: any, context: Context) => {
@@ -69,6 +70,7 @@ export default {
                 await act!.save({transaction: t})
             })
             delete mng.getActionsCache()[act.identifier]
+            await mng.reloadModelRemotely(act.id, null, 'ACTION', false, context.getUserToken())
             return act.id
         },
         removeAction: async (parent: any, { id }: any, context: Context) => {
@@ -95,7 +97,7 @@ export default {
             })
 
             mng.getActions().splice(idx, 1)
-
+            await mng.reloadModelRemotely(act.id, null, 'ACTION', true, context.getUserToken())
             return true
         },
         executeButtonAction: async (parent: any, { itemId, buttonText, data }: any, context: Context) => {

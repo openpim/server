@@ -1,6 +1,7 @@
 import { Base } from './base'
 import BaseColumns from './base'
 import { Sequelize, DataTypes } from 'sequelize'
+import Context from '../context'
 
 export enum EventType {
   BeforeCreate = 1,
@@ -29,6 +30,9 @@ export class Action extends Base {
   public code!: string
   public order!: number
   public triggers!: any
+  public static applyScope(context: Context) {
+    return Action.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
+  }
 }
 
 export function init(sequelize: Sequelize):void {
@@ -64,6 +68,15 @@ export function init(sequelize: Sequelize):void {
       tableName: 'actions',
       paranoid: true,
       timestamps: true,
-      sequelize: sequelize
-  });    
+      sequelize: sequelize,
+      scopes: {
+        tenant(value) {
+          return {
+            where: {
+              tenantId: value
+            }
+          }
+        }
+      }
+  });
 }

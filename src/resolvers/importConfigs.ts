@@ -46,6 +46,7 @@ export default {
             })
 
             mng.getImportConfigs().push(importConfig)
+            await mng.reloadModelRemotely(importConfig.id, null, 'IMPORT_CONFIG', false, context.getUserToken())
             return importConfig.id
         },
         updateImportConfig: async (parent: any, { id, name, type, mappings, filedata, config }: any, context: Context) => {
@@ -82,7 +83,7 @@ export default {
             await sequelize.transaction(async (t) => {
                 await importConfig!.save({transaction: t})
             })
-
+            await mng.reloadModelRemotely(importConfig.id, null, 'IMPORT_CONFIG', false, context.getUserToken())
             return importConfig.id
         },
         removeImportConfig: async (parent: any, { id }: any, context: Context) => {
@@ -111,6 +112,7 @@ export default {
             })
 
             mng.getImportConfigs().splice(idx, 1)
+            await mng.reloadModelRemotely(importConfig.id, null, 'IMPORT_CONFIG', true, context.getUserToken())
             return true
         }
     }

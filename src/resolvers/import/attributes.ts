@@ -71,6 +71,7 @@ export async function importAttribute(context: Context, config: IImportConfig, a
                     const idx = grp.getAttributes().findIndex((attr) => { return attr.id === data.id })
                     if (idx !== -1) {
                         grp.getAttributes().splice(idx, 1)
+                        await mng.reloadModelRemotely(data.id, grp.getGroup().id, 'ATTRIBUTE', true, context.getUserToken())
                     }
                 }
                         
@@ -148,8 +149,15 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             })
 
             result.id = ""+data.id
-
             await processAttributeActions(context, EventType.AfterCreate, data, true)
+            
+            for (let i=0; i < mng.getAttrGroups().length; i++) {
+                const grp = mng.getAttrGroups()[i]
+                const idx = grp.getAttributes().findIndex((attr) => { return attr.id === data.id })
+                if (idx !== -1) {
+                    await mng.reloadModelRemotely(data.id, grp.getGroup().id, 'ATTRIBUTE', false, context.getUserToken())
+                }
+            }
 
             result.result = ImportResult.CREATED
         } else {
@@ -234,8 +242,15 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             })
 
             result.id = ""+data.id
-
             await processAttributeActions(context, EventType.AfterUpdate, data, true)
+            
+            for (let i=0; i < mng.getAttrGroups().length; i++) {
+                const grp = mng.getAttrGroups()[i]
+                const idx = grp.getAttributes().findIndex((attr) => { return attr.id === data.id })
+                if (idx !== -1) {
+                    await mng.reloadModelRemotely(data.id, grp.getGroup().id, 'ATTRIBUTE', false, context.getUserToken())
+                }
+            }
 
             result.result = ImportResult.UPDATED
         } 
