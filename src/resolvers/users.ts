@@ -227,7 +227,7 @@ export default {
 
                     (<any>user).internalId = user.id
 
-                    logger.info("User " + login + " was logged on.")
+                    logger.info("User " + login + " was logged on. Token: " + token)
 
                     return {token, user, auditEnabled: audit.auditEnabled()}
                 } else {
