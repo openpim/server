@@ -78,6 +78,7 @@ export default {
             let option = null
             let data: any
             let lov: LOV | null = null
+            let lang = mng.getLanguages().length > 0 ? mng.getLanguages()[0].identifier : 'en'
             if (component.type === 1) {
                 /* example of request
                 const result: any = await Item.applyScope(context).findAll({
@@ -132,7 +133,7 @@ export default {
 
                         if (lov) {
                             const tst = lov.values.find((lovItem:any) => lovItem.id == val)
-                            return tst ? tst.value.ru : val // now we returned only Russian values... need to know current language from UI, todo later
+                            return tst ? tst.value[lang] : val 
                         } else {
                             return val
                         }
