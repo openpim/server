@@ -851,6 +851,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     if (ozonTypeId) {
                         const body = {
                             "attribute_id": ozonAttrId,
+                            "description_category_id": ozonCategoryId,
                             "category_id": ozonCategoryId,
                             "type_id": ozonTypeId,
                             "language": "DEFAULT",
@@ -1015,7 +1016,7 @@ export class OzonChannelHandler extends ChannelHandler {
     }
     private collectTreeNew(arr: any[], treeNode: ChannelCategory, parent: any) {
         arr.forEach(elem => {
-            const child = elem.type_id ? {id: 'cat_' + parent.category_id + NEW_VER_DELIMETER + elem.type_id, name: elem.type_name, children: []} : {id: 'cat_' + elem.category_id, name: elem.category_name, children: []}
+            const child = elem.type_id ? {id: 'cat_' + parent.category_id + NEW_VER_DELIMETER + elem.type_id, name: elem.type_name, children: []} : {id: 'cat_' + (elem.description_category_id || elem.category_id), name: elem.category_name, children: []}
             treeNode.children!.push(child)
             if (elem.children) {
                 if (elem.children.length > 0) {
@@ -1033,6 +1034,7 @@ export class OzonChannelHandler extends ChannelHandler {
             const ozonCategoryId = arr[0]
             const ozonTypeId = arr[1]
             const query = {
+                description_category_id: ozonCategoryId,
                 category_id: ozonCategoryId,
                 type_id: ozonTypeId,
                 language: "DEFAULT"
@@ -1060,6 +1062,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     isAspect: elem.is_aspect,
                     dictionaryLinkPost: elem.dictionary_id !== 0 ? { body: {
                         attribute_id: elem.id,
+                        description_category_id: ozonCategoryId,
                         category_id: ozonCategoryId,
                         type_id: ozonTypeId,
                         language: "DEFAULT",
