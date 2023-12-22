@@ -19,7 +19,7 @@ interface JobContext {
 }
 
 export class WBChannelHandler extends ChannelHandler {
-    private cache = new NodeCache();
+    private cache = new NodeCache({useClones: false});
 
     public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
         const chanExec = await this.createExecution(channel)

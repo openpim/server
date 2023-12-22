@@ -31,7 +31,7 @@ export class ModelManager {
     private actionsCache:any = {}
     private roles: Role[] = []
     private users: UserWrapper[] = []
-    private cache = new NodeCache()
+    private cache = new NodeCache({useClones: false})
     private static serverConfig: any = null
 
     public constructor(tenantId: string) { this.tenantId = tenantId }

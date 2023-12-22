@@ -9,7 +9,7 @@ import { exec } from "child_process"
 import { ItemRelation } from "../models/itemRelations"
 
 export abstract class ChannelHandler {
-  private lovCache = new NodeCache();
+  private lovCache = new NodeCache({useClones: false});
 
   abstract processChannel(channel: Channel, language: string, data: any): Promise<void>
 

@@ -20,7 +20,7 @@ interface JobContext {
 }
 
 export class WBNewChannelHandler extends ChannelHandler {
-    private cache = new NodeCache();
+    private cache = new NodeCache({useClones: false});
 
     public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
         
