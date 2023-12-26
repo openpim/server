@@ -126,7 +126,7 @@ export default {
                 return null
             }
         },
-        getItemRelationsChildren: async (parent: any, { itemId, offset, limit  }: any, context: Context) => {
+        getItemRelationsChildren: async (parent: any, { itemId, offset, limit, sort  }: any, context: Context) => {
             context.checkAuth()
             
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
@@ -166,7 +166,7 @@ export default {
                     r."relationId" in (:relations) and 
                     r."itemId"=:itemId
                     `+restrictSql+` 
-                    order by i.id 
+                    order by i.`+(sort ? sort : 'id')+` 
                     limit :limit offset :offset`, {
                 replacements: { 
                     tenant: context.getCurrentUser()!.tenantId,

@@ -3,7 +3,7 @@ type Query {
   getTargetRelations(itemId: ID!, relationId: ID!, offset: Int!, limit: Int!, where: JSONObject): ItemRelationsResponse
   getItemRelation(id: ID!): ItemRelation
   getItemRelationByIdentifier(identifier: String!): ItemRelation
-  getItemRelationsChildren(itemId: ID!, offset: Int!, limit: Int!): ItemRelationsChildrenResponse
+  getItemRelationsChildren(itemId: ID!, offset: Int!, limit: Int!, sort: String): ItemRelationsChildrenResponse
 }
 
 type Mutation {
