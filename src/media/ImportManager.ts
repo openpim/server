@@ -1,3 +1,5 @@
+const { Op } = require("sequelize");
+
 import * as fs from 'fs'
 import { Process } from '../models/processes'
 import { ImportConfig } from '../models/importConfigs'
@@ -7,9 +9,10 @@ import Context from '../context'
 import XLSX from 'xlsx'
 import { File } from 'formidable'
 import logger from "../logger"
-import { processImportActions } from '../resolvers/utils'
+import { processImportActions, replaceOperations } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 import i18next from '../i18n'
+import { Item } from '../models/items'
 
 export class ImportManager {
     private static instance: ImportManager
@@ -54,7 +57,7 @@ export class ImportManager {
             for (let i = startRowNumber; i < endRowNumber; i++) {
                 const rowData = selectedData[i] || null
                 if (rowData) {
-                    const res = (config.beforeEachRow && config.beforeEachRow.length) ? await this.evaluateExpression(rowData, null, config.beforeEachRow) : null
+                    const res = (config.beforeEachRow && config.beforeEachRow.length) ? await this.evaluateExpression(rowData, null, config.beforeEachRow, context) : null
                     if (res && typeof res == 'boolean') {
                         process.log += '\n' + `${i18next.t('ImportManagerValueSkipped', { lng: language })} ${JSON.stringify(rowData)}`
                         continue
@@ -64,7 +67,7 @@ export class ImportManager {
                         continue
                     }
                     try {
-                        const item = await this.mapLine(headers, importConfig, rowData)
+                        const item = await this.mapLine(headers, importConfig, rowData, context)
                         process.log += '\n' + `${i18next.t('ImportManagerItem', { lng: language })} ` + JSON.stringify(item)
                         if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
                             const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
@@ -95,7 +98,7 @@ export class ImportManager {
         await process.save()
     }
 
-    private async mapLine(headers: Array<any>, importConfig: ImportConfig, data: Array<any>) {
+    private async mapLine(headers: Array<any>, importConfig: ImportConfig, data: Array<any>, context: Context) {
         const result: any = {
             name: {},
             values: {}
@@ -113,7 +116,7 @@ export class ImportManager {
                 }
     
                 if ((idx !== -1 || (idx === -1 && mapping.expression)) && mapping.attribute && mapping.attribute.length) {
-                    const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, data[idx], mapping.expression) : data[idx]
+                    const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, data[idx], mapping.expression, context) : data[idx]
                     if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
                         result.values[mapping.attribute] = mappedData
                     } else if (mapping.attribute.startsWith('$name#')) {
@@ -131,10 +134,26 @@ export class ImportManager {
         return result
     }
 
-    private async evaluateExpression(row:Array<any>, data: any, expression: string): Promise<any> {
+    private async evaluateExpression(row: Array<any>, data: any, expression: string, context: Context): Promise<any> {
         try {
-            const func = new Function('row', 'data', '"use strict"; return (async () => { return (' + expression + ')})()')
-            return await func(row, data)
+            const utils = {
+                findItem: async (condition: any) => {
+                    logger.debug(`Executing evaluateExpression findItem, condition: ${JSON.stringify(condition)}`)
+                    replaceOperations(condition)
+                    const item = await Item.findOne({
+                        where: {
+                            [Op.and]: [
+                                condition,
+                                { tenantId: context.getCurrentUser()?.tenantId }
+                            ]
+                        }
+                    })
+                    logger.debug(`findItem result: ${item?.identifier}`)
+                    return item
+                }
+            }
+            const func = new Function('row', 'data', 'utils', '"use strict"; return (async () => { return (' + expression + ')})()')
+            return await func(row, data, utils)
         } catch (err: any) {
             logger.error('Failed to execute expression :[' + expression + '] for data: ' + data + ' with error: ' + err.message)
             throw err
