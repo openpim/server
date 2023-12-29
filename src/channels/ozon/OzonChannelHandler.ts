@@ -659,7 +659,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
 
-        const url = 'https://api-seller.ozon.ru/v2/product/import'
+        const url = 'https://api-seller.ozon.ru/v3/product/import'
         const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
         logger.info(log)
         if (channel.config.debug) context.log += log+'\n'
@@ -852,7 +852,6 @@ export class OzonChannelHandler extends ChannelHandler {
                         const body = {
                             "attribute_id": ozonAttrId,
                             "description_category_id": ozonCategoryId,
-                            "category_id": ozonCategoryId,
                             "type_id": ozonTypeId,
                             "language": "DEFAULT",
                             "last_value_id": last,
@@ -1016,7 +1015,7 @@ export class OzonChannelHandler extends ChannelHandler {
     }
     private collectTreeNew(arr: any[], treeNode: ChannelCategory, parent: any) {
         arr.forEach(elem => {
-            const child = elem.type_id ? {id: 'cat_' + parent.category_id + NEW_VER_DELIMETER + elem.type_id, name: elem.type_name, children: []} : {id: 'cat_' + (elem.description_category_id || elem.category_id), name: elem.category_name, children: []}
+            const child = elem.type_id ? {id: 'cat_' + parent.description_category_id + NEW_VER_DELIMETER + elem.type_id, name: elem.type_name, children: []} : {id: 'cat_' + elem.description_category_id, name: elem.category_name, children: []}
             treeNode.children!.push(child)
             if (elem.children) {
                 if (elem.children.length > 0) {
@@ -1035,7 +1034,6 @@ export class OzonChannelHandler extends ChannelHandler {
             const ozonTypeId = arr[1]
             const query = {
                 description_category_id: ozonCategoryId,
-                category_id: ozonCategoryId,
                 type_id: ozonTypeId,
                 language: "DEFAULT"
               }
