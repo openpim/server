@@ -11,7 +11,9 @@ export enum EventType {
   BeforeDelete,
   AfterDelete,
   ImportBeforeStart,
-  ImportAfterEnd
+  ImportAfterEnd,
+  BeforeBulkUpdateChannels,
+  AfterBulkUpdateChannels
 }
 
 export enum TriggerType {

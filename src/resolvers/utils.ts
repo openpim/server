@@ -43,6 +43,7 @@ import { ImportConfig } from '../models/importConfigs'
 import { CollectionItems } from "../models/collectionItems"
 import { ChannelExecution } from "../models/channels"
 import { ChannelsManagerFactory } from "../channels"
+import actions from "./actions"
 
 export function replaceOperations(obj: any) {
     let include = []
@@ -474,6 +475,39 @@ export async function processTableButtonActions(context: Context, buttonText: st
     })
 
     return await processItemButtonActions2(context, actions, item, data, buttonText, where)
+}
+
+export async function processBulkUpdateChannelsActions(context: Context, event: EventType, channels: any, where: any) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const actions:Action[] = mng.getActions().filter(action => {
+        for (let i = 0; i < action.triggers.length; i++) {
+            const trigger = action.triggers[i]
+
+            const result = parseInt(trigger.event) === event
+            if (result) return true
+        }
+        return false
+    })
+
+    const channelsCopy = channels ? channels : []
+    const whereCopy = where ? where : {}
+    const ret = await processActions(mng, actions, { Op: Op,
+        where: where,
+        channels: channels,
+        user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
+        utils: new ActionUtils(context),
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
+        models: { 
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
+            Item,
+            ItemRelation
+        } 
+    })
+    return {newChannels:channelsCopy, newWhere:whereCopy, result: ret}
 }
 
 export async function testAction(context: Context, action: Action, item: Item) {

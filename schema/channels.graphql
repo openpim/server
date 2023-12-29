@@ -14,6 +14,7 @@ type Mutation {
   updateChannel(id: ID!, name: LanguageDependentString, active: Boolean, type: Int, valid: [ID], visible: [ID], config: JSONObject, mappings: JSONObject, runtime: JSONObject) : ID!
   removeChannel(id: ID!) : Boolean!
   triggerChannel(id: ID!, language: String!, data: JSONObject) : Boolean
+  bulkUpdateChannels(identifiers: [String]!, status: Int!, message: String, where: String!) : Boolean
 }
 
 type Channel {

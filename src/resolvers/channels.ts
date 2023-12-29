@@ -5,6 +5,8 @@ import { Channel, ChannelExecution } from '../models/channels'
 import { Item } from '../models/items'
 import { fn, literal, Op } from 'sequelize'
 import { ChannelsManagerFactory } from '../channels'
+import { replaceOperations, processBulkUpdateChannelsActions } from './utils'
+import { EventType } from '../models/actions'
 
 export default {
     Query: {
@@ -307,6 +309,34 @@ export default {
             channelMng.stopChannel(chan)
 
             await mng.reloadModelRemotely(chan.id, null, 'CHANNEL', true, context.getUserToken())
+            return true
+        },
+        bulkUpdateChannels: async (params: any, { identifiers, status, message, where }: any, context: Context) => {
+            context.checkAuth()
+
+            let whereObj = JSON.parse(where)
+            replaceOperations(whereObj)
+
+            const { newChannels, newWhere, result } = await processBulkUpdateChannelsActions(context, EventType.BeforeBulkUpdateChannels, identifiers, whereObj)
+
+            identifiers = newChannels
+            whereObj = newWhere
+
+            const param  = identifiers.map((identifier: any) => {
+                return `{ "${identifier}": { "status": ${status}, "submittedAt": ${Date.now()}, "submittedBy": "${context.currentUser.login}", "message": "${message ? message : ''}" }}`;
+            }).join("' || '")
+
+            await Item.update(
+                {
+                    channels: sequelize.literal(`channels || '${param}'`),
+                },
+                {
+                    where: whereObj
+                }
+            )
+
+            await processBulkUpdateChannelsActions(context, EventType.AfterBulkUpdateChannels, identifiers, whereObj)
+          
             return true
         }
     }
