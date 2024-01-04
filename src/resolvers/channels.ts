@@ -313,25 +313,72 @@ export default {
         },
         bulkUpdateChannels: async (params: any, { identifiers, status, message, where }: any, context: Context) => {
             context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
             let whereObj = JSON.parse(where)
-            replaceOperations(whereObj)
-
+            const include = replaceOperations(whereObj)
+            if (include && include.length > 0) {
+                // update does not support include, so we have to change where to "select in" if we have include
+                const search:any = {where: whereObj}
+                search.include = include
+                const items = await Item.applyScope(context).findAll(search)
+                const ids = items.map(item => item.id)
+                whereObj = {id: {[Op.in]: ids}}
+            }
+    
             const { newChannels, newWhere, result } = await processBulkUpdateChannelsActions(context, EventType.BeforeBulkUpdateChannels, identifiers, whereObj)
 
             identifiers = newChannels
             whereObj = newWhere
 
-            const param  = identifiers.map((identifier: any) => {
-                return `{ "${identifier}": { "status": ${status}, "submittedAt": ${Date.now()}, "submittedBy": "${context.currentUser.login}", "message": "${message ? message : ''}" }}`;
-            }).join("' || '")
+            // filter channels user has access
+            identifiers = identifiers.filter((ident:any) => {
+                const chan = mng.getChannels().find(chan => chan.identifier === ident)
+                return context.canEditChannel(ident) && chan && chan.tenantId === context.getCurrentUser()?.tenantId
+            })
+
+            const chanRestrictSQL = identifiers.map((ident:any) => { // filter by type and path valid for channel
+                const chan = mng.getChannels().find(chan => chan.identifier === ident)
+                if (chan) {
+                    const validArr = chan.valid.join(',')
+                    let sql = ''
+                    chan.visible.forEach((fromItem:any, idx:any, arr:any) => {
+                        sql += "path ~ '*." + fromItem + ".*' "
+                        if (idx != arr.length-1) sql += ' or '
+                    })
+                        return `("typeId" in (${validArr}) and (${sql}))`
+                } else {
+                    return ''
+                }
+            }).join(' and ')
+
+            const andArr = [
+                whereObj,
+                literal(chanRestrictSQL)
+            ]
+            const restrictSql = await context.generateRestrictionsInSQL('', false) // filter by items user has access
+            if (restrictSql.length > 0) andArr.push(literal(restrictSql))
+            const andExpr = {[Op.and] : andArr}
+            const secureWhereObj = andExpr
+
+            let literalStr = ''
+
+            if (status !== 0) {
+                const param  = identifiers.map((identifier: any) => {
+                    return `{ "${identifier}": { "status": ${status}, "submittedAt": ${Date.now()}, "submittedBy": "${context.getCurrentUser()!.login}", "message": "${message ? message : ''}" }}`;
+                }).join("' || '")
+                literalStr = `channels || '${param}'`
+            } else {
+                const param  = identifiers.join("' - '")
+                literalStr = `channels - '${param}'`
+            }
 
             await Item.update(
                 {
-                    channels: sequelize.literal(`channels || '${param}'`),
+                    channels: sequelize.literal(literalStr),
                 },
                 {
-                    where: whereObj
+                    where: secureWhereObj
                 }
             )
 
