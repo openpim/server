@@ -432,7 +432,7 @@ export class OzonChannelHandler extends ChannelHandler {
         }
         product.offer_id = ''+productCode
         product.barcode = ''+barcode
-        product.price = price
+        product.price = ''+price
         product.weight = weight
         product.weight_unit = 'g'
         product.depth = depth
@@ -444,11 +444,11 @@ export class OzonChannelHandler extends ChannelHandler {
 
         const priceOldConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#oldprice')
         const priceOld = await this.getValueByMapping(channel, priceOldConfig, item, language)
-        if (priceOld) product.old_price = priceOld
+        if (priceOld) product.old_price = ''+priceOld
 
         const pricePremConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#premprice')
         const pricePrem = await this.getValueByMapping(channel, pricePremConfig, item, language)
-        if (pricePrem) product.premium_price = pricePrem
+        if (pricePrem) product.premium_price = ''+pricePrem
 
         // video processing
         const complex_attributes:any = [{attributes:[]}]
