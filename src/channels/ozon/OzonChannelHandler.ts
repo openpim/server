@@ -420,7 +420,8 @@ export class OzonChannelHandler extends ChannelHandler {
 
         let ozonCategoryId: number|null = null
         let ozonTypeId: number|null = null
-        if (categoryConfig.id.includes(NEW_VER_DELIMETER)) { // new API version
+        const newVersion = categoryConfig.id.includes(NEW_VER_DELIMETER)
+        if (newVersion) { // new API version
             const tmp = categoryConfig.id.substring(4)
             const arr = tmp.split(NEW_VER_DELIMETER)
             ozonCategoryId = parseInt(arr[0])
@@ -552,7 +553,7 @@ export class OzonChannelHandler extends ChannelHandler {
         }
 
         const ozonProductId = item.values[channel.config.ozonIdAttr]
-        if (ozonProductId) {
+        if (ozonProductId && !ozonProductId.startsWith('task_id=')) {
             // check if we have changed prices that we should leave unchanged
             const existingPricesReq = {product_id: ozonProductId}
             const existingPricesUrl = 'https://api-seller.ozon.ru/v2/product/info'
@@ -659,7 +660,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
 
-        const url = 'https://api-seller.ozon.ru/v3/product/import'
+        const url = newVersion? 'https://api-seller.ozon.ru/v3/product/import' : 'https://api-seller.ozon.ru/v2/product/import'
         const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
         logger.info(log)
         if (channel.config.debug) context.log += log+'\n'
