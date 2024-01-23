@@ -13,6 +13,8 @@ import { processImportActions, replaceOperations } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 import i18next from '../i18n'
 import { Item } from '../models/items'
+import { ModelsManager } from '../models/manager';
+import { LOV } from '../models/lovs';
 
 export class ImportManager {
     private static instance: ImportManager
@@ -150,6 +152,27 @@ export class ImportManager {
                     })
                     logger.debug(`findItem result: ${item?.identifier}`)
                     return item
+                },
+                findLOV: async (lovIdentifier: string, value: string, lang = 'en', createIfNotExists = false) => {
+                    const lov = await LOV.applyScope(context).findOne({where:{identifier: lovIdentifier}})
+                    if (!lov) throw new Error(`Failed to find LOV by identifier: ${lovIdentifier}`)
+                    logger.debug(`findLOV: lov found`)
+                    let val = lov.values.find((elem:any) => elem.value[lang] == value)
+                    logger.debug(`findLOV: value found: ${JSON.stringify(val)}`)
+                    if (!val && createIfNotExists) {
+                        const max = lov.values.reduce((prev:any, current:any) => (prev.id > current.id) ? prev : current)
+                        val = { id: max ? max.id+1 : 1, value: {}, filter: null}
+                        val.value[lang] = value
+                        lov.values.push(val)
+                        lov.changed('values', true)
+                        logger.debug(`findLOV: new value created: ${JSON.stringify(val)}`)
+                        await lov.save()
+                    }
+                    return val?.id
+                },
+                getCache: () => {
+                    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+                    return mng.getCache()
                 }
             }
             const func = new Function('row', 'data', 'utils', '"use strict"; return (async () => { return (' + expression + ')})()')
