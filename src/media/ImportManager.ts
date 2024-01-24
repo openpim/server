@@ -153,7 +153,7 @@ export class ImportManager {
                     logger.debug(`findItem result: ${item?.identifier}`)
                     return item
                 },
-                findLOV: async (lovIdentifier: string, value: string, lang = 'en', createIfNotExists = false) => {
+                findLOV: async (lovIdentifier: string, value: string, lang = 'en', caseInsensitive = false, createIfNotExists = false) => {
                     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
                     let lov:LOV | undefined | null = mng.getCache().get('IM_LOV_' + lovIdentifier)
                     if (!lov) {
@@ -162,7 +162,15 @@ export class ImportManager {
                         logger.debug(`findLOV: lov found`)
                         mng.getCache().set('IM_LOV_' + lovIdentifier, lov, 60*60)
                     }
-                    let val = lov.values.find((elem:any) => elem.value[lang] == value)
+                    const valueLowerCase = value ? value.toLocaleLowerCase() : null
+                    let val = lov.values.find((elem:any) => {
+                        if (!caseInsensitive) {
+                            return elem.value[lang] == value
+                        } else {
+                            const elemVal = elem.value[lang] ? elem.value[lang].toLocaleLowerCase() : null
+                            return elemVal == valueLowerCase
+                        }
+                    })
                     logger.debug(`findLOV: value found: ${JSON.stringify(val)}`)
                     if (!val && createIfNotExists) {
                         const max = lov.values.reduce((prev:any, current:any) => (prev.id > current.id) ? prev : current)
