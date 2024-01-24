@@ -154,9 +154,14 @@ export class ImportManager {
                     return item
                 },
                 findLOV: async (lovIdentifier: string, value: string, lang = 'en', createIfNotExists = false) => {
-                    const lov = await LOV.applyScope(context).findOne({where:{identifier: lovIdentifier}})
-                    if (!lov) throw new Error(`Failed to find LOV by identifier: ${lovIdentifier}`)
-                    logger.debug(`findLOV: lov found`)
+                    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+                    let lov:LOV | undefined | null = mng.getCache().get('IM_LOV_' + lovIdentifier)
+                    if (!lov) {
+                        lov = await LOV.applyScope(context).findOne({where:{identifier: lovIdentifier}})
+                        if (!lov) throw new Error(`Failed to find LOV by identifier: ${lovIdentifier}`)
+                        logger.debug(`findLOV: lov found`)
+                        mng.getCache().set('IM_LOV_' + lovIdentifier, lov, 60*60)
+                    }
                     let val = lov.values.find((elem:any) => elem.value[lang] == value)
                     logger.debug(`findLOV: value found: ${JSON.stringify(val)}`)
                     if (!val && createIfNotExists) {
@@ -175,8 +180,8 @@ export class ImportManager {
                     return mng.getCache()
                 }
             }
-            const func = new Function('row', 'data', 'utils', '"use strict"; return (async () => { return (' + expression + ')})()')
-            return await func(row, data, utils)
+            const func = new Function('row', 'data', 'utils', 'logger', '"use strict"; return (async () => { return (' + expression + ')})()')
+            return await func(row, data, utils, logger)
         } catch (err: any) {
             logger.error('Failed to execute expression :[' + expression + '] for data: ' + data + ' with error: ' + err.message)
             throw err
