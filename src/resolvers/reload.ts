@@ -10,6 +10,7 @@ import { AttrGroupWrapper, UserWrapper, ModelsManager, TreeNode } from '../model
 import { AttrGroup, Attribute } from '../models/attributes'
 import { Role, User } from '../models/users'
 import { Type } from '../models/types'
+import { ChannelsManagerFactory } from '../channels'
 
 export default {
   // TODO: should be mutation?
@@ -94,10 +95,12 @@ export default {
                 existedChannels[channelIndex] = channel
                 logger.debug('Remote reload: channel updated')
                 logger.debug(JSON.stringify(existedChannels[channelIndex]))
+                ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId).startChannel(channel)
               } else if (channel && channelIndex === -1) {
                 existedChannels.push(channel)
                 logger.debug('Remote reload: channel added')
                 logger.debug(JSON.stringify(channel))
+                ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId).startChannel(channel)
               }
             }
             break
