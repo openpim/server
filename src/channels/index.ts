@@ -23,6 +23,7 @@ export class ChannelsManager {
     }
 
     public stopChannel(channel: Channel) {
+        logger.info(`Stopping channel ${channel.identifier}`)
         const tst = this.jobMap[channel.identifier]
         if (tst && tst[0]) tst[0].cancel()
     }
@@ -95,11 +96,16 @@ export class ChannelsManager {
     }
 
     public startChannel(channel: Channel) {
-        if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'true') return
+        logger.info(`Starting channel ${channel.identifier}`)
+        if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'true') {
+            logger.info(`   Skip start because of OPENPIM_NO_CHANNEL_SCHEDULER=true`)
+            return
+        }
         if (channel.active) {
             this.stopChannel(channel)
             if (!channel.config.start || channel.config.start === 1) {
                 this.jobMap[channel.identifier] = [null, false]
+                logger.info(`   channel ${channel.identifier} has no scheduling`)
             } else if (channel.config.start === 2) { //interval
                 if(channel.config.interval) {
                     const range = new Range(0, 60, parseInt(channel.config.interval))
@@ -107,6 +113,7 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, null)
                     })  
                     this.jobMap[channel.identifier] = [job, false]
+                    logger.info(`   channel ${channel.identifier} has interval scheduling: ${channel.config.interval} `)
                 } else {
                     logger.warn('Interval is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
@@ -116,6 +123,7 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, null)
                     })  
                     this.jobMap[channel.identifier] = [job, false]
+                    logger.info(`   channel ${channel.identifier} has cron scheduling: ${channel.config.cron} `)
                 } else {
                     logger.warn('Cron expression is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
@@ -126,12 +134,14 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, null)
                     })  
                     this.jobMap[channel.identifier] = [job, false]
+                    logger.info(`   channel ${channel.identifier} has time scheduling: ${channel.config.time} `)
                 } else {
                     logger.warn('Time is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             }
             if (!channel.config.syncStart || channel.config.syncStart === 1) {
                 this.jobMap[channel.identifier+'_sync'] = [null, false]
+                logger.info(`   channel ${channel.identifier} has no sync scheduling`)
             } else if (channel.config.syncStart === 2) { // sync interval
                 if(channel.config.syncInterval) {
                     const range = new Range(0, 60, parseInt(channel.config.syncInterval))
@@ -139,6 +149,7 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
                     this.jobMap[channel.identifier+'_sync'] = [job, false]
+                    logger.info(`   channel ${channel.identifier} has interval sync scheduling: ${channel.config.syncInterval} `)
                 } else {
                     logger.warn('Interval is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
@@ -148,6 +159,7 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
                     this.jobMap[channel.identifier+'_sync'] = [job, false]
+                    logger.info(`   channel ${channel.identifier} has cron sync scheduling: ${channel.config.syncCron} `)
                 } else {
                     logger.warn('Cron expression is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
@@ -158,10 +170,13 @@ export class ChannelsManager {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
                     this.jobMap[channel.identifier+'_sync'] = [job, false]
+                    logger.info(`   channel ${channel.identifier} has time sync scheduling: ${channel.config.syncTime} `)
                 } else {
                     logger.warn('Time expression is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             }
+        } else {
+            logger.info(`   Skip start because channel is not active`)
         }
     }
 
