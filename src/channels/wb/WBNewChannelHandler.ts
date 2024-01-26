@@ -82,7 +82,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             return 
         }
 
-        const errorsResp = await fetch('https://suppliers-api.wildberries.ru/content/v1/cards/error/list', {
+        const errorsResp = await fetch('https://suppliers-api.wildberries.ru/content/v2/cards/error/list', {
             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
         })
         const errorsJson = await errorsResp.json()
