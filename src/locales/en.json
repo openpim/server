@@ -14,6 +14,7 @@
     "ImportManagerThereIsNoDataForLine": "There is no data for line:",
     "ImportManagerFileProcessingFinished": "File processing finished!",
     "ImportManagerUploadedFileHasInvalidFormat": "Uploaded file has invalid format. Check template and current file!",
+    "ImportManagerError": "Execution error:",
     "Started": "Started",
     "Active": "Active",
     "Finished": "Finished",
