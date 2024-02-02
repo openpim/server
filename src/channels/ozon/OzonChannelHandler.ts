@@ -480,6 +480,8 @@ export class OzonChannelHandler extends ChannelHandler {
         }
         if (wasData) product.complex_attributes = complex_attributes
 
+        const attrs = await this.getAttributes(channel, categoryConfig.id)
+
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i];
@@ -487,9 +489,9 @@ export class OzonChannelHandler extends ChannelHandler {
             if (
                 attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && attrConfig.id != '#oldprice' && attrConfig.id != '#premprice' && 
                 attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
-                && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames' && attrConfig.id != '#images360Urls'
+                && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames' && attrConfig.id != '#images360Urls' && attrConfig.id != 'attr_4194' // image attribute is filled automatically
             ) {
-                const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
+                const attr = attrs.find(elem => elem.id === attrConfig.id)
                 if (!attr) {
                     logger.warn('Failed to find attribute in channel for attribute with id: ' + attrConfig.id)
                     continue
@@ -542,7 +544,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
         
-        await this.processItemImages(channel, item, context, product)
+        await this.processItemImages(channel, item, context, product, attrs)
 
         // images 360 processing
         const images360UrlsConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images360Urls')
@@ -552,7 +554,7 @@ export class OzonChannelHandler extends ChannelHandler {
             product.images360 = images360UrlsValue
         }
 
-        const ozonProductId = item.values[channel.config.ozonIdAttr]
+        const ozonProductId = ''+item.values[channel.config.ozonIdAttr]
         if (ozonProductId && !ozonProductId.startsWith('task_id=')) {
             // check if we have changed prices that we should leave unchanged
             const existingPricesReq = {product_id: ozonProductId}
@@ -757,7 +759,7 @@ export class OzonChannelHandler extends ChannelHandler {
         return changedValues
     }
 
-    async processItemImages(channel: Channel, item: Item, context: JobContext, product: any) {
+    async processItemImages(channel: Channel, item: Item, context: JobContext, product: any, attrs: ChannelAttribute[]) {
         if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
             const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
             const typeNode = mng.getTypeById(item.typeId)
@@ -832,7 +834,19 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 }
             }
-            if (data.length > 0) product.images = data
+            if (data.length > 0) {
+                product.images = data
+
+                /*
+                const hasImageAttr = attrs.some(elem => elem.id === 'attr_4194')
+                if (hasImageAttr) {
+                    product.attributes.push({
+                        "complex_id": 0,
+                        "id": 4194,
+                        "values": [{"value": data[0]}]
+                    })
+                } */
+            }
         }
     }    
     private async generateValue(channel: Channel, ozonCategoryId: number, ozonTypeId: number|null, ozonAttrId: number, dictionary: boolean, value: any, options: any) {
