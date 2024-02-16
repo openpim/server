@@ -357,12 +357,12 @@ export class OzonChannelHandler extends ChannelHandler {
 
         const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
         const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
-        if (!barcode) {
+        /*if (!barcode) {
             const msg = 'Не введена конфигурация или нет данных для "Баркода" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
-        }
+        }*/
 
         const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
         const price = await this.getValueByMapping(channel, priceConfig, item, language)
@@ -432,7 +432,7 @@ export class OzonChannelHandler extends ChannelHandler {
             product.category_id = ozonCategoryId
         }
         product.offer_id = ''+productCode
-        product.barcode = ''+barcode
+        if(barcode) product.barcode = ''+barcode
         product.price = ''+price
         product.weight = weight
         product.weight_unit = 'g'
@@ -554,7 +554,7 @@ export class OzonChannelHandler extends ChannelHandler {
             product.images360 = images360UrlsValue
         }
 
-        const ozonProductId = ''+item.values[channel.config.ozonIdAttr]
+        const ozonProductId = item.values[channel.config.ozonIdAttr] ? ''+item.values[channel.config.ozonIdAttr]: null
         if (ozonProductId && !ozonProductId.startsWith('task_id=')) {
             // check if we have changed prices that we should leave unchanged
             const existingPricesReq = {product_id: ozonProductId}
@@ -872,7 +872,7 @@ export class OzonChannelHandler extends ChannelHandler {
                             "last_value_id": last,
                             "limit": 5000
                         }
-                        // console.log('request to https://api-seller.ozon.ru/v1/description-category/attribute/values '+JSON.stringify(body))
+                        if (channel.config.debug) console.log('generateValue - request to https://api-seller.ozon.ru/v1/description-category/attribute/values '+JSON.stringify(body))
                         res = await fetch('https://api-seller.ozon.ru/v1/description-category/attribute/values', {
                             method: 'post',
                             body:    JSON.stringify(body),
@@ -886,7 +886,7 @@ export class OzonChannelHandler extends ChannelHandler {
                             "last_value_id": last,
                             "limit": 5000
                         }
-                        // console.log('request to https://api-seller.ozon.ru/v2/category/attribute/values '+JSON.stringify(body))
+                        if (channel.config.debug) console.log('generateValue - request to https://api-seller.ozon.ru/v2/category/attribute/values '+JSON.stringify(body))
                         res = await fetch('https://api-seller.ozon.ru/v2/category/attribute/values', {
                             method: 'post',
                             body:    JSON.stringify(body),
@@ -894,7 +894,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         })
                     }
                     const json = await res.json()
-                    // console.log('response: '+JSON.stringify(json))
+                    if (channel.config.debug) console.log('generateValue - response: '+JSON.stringify(json))
                     dict = dict.concat(json.result)
                     next = json.has_next
                     if (dict.length === 0) throw new Error('No data for attribute dictionary: '+ozonAttrId+', for category: '+ozonCategoryId)
@@ -912,8 +912,10 @@ export class OzonChannelHandler extends ChannelHandler {
 
             const entry = (dict as any[])!.find((elem:any) => elem.value === value)
             if (!entry) {
+                if (channel.config.debug) console.log('generateValue - entry not found ')
                 return null
             } else {
+                if (channel.config.debug) console.log('generateValue - entry found: '+entry.id)
                 return {dictionary_value_id: entry.id, value: value}
             }
         } else {
