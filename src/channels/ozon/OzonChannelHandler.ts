@@ -855,7 +855,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 const tst = options.find((elem:any) => elem.name === value)
                 if (tst) return {dictionary_value_id: tst.value, value: value}
             }
-            let dict: any[] | string | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId)
+            let dict: any[] | string | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId+'_'+ozonTypeId)
             if (!dict) {
                 dict = []
                 let next = false
@@ -900,12 +900,11 @@ export class OzonChannelHandler extends ChannelHandler {
                     if (dict.length === 0) throw new Error('No data for attribute dictionary: '+ozonAttrId+', for category: '+ozonCategoryId)
                     last = dict[dict.length-1]?.id
                     if (idx++ > 25) {
-                        this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, 'big', 3600)
                         throw new Error('Data dictionary for attribute: '+ozonAttrId+ ', typeId:' + ozonTypeId + ' is too big, for category: '+ozonCategoryId)
                     }
                 } while (next)
     
-                this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId, dict, 3600)
+                this.cache.set('dict_'+ozonCategoryId+'_'+ozonAttrId+'_'+ozonTypeId, dict, 3600)
             } else if (dict === 'big') {
                 throw new Error('Data dictionary for attribute: '+ozonAttrId+ ', typeId:' + ozonTypeId + ' is too big, for category: '+ozonCategoryId)
             }
