@@ -35,13 +35,16 @@ import { initModels } from './models';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
 import version from './version';
+import promBundle from "express-prom-bundle";
 
+let isMetrics
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
 if (process.env.OPENPIM_DATABASE_NAME) process.env.DATABASE_NAME = process.env.OPENPIM_DATABASE_NAME
 if (process.env.OPENPIM_DATABASE_PORT) process.env.DATABASE_PORT = process.env.OPENPIM_DATABASE_PORT
 if (process.env.OPENPIM_DATABASE_USER) process.env.DATABASE_USER = process.env.OPENPIM_DATABASE_USER
 if (process.env.OPENPIM_DATABASE_PASSWORD) process.env.DATABASE_PASSWORD = process.env.OPENPIM_DATABASE_PASSWORD
 if (process.env.OPENPIM_AUDIT_URL) process.env.AUDIT_URL = process.env.OPENPIM_AUDIT_URL
+if (process.env.OPENPIM_ENABLE_MERTICS) isMetrics = process.env.OPENPIM_ENABLE_MERTICS === 'true' ? true : false
 
 dotenv.config();
 const app = express();
@@ -84,9 +87,25 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     }
   }
 
+  if (isMetrics) {
+    const metricsMiddleware = promBundle({
+      includeMethod: true, 
+      includePath: true, 
+      includeStatusCode: true, 
+      includeUp: true,
+      customLabels: {project_name: 'openpim', project_type: 'metrics_labels'},
+      promClient: {
+          collectDefaultMetrics: {
+          }
+        }
+    })
+    
+    app.use(metricsMiddleware)
+  }
+
   ModelsManager.getInstance().init(channelTypes)
   ChannelsManagerFactory.getInstance().init()
-  
+
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
