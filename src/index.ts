@@ -44,7 +44,7 @@ if (process.env.OPENPIM_DATABASE_PORT) process.env.DATABASE_PORT = process.env.O
 if (process.env.OPENPIM_DATABASE_USER) process.env.DATABASE_USER = process.env.OPENPIM_DATABASE_USER
 if (process.env.OPENPIM_DATABASE_PASSWORD) process.env.DATABASE_PASSWORD = process.env.OPENPIM_DATABASE_PASSWORD
 if (process.env.OPENPIM_AUDIT_URL) process.env.AUDIT_URL = process.env.OPENPIM_AUDIT_URL
-if (process.env.OPENPIM_ENABLE_MERTICS) isMetrics = process.env.OPENPIM_ENABLE_MERTICS === 'true' ? true : false
+if (process.env.OPENPIM_ENABLE_METRICS) isMetrics = process.env.OPENPIM_ENABLE_METRICS === 'true' ? true : false
 
 dotenv.config();
 const app = express();
