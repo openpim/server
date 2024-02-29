@@ -37,6 +37,10 @@ import resolvers from './resolvers';
 import version from './version';
 import promBundle from "express-prom-bundle";
 
+import userResolver from './resolvers/users'
+import { FileManager } from './media/FileManager';
+
+
 let isMetrics
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
 if (process.env.OPENPIM_DATABASE_NAME) process.env.DATABASE_NAME = process.env.OPENPIM_DATABASE_NAME
@@ -283,6 +287,39 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       await downloadProcessFile(context, req, res, false)
     } catch (error: any) {
       res.status(400).send(error.message)
+    }
+  })
+
+  app.get('/server.log', async (request, response) => {
+    try {
+      if (!request.headers.authorization) {
+        logger.error('server.log - no login')
+        response.set('WWW-Authenticate', 'Basic realm="401"')
+        response.status(401).send('Authentication required.')
+        return
+      }
+      const b64auth = request.headers.authorization.split(' ')[1]
+      const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+      const { user } = await userResolver.Mutation.signIn(null, {login: login, password:password }, await Context.create(request))
+      if (user && user.roles.includes(1)) { // 1 is admin role
+        let bufSize = 10240
+        if (request.query.size) {
+          const sizeStr = ''+request.query.size
+          const sizeNum = parseInt(sizeStr)
+          if (!isNaN(sizeNum)) bufSize = sizeNum
+        }
+        const buf = await FileManager.getLastXBytesBuffer('/server/server.log', bufSize)
+        response.setHeader('content-type', 'text/plain');
+        response.send(buf.toString());
+        // response.sendFile('/server/server.log', {headers: { 'Content-Type': "text/plain" }})
+      } else {
+        logger.error('server.log - wrong user: '+JSON.stringify(user))
+        response.set('WWW-Authenticate', 'Basic realm="401"')
+        response.status(401).send('Authentication required.')
+        return
+      }
+    } catch (error: any) {
+      response.status(400).send(error.message)
     }
   })
 

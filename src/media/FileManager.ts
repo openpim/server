@@ -1,4 +1,5 @@
 import * as fs from 'fs'
+import FS from 'fs/promises'
 import { Item } from '../models/items'
 import * as JPEG from 'jpeg-js'
 import * as Jimp from 'jimp'
@@ -228,5 +229,20 @@ export class FileManager {
             || (mimeType === 'image/tiff')
             || (mimeType === 'image/gif')
             || (mimeType === 'image/webp')
+    }
+
+
+    public static async getLastXBytesBuffer(path: string, bytesToRead: number) : Promise<Buffer> {
+        const handle = await FS.open(path, 'r');
+        const { size } = await handle.stat()
+      
+        // Calculate the position x bytes from the end
+        const position = size > bytesToRead ? size - bytesToRead : size; 
+      
+        // Get the resulting buffer
+        const { buffer } = await handle.read(Buffer.alloc(bytesToRead), 0, bytesToRead, position);
+      
+        await handle.close()
+        return buffer
     }
 }
