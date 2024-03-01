@@ -237,10 +237,11 @@ export class FileManager {
         const { size } = await handle.stat()
       
         // Calculate the position x bytes from the end
-        const position = size > bytesToRead ? size - bytesToRead : size; 
+        const position = size > bytesToRead ? size - bytesToRead : 0; 
       
         // Get the resulting buffer
-        const { buffer } = await handle.read(Buffer.alloc(bytesToRead), 0, bytesToRead, position);
+        const bytesRead = size > bytesToRead ? bytesToRead : size
+        const { buffer } = await handle.read(Buffer.alloc(bytesRead), 0, bytesRead, position);
       
         await handle.close()
         return buffer

@@ -309,9 +309,12 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
           if (!isNaN(sizeNum)) bufSize = sizeNum
         }
         const buf = await FileManager.getLastXBytesBuffer('/server/server.log', bufSize)
-        response.setHeader('content-type', 'text/plain');
-        response.send(buf.toString());
-        // response.sendFile('/server/server.log', {headers: { 'Content-Type': "text/plain" }})
+        response.setHeader('Content-Type', 'text/plain');
+        response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.setHeader('Pragma', 'no-cache');
+        response.setHeader('Expires', '0');
+        response.setHeader('Surrogate-Control', 'no-store');
+        response.status(200).send(buf.toString());
       } else {
         logger.error('server.log - wrong user: '+JSON.stringify(user))
         response.set('WWW-Authenticate', 'Basic realm="401"')
