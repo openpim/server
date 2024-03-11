@@ -23,6 +23,7 @@ export default {
           case 'ACTION':
             const existedActions = mng.getActions()
             const actionIndex = existedActions.findIndex(act => act.id === parseInt(id))
+            const action = actionIndex !== -1 ? existedActions[actionIndex] : null
             if (del && actionIndex !== -1) {
               existedActions.splice(actionIndex, 1)
               logger.debug(`Remote reload: action removed ${id}`)
@@ -40,6 +41,7 @@ export default {
                 logger.debug(JSON.stringify(act))
               }
             }
+            if (action) delete mng.getActionsCache()[action.identifier]
             break
           case 'ATTRIBUTE':
             const existedAttr = mng.getAttribute(parseInt(id))
