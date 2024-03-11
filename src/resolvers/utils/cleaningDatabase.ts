@@ -140,7 +140,7 @@ export class cleaningDatabase {
             logger.info(msg)
             const procIds = []
             for (let i = 0; i < proc2[1].rows.length; i++) {
-                const item = proc2.rows[i]
+                const item = proc2[1].rows[i]
                 if (item.storagePath === '') continue
                 const file = openpimDir + item.storagePath
                 if (fs.existsSync(file)) fs.unlinkSync(file)
