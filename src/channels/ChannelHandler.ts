@@ -24,7 +24,7 @@ export abstract class ChannelHandler {
   asyncExec (cmd: string) {
     return new Promise(async (resolve) => {
         try {
-            exec(cmd, function (error: any, stdout: string, stderr: string) {
+            exec(cmd, {maxBuffer: 1024 * 10000}, function (error: any, stdout: string, stderr: string) {
                 resolve({ code: error ? error.code : 0, stdout:stdout, stderr: stderr } )
             })
         } catch (err:any) {
