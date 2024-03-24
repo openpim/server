@@ -600,6 +600,37 @@ export async function processAttributeActions(context: Context, event: EventType
     })
 }
 
+export async function processLOVActions(context: Context, event: EventType, lov: LOV, isImport: boolean, changes: any = null) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const actions = mng.getActions().filter(action => {
+        for (let i = 0; i < action.triggers.length; i++) {
+            const trigger = action.triggers[i]
+
+            const result = parseInt(trigger.type) === TriggerType.LOV && parseInt(trigger.event) === event
+            if (result) return true
+        }
+        return false
+    })
+    return await processActions(mng, actions, { Op: Op,
+        event: EventType[event],
+        user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
+        utils: new ActionUtils(context),
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
+        isImport: isImport, 
+        lov: lov,
+        changes: changes,
+        models: { 
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            process: Process.applyScope(context),
+            Item,
+            ItemRelation
+        } 
+    })
+}
+
 export async function processImportActions(context: Context, event: EventType, process: Process, importConfig: ImportConfig, filepath: any) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions:Action[] = []

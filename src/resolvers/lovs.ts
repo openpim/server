@@ -3,6 +3,8 @@ import { Language } from '../models/languages'
 import { sequelize } from '../models'
 import { LOV } from '../models/lovs'
 import { Attribute } from '../models/attributes'
+import { EventType } from '../models/actions'
+import { processLOVActions } from './utils'
 
 export default {
     Query: {
@@ -38,16 +40,22 @@ export default {
                 throw new Error('Identifier already exists: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const lov = await sequelize.transaction(async (t) => {
-                return await LOV.create ({
-                    identifier: identifier,
-                    tenantId: context.getCurrentUser()!.tenantId,
-                    createdBy: context.getCurrentUser()!.login,
-                    updatedBy: context.getCurrentUser()!.login,
-                    name: name,
-                    values: values || []
-                }, {transaction: t})
+            const lov = await LOV.build({
+                identifier: identifier,
+                tenantId: context.getCurrentUser()!.tenantId,
+                createdBy: context.getCurrentUser()!.login,
+                updatedBy: context.getCurrentUser()!.login,
+                name: name,
+                values: values || []
             })
+
+            await processLOVActions(context, EventType.BeforeCreate, lov, false)
+
+            await sequelize.transaction(async (t) => {
+                return await lov.save({transaction: t})
+            })
+
+            await processLOVActions(context, EventType.AfterCreate, lov, false)
 
             return lov.id
         },
@@ -63,12 +71,21 @@ export default {
                 throw new Error('Failed to find list of values by id: ' + id + ', tenant: ' + context.getCurrentUser()?.tenantId)
             }
 
+            const changes = {
+                name: name,
+                values: values
+            }
+            await processLOVActions(context, EventType.BeforeUpdate, lov, false, changes)
+
             if (name) lov.name = name
             if (values) lov.values = values
             lov.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await lov.save({transaction: t})
             })
+
+            await processLOVActions(context, EventType.AfterUpdate, lov, false)
+
             return lov.id
         },
         removeLOV: async (parent: any, { id }: any, context: Context) => {
@@ -87,6 +104,8 @@ export default {
             const tst1 = await Attribute.applyScope(context).findOne({where: {lov: nId}})
             if (tst1) throw new Error('Can not remove this list of values because there are attributes linked to it.');
 
+            await processLOVActions(context, EventType.BeforeDelete, lov, false)
+
             lov.updatedBy = context.getCurrentUser()!.login
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
             lov.identifier = lov.identifier + '_d_' + Date.now() 
@@ -94,6 +113,8 @@ export default {
                 await lov!.save({transaction: t})
                 await lov!.destroy({transaction: t})
             })
+
+            await processLOVActions(context, EventType.AfterDelete, lov, false)
 
             return true
         }
