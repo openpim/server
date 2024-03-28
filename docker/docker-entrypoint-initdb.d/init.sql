@@ -1436,8 +1436,8 @@ ALTER TABLE ONLY public.group_attribute
 -- v1.5
 --
 
-ALTER TABLE "actions" 
+ALTER TABLE public.actions 
     ADD COLUMN "order" integer;
 
-ALTER TABLE "savedSearch" 
+ALTER TABLE public.savedSearch 
     ADD COLUMN "entity" varchar(50);
