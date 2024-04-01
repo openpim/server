@@ -139,6 +139,8 @@ export class ChannelsManager {
                     logger.warn('Time is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
             }
+
+            // sync
             if (!channel.config.syncStart || channel.config.syncStart === 1) {
                 this.jobMap[channel.identifier+'_sync'] = [null, false]
                 logger.info(`   channel ${channel.identifier} has no sync scheduling`)
@@ -153,7 +155,7 @@ export class ChannelsManager {
                 } else {
                     logger.warn('Interval is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
                 }
-            } else if (channel.config.start === 4) { //cron
+            } else if (channel.config.syncStart === 4) { //cron
                 if(channel.config.syncCron) {
                     const job = scheduleJob(channel.config.syncCron, () => {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
