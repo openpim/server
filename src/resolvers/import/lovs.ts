@@ -7,6 +7,7 @@ import { Attribute } from "../../models/attributes"
 import logger from '../../logger'
 import { EventType } from "../../models/actions"
 import { processLOVActions } from "../utils"
+import { ModelManager, ModelsManager } from "../../models/manager"
 
 export async function importLOV(context: Context, config: IImportConfig, lov: ILOVImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(lov.identifier)
@@ -65,6 +66,8 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
         }        
 
         if (!data) {
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            checkLOVValues(mng, lov.values)
             // create
             const data = await LOV.build({
                 identifier: lov.identifier,
@@ -87,7 +90,8 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
             result.result = ImportResult.CREATED
         } else {
             // update
-
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            checkLOVValues(mng, lov.values)
             const changes = {
                 name: lov.name,
                 values: lov.values
@@ -113,4 +117,13 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
     }
 
     return result
+}
+
+function checkLOVValues( mng: ModelManager, values: any): void {
+    if (!values) return
+    values.forEach((val:any) => {
+        if (val.attrs && val.attrs.length > 0) {
+            val.attrs = val.attrs.map((attrIdent:string) => mng.getAttributeByIdentifier(attrIdent, true)?.attr?.id).filter((elem:any) => !!elem)
+        }
+    })
 }

@@ -234,6 +234,14 @@ export default {
                         throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to view list of values, tenant: ' + context.getCurrentUser()!.tenantId)
 
                     res = await LOV.applyScope(context).findAndCountAll(params)
+                    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+                    res.rows.forEach((lov: LOV) => {
+                        if (lov.values) lov.values.forEach((val:any) => {
+                            if (val.attrs && val.attrs.length > 0) {
+                                val.attrs = val.attrs.map((attrId:number) => mng.getAttribute(attrId)?.attr?.identifier)
+                            }
+                        })
+                    })
                     res.type = 'LOVsResponse'
                 }
                 arr.push(res)
