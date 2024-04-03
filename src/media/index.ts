@@ -596,8 +596,8 @@ export async function downloadXlsxTemplateFile(context: Context, req: Request, r
 
 	const extNum = template?.lastIndexOf('/')
 	const fileName = extNum !== -1 ? template?.substring(extNum! + 1) : ''
-	console.log('template=' + template)
-	console.log('fileName=' + fileName)
+	//console.log('template=' + template)
+	//console.log('fileName=' + fileName)
 
     headers['Content-Disposition'] = fileName ? contentDisposition(fileName) : 'attachment; filename="template.xlsx"'
     res.sendFile(template, {headers: headers})

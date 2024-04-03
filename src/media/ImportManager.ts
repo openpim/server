@@ -163,7 +163,7 @@ export class ImportManager {
                     return item
                 },
                 findLOV: async (lovIdentifier: string, value: string, lang = 'en', caseInsensitive = false, createIfNotExists = false) => {
-                    console.log(JSON.stringify(value))
+                    //console.log(JSON.stringify(value))
                     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
                     let lov:LOV | undefined | null = mng.getCache().get('IM_LOV_' + lovIdentifier)
                     if (!lov) {

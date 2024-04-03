@@ -68,7 +68,6 @@ export default {
           case 'ATTRIBUTE_GROUP':
             const existedAttrGroups = mng.getAttrGroups()
             const attrGroupIndex = existedAttrGroups.findIndex(attrGroupWrapper => attrGroupWrapper.getGroup().id === parseInt(id))
-            console.log(attrGroupIndex)
             if (del && attrGroupIndex !== -1) {
               existedAttrGroups.splice(attrGroupIndex, 1)
               logger.debug(`Remote reload: attribute group removed ${id}`)
