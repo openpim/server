@@ -542,7 +542,6 @@ export class WBNewChannelHandler extends ChannelHandler {
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             const json = await res.json()
-            console.log(JSON.stringify(json))
             data = Object.values(json.data).map((data:any) => { 
                 return { 
                     id: 'wbattr_'+data.charcID, 
