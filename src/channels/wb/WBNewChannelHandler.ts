@@ -525,7 +525,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             } while (length > 0)
 
             tree  = {id: '', name: 'root', children: data.filter(elem => elem.children!.length > 0)}
-            this.cache.set('categories', data, 3600)
+            this.cache.set('categories', tree, 3600)
         }
         return { list: null, tree: tree }
     }
@@ -542,6 +542,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             const json = await res.json()
+            console.log(JSON.stringify(json))
             data = Object.values(json.data).map((data:any) => { 
                 return { 
                     id: 'wbattr_'+data.charcID, 
