@@ -288,8 +288,18 @@ export class WBNewChannelHandler extends ChannelHandler {
             return
         }
 
+
+        const lengthConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#length')
+        const length = await this.getValueByMapping(channel, lengthConfig, item, language)
+
+        const widthConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#width')
+        const width = await this.getValueByMapping(channel, widthConfig, item, language)
+
+        const heightConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#height')
+        const height = await this.getValueByMapping(channel, heightConfig, item, language)
+
         // request to WB
-        let request:any = {vendorCode:productCode, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: [''+barcode]}]}
+        let request:any = {vendorCode:productCode, dimensions: {length: length || 0, width: width || 0, height: height || 0}, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: [''+barcode]}]}
 
         const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
