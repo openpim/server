@@ -241,7 +241,13 @@ export abstract class ChannelHandler {
         } else if (mapping.attrIdent === '$id') {
             return item.id
         } else {
-          return await this.checkLOV(channel, mapping.attrIdent, item.values[mapping.attrIdent], language)
+          let attrValue = item.values[mapping.attrIdent]
+          if (attrValue && mapping.options) {
+            const tst = mapping.options.find((elem:any) => elem.name === attrValue)
+            if (tst) attrValue = tst.value
+          }
+
+          return await this.checkLOV(channel, mapping.attrIdent, attrValue, language)
         }
       } else {
         const attr = mapping.attrIdent.substring(0, tst)
@@ -249,7 +255,11 @@ export abstract class ChannelHandler {
         if (attr === '$name') {
           return item.name[lang]
         } else {
-          const attrValue = item.values[attr] ? item.values[attr][lang] : null
+          let attrValue = item.values[attr] ? item.values[attr][lang] : null
+          if (attrValue && mapping.options) {
+            const tst = mapping.options.find((elem:any) => elem.name === attrValue)
+            if (tst) attrValue = tst.value
+          }
           return await this.checkLOV(channel, attr, attrValue, language)
         }
       }

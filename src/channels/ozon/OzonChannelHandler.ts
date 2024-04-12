@@ -506,7 +506,7 @@ export class OzonChannelHandler extends ChannelHandler {
                             for (let j = 0; j < value.length; j++) {
                                 let elem = value[j];
                                 if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
-                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem, attrConfig.options)
+                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem)
                                 if (!ozonValue) {
                                     const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/' + ozonCategoryId + '/' + ozonTypeId + ')'
                                     context.log += msg                      
@@ -518,7 +518,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         } else if (typeof value === 'object') {
                             data.values.push(value)
                         } else {
-                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value, attrConfig.options)
+                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value)
                             if (!ozonValue) {
                                 const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/'  + ozonCategoryId + '/' + ozonTypeId + ')'
                                 context.log += msg                      
@@ -849,12 +849,8 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
     }    
-    private async generateValue(channel: Channel, ozonCategoryId: number, ozonTypeId: number|null, ozonAttrId: number, dictionary: boolean, value: any, options: any) {
+    private async generateValue(channel: Channel, ozonCategoryId: number, ozonTypeId: number|null, ozonAttrId: number, dictionary: boolean, value: any) {
         if (dictionary) {
-            if (options) {
-                const tst = options.find((elem:any) => elem.name === value)
-                if (tst) return {dictionary_value_id: tst.value, value: value}
-            }
             let dict: any[] | string | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId+'_'+ozonTypeId)
             if (!dict) {
                 dict = []
@@ -909,7 +905,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 throw new Error('Data dictionary for attribute: '+ozonAttrId+ ', typeId:' + ozonTypeId + ' is too big, for category: '+ozonCategoryId)
             }
 
-            const entry = (dict as any[])!.find((elem:any) => elem.value === value)
+            const entry = (dict as any[])!.find((elem:any) => elem.value == value)
             if (!entry) {
                 if (channel.config.debug) console.log('generateValue - entry not found ')
                 return null
