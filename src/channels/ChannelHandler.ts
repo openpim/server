@@ -347,4 +347,6 @@ export interface ChannelAttribute {
   dictionaryLinkPost?: any
   maxCount?: number
   isAspect?: boolean
+  attributeComplexId?: number
+  categoryDependent?: boolean
 }

@@ -482,6 +482,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
         const attrs = await this.getAttributes(channel, categoryConfig.id)
 
+        const complexAttributesToProcess:number[] = []
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i];
@@ -495,6 +496,10 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (!attr) {
                     logger.warn('Failed to find attribute in channel for attribute with id: ' + attrConfig.id)
                     continue
+                }
+                if (attr.attributeComplexId && attr.attributeComplexId > 0) {
+                    // skip complex attributes to later processing
+                    if (!complexAttributesToProcess.includes(attr.attributeComplexId)) complexAttributesToProcess.push(attr.attributeComplexId)
                 }
                 try {
                     let value = await this.getValueByMapping(channel, attrConfig, item, language)
@@ -543,6 +548,68 @@ export class OzonChannelHandler extends ChannelHandler {
                   }
             }
         }
+
+        console.log(111, JSON.stringify(product.complex_attributes))
+
+        //complex attributes processing
+        for (const complexAttrId of complexAttributesToProcess) {
+            const attrsToProcess = attrs.filter(elem => elem.attributeComplexId == complexAttrId)
+            const valsArr:any[] = []
+            let maxLength = 0
+            for (const attr of attrsToProcess) {
+                const currentValArr:any[] = []
+                const attrConfig = categoryConfig.attributes.find((elem:any) => elem.id === attr.id)
+                let value = await this.getValueByMapping(channel, attrConfig, item, language)
+                const ozonAttrId = parseInt(attr.id.substring(5))
+                if (value) {
+                    if (Array.isArray(value)) {
+                        for (let j = 0; j < value.length; j++) {
+                            let elem = value[j];
+                            if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
+                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem)
+                            if (!ozonValue) {
+                                const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/' + ozonCategoryId + '/' + ozonTypeId + ')'
+                                context.log += msg                      
+                                this.reportError(channel, item, msg)
+                                return
+                            }
+                            currentValArr.push(ozonValue)
+                        }
+                    } else if (typeof value === 'object') {
+                        currentValArr.push(value)
+                    } else {
+                        const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value)
+                        if (!ozonValue) {
+                            const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/'  + ozonCategoryId + '/' + ozonTypeId + ')'
+                            context.log += msg                      
+                            this.reportError(channel, item, msg)
+                            return
+                        }
+                        currentValArr.push(ozonValue)
+                    }
+                }
+                if (currentValArr.length > maxLength) maxLength = currentValArr.length
+                valsArr.push(currentValArr)
+            }
+            if (maxLength == 0) continue
+            if (!product.complex_attributes) product.complex_attributes = []
+            let idx = 0
+            do {
+                const attributes:any = {attributes: []}
+                for (let i = 0; i < attrsToProcess.length; i++) {
+                    const attr = attrsToProcess[i]
+                    const valArr = valsArr[i]
+                    if (valArr.length > idx) {
+                        const ozonAttrId = parseInt(attr.id.substring(5))
+                        attributes.attributes.push({id: ozonAttrId, complex_id: complexAttrId, values: [valArr[idx]]})
+                    }
+                }
+                product.complex_attributes.push(attributes)
+                console.log(222, idx, maxLength)
+            } while (idx++ < maxLength-1)
+        }
+
+        console.log(111, product.complex_attributes?.length)
         
         await this.processItemImages(channel, item, context, product, attrs)
 
@@ -1070,6 +1137,8 @@ export class OzonChannelHandler extends ChannelHandler {
                     description: elem.description+'\n id: '+elem.id+', category: '+categoryId,
                     dictionary: elem.dictionary_id !== 0,
                     isAspect: elem.is_aspect,
+                    attributeComplexId: elem.attribute_complex_id,
+                    categoryDependent: elem.category_dependent,
                     dictionaryLinkPost: elem.dictionary_id !== 0 ? { body: {
                         attribute_id: elem.id,
                         description_category_id: ozonCategoryId,
