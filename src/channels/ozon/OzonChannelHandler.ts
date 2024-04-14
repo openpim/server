@@ -549,8 +549,6 @@ export class OzonChannelHandler extends ChannelHandler {
             }
         }
 
-        console.log(111, JSON.stringify(product.complex_attributes))
-
         //complex attributes processing
         for (const complexAttrId of complexAttributesToProcess) {
             const attrsToProcess = attrs.filter(elem => elem.attributeComplexId == complexAttrId)
@@ -605,12 +603,9 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 }
                 product.complex_attributes.push(attributes)
-                console.log(222, idx, maxLength)
             } while (idx++ < maxLength-1)
         }
 
-        console.log(111, product.complex_attributes?.length)
-        
         await this.processItemImages(channel, item, context, product, attrs)
 
         // images 360 processing
