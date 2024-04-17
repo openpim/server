@@ -40,10 +40,10 @@ export async function initModels() {
         dialectOptions: dialectOptions,
         logging: logger.debug.bind(logger),
         pool: {
-            max: 20,
+            max: 50,
             min: 0,
-            idle: 60000,
-            acquire: 60000,
+            idle: 30000,
+            acquire: 600000,
             evict: 1000
         }
     })
