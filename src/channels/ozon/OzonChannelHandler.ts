@@ -500,6 +500,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (attr.attributeComplexId && attr.attributeComplexId > 0) {
                     // skip complex attributes to later processing
                     if (!complexAttributesToProcess.includes(attr.attributeComplexId)) complexAttributesToProcess.push(attr.attributeComplexId)
+                    continue
                 }
                 try {
                     let value = await this.getValueByMapping(channel, attrConfig, item, language)
@@ -967,9 +968,13 @@ export class OzonChannelHandler extends ChannelHandler {
                 throw new Error('Data dictionary for attribute: '+ozonAttrId+ ', typeId:' + ozonTypeId + ' is too big, for category: '+ozonCategoryId)
             }
 
-            const entry = (dict as any[])!.find((elem:any) => elem.value == value)
+            let entry = (dict as any[])!.find((elem:any) => elem.value == value)
             if (!entry) {
-                if (channel.config.debug) console.log('generateValue - entry not found ')
+                if (channel.config.debug) console.log('generateValue - entry not found 1')
+                entry = (dict as any[])!.find((elem:any) => elem.id == value)
+            }
+            if (!entry) {
+                if (channel.config.debug) console.log('generateValue - entry not found 2')
                 return null
             } else {
                 if (channel.config.debug) console.log('generateValue - entry found: '+entry.id)
