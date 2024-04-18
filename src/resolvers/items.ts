@@ -357,7 +357,7 @@ export default {
                 typeIdentifier: type.getValue().identifier,
                 parentIdentifier: parentIdentifier, 
                 values: {},
-                channels: null,
+                channels: {},
                 fileOrigName: '',
                 storagePath: '',
                 mimeType: ''
