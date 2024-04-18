@@ -356,7 +356,7 @@ export default {
                 typeId: nTypeId,
                 typeIdentifier: type.getValue().identifier,
                 parentIdentifier: parentIdentifier, 
-                values: null,
+                values: {},
                 channels: null,
                 fileOrigName: '',
                 storagePath: '',
