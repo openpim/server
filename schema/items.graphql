@@ -6,6 +6,8 @@ type Query {
   getAssets(id: ID!): [Asset]
   getMainImages(ids: [ID]!) : [Thumbnail]
   hasRelations(id: ID!): Boolean!
+  getItemsForRelationAttribute(attrIdentifier: String!, value: [ID]!, searchStr: String, langIdentifier: String!, limit: Int!, offset: Int!, order: String!): [Item]
+  getItemsForRelationAttributeImport(attrIdentifier: String!, searchArr: [String]!, langIdentifier: String!, limit: Int!, offset: Int!, order: String!): [Item]
 }
 
 type Mutation {

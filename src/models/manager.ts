@@ -22,16 +22,17 @@ export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
     private tenantId: string
     private attrGroups: AttrGroupWrapper[] = []
+    private relAttributes: Attribute[] = []
     private relations: Relation[] = []
     private languages: Language[] = []
     private channels: Channel[] = []
     private importConfigs: ImportConfig[] = []
     private actions: Action[] = []
     private dashboards: Dashboard[] = []
-    private actionsCache:any = {}
+    private actionsCache: any = {}
     private roles: Role[] = []
     private users: UserWrapper[] = []
-    private cache = new NodeCache({useClones: false})
+    private cache = new NodeCache({ useClones: false })
     private static serverConfig: any = null
 
     public constructor(tenantId: string) { this.tenantId = tenantId }
@@ -77,9 +78,13 @@ export class ModelManager {
         return this.relations
     }
 
+    public getRelationAttributes(): Attribute[] {
+        return this.relAttributes
+    }
+
     public dumpRelations() {
         return this.relations.map((rel) => {
-            const data = {internalId: 0}
+            const data = { internalId: 0 }
             Object.assign(data, rel.get({ plain: true }))
             data.internalId = rel.id
             return data
@@ -87,20 +92,20 @@ export class ModelManager {
     }
 
     public getRelationById(id: number): Relation | undefined {
-        return this.relations.find( (rel) => rel.id === id)    
+        return this.relations.find((rel) => rel.id === id)
     }
 
     public getRelationByIdentifier(identifier: string): Relation | undefined {
-        return this.relations.find( (rel) => rel.identifier === identifier)    
+        return this.relations.find((rel) => rel.identifier === identifier)
     }
 
-    public getTypes() : any {
-        const result:any[] = []
+    public getTypes(): any {
+        const result: any[] = []
         this.dumpChildren(result, this.typeRoot.getChildren())
         return result
     }
 
-    public static getServerConfig() : any {
+    public static getServerConfig(): any {
         if (!this.serverConfig) {
             const filesRoot = FileManager.getInstance().getFilesRoot()
             const configFile = filesRoot + '/server.config'
@@ -113,11 +118,11 @@ export class ModelManager {
         return this.serverConfig
     }
 
-    public async reloadModelRemotely(id: number, parentId: number | null, entity: string, del:boolean, xToken: string | null) {
+    public async reloadModelRemotely(id: number, parentId: number | null, entity: string, del: boolean, xToken: string | null) {
         const servers = process.env.OPENPIM_SERVERS
         if (servers && servers.length && xToken) {
             const serversArr = servers.split(';')
-            for (let i=0; i<serversArr.length; i++) {
+            for (let i = 0; i < serversArr.length; i++) {
                 const server = serversArr[i]
                 const request = `query { reloadModelRemotely( id: "${id}", parentId: "${parentId}" entity: ${entity}, del: ${del} ) }`
                 const query = { query: request }
@@ -130,7 +135,7 @@ export class ModelManager {
                     })
                     const json = await res.json()
                     logger.debug(JSON.stringify(json))
-                } catch(err) {
+                } catch (err) {
                     logger.error(`Failed to reload model remotely for server ${server}`)
                     logger.error(err)
                 }
@@ -138,10 +143,10 @@ export class ModelManager {
         }
     }
 
-    private dumpChildren(arr:any[], children: TreeNode<Type>[]) {
+    private dumpChildren(arr: any[], children: TreeNode<Type>[]) {
         for (var i = 0; i < children.length; i++) {
             const child = children[i]
-            const data = {children: [], internalId: 0, link: 0, name: '', icon: '', iconColor: ''}
+            const data = { children: [], internalId: 0, link: 0, name: '', icon: '', iconColor: '' }
             Object.assign(data, child.getValue()?.get({ plain: true }))
             data.internalId = child.getValue()!.id
             if (data.link !== 0) {
@@ -173,12 +178,12 @@ export class ModelManager {
     }
 
     public getTypeById(id: number): TreeNode<any> | null {
-        const res =  this.findNode(id, this.typeRoot.getChildren(), (id, item) => item.getValue().id === id)
+        const res = this.findNode(id, this.typeRoot.getChildren(), (id, item) => item.getValue().id === id)
         return res
     }
 
     public getTypeByLinkId(id: number): TreeNode<any> | null {
-        const res =  this.findNode(id, this.typeRoot.getChildren(), (id, item) => item.getValue().link === id)
+        const res = this.findNode(id, this.typeRoot.getChildren(), (id, item) => item.getValue().link === id)
         return res
     }
 
@@ -186,18 +191,18 @@ export class ModelManager {
         return this.findNode(identifier, this.typeRoot.getChildren(), (id, item) => item.getValue().identifier === identifier)
     }
 
-    private findNode (id: any, children:TreeNode<any>[], comparator: ((id: any, item: TreeNode<any>) => boolean)): TreeNode<any> | null {
+    private findNode(id: any, children: TreeNode<any>[], comparator: ((id: any, item: TreeNode<any>) => boolean)): TreeNode<any> | null {
         for (var i = 0; i < children.length; i++) {
-          const item = children[i]
-          // console.log('check-', item.getValue().id, typeof item.getValue().id, id, typeof id)
-          if (comparator(id, item)) {
-            return item
-          } else {
-            const found = this.findNode(id, item.getChildren(), comparator)
-            if (found) {
-              return found
+            const item = children[i]
+            // console.log('check-', item.getValue().id, typeof item.getValue().id, id, typeof id)
+            if (comparator(id, item)) {
+                return item
+            } else {
+                const found = this.findNode(id, item.getChildren(), comparator)
+                if (found) {
+                    return found
+                }
             }
-          }
         }
         return null
     }
@@ -206,30 +211,30 @@ export class ModelManager {
         return this.attrGroups
     }
 
-    public getAttributesInfo() : any[] {
-        const result:any[] = []
+    public getAttributesInfo(): any[] {
+        const result: any[] = []
         let attrId = Date.now()
         this.attrGroups.forEach((grp) => {
-            const attributes :any[] = []
-            const group: {attributes:any[], internalId: number, group: boolean, Attributes?: []} = {attributes: attributes, internalId: 0, group: true, Attributes: []}
+            const attributes: any[] = []
+            const group: { attributes: any[], internalId: number, group: boolean, Attributes?: [] } = { attributes: attributes, internalId: 0, group: true, Attributes: [] }
             Object.assign(group, grp.getGroup().get({ plain: true }))
             delete group.Attributes
             group.internalId = grp.getGroup().id
-            group.attributes = grp.getAttributes().map( attr => {
-                const data: {internalId: number, group: boolean, id:number, GroupsAttributes?:string} = {internalId: 0, group: false, id:0, GroupsAttributes:''}
+            group.attributes = grp.getAttributes().map(attr => {
+                const data: { internalId: number, group: boolean, id: number, GroupsAttributes?: string } = { internalId: 0, group: false, id: 0, GroupsAttributes: '' }
                 Object.assign(data, attr.get({ plain: true }))
                 data.internalId = attr.id
                 data.id = attrId++ // we have to assign unique id
-    
+
                 delete data.GroupsAttributes
                 return data
             })
             result.push(group)
-        }) 
+        })
         return result
     }
 
-    public getAttribute(id: number) : { attr: Attribute, groups: AttrGroup[] } | null {
+    public getAttribute(id: number): { attr: Attribute, groups: AttrGroup[] } | null {
         const groups: AttrGroup[] = []
         let attr: Attribute | null = null
         for (var i = 0; i < this.attrGroups.length; i++) {
@@ -241,11 +246,11 @@ export class ModelManager {
                     groups.push(group.getGroup())
                 }
             }
-        }  
-        return attr ? {attr:attr, groups:groups} : null
+        }
+        return attr ? { attr: attr, groups: groups } : null
     }
 
-    public getAttributeByIdentifier(identifier: string, firstOnly: boolean = false) : { attr: Attribute, groups: AttrGroup[] } | null {
+    public getAttributeByIdentifier(identifier: string, firstOnly: boolean = false): { attr: Attribute, groups: AttrGroup[] } | null {
         const groups: AttrGroup[] = []
         let attr: Attribute | null = null
         for (var i = 0; i < this.attrGroups.length; i++) {
@@ -254,12 +259,12 @@ export class ModelManager {
             for (var j = 0; j < attributes.length; j++) {
                 if (attributes[j].identifier === identifier) {
                     attr = attributes[j]
-                    if (firstOnly) return {attr:attr, groups: [group.getGroup()]}
+                    if (firstOnly) return { attr: attr, groups: [group.getGroup()] }
                     groups.push(group.getGroup())
                 }
             }
-        }  
-        return attr ? {attr:attr, groups:groups} : null
+        }
+        return attr ? { attr: attr, groups: groups } : null
     }
 }
 
@@ -267,9 +272,9 @@ export class ModelsManager {
     private static instance: ModelsManager
     private tenantMap: Record<string, ModelManager> = {}
     private channelTypes: number[] = [1, 5, 6] // external and external with mapping and MDM by default
-    
+
     private constructor() { }
-   
+
     public static getInstance(): ModelsManager {
         if (!ModelsManager.instance) {
             ModelsManager.instance = new ModelsManager()
@@ -298,14 +303,14 @@ export class ModelsManager {
         if (channelTypes) this.channelTypes = channelTypes
         let where: WhereOptions | undefined = undefined
         if (process.argv.length > 3) {
-            where = {tenantId: process.argv.splice(3)}
+            where = { tenantId: process.argv.splice(3) }
         }
         await this.initModels(where)
     }
 
     public async reloadModel(tenantId: string) {
         delete this.tenantMap[tenantId]
-        this.initModels({tenantId: [tenantId]})
+        this.initModels({ tenantId: [tenantId] })
     }
 
     public async initModels(where: WhereOptions | undefined) {
@@ -319,12 +324,13 @@ export class ModelsManager {
 
         const types: Type[] = await Type.findAll({
             where: where,
-            order: [['tenantId', 'DESC'],['path', 'ASC']]})
+            order: [['tenantId', 'DESC'], ['path', 'ASC']]
+        })
 
         let mng: ModelManager
         let currentNode: TreeNode<any>
         let currentLevel: number
-        types.forEach( (type) => {
+        types.forEach((type) => {
             // console.log('loading type-' + type.path)
             if (!mng || mng.getTenantId() !== type.tenantId) {
                 mng = this.tenantMap[type.tenantId]
@@ -338,7 +344,7 @@ export class ModelsManager {
                 (currentNode.getParent() ? 'par-'+currentNode.getParent()! : "no parent")) */
             if (currentLevel > arr.length) {
                 // go to one parent up
-                while(currentLevel > arr.length) {
+                while (currentLevel > arr.length) {
                     currentNode = currentNode.getParent()!
                     currentLevel--
                 }
@@ -366,7 +372,8 @@ export class ModelsManager {
         // TODO optimize this to load data by 1 select with join
         const roles = await Role.findAll({
             where: where,
-            order: [['tenantId', 'DESC']]})
+            order: [['tenantId', 'DESC']]
+        })
         if (!roles) return
 
         let mng: ModelManager | null = null
@@ -381,7 +388,8 @@ export class ModelsManager {
 
         const users = await User.findAll({
             where: where,
-            order: [['tenantId', 'DESC']]})
+            order: [['tenantId', 'DESC']]
+        })
         if (!users) return
 
         mng = null
@@ -405,8 +413,9 @@ export class ModelsManager {
         // TODO optimize this to load data by 1 select with join
         const groups = await AttrGroup.findAll({
             where: where,
-            include: [{model: Attribute}],
-            order: [['tenantId', 'DESC']]})
+            include: [{ model: Attribute }],
+            order: [['tenantId', 'DESC']]
+        })
         if (!groups) return
 
         let mng: ModelManager | null = null
@@ -417,12 +426,27 @@ export class ModelsManager {
             }
             mng.getAttrGroups().push(new AttrGroupWrapper(grp, await grp.getAttributes()))
         }
+
+        for (var i = 0; i < groups.length; i++) {
+            const grp = groups[i];
+            if (!mng || mng.getTenantId() !== grp.tenantId) {
+                mng = this.tenantMap[grp.tenantId]
+            }
+            const attrs = await grp.getAttributes()
+            for (let k = 0; k < attrs.length; k++) {
+                const attr = attrs[k]
+                if (attr.type === 9) {
+                    mng.getRelationAttributes().push(attrs[k])
+                }
+            }
+        }
     }
 
     public async initRelations(where: WhereOptions | undefined) {
         const rels = await Relation.findAll({
             where: where,
-            order: [['tenantId', 'DESC']]})
+            order: [['tenantId', 'DESC']]
+        })
         if (!rels) return
 
         let mng: ModelManager | null = null
@@ -438,7 +462,8 @@ export class ModelsManager {
     public async initActions(where: WhereOptions | undefined) {
         const actions = await Action.findAll({
             where: where,
-            order: [['tenantId', 'DESC']]})
+            order: [['tenantId', 'DESC']]
+        })
         if (!actions) return
 
         let mng: ModelManager | null = null
@@ -454,7 +479,8 @@ export class ModelsManager {
     public async initDashboards(where: WhereOptions | undefined) {
         const dashboards = await Dashboard.findAll({
             where: where,
-            order: [['tenantId', 'DESC']]})
+            order: [['tenantId', 'DESC']]
+        })
         if (!dashboards) return
 
         let mng: ModelManager | null = null
@@ -470,7 +496,8 @@ export class ModelsManager {
     public async initChannels(where: WhereOptions | undefined) {
         const items = await Channel.findAll({
             where: where,
-            order: [['tenantId', 'DESC']]})
+            order: [['tenantId', 'DESC']]
+        })
         if (!items) return
 
         let mng: ModelManager | null = null
@@ -486,7 +513,8 @@ export class ModelsManager {
     public async initImportConfigs(where: WhereOptions | undefined) {
         const items = await ImportConfig.findAll({
             where: where,
-            order: [['tenantId', 'DESC']]})
+            order: [['tenantId', 'DESC']]
+        })
         if (!items) return
 
         let mng: ModelManager | null = null
@@ -502,7 +530,8 @@ export class ModelsManager {
     public async initLanguages(where: WhereOptions | undefined) {
         const languages = await Language.findAll({
             where: where,
-            order: [['tenantId', 'DESC'], ['id', 'ASC']]})
+            order: [['tenantId', 'DESC'], ['id', 'ASC']]
+        })
         if (!languages) return
 
         let mng: ModelManager | null = null

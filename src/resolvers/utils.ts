@@ -2,7 +2,7 @@ import XRegExp = require("xregexp")
 import { ModelManager, ModelsManager } from "../models/manager"
 import { Item } from "../models/items"
 import { EventType, TriggerType, Action } from "../models/actions"
-import {VM, VMScript} from 'vm2'
+import { VM, VMScript } from 'vm2'
 import Context from "../context"
 import { ItemRelation } from "../models/itemRelations"
 import { exec } from 'child_process'
@@ -25,7 +25,7 @@ import * as fs from 'fs/promises'
 import moment from 'moment'
 import KafkaJS from "kafkajs"
 const archiver = require('archiver')
-import * as stream from 'node:stream' 
+import * as stream from 'node:stream'
 const pipe = util.promisify(stream.pipeline)
 import XLSX from 'xlsx'
 const extractzip = require('extract-zip')
@@ -79,7 +79,7 @@ export function replaceOperations(obj: any) {
         }
 
         if (prop === 'collectionId') {
-            include = [{as: "collectionItems", where: {"collectionId": value}}]
+            include = [{ as: "collectionItems", where: { "collectionId": value } }]
             delete obj[prop]
             fillInclude(include)
         }
@@ -89,7 +89,7 @@ export function replaceOperations(obj: any) {
             delete obj[prop]
             fillInclude(include)
         }
-        
+
         if (prop !== 'include' && value === Object(value)) {
             replaceOperations(value)
         }
@@ -108,7 +108,7 @@ function fillInclude(include: any[]) {
     })
 }
 
-export function filterChannels(context: Context, channels:any) {
+export function filterChannels(context: Context, channels: any) {
     for (const prop in channels) {
         if (!context.canViewChannel(prop)) {
             delete channels[prop]
@@ -116,7 +116,7 @@ export function filterChannels(context: Context, channels:any) {
     }
 }
 
-export function filterEditChannels(context: Context, channels:any) {
+export function filterEditChannels(context: Context, channels: any) {
     if (!channels) return
     for (const prop in channels) {
         if (!context.canEditChannel(prop)) {
@@ -140,17 +140,17 @@ export function checkSubmit(context: Context, channels: any) {
     }
 }
 
-export function filterValues(allowedAttributes: string[] | null, values:any) {
+export function filterValues(allowedAttributes: string[] | null, values: any) {
     if (allowedAttributes) {
         for (const prop in values) {
             if (!allowedAttributes.includes(prop)) {
                 delete values[prop]
             }
         }
-    }    
+    }
 }
 
-export function processDeletedChannels(channels:any) {
+export function processDeletedChannels(channels: any) {
     if (channels) {
         for (const key in channels) {
             if (channels[key].is_deleted) {
@@ -167,10 +167,10 @@ export function mergeValues(newValues: any, oldValues: any): any {
                 const obj = oldValues[prop]
                 const newobj = newValues[prop]
                 if (obj !== null && typeof obj === 'object' && typeof newobj === 'object' && !Array.isArray(newobj)) {
-                    newValues[prop] = {...oldValues[prop], ...newValues[prop]}
+                    newValues[prop] = { ...oldValues[prop], ...newValues[prop] }
                 }
             }
-            return {...oldValues, ...newValues}
+            return { ...oldValues, ...newValues }
         } else {
             return newValues
         }
@@ -194,7 +194,7 @@ export function diff(obj1: any, obj2: any) {
     //
     // Variables
     //
-    var diffs: any = {added:{}, changed: {}, old:{}, deleted: {}};
+    var diffs: any = { added: {}, changed: {}, old: {}, deleted: {} };
     var key;
 
     //
@@ -232,16 +232,16 @@ export function diff(obj1: any, obj2: any) {
         }
 
         // If items are different types
-        if (item1 !== undefined && item2 !== undefined  && type1 !== type2) {
+        if (item1 !== undefined && item2 !== undefined && type1 !== type2) {
             diffs.changed[key] = item2;
             diffs.old[key] = item1;
             return;
         }
 
-        if ((!Array.isArray(item1) && item1 !== item2 && item2 !== undefined) || (Array.isArray(item1) && Array.isArray(item2) && !(item1.length === item2.length && item1.every((elem:any) => item2.indexOf(elem) !== -1)))) {
+        if ((!Array.isArray(item1) && item1 !== item2 && item2 !== undefined) || (Array.isArray(item1) && Array.isArray(item2) && !(item1.length === item2.length && item1.every((elem: any) => item2.indexOf(elem) !== -1)))) {
             diffs.changed[key] = item2;
             diffs.old[key] = item1;
-        } 
+        }
     };
 
     //
@@ -258,7 +258,7 @@ export function diff(obj1: any, obj2: any) {
     for (key in obj2) {
         if (key in obj2) {
             if (!(key in obj1) && obj1[key] !== obj2[key]) {
-                diffs.added[key] = obj2[key] !== null ? obj2[key]  : null;
+                diffs.added[key] = obj2[key] !== null ? obj2[key] : null;
             }
         }
     }
@@ -267,17 +267,17 @@ export function diff(obj1: any, obj2: any) {
     return diffs
 }
 
-export function isObjectEmpty(obj:any) {
+export function isObjectEmpty(obj: any) {
     return Object.keys(obj).length === 0;
 }
 
 export function checkValues(mng: ModelManager, values: any) {
-    for(const prop in values) {
+    for (const prop in values) {
         const attr = mng.getAttributeByIdentifier(prop, true)?.attr
         if (attr && attr.pattern) {
             const regex = XRegExp(attr.pattern, 'g')
             if (attr.languageDependent) {
-                for(const lang in values[prop]) {
+                for (const lang in values[prop]) {
                     const value = values[prop][lang] ? '' + values[prop][lang] : ''
                     if (value && !regex.test(value)) {
                         let str = 'Wrong value: ' + value + ' for pattern: ' + attr.pattern + ', for attribute: ' + attr.identifier
@@ -289,7 +289,7 @@ export function checkValues(mng: ModelManager, values: any) {
                                 }
                             }
                         }
-                        throw  new Error(str)
+                        throw new Error(str)
                     }
                 }
             } else {
@@ -304,18 +304,213 @@ export function checkValues(mng: ModelManager, values: any) {
                             }
                         }
                     }
-                    throw  new Error(str)
+                    throw new Error(str)
                 }
             }
         } else if (attr && attr.type === 3) { // Integer
             if (attr.languageDependent) {
-                for(const lang in values[prop]) {
+                for (const lang in values[prop]) {
                     const value = values[prop][lang]
                     checkInteger(attr, value)
                 }
             } else {
                 const value = values[prop]
                 checkInteger(attr, value)
+            }
+        }
+    }
+}
+
+export async function updateItemRelationAttributes(context: Context, mng: ModelManager, itemRelation: ItemRelation, del: Boolean) {
+
+    const relationId = itemRelation.relationId
+    // const relation = mng.getRelationById(relationId)
+
+    const attrs = mng.getRelationAttributes()
+    const attrsFiltered = attrs.filter(attr => attr.relations.some((el: number) => el === itemRelation.relationId))
+
+    const item = await Item.applyScope(context).findByPk(itemRelation.itemId)
+    const targetItem = await Item.applyScope(context).findByPk(itemRelation.targetId)
+
+    if (!item) {
+        throw new Error(`Can not find item with id ${itemRelation.itemId}`)
+    }
+
+    if (!targetItem) {
+        throw new Error(`Can not find item with id ${itemRelation.targetId}`)
+    }
+
+    if (item) {
+        const pathArr = item.path.split('.').map(elem => parseInt(elem))
+        for (let i = 0; i < attrsFiltered.length; i++) {
+            const attr = attrsFiltered[i]
+            if (attr.valid[0] && attr.valid.includes(item.typeId)) {
+                if (pathArr.some(r => attr.visible.indexOf(r) !== -1)) {
+                    let currentAttrValue = item.values[attr.identifier]
+                    if (attr.options.some((elem : any) => elem.name === 'multivalue' && elem.value === 'true')) {
+                        if (!Array.isArray(currentAttrValue)) {
+                            currentAttrValue = []
+                        }
+                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) === parseInt(targetItem.id))
+                        if (idx === -1 && !del) {
+                            currentAttrValue.push(targetItem.id.toString())
+                        } else if (idx && del) {
+                            currentAttrValue.splice(idx, 1)
+                        }
+                        item.values[attr.identifier] = currentAttrValue
+                    } else {
+                        item.values[attr.identifier] = !del ? targetItem.id.toString() : null
+                    }
+                    item.changed('values', true)
+                    await item.save()
+                }
+            }
+        }
+    }
+    
+
+    if (targetItem) {
+        const pathArr = targetItem.path.split('.').map(elem => parseInt(elem))
+        for (let i = 0; i < attrsFiltered.length; i++) {
+            const attr = attrsFiltered[i]
+            if (attr.valid[0] && attr.valid.includes(targetItem.typeId)) {
+                if (pathArr.some(r => attr.visible.indexOf(r) !== -1)) {
+                    let currentAttrValue = item.values[attr.identifier]
+                    if (attr.options.some((elem : any) => elem.name === 'multivalue' && elem.value === 'true')) {
+                        if (!Array.isArray(currentAttrValue)) {
+                            currentAttrValue = []
+                        }
+                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) === parseInt(item.id))
+                        if (idx === -1 && !del) {
+                            currentAttrValue.push(item.id.toString())
+                        } else if (idx && del) {
+                            currentAttrValue.splice(idx, 1)
+                        }
+                        targetItem.values[attr.identifier] = currentAttrValue
+                    } else {
+                        targetItem.values[attr.identifier] = !del ? item.id.toString(): null
+                    }
+                    targetItem.changed('values', true)
+                    await targetItem.save()
+                }
+            }
+        }
+    }
+}
+
+export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any) {
+
+    const utils = new ActionUtils(context)
+
+    // all the attributes with relation type
+    const itemRelationAttributes: Attribute[] = []
+
+    // all the items ids from relation attributes
+    let relatedItemsIds: number[] = []
+
+    for (const prop in values) {
+        const attr = mng.getRelationAttributes().find(el => (el.identifier === prop))
+        if (attr) {
+            itemRelationAttributes.push(attr)
+            if (values[prop] && Array.isArray(values[prop])) {
+                relatedItemsIds = relatedItemsIds.concat(values[prop])
+            } else if (values[prop]) {
+                relatedItemsIds.push(parseInt(values[prop]))
+            }
+        }
+    }
+
+    // all posible relation types for attributes
+    let itemRelationsTypes: number[] = []
+    for (let i = 0; i < itemRelationAttributes.length; i++) {
+        itemRelationsTypes = itemRelationAttributes[i].relations ? itemRelationsTypes.concat(itemRelationAttributes[i].relations) : itemRelationsTypes
+    }
+    const itemRelationsTypesUnique = itemRelationsTypes.filter((item, pos) => itemRelationsTypes.indexOf(item) === pos).map((relId: number) => mng.getRelationById(relId))
+
+    // all relations for item with allowed types
+    let existedItemRelations: ItemRelation[] = []
+    if (itemRelationsTypesUnique.length) {
+        existedItemRelations = await ItemRelation.applyScope(context).findAll({
+            where: {
+                relationIdentifier: itemRelationsTypesUnique.map(rel => rel.identifier),
+                [Op.or]: [{ itemId: item.id }, { targetId: item.id }]
+            },
+            //include: [{model: Item, as: 'sourceItem'}, {model: Item, as: 'targetItem'}]
+        })
+    }
+
+    // all the items from values
+    let sourceAndTargetItemTypes: number[] = []
+    for (let i = 0; i < itemRelationsTypesUnique.length; i++) {
+        if (itemRelationsTypesUnique[i]?.sources) {
+            sourceAndTargetItemTypes = sourceAndTargetItemTypes.concat(itemRelationsTypesUnique[i]?.sources)
+        }
+        if (itemRelationsTypesUnique[i]?.targets) {
+            sourceAndTargetItemTypes = sourceAndTargetItemTypes.concat(itemRelationsTypesUnique[i]?.targets)
+        }
+    }
+    const sourceAndTargetItemTypesUnique = sourceAndTargetItemTypes.filter((item, pos) => sourceAndTargetItemTypes.indexOf(item) === pos)
+
+    let relatedItems: any = []
+    if (relatedItemsIds.length) {
+        relatedItems = await Item.applyScope(context).findAll({
+            where: {
+                id: relatedItemsIds,
+                typeId: sourceAndTargetItemTypesUnique
+            }
+        })
+    }
+
+    for (const prop in values) {
+        const attr = mng.getRelationAttributes().find(el => (el.identifier === prop))
+        if (attr) {
+            // possible rel types for current attribute
+            const relations = attr.relations ? attr.relations.map((relId: number) => mng.getRelationById(relId)) : []
+            for (let relIndx = 0; relIndx < relations.length; relIndx++) {
+                const relation = relations[relIndx]
+                const isSource = relation.sources.find((el: number) => el === item.typeId)
+
+                const existedItemRelationsForAttribute = existedItemRelations.filter(rel => rel.relationIdentifier === relation.identifier && (isSource ? rel.itemId === item.id : rel.targetId === item.id))
+                
+                // existedItemRelationsForAttribute  - existed relations for attr 
+                // valsArray - incoming data for attr
+                let valsArray: any[] = []
+                if (!Array.isArray(values[prop])) {
+                    valsArray.push(parseInt(values[prop]))
+                } else {
+                    valsArray = values[prop].map((el: string) => parseInt(el))
+                }
+
+                // remove relations not existed in incoming array
+                const existedItemRelationsForAttribute2Delete = existedItemRelationsForAttribute.filter(value => !valsArray.includes(isSource ? value.targetId : value.itemId))
+                for (let i = 0; i < existedItemRelationsForAttribute2Delete.length; i++) {
+                    await utils.removeItemRelation(existedItemRelationsForAttribute2Delete[i].id.toString(), context)
+                    const idx = existedItemRelations.findIndex(el => el.id === existedItemRelationsForAttribute2Delete[i].id)
+                    if (idx !== -1) {
+                        existedItemRelations.splice(idx, 1)
+                    }
+                }
+
+                for (let valIndex = 0; valIndex < valsArray.length; valIndex++) {
+                    const val = valsArray[valIndex]
+                    if (val) {
+                        const find = existedItemRelationsForAttribute.find(rel => (isSource ? rel.targetId === val : rel.itemId === val))
+                        if (!find) {
+                            const relatedItem = isSource ? relatedItems.find((relItem: any) => (relItem.id === val && relation.targets.some((id: number) => (id === relItem.typeId)))) : relatedItems.find((relItem: any) => (relItem.id === val && relation.sources.some((id: number) => (id === relItem.typeId))))
+                            if (relatedItem) {
+                                if (isSource) {
+                                    await utils.createItemRelation(relation.identifier, `${item.identifier}_${relation.identifier}_${relatedItem.identifier}`, item.identifier, relatedItem.identifier, {}, false)
+                                } else {
+                                    await utils.createItemRelation(relation.identifier, `${relatedItem.identifier}_${relation.identifier}_${item.identifier}`, relatedItem.identifier, item.identifier, {}, false)
+                                }
+                            } else {
+                                throw new Error('Invalid item id')
+                            }
+                        }
+                        
+                    }
+                }
+
             }
         }
     }
@@ -339,38 +534,39 @@ function checkInteger(attr: Attribute, value: any) {
     }
 }
 
-export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean, isFileUpload: boolean) {
+export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean, isFileUpload: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-    const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
+    const pathArr = item.path.split('.').map((elem: string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
             const trigger = action.triggers[i]
 
-            const result = parseInt(trigger.type) === TriggerType.Item && 
-                parseInt(trigger.event) === event && 
+            const result = parseInt(trigger.type) === TriggerType.Item &&
+                parseInt(trigger.event) === event &&
                 item.typeId === parseInt(trigger.itemType) &&
                 pathArr.includes(parseInt(trigger.itemFrom))
             if (result) return true
         }
         return false
     })
-    return await processActions(mng, actions, { Op: Op,
+    return await processActions(mng, actions, {
+        Op: Op,
         event: EventType[event],
         fileUpload: isFileUpload,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-        isImport: isImport, 
+        isImport: isImport,
         item: makeItemProxy(item, EventType[event]), values: newValues, channels: newChannels, name: newName, parent: newParent,
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        } 
+        }
     })
 }
 
@@ -405,13 +601,13 @@ export async function processItemActions(context: Context, event: EventType, ite
 
 export async function processItemButtonActions(context: Context, buttonText: string, item: Item, data: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-    const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
+    const pathArr = item.path.split('.').map((elem: string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
             const trigger = action.triggers[i]
 
-            const result = parseInt(trigger.type) === TriggerType.Button && 
-                trigger.itemButton === buttonText && 
+            const result = parseInt(trigger.type) === TriggerType.Button &&
+                trigger.itemButton === buttonText &&
                 item.typeId === parseInt(trigger.itemType) &&
                 pathArr.includes(parseInt(trigger.itemFrom))
             if (result) return true
@@ -423,20 +619,21 @@ export async function processItemButtonActions(context: Context, buttonText: str
 }
 
 export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null) {
-    let search:any
+    let search: any
     if (where) {
         const whereObj = JSON.parse(where)
         const include = replaceOperations(whereObj)
-        search = {where: whereObj}
+        search = { where: whereObj }
         if (include && include.length > 0) search.include = include
     }
 
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-    const valuesCopy = item ? {...item.values} : {}
-    const channelsCopy = item ? {...item.channels} : {}
-    const nameCopy = item ? {...item.name} : {}
-    const ret = await processActions(mng, actions, { Op: Op,
-        event: 'Button:'+buttonText,
+    const valuesCopy = item ? { ...item.values } : {}
+    const channelsCopy = item ? { ...item.channels } : {}
+    const nameCopy = item ? { ...item.name } : {}
+    const ret = await processActions(mng, actions, {
+        Op: Op,
+        event: 'Button:' + buttonText,
         data: data,
         where: search,
         whereAsString: where,
@@ -444,31 +641,31 @@ export async function processItemButtonActions2(context: Context, actions: Actio
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-        buttonText: buttonText, 
-        item: item ? makeItemProxy(item, 'Button:'+buttonText) : null, values: valuesCopy, channels:channelsCopy, name: nameCopy,
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        buttonText: buttonText,
+        item: item ? makeItemProxy(item, 'Button:' + buttonText) : null, values: valuesCopy, channels: channelsCopy, name: nameCopy,
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        } 
+        }
     })
-    return {channels:channelsCopy, values:valuesCopy, result: ret[0]}
+    return { channels: channelsCopy, values: valuesCopy, result: ret[0] }
 }
 
 export async function processTableButtonActions(context: Context, buttonText: string, item: Item | null, where: any, data: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-    const pathArr = item ? item.path.split('.').map((elem:string) => parseInt(elem)) : null
+    const pathArr = item ? item.path.split('.').map((elem: string) => parseInt(elem)) : null
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
             const trigger = action.triggers[i]
 
             const result = parseInt(trigger.type) === TriggerType.TableButton &&
                 trigger.itemButton === buttonText &&
-                ( (!trigger.itemType && !trigger.itemFrom) ||
-                (item && item.typeId === parseInt(trigger.itemType) && pathArr!.includes(parseInt(trigger.itemFrom))))
+                ((!trigger.itemType && !trigger.itemFrom) ||
+                    (item && item.typeId === parseInt(trigger.itemType) && pathArr!.includes(parseInt(trigger.itemFrom))))
             if (result) return true
         }
         return false
@@ -479,7 +676,7 @@ export async function processTableButtonActions(context: Context, buttonText: st
 
 export async function processBulkUpdateChannelsActions(context: Context, event: EventType, channels: any, where: any) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-    const actions:Action[] = mng.getActions().filter(action => {
+    const actions: Action[] = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
             const trigger = action.triggers[i]
 
@@ -491,49 +688,52 @@ export async function processBulkUpdateChannelsActions(context: Context, event: 
 
     const channelsCopy = channels ? channels : []
     const whereCopy = where ? where : {}
-    const ret = await processActions(mng, actions, { Op: Op,
+    const ret = await processActions(mng, actions, {
+        Op: Op,
         where: where,
         channels: channels,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        } 
+        }
     })
-    return {newChannels:channelsCopy, newWhere:whereCopy, result: ret}
+    return { newChannels: channelsCopy, newWhere: whereCopy, result: ret }
 }
 
 export async function testAction(context: Context, action: Action, item: Item) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-    const values = {...item.values}
-    const channels = {...item.channels}
+    const values = { ...item.values }
+    const channels = { ...item.channels }
     let log = ''
-    const nameCopy = {...item.name}
-    const ret = await processActionsWithLog(mng, [action], { Op: Op,
-        event: 'Test', 
+    const nameCopy = { ...item.name }
+    const ret = await processActionsWithLog(mng, [action], {
+        Op: Op,
+        event: 'Test',
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, XLSX, FS, pipe, stream, archiver, extractzip },
-        item: makeItemProxy(item, 'Test'), values: values, channels:channels, name: nameCopy,
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        item: makeItemProxy(item, 'Test'), values: values, channels: channels, name: nameCopy,
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        }},
-        { 
-            log: ((...args: any) => { log += '' + args + '\n'}),
-            error: ((...args: any) => { log += '[ERROR] ' + args + '\n'}),
+        }
+    },
+        {
+            log: ((...args: any) => { log += '' + args + '\n' }),
+            error: ((...args: any) => { log += '[ERROR] ' + args + '\n' }),
         }
     )
     return { values, log, ...ret[0] }
@@ -550,22 +750,23 @@ export async function processAttrGroupActions(context: Context, event: EventType
         }
         return false
     })
-    return await processActions(mng, actions, { Op: Op,
+    return await processActions(mng, actions, {
+        Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-        isImport: isImport, 
+        isImport: isImport,
         group: grp,
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        } 
+        }
     })
 }
 
@@ -580,85 +781,87 @@ export async function processAttributeActions(context: Context, event: EventType
         }
         return false
     })
-    return await processActions(mng, actions, { Op: Op,
+    return await processActions(mng, actions, {
+        Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-        isImport: isImport, 
+        isImport: isImport,
         attribute: attr,
         changes: changes,
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        } 
+        }
     })
 }
 
 export async function processImportActions(context: Context, event: EventType, process: Process, importConfig: ImportConfig, filepath: any) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-    const actions:Action[] = []
+    const actions: Action[] = []
 
     if (event === EventType.ImportBeforeStart && importConfig.config.beforeStartAction) {
-        const identifier = importConfig.identifier+event
-        const action = Action.build({ identifier: identifier, code: importConfig.config.beforeStartAction, order:0 })
+        const identifier = importConfig.identifier + event
+        const action = Action.build({ identifier: identifier, code: importConfig.config.beforeStartAction, order: 0 })
         actions.push(action)
     }
     if (event === EventType.ImportAfterEnd && importConfig.config.afterEndAction) {
-        const identifier = importConfig.identifier+event
-        const action = Action.build({ identifier: identifier, code: importConfig.config.afterEndAction, order:0 })
+        const identifier = importConfig.identifier + event
+        const action = Action.build({ identifier: identifier, code: importConfig.config.afterEndAction, order: 0 })
         actions.push(action)
     }
 
-    return await processActions(mng, actions, { Op: Op,
+    return await processActions(mng, actions, {
+        Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-        process: process, 
+        process: process,
         importConfig: importConfig,
         filepath: filepath,
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        } 
+        }
     })
 }
 
 
 async function processActions(mng: ModelManager, actions: Action[], sandbox: any) {
-    const cons = { 
-        log: ((...args: any) => {logger.info('ACTION: ' + args)}),
-        error: ((...args: any) => {logger.error('ACTION: ' + args)})
+    const cons = {
+        log: ((...args: any) => { logger.info('ACTION: ' + args) }),
+        error: ((...args: any) => { logger.error('ACTION: ' + args) })
     }
     return await processActionsWithLog(mng, actions, sandbox, cons)
 }
 
-async function processActionsWithLog(mng: ModelManager, actions: Action[], sandbox: any, console: any): 
-    Promise<{identifier: string, compileError?: string, message?: string, error?:string, data?: any, result?: any}[]> {
+async function processActionsWithLog(mng: ModelManager, actions: Action[], sandbox: any, console: any):
+    Promise<{ identifier: string, compileError?: string, message?: string, error?: string, data?: any, result?: any }[]> {
     const retArr = []
     if (actions.length > 0) {
         const vm = new VM({
             timeout: 3000,
             sandbox: sandbox
-        }) 
-        vm.setGlobals({console: console})
+        })
+        vm.setGlobals({ console: console })
         actions.sort((a, b) => a.order - b.order)
         for (let i = 0; i < actions.length; i++) {
             const action = actions[i]
             const startTS = Date.now()
             logger.debug(`Starting action ${action.identifier} at ${startTS}`)
-            let script:VMScript | {compileError: boolean, error: string} | undefined = mng.getActionsCache()[action.identifier]
+            let script: VMScript | { compileError: boolean, error: string } | undefined = mng.getActionsCache()[action.identifier]
             if (script instanceof VMScript || script === undefined) {
                 if (script === undefined) {
                     const code = `
@@ -669,10 +872,10 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                     script = new VMScript(code)
                     try {
                         script.compile()
-                    } catch (err:any) {
-                        retArr.push({identifier: action.identifier, compileError: err.message})
+                    } catch (err: any) {
+                        retArr.push({ identifier: action.identifier, compileError: err.message })
                         logger.error('Failed to compile script.', err);
-                        script = {compileError: true, error: err.message}
+                        script = { compileError: true, error: err.message }
                     }
                     mng.getActionsCache()[action.identifier] = script
                 }
@@ -682,100 +885,117 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                         const ret = await funct()
                         if (ret) {
                             if (typeof ret === 'object') {
-                                retArr.push({identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data, result: ret.result})
+                                retArr.push({ identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data, result: ret.result })
                             } else {
-                                retArr.push({identifier: action.identifier, message: ''+ret})
+                                retArr.push({ identifier: action.identifier, message: '' + ret })
                             }
                         } else {
-                            retArr.push({identifier: action.identifier})
+                            retArr.push({ identifier: action.identifier })
                         }
                     } catch (err) {
                         logger.error('Failed to run action: ' + action.identifier);
                         throw err
                     }
                 } else {
-                    retArr.push({identifier: action.identifier, compileError: script.error})
+                    retArr.push({ identifier: action.identifier, compileError: script.error })
                 }
             } else {
-                retArr.push({identifier: action.identifier, compileError: script.error})
+                retArr.push({ identifier: action.identifier, compileError: script.error })
             }
             const finishTS = Date.now()
-            logger.debug(`Finished action ${action.identifier} at ${finishTS}, duration is ${finishTS-startTS}`)
+            logger.debug(`Finished action ${action.identifier} at ${finishTS}, duration is ${finishTS - startTS}`)
         }
     }
     return retArr
 }
 
 function makeModelProxy(model: any, itemProxy: any) {
-    return new Proxy( model, {
-        get: function( target, property, receiver ) {
-            if ((<string>property) =='findOne') {
-                return async(...args: any) => {
-                    const tst = await target[ property ].apply( target, args )
-                    return tst? itemProxy(tst) : undefined
+    return new Proxy(model, {
+        get: function (target, property, receiver) {
+            if ((<string>property) == 'findOne') {
+                return async (...args: any) => {
+                    const tst = await target[property].apply(target, args)
+                    return tst ? itemProxy(tst) : undefined
                 }
-            } else if ((<string>property) =='create') {
-                return async(...args: any) => {
-                    return itemProxy(await target[ property ].apply( target, args ))
+            } else if ((<string>property) == 'create') {
+                return async (...args: any) => {
+                    return itemProxy(await target[property].apply(target, args))
                 }
-            } else if ((<string>property) =='count') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+            } else if ((<string>property) == 'count') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
                 }
-            } else if ((<string>property) =='findAll') {
-                return async(...args: any) => {
-                    const arr = await target[ property ].apply( target, args )
+            } else if ((<string>property) == 'findAll') {
+                return async (...args: any) => {
+                    const arr = await target[property].apply(target, args)
                     return arr.map((elem: any) => itemProxy(elem))
                 }
             } else {
                 return null
             }
         }
-    })    
+    })
 }
 
 function makeItemProxy(item: any, event: string) {
-    return new Proxy( item, {
-        get: function( target, property, receiver ) {
-            if ((<string>property) =='save') {
+    return new Proxy(item, {
+        get: function (target, property, receiver) {
+            if ((<string>property) == 'save') {
                 if (event === 'BeforeCreate') throw new Error('It is forbidden to call method save() during BeforeCreate')
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='destroy') {
-                return async(...args: any) => {
-                    target.set('identifier', target.identifier + "_d"+Date.now())
-                    target.save()            
-                    return await target[ property ].apply( target, args )
+            } else if ((<string>property) == 'destroy') {
+                return async (...args: any) => {
+                    target.set('identifier', target.identifier + "_d" + Date.now())
+                    target.save()
+                    return await target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='set') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+            } else if ((<string>property) == 'set') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='changed') {
+            } else if ((<string>property) == 'changed') {
                 return (...args: any) => {
-                    return target[ property ].apply( target, args )
+                    return target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='id') { return target[ property ]
-            } else  if ((<string>property) =='tenantId') { return target[ property ]
-            } else  if ((<string>property) =='identifier') { return target[ property ]
-            } else  if ((<string>property) =='path') { return target[ property ]
-            } else  if ((<string>property) =='typeId') { return target[ property ]
-            } else  if ((<string>property) =='typeIdentifier') { return target[ property ]
-            } else  if ((<string>property) =='parentIdentifier') { return target[ property ]
-            } else  if ((<string>property) =='name') { return target[ property ]
-            } else  if ((<string>property) =='values') { return target[ property ]
-            } else  if ((<string>property) =='channels') { return target[ property ]
-            } else  if ((<string>property) =='fileOrigName') { return target[ property ]
-            } else  if ((<string>property) =='storagePath') { return target[ property ]
-            } else  if ((<string>property) =='mimeType') { return target[ property ]
-            } else  if ((<string>property) =='createdBy') { return target[ property ]
-            } else  if ((<string>property) =='updatedBy') { return target[ property ]
-            } else  if ((<string>property) =='createdAt') { return target[ property ]
-            } else  if ((<string>property) =='updatedAt') { return target[ property ]
+            } else if ((<string>property) == 'id') {
+                return target[property]
+            } else if ((<string>property) == 'tenantId') {
+                return target[property]
+            } else if ((<string>property) == 'identifier') {
+                return target[property]
+            } else if ((<string>property) == 'path') {
+                return target[property]
+            } else if ((<string>property) == 'typeId') {
+                return target[property]
+            } else if ((<string>property) == 'typeIdentifier') {
+                return target[property]
+            } else if ((<string>property) == 'parentIdentifier') {
+                return target[property]
+            } else if ((<string>property) == 'name') {
+                return target[property]
+            } else if ((<string>property) == 'values') {
+                return target[property]
+            } else if ((<string>property) == 'channels') {
+                return target[property]
+            } else if ((<string>property) == 'fileOrigName') {
+                return target[property]
+            } else if ((<string>property) == 'storagePath') {
+                return target[property]
+            } else if ((<string>property) == 'mimeType') {
+                return target[property]
+            } else if ((<string>property) == 'createdBy') {
+                return target[property]
+            } else if ((<string>property) == 'updatedBy') {
+                return target[property]
+            } else if ((<string>property) == 'createdAt') {
+                return target[property]
+            } else if ((<string>property) == 'updatedAt') {
+                return target[property]
             }
         },
-        set: function(target, prop, value, receiver) {
+        set: function (target, prop, value, receiver) {
             if (
                 prop === 'path' ||
                 prop === 'typeId' ||
@@ -788,85 +1008,100 @@ function makeItemProxy(item: any, event: string) {
                 prop === 'fileOrigName' ||
                 prop === 'mimeType' ||
                 prop === 'updatedBy'
-                ) {
+            ) {
                 target[prop] = value
                 return true
             } else {
                 return false
             }
         }
-    })    
+    })
 }
-export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes:any, newValues: any, isImport: boolean) {
+export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes: any, newValues: any, isImport: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
             const trigger = action.triggers[i]
 
-            const result = parseInt(trigger.type) === TriggerType.ItemRelation && 
-                parseInt(trigger.event) === event && 
+            const result = parseInt(trigger.type) === TriggerType.ItemRelation &&
+                parseInt(trigger.event) === event &&
                 itemRelation.relationId === parseInt(trigger.relation)
             if (result) return true
         }
         return false
     })
-    return await processActions(mng, actions, { Op: Op,
+    return await processActions(mng, actions, {
+        Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-        isImport: isImport, 
+        isImport: isImport,
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, changes: changes,
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        } 
+        }
     })
 }
 
 function makeItemRelationProxy(item: any) {
-    return new Proxy( item, {
-        get: function( target, property, receiver ) {
-            if ((<string>property) =='save') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+    return new Proxy(item, {
+        get: function (target, property, receiver) {
+            if ((<string>property) == 'save') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='destroy') {
-                return async(...args: any) => {
-                    target.set('identifier', target.identifier + "_d"+Date.now())
-                    target.save()            
-                    return await target[ property ].apply( target, args )
+            } else if ((<string>property) == 'destroy') {
+                return async (...args: any) => {
+                    target.set('identifier', target.identifier + "_d" + Date.now())
+                    target.save()
+                    return await target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='set') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+            } else if ((<string>property) == 'set') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='changed') {
+            } else if ((<string>property) == 'changed') {
                 return (...args: any) => {
-                    return target[ property ].apply( target, args )
+                    return target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='id') { return target[ property ]
-            } else  if ((<string>property) =='tenantId') { return target[ property ]
-            } else  if ((<string>property) =='identifier') { return target[ property ]
-            } else  if ((<string>property) =='relationId') { return target[ property ]
-            } else  if ((<string>property) =='relationIdentifier') { return target[ property ]
-            } else  if ((<string>property) =='itemId') { return target[ property ]
-            } else  if ((<string>property) =='itemIdentifier') { return target[ property ]
-            } else  if ((<string>property) =='targetId') { return target[ property ]
-            } else  if ((<string>property) =='targetIdentifier') { return target[ property ]
-            } else  if ((<string>property) =='values') { return target[ property ]
-            } else  if ((<string>property) =='createdBy') { return target[ property ]
-            } else  if ((<string>property) =='updatedBy') { return target[ property ]
-            } else  if ((<string>property) =='createdAt') { return target[ property ]
-            } else  if ((<string>property) =='updatedAt') { return target[ property ]
+            } else if ((<string>property) == 'id') {
+                return target[property]
+            } else if ((<string>property) == 'tenantId') {
+                return target[property]
+            } else if ((<string>property) == 'identifier') {
+                return target[property]
+            } else if ((<string>property) == 'relationId') {
+                return target[property]
+            } else if ((<string>property) == 'relationIdentifier') {
+                return target[property]
+            } else if ((<string>property) == 'itemId') {
+                return target[property]
+            } else if ((<string>property) == 'itemIdentifier') {
+                return target[property]
+            } else if ((<string>property) == 'targetId') {
+                return target[property]
+            } else if ((<string>property) == 'targetIdentifier') {
+                return target[property]
+            } else if ((<string>property) == 'values') {
+                return target[property]
+            } else if ((<string>property) == 'createdBy') {
+                return target[property]
+            } else if ((<string>property) == 'updatedBy') {
+                return target[property]
+            } else if ((<string>property) == 'createdAt') {
+                return target[property]
+            } else if ((<string>property) == 'updatedAt') {
+                return target[property]
             }
         },
-        set: function(target, prop, value, receiver) {
+        set: function (target, prop, value, receiver) {
             if (
                 prop === 'relationId' ||
                 prop === 'relationIdentifier' ||
@@ -876,7 +1111,7 @@ function makeItemRelationProxy(item: any) {
                 prop === 'targetIdentifier' ||
                 prop === 'values' ||
                 prop === 'updatedBy'
-                ) {
+            ) {
                 target[prop] = value
                 return true
             } else {
@@ -903,9 +1138,9 @@ function makeLOVProxy(item: any) {
                 return async (...args: any) => {
                     return await target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='changed') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+            } else if ((<string>property) == 'changed') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'id') {
                 return target[property]
@@ -947,7 +1182,7 @@ class ActionUtils {
     #mng: ModelManager
 
     public constructor(context: Context) {
-        this.#context = context 
+        this.#context = context
         this.#mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
     }
 
@@ -975,7 +1210,7 @@ class ActionUtils {
     }
 
     public getItemAttributes(item: Item, groupIdentifier?: string) {
-        return this.getItemAttributesForGroups(item, groupIdentifier ? [groupIdentifier]: undefined)
+        return this.getItemAttributesForGroups(item, groupIdentifier ? [groupIdentifier] : undefined)
     }
 
     public getItemAttributesForGroups(item: Item, groupIdentifiers?: string[]) {
@@ -984,9 +1219,9 @@ class ActionUtils {
     }
 
     public getItemAttributesObject(item: Item, groupIdentifier?: string) {
-        return this.getItemAttributesObjectForGroups(item, groupIdentifier ? [groupIdentifier]: undefined)
+        return this.getItemAttributesObjectForGroups(item, groupIdentifier ? [groupIdentifier] : undefined)
     }
-    
+
     public getItemAttributesObjectForGroups(item: Item, groupIdentifiers?: string[]) {
         const attrArr: Attribute[] = []
         const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
@@ -996,7 +1231,7 @@ class ActionUtils {
             if (group.getGroup().visible && (!groupIdentifiers || groupIdentifiers.includes(group.getGroup().identifier))) {
                 group.getAttributes().forEach(attr => {
                     if (attr.valid.includes(item.typeId)) {
-                        for (let i=0; i<attr.visible.length; i++ ) {
+                        for (let i = 0; i < attr.visible.length; i++) {
                             const visible: number = attr.visible[i]
                             if (pathArr.includes(visible)) {
                                 if (!unique[attr.identifier]) {
@@ -1024,7 +1259,7 @@ class ActionUtils {
                 const group_: string = group.getGroup().identifier
                 group.getAttributes().forEach(attr => {
                     if (attr.valid.includes(item.typeId)) {
-                        for (let i=0; i<attr.visible.length; i++ ) {
+                        for (let i = 0; i < attr.visible.length; i++) {
                             const visible: number = attr.visible[i]
                             if (pathArr.includes(visible)) {
                                 if (!unique[attr.identifier]) {
@@ -1068,13 +1303,13 @@ class ActionUtils {
         return dateFormat(date, format)
     }
 
-    private a:any = {"(": "_", ")": "_", "\"":"_","'":"_"," ": "_","Ё":"YO","Й":"I","Ц":"TS","У":"U","К":"K","Е":"E","Н":"N","Г":"G","Ш":"SH","Щ":"SCH","З":"Z","Х":"H","Ъ":"'","ё":"yo","й":"i","ц":"ts","у":"u","к":"k","е":"e","н":"n","г":"g","ш":"sh","щ":"sch","з":"z","х":"h","ъ":"'","Ф":"F","Ы":"I","В":"V","А":"a","П":"P","Р":"R","О":"O","Л":"L","Д":"D","Ж":"ZH","Э":"E","ф":"f","ы":"i","в":"v","а":"a","п":"p","р":"r","о":"o","л":"l","д":"d","ж":"zh","э":"e","Я":"Ya","Ч":"CH","С":"S","М":"M","И":"I","Т":"T","Ь":"'","Б":"B","Ю":"YU","я":"ya","ч":"ch","с":"s","м":"m","и":"i","т":"t","ь":"_","б":"b","ю":"yu"};
-    public transliterate (word: string) {
-      return word.split('').map( (char) => { 
-        return this.a[char] || char; 
-      }).join("")
+    private a: any = { "(": "_", ")": "_", "\"": "_", "'": "_", " ": "_", "Ё": "YO", "Й": "I", "Ц": "TS", "У": "U", "К": "K", "Е": "E", "Н": "N", "Г": "G", "Ш": "SH", "Щ": "SCH", "З": "Z", "Х": "H", "Ъ": "'", "ё": "yo", "й": "i", "ц": "ts", "у": "u", "к": "k", "е": "e", "н": "n", "г": "g", "ш": "sh", "щ": "sch", "з": "z", "х": "h", "ъ": "'", "Ф": "F", "Ы": "I", "В": "V", "А": "a", "П": "P", "Р": "R", "О": "O", "Л": "L", "Д": "D", "Ж": "ZH", "Э": "E", "ф": "f", "ы": "i", "в": "v", "а": "a", "п": "p", "р": "r", "о": "o", "л": "l", "д": "d", "ж": "zh", "э": "e", "Я": "Ya", "Ч": "CH", "С": "S", "М": "M", "И": "I", "Т": "T", "Ь": "'", "Б": "B", "Ю": "YU", "я": "ya", "ч": "ch", "с": "s", "м": "m", "и": "i", "т": "t", "ь": "_", "б": "b", "ю": "yu" };
+    public transliterate(word: string) {
+        return word.split('').map((char) => {
+            return this.a[char] || char;
+        }).join("")
     }
-  
+
     public runAs(login: string) {
         const ctx = Context.createAs(login, this.#context.getCurrentUser()!.tenantId)
         this.#context = ctx
@@ -1092,36 +1327,37 @@ class ActionUtils {
         return !item.storagePath ? null : FileManager.getInstance().getFilesRoot() + item.storagePath
     }
 
-    public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels:any, isImport: boolean) {
+    public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
 
-        let action  = mng.getActions().find(act => act.identifier === actionIdentifier)
+        let action = mng.getActions().find(act => act.identifier === actionIdentifier)
         if (!action) {
             throw new Error('Failed to find action by identifier: ' + actionIdentifier + ', tenant: ' + mng.getTenantId())
         }
 
         const context = this.#context
-        return await processActions(mng, [action], { Op: Op,
+        return await processActions(mng, [action], {
+            Op: Op,
             event: event,
             user: context.getCurrentUser()?.login,
             roles: context.getUser()?.getRoles(),
             utils: new ActionUtils(context),
             system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-            isImport: isImport, 
+            isImport: isImport,
             item: makeItemProxy(item, event), values: newValues, channels: newChannels, name: newName, parent: newParent,
-            models: { 
-                item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-                itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            models: {
+                item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+                itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
                 lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
                 process: Process.applyScope(context),
                 Item,
                 ItemRelation
-            } 
+            }
         })
     }
 
     public async nextId(seqName: string) {
-        const results:any = await sequelize.query("SELECT nextval('"+seqName+"')", { 
+        const results: any = await sequelize.query("SELECT nextval('" + seqName + "')", {
             type: QueryTypes.SELECT
         });
         return (results[0]).nextval
@@ -1146,12 +1382,12 @@ class ActionUtils {
         }
         const nTypeId = type.getValue()!.id;
 
-        const results:any = await sequelize.query("SELECT nextval('items_id_seq')", { 
+        const results: any = await sequelize.query("SELECT nextval('items_id_seq')", {
             type: QueryTypes.SELECT
         });
         const id = (results[0]).nextval
-        
-        let path:string
+
+        let path: string
         if (parentIdentifier) {
             const parentItem = await Item.applyScope(this.#context).findOne({
                 where: {
@@ -1184,7 +1420,7 @@ class ActionUtils {
             throw new Error('User :' + this.#context.getCurrentUser()?.login + ' can not create such item , tenant: ' + this.#context.getCurrentUser()!.tenantId)
         }
 
-        const item = Item.build ({
+        const item = Item.build({
             id: id,
             path: path,
             identifier: identifier,
@@ -1194,7 +1430,7 @@ class ActionUtils {
             name: name,
             typeId: nTypeId,
             typeIdentifier: type.getValue().identifier,
-            parentIdentifier: parentIdentifier, 
+            parentIdentifier: parentIdentifier,
             values: null,
             fileOrigName: '',
             storagePath: '',
@@ -1211,7 +1447,7 @@ class ActionUtils {
         item.values = values
 
         await sequelize.transaction(async (t) => {
-            await item.save({transaction: t})
+            await item.save({ transaction: t })
         })
 
         if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false)
@@ -1223,7 +1459,7 @@ class ActionUtils {
                 name: item.name,
                 values: values
             }
-            audit.auditItem(ChangeType.CREATE, item.id, item.identifier, {added: itemChanges}, this.#context.getCurrentUser()!.login, item.createdAt)
+            audit.auditItem(ChangeType.CREATE, item.id, item.identifier, { added: itemChanges }, this.#context.getCurrentUser()!.login, item.createdAt)
         }
 
         return makeItemProxy(item, 'createItem')
@@ -1251,12 +1487,12 @@ class ActionUtils {
             throw new Error('Identifier: ' + identifier + ' already exists, tenant: ' + this.#context.getCurrentUser()!.tenantId)
         }
 
-        const item = await Item.applyScope(this.#context).findOne({where: {identifier: itemIdentifier}})
+        const item = await Item.applyScope(this.#context).findOne({ where: { identifier: itemIdentifier } })
         if (!item) {
             throw new Error('Failed to find item by id: ' + itemIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
         }
 
-        const targetItem = await Item.applyScope(this.#context).findOne({where: {identifier: targetIdentifier}})
+        const targetItem = await Item.applyScope(this.#context).findOne({ where: { identifier: targetIdentifier } })
         if (!targetItem) {
             throw new Error('Failed to find target item by id: ' + targetIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
         }
@@ -1267,7 +1503,7 @@ class ActionUtils {
         }
 
         if (!rel.multi) {
-            const count = await ItemRelation.applyScope(this.#context).count( {
+            const count = await ItemRelation.applyScope(this.#context).count({
                 where: {
                     itemIdentifier: itemIdentifier,
                     relationId: rel.id
@@ -1279,7 +1515,7 @@ class ActionUtils {
             }
         }
 
-        const itemRelation = await ItemRelation.build ({
+        const itemRelation = await ItemRelation.build({
             identifier: identifier,
             tenantId: this.#context.getCurrentUser()!.tenantId,
             createdBy: this.#context.getCurrentUser()!.login,
@@ -1302,7 +1538,7 @@ class ActionUtils {
         itemRelation.values = values
 
         await sequelize.transaction(async (t) => {
-            await itemRelation.save({transaction: t})
+            await itemRelation.save({ transaction: t })
         })
 
         if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false)
@@ -1314,14 +1550,58 @@ class ActionUtils {
                 targetIdentifier: itemRelation.targetIdentifier,
                 values: values
             }
-            audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, this.#context.getCurrentUser()!.login, itemRelation.createdAt)
+            audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, { added: itemRelationChanges }, this.#context.getCurrentUser()!.login, itemRelation.createdAt)
         }
 
         return makeItemRelationProxy(itemRelation)
-    }    
+    }
 
-    public async createProcess( identifier: string, title: string, active: boolean = true, status: string = '', log: string = '', runtime: any = {}) : Promise<Process> {
-        return procResolvers.Mutation.createProcess(null, {identifier, title, active, status, log, runtime}, this.#context)
+    public async removeItemRelation(id: string, context: Context) {
+        context.checkAuth()
+        const nId = parseInt(id)
+
+        const itemRelation = await ItemRelation.applyScope(context).findByPk(nId)
+        if (!itemRelation) {
+            throw new Error('Failed to find item relation by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+        }
+
+        if (!context.canEditItemRelation(itemRelation.relationId)) {
+            throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+        }
+
+        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false)
+
+        itemRelation.updatedBy = context.getCurrentUser()!.login
+        if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
+            await itemRelation.save()
+            return true
+        }
+
+        // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
+        const oldIdentifier = itemRelation.identifier
+        itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now()
+        await sequelize.transaction(async (t) => {
+            await itemRelation.save({ transaction: t })
+            await itemRelation.destroy({ transaction: t })
+        })
+
+        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false)
+
+        if (audit.auditEnabled()) {
+            const itemRelationChanges: ItemRelationChanges = {
+                relationIdentifier: itemRelation.relationIdentifier,
+                itemIdentifier: itemRelation.itemIdentifier,
+                targetIdentifier: itemRelation.targetIdentifier,
+                values: itemRelation.values
+            }
+            audit.auditItemRelation(ChangeType.DELETE, itemRelation.id, oldIdentifier, { deleted: itemRelationChanges }, context.getCurrentUser()!.login, itemRelation.updatedAt)
+        }
+
+        return true
+    }
+
+    public async createProcess(identifier: string, title: string, active: boolean = true, status: string = '', log: string = '', runtime: any = {}): Promise<Process> {
+        return procResolvers.Mutation.createProcess(null, { identifier, title, active, status, log, runtime }, this.#context)
     }
 
     public async saveProcessFile(process: Process, filepath: string, mimetype: string | null, originalFilename: string | null, clean = false) {
@@ -1330,7 +1610,7 @@ class ActionUtils {
     }
 
     public async createChannelExecution(channelId: number, status: number, startTime: Date, finishTime: Date, log: string) {
-        const chanExec = await sequelize.transaction(async (t:any) => {
+        const chanExec = await sequelize.transaction(async (t: any) => {
             return await ChannelExecution.create({
                 tenantId: this.#context.getCurrentUser()!.tenantId,
                 channelId: channelId,
@@ -1347,14 +1627,14 @@ class ActionUtils {
         return chanExec
     }
 
-    public async triggerChannel (channelIdentifier: string, language: string, data: any = null) {
+    public async triggerChannel(channelIdentifier: string, language: string, data: any = null) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
-        const chan = mng.getChannels().find( chan => chan.identifier === channelIdentifier)
+        const chan = mng.getChannels().find(chan => chan.identifier === channelIdentifier)
         if (!chan) {
             throw new Error('Failed to find channel by identifier: ' + channelIdentifier + ', tenant: ' + mng.getTenantId())
         }
         if (!this.#context.canEditChannel(chan.identifier) || chan.tenantId !== this.#context.getCurrentUser()?.tenantId) {
-            throw new Error('User '+ this.#context.getCurrentUser()?.id+ ' does not has permissions to triger channel, tenant: ' + this.#context.getCurrentUser()!.tenantId)
+            throw new Error('User ' + this.#context.getCurrentUser()?.id + ' does not has permissions to triger channel, tenant: ' + this.#context.getCurrentUser()!.tenantId)
         }
         const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(this.#context.getCurrentUser()!.tenantId)
         await channelMng.triggerChannel(chan, language, data)

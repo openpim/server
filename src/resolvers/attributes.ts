@@ -10,23 +10,23 @@ export default {
     Query: {
         getAttributesInfo: async (parent: any, args: any, context: Context) => {
             context.checkAuth()
-            
+
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             return mng.getAttributesInfo()
         },
         getAttributeGroup: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
-            
+
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             return mng.getAttrGroups().find(grp => grp.getGroup().id === id)
         },
         getAttribute: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
-            
+
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             const tst = mng.getAttribute(parseInt(id))
             if (tst) {
-                const attr:any = tst.attr
+                const attr: any = tst.attr
                 mng.getAttrGroups().forEach(group => {
                     group.getAttributes().forEach(groupAttr => {
                         if (groupAttr.id === attr.id) {
@@ -41,12 +41,12 @@ export default {
     Mutation: {
         createAttributeGroup: async (parent: any, { identifier, name, order, visible, options }: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create attr group, tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES))
+                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to create attr group, tenant: ' + context.getCurrentUser()!.tenantId)
 
             if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
-            const results:any = await sequelize.query("SELECT nextval('\"attrGroups_id_seq\"')", { 
+            const results: any = await sequelize.query("SELECT nextval('\"attrGroups_id_seq\"')", {
                 type: QueryTypes.SELECT
             });
             const id = (results[0]).nextval
@@ -59,35 +59,35 @@ export default {
             }
 
             const grp = await sequelize.transaction(async (t) => {
-                return await AttrGroup.create ({
+                return await AttrGroup.create({
                     id: id,
                     identifier: identifier,
                     tenantId: context.getCurrentUser()!.tenantId,
                     createdBy: context.getCurrentUser()!.login,
                     updatedBy: context.getCurrentUser()!.login,
                     name: name,
-                    order: order != null? order : null,
+                    order: order != null ? order : null,
                     visible: visible || false,
                     options: options ? options : []
-                }, {transaction: t})
+                }, { transaction: t })
             })
 
             mng.getAttrGroups().push(new AttrGroupWrapper(grp))
             await processAttrGroupActions(context, EventType.AfterCreate, grp, false)
             await mng.reloadModelRemotely(grp.id, null, 'ATTRIBUTE_GROUP', false, context.getUserToken())
-            
+
             return grp.id
         },
         updateAttributeGroup: async (parent: any, { id, name, order, visible, options }: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update attr group, tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES))
+                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to update attr group, tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nId = parseInt(id)
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
-            const tst  = mng.getAttrGroups().find(grp => grp.getGroup().id === nId)
+            const tst = mng.getAttrGroups().find(grp => grp.getGroup().id === nId)
             if (!tst) {
                 throw new Error('Failed to find attribute group by id: ' + nId + ', tenant: ' + mng.getTenantId())
             }
@@ -99,7 +99,7 @@ export default {
             if (options != null) group.options = options
             group.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
-                await group.save({transaction: t})
+                await group.save({ transaction: t })
             })
             await processAttrGroupActions(context, EventType.AfterUpdate, group, false)
             await mng.reloadModelRemotely(group.id, null, 'ATTRIBUTE_GROUP', false, context.getUserToken())
@@ -107,8 +107,8 @@ export default {
         },
         removeAttributeGroup: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to delete attr group, tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES))
+                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to delete attr group, tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nId = parseInt(id)
 
@@ -119,7 +119,7 @@ export default {
                 throw new Error('Failed to find attribute group by id: ' + nId + ', tenant: ' + mng.getTenantId())
             }
 
-            const group  = mng.getAttrGroups()[idx].getGroup()
+            const group = mng.getAttrGroups()[idx].getGroup()
             if ((await group!.countAttributes()) > 0) {
                 throw new Error('Failed to remove group with attributes id: ' + nId + ', tenant: ' + mng.getTenantId())
             }
@@ -130,10 +130,10 @@ export default {
 
             group.updatedBy = context.getCurrentUser()!.login
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
-            group.identifier = group.identifier + '_d_' + Date.now() 
+            group.identifier = group.identifier + '_d_' + Date.now()
             await sequelize.transaction(async (t) => {
-                await group.save({transaction: t})
-                await group.destroy({transaction: t})
+                await group.save({ transaction: t })
+                await group.destroy({ transaction: t })
             })
 
             mng.getAttrGroups().splice(idx, 1)
@@ -146,8 +146,8 @@ export default {
         },
         createAttribute: async (parent: any, { groupId, identifier, name, order, valid, visible, relations, languageDependent, type, pattern, errorMessage, lov, richText, multiLine, options }: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create attribute, tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES))
+                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to create attribute, tenant: ' + context.getCurrentUser()!.tenantId)
 
             if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
@@ -162,7 +162,7 @@ export default {
                 throw new Error('Identifier already exists: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const results:any = await sequelize.query("SELECT nextval('attributes_id_seq')", { 
+            const results: any = await sequelize.query("SELECT nextval('attributes_id_seq')", {
                 type: QueryTypes.SELECT
             });
             const id = (results[0]).nextval
@@ -171,21 +171,21 @@ export default {
             const vis = visible ? visible.map((elem: string) => parseInt(elem)) : []
             const rels = relations ? relations.map((elem: string) => parseInt(elem)) : []
 
-            const attr = await Attribute.build ({
+            const attr = await Attribute.build({
                 id: id,
                 identifier: identifier,
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,
                 updatedBy: context.getCurrentUser()!.login,
                 name: name,
-                order: order != null? order : 0,
+                order: order != null ? order : 0,
                 valid: val,
                 visible: vis,
                 relations: rels,
                 languageDependent: languageDependent || false,
                 type: type,
                 pattern: pattern || '',
-                errorMessage: errorMessage || {ru:""},
+                errorMessage: errorMessage || { ru: "" },
                 lov: lov ? parseInt(lov) : null,
                 richText: richText != null ? richText : false,
                 multiLine: multiLine != null ? multiLine : false,
@@ -195,25 +195,29 @@ export default {
             await processAttributeActions(context, EventType.BeforeCreate, attr, false)
 
             await sequelize.transaction(async (t) => {
-                await attr.save({transaction: t})
-                await group.getGroup().addAttribute(attr, {transaction: t})
+                await attr.save({ transaction: t })
+                await group.getGroup().addAttribute(attr, { transaction: t })
             })
 
             group.getAttributes().push(attr)
+            if (attr.type === 9) {
+                mng.getRelationAttributes().push(attr)
+            }
+
             await processAttributeActions(context, EventType.AfterCreate, attr, false)
             await mng.reloadModelRemotely(attr.id, group.getGroup().id, 'ATTRIBUTE', false, context.getUserToken())
             return attr.id
         },
         updateAttribute: async (parent: any, { id, name, order, valid, visible, relations, languageDependent, type, pattern, errorMessage, lov, richText, multiLine, options }: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update attribute, tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES))
+                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to update attribute, tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nId = parseInt(id)
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
-            const tst  = await mng.getAttribute(nId)
+            const tst = await mng.getAttribute(nId)
             if (!tst) {
                 throw new Error('Failed to find attribute by id: ' + nId + ', tenant: ' + mng.getTenantId())
             }
@@ -252,11 +256,18 @@ export default {
             if (options != null) attr.options = options
             attr.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
-                await attr.save({transaction: t})
+                await attr.save({ transaction: t })
             })
 
+            if (attr.type === 9) {
+                const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === nId })
+                if (idx !== -1) {
+                    mng.getRelationAttributes()[idx] = attr
+                }
+            }
+
             // replace all such attributes in all groups to be the same (they are loaded as independent objects during init)
-            for (let i=0; i < mng.getAttrGroups().length; i++) {
+            for (let i = 0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]
                 const idx = grp.getAttributes().findIndex((attr) => { return attr.id === nId })
                 if (idx !== -1) {
@@ -266,20 +277,19 @@ export default {
             }
 
             await processAttributeActions(context, EventType.AfterUpdate, attr, false)
-
             return attr.id
         },
         assignAttribute: async (parent: any, { id, groupId }: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to assign attribute, tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES))
+                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to assign attribute, tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nId = parseInt(id)
             const nGroupId = parseInt(groupId)
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
-            const tstAttr  = await mng.getAttribute(nId)
+            const tstAttr = await mng.getAttribute(nId)
             if (!tstAttr) {
                 throw new Error('Failed to find attribute by id: ' + nId + ', tenant: ' + mng.getTenantId())
             }
@@ -288,11 +298,11 @@ export default {
                 throw new Error('Failed to find attribute group by id: ' + nGroupId + ', tenant: ' + mng.getTenantId())
             }
 
-            await processAttributeActions(context, EventType.BeforeUpdate, tstAttr.attr, false, {assignGroup: tstGroup})
-                
+            await processAttributeActions(context, EventType.BeforeUpdate, tstAttr.attr, false, { assignGroup: tstGroup })
+
             const save = tstAttr.attr // we must save a link to attr here because after addAttribute we will have clone of object
             await sequelize.transaction(async (t) => {
-                await tstGroup.getGroup().addAttribute(tstAttr.attr, {transaction: t})
+                await tstGroup.getGroup().addAttribute(tstAttr.attr, { transaction: t })
             })
 
             tstGroup.getAttributes().push(save)
@@ -302,15 +312,15 @@ export default {
         },
         unassignAttribute: async (parent: any, { id, groupId }: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to unassign attribute, tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES))
+                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to unassign attribute, tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nId = parseInt(id)
             const nGroupId = parseInt(groupId)
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
-            const tstAttr  = await mng.getAttribute(nId)
+            const tstAttr = await mng.getAttribute(nId)
             if (!tstAttr) {
                 throw new Error('Failed to find attribute by id: ' + nId + ', tenant: ' + mng.getTenantId())
             }
@@ -319,10 +329,10 @@ export default {
                 throw new Error('Failed to find attribute group by id: ' + nGroupId + ', tenant: ' + mng.getTenantId())
             }
 
-            await processAttributeActions(context, EventType.BeforeUpdate, tstAttr.attr, false, {unassignGroup: tstGroup})
+            await processAttributeActions(context, EventType.BeforeUpdate, tstAttr.attr, false, { unassignGroup: tstGroup })
 
             let num: number = 0
-            for (let i=0; i < mng.getAttrGroups().length; i++) {
+            for (let i = 0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]
                 if (grp.getAttributes().findIndex((attr) => { return attr.id === nId })) {
                     num++
@@ -333,7 +343,7 @@ export default {
             }
 
             await sequelize.transaction(async (t) => {
-                await tstGroup.getGroup().removeAttribute(tstAttr.attr, {transaction: t})
+                await tstGroup.getGroup().removeAttribute(tstAttr.attr, { transaction: t })
             })
 
             const idx = tstGroup.getAttributes().findIndex((attr) => attr.id === nId)
@@ -344,14 +354,14 @@ export default {
         },
         removeAttribute: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
-            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to remove attribute, tenant: ' + context.getCurrentUser()!.tenantId)
+            if (!context.canEditConfig(ConfigAccess.ATTRIBUTES))
+                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to remove attribute, tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nId = parseInt(id)
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
-            const tst  = await mng.getAttribute(nId)
+            const tst = await mng.getAttribute(nId)
             if (!tst) {
                 throw new Error('Failed to find attribute by id: ' + nId + ', tenant: ' + mng.getTenantId())
             }
@@ -362,13 +372,20 @@ export default {
 
             attr.updatedBy = context.getCurrentUser()!.login
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
-            attr.identifier = attr.identifier + '_d_' + Date.now() 
+            attr.identifier = attr.identifier + '_d_' + Date.now()
             await sequelize.transaction(async (t) => {
-                await attr.save({transaction: t})
-                await attr.destroy({transaction: t})
+                await attr.save({ transaction: t })
+                await attr.destroy({ transaction: t })
             })
 
-            for (let i=0; i < mng.getAttrGroups().length; i++) {
+            if (attr.type === 9) {
+                const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === nId})
+                if (idx !== -1) {
+                    mng.getRelationAttributes()[idx] = attr
+                }
+            }
+
+            for (let i = 0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]
                 const idx = grp.getAttributes().findIndex((attr) => { return attr.id === nId })
                 if (idx !== -1) {
@@ -376,6 +393,7 @@ export default {
                     await mng.reloadModelRemotely(id, grp.getGroup().id, 'ATTRIBUTE', true, context.getUserToken())
                 }
             }
+
             await processAttributeActions(context, EventType.AfterDelete, attr, false)
             return true
         }

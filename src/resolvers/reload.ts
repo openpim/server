@@ -44,19 +44,33 @@ export default {
             const existedAttr = mng.getAttribute(parseInt(id))
             const grpIndex = mng.getAttrGroups().findIndex(el => el.getGroup().id === parseInt(parentId))
             const existedGroup = mng.getAttrGroups()[grpIndex]
+            const relAttributes = mng.getRelationAttributes()
             if (existedAttr && del) {
               const attrIndex = existedGroup.getAttributes().findIndex(el => el.id === id)
               existedGroup.getAttributes().splice(attrIndex, 1)
+              if (existedAttr.attr.type === 9) {
+                const idx = relAttributes.findIndex((attr) => { return attr.id === existedAttr.attr.id })
+                if (idx !== -1) {
+                    relAttributes.splice(idx, 1)
+                }
+              }
               logger.debug(`Remote reload: attribute removed ${id}`)
             } else {
               const attr = await Attribute.applyScope(context).findOne({ where: { id } })
               if (existedAttr && attr) {
                 const attrIndex = existedGroup.getAttributes().findIndex(el => el.id === id)
                 existedGroup.getAttributes()[attrIndex] = attr
+                if (existedAttr.attr.type === 9) {
+                  const idx = relAttributes.findIndex((attr) => { return attr.id === existedAttr.attr.id })
+                  if (idx !== -1) {
+                      relAttributes[idx] = attr
+                  }
+                }
                 logger.debug('Remote reload: attribute updated')
                 logger.debug(JSON.stringify(existedGroup.getAttributes()[attrIndex]))
               } else if (!existedAttr && attr) {
                 existedGroup.getAttributes().push(attr)
+                relAttributes.push(attr)
                 logger.debug('Remote reload: attribute added')
                 logger.debug(JSON.stringify(attr))
               }
@@ -65,7 +79,6 @@ export default {
           case 'ATTRIBUTE_GROUP':
             const existedAttrGroups = mng.getAttrGroups()
             const attrGroupIndex = existedAttrGroups.findIndex(attrGroupWrapper => attrGroupWrapper.getGroup().id === parseInt(id))
-            console.log(attrGroupIndex)
             if (del && attrGroupIndex !== -1) {
               existedAttrGroups.splice(attrGroupIndex, 1)
               logger.debug(`Remote reload: attribute group removed ${id}`)

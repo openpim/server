@@ -4,7 +4,7 @@ import { Item } from '../models/items'
 import { ItemRelation, IItemRelation } from '../models/itemRelations'
 import { ModelsManager } from '../models/manager'
 import { QueryTypes, literal } from 'sequelize'
-import { filterValues, mergeValues, checkValues, processItemRelationActions, diff, isObjectEmpty } from './utils'
+import { filterValues, mergeValues, checkValues, processItemRelationActions, updateItemRelationAttributes, diff, isObjectEmpty } from './utils'
 import { EventType } from '../models/actions'
 import audit, { AuditItemRelation, ChangeType, ItemRelationChanges } from '../audit'
 
@@ -256,7 +256,6 @@ export default {
 
             filterValues(context.getEditItemRelationAttributes(nRelationId), values)
             checkValues(mng, values)
-
             itemRelation.values = values
 
             await sequelize.transaction(async (t) => {
@@ -274,6 +273,8 @@ export default {
                 }
                 audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
             }
+
+            await updateItemRelationAttributes(context, mng, itemRelation, false)
 
             return itemRelation
         },
@@ -376,11 +377,15 @@ export default {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
 
+            await updateItemRelationAttributes(context, mng, itemRelation, false)
+
             return itemRelation
         },
         removeItemRelation: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
             const nId = parseInt(id)
+
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
             const itemRelation = await ItemRelation.applyScope(context).findByPk(nId)
             if (!itemRelation) {
@@ -408,6 +413,7 @@ export default {
             })
 
             await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false)
+            await updateItemRelationAttributes(context, mng, itemRelation, true)
 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {

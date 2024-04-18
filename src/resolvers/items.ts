@@ -2,8 +2,8 @@ import Context from '../context'
 import { sequelize } from '../models'
 import { QueryTypes, literal } from 'sequelize'
 import { Item } from '../models/items'
-import {  ModelManager, ModelsManager } from '../models/manager'
-import { filterValues, filterChannels, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit, processDeletedChannels } from './utils'
+import { ModelManager, ModelsManager } from '../models/manager'
+import { filterValues, filterChannels, mergeValues, checkValues, checkRelationAttributes, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit, processDeletedChannels } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
@@ -25,22 +25,22 @@ function generateOrder(order: string[][], mng: ModelManager) {
         const idx = field.indexOf('.')
         if (idx !== -1) {
             const obj = field.substring(0, idx)
-            const prop = field.substring(idx+1)
-            result += '('+obj+"->>'"+prop+"')"
+            const prop = field.substring(idx + 1)
+            result += '(' + obj + "->>'" + prop + "')"
             if (obj === 'values') {
                 const attr = mng.getAttributeByIdentifier(prop, true)
-                if (attr && (attr.attr.type === 3 || attr.attr.type === 4 || attr.attr.type === 7) ) { // integer, float, lov
+                if (attr && (attr.attr.type === 3 || attr.attr.type === 4 || attr.attr.type === 7)) { // integer, float, lov
                     result += '::numeric'
                 }
             }
         } else {
-            result += '"'+field+'"'
+            result += '"' + field + '"'
         }
         result += " " + arr[1]
 
-        if (i !== order.length-1) result += ', '
+        if (i !== order.length - 1) result += ', '
     }
-    if (result.length === 0){
+    if (result.length === 0) {
         result = 'id ASC'
     }
     return result
@@ -49,9 +49,9 @@ function generateOrder(order: string[][], mng: ModelManager) {
 export default {
     ItemsResponse: {
         count: async ({ restrictSql, parentId, context, parentItem }: any) => {
-            let cnt:{count: string}|null = {count: '0'}
+            let cnt: { count: string } | null = { count: '0' }
             if (!parentId) {
-                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 '+restrictSql, {
+                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 ' + restrictSql, {
                     replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                     },
@@ -60,8 +60,8 @@ export default {
                     type: QueryTypes.SELECT
                 })
             } else {
-                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery '+restrictSql, {
-                    replacements: { 
+                cnt = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery ' + restrictSql, {
+                    replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         lquery: parentItem.path + '.*{1}',
                     },
@@ -76,8 +76,8 @@ export default {
         rows: async ({ restrictSql, parentId, offset, limit, orderSql, context, parentItem }: any) => {
             let items: Item[]
             if (!parentId) {
-                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 '+restrictSql+' order by '+orderSql+' limit :limit offset :offset', {
-                    replacements: { 
+                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and nlevel(path) = 1 ' + restrictSql + ' order by ' + orderSql + ' limit :limit offset :offset', {
+                    replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         offset: offset,
                         limit: limit === -1 ? null : limit
@@ -91,8 +91,8 @@ export default {
                     while (tst.values.changedAt < Date.now()) arr.push(Date.now())
                 }
             } else {
-                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery '+restrictSql+' order by '+orderSql+' limit :limit offset :offset', {
-                    replacements: { 
+                items = await sequelize.query('SELECT * FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery ' + restrictSql + ' order by ' + orderSql + ' limit :limit offset :offset', {
+                    replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         lquery: parentItem.path + '.*{1}',
                         offset: offset,
@@ -103,7 +103,7 @@ export default {
                 })
             }
 
-            items.forEach(item => {   
+            items.forEach(item => {
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
                 filterChannels(context, item.channels)
@@ -151,18 +151,18 @@ export default {
             const nId = parseInt(id)
             const num = await ItemRelation.applyScope(context).count({
                 where: {
-                    [Op.or]: [{itemId: nId}, {targetId: nId}]
+                    [Op.or]: [{ itemId: nId }, { targetId: nId }]
                 },
             })
             return (num > 0)
         },
         getItemsByIds: async (parent: any, { ids }: any, context: Context) => {
             context.checkAuth()
-            const arr = ids.map((elem:any) => parseInt(elem))
-            let items = await Item.applyScope(context).findAll({ where: { id: arr} })
+            const arr = ids.map((elem: any) => parseInt(elem))
+            let items = await Item.applyScope(context).findAll({ where: { id: arr } })
             items = items.filter(item => context.canViewItem(item))
- 
-            items.forEach(item => {   
+
+            items.forEach(item => {
                 const allowedAttributes = context.getViewItemAttributes(item)
                 filterValues(allowedAttributes, item.values)
                 filterChannels(context, item.channels)
@@ -197,9 +197,9 @@ export default {
             const item = await Item.applyScope(context).findByPk(parseInt(id))
             if (item && context.canViewItem(item)) {
                 const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-                const type:Type = mng.getTypeById(item.typeId)?.getValue()
-                
-                const skipRelationIds = mng.getRelations().filter(rel => !context.canViewItemRelation(rel.id) || rel.options.some((option:any) => option.name === 'skipInAssets' && option.value === 'true')).map(rel => rel.id)
+                const type: Type = mng.getTypeById(item.typeId)?.getValue()
+
+                const skipRelationIds = mng.getRelations().filter(rel => !context.canViewItemRelation(rel.id) || rel.options.some((option: any) => option.name === 'skipInAssets' && option.value === 'true')).map(rel => rel.id)
 
                 const data: any[] = await sequelize.query(
                     `SELECT a."id", a."typeId", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName",
@@ -216,26 +216,27 @@ export default {
                         a."deletedAt" is null and 
                         r."deletedAt" is null 
                         `+ (skipRelationIds.length > 0 ? `and r.id not in (:skipRelationIds)` : ``) +
-                        ` order by r.order, ir.values->'_itemRelationOrder', a.id`, {
-                    replacements: { 
+                    ` order by r.order, ir.values->'_itemRelationOrder', a.id`, {
+                    replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         itemId: item.id,
                         skipRelationIds: skipRelationIds
                     },
                     type: QueryTypes.SELECT
                 })
-                const res = data.map(elem => { 
+                const res = data.map(elem => {
                     return {
-                        id: elem.id, 
-                        typeId: elem.typeId, 
+                        id: elem.id,
+                        typeId: elem.typeId,
                         identifier: elem.identifier,
                         name: elem.name,
                         relationName: elem.relationName,
                         relationId: elem.relationId,
                         mimeType: elem.mimeType,
                         fileOrigName: elem.fileOrigName,
-                        mainImage: type.mainImage === elem.relationId, 
-                        image: type.images.includes(elem.relationId) }
+                        mainImage: type.mainImage === elem.relationId,
+                        image: type.images.includes(elem.relationId)
+                    }
                 })
                 return res
             } else {
@@ -244,7 +245,7 @@ export default {
         },
         getMainImages: async (parent: any, { ids }: any, context: Context) => {
             context.checkAuth()
-            const arr = ids.map((elem:any) => parseInt(elem))
+            const arr = ids.map((elem: any) => parseInt(elem))
 
             let data: any[] = await sequelize.query(
                 `SELECT distinct item."id" as "itemId", asset."id", asset."identifier", ir.values->'_itemRelationOrder'
@@ -262,7 +263,7 @@ export default {
                     item."deletedAt" is null
                     order by ir.values->'_itemRelationOrder', asset.id
                     `, {
-                replacements: { 
+                replacements: {
                     tenant: context.getCurrentUser()!.tenantId,
                     ids: ids
                 },
@@ -278,7 +279,7 @@ export default {
                         item."mimeType" like 'image/%' and
                         item."deletedAt" is null
                         `, {
-                    replacements: { 
+                    replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         ids: ids
                     },
@@ -286,10 +287,112 @@ export default {
                 })
             }
             return data
-        }        
+        },
+        getItemsForRelationAttributeImport: async (parent: any, { attrIdentifier, searchArr, langIdentifier, limit, offset, order }: any, context: Context) => {
+            context.checkAuth()
+            if (!searchArr.length) return []
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            const attr = mng.getRelationAttributes().find(el => el.identifier === attrIdentifier)
+            let itemTypes: number[] = []
+            if (attr && attr.valid && attr.valid.length) {
+                const relations = attr.relations ? attr.relations.map((relId: number) => mng.getRelationById(relId)) : []
+                attr.valid.forEach((typeId: number) => {
+                    for (let relIndx = 0; relIndx < relations.length; relIndx++) {
+                        const relation = relations[relIndx]
+                        const isSource = relation.sources.find((el: number) => el === typeId)
+                        if (isSource) {
+                            itemTypes = itemTypes.concat(relation.targets)
+                        } else {
+                            itemTypes = itemTypes.concat(relation.sources)
+                        }
+                    }
+                })
+
+                let query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null and `
+                const displayValue = attr.options.find((el: any) => el.name === 'displayvalue')
+                    if (displayValue && displayValue.value && displayValue.value.length) {
+                        const displayValueAttr = mng.getAttributeByIdentifier(displayValue, true)
+                        if (displayValueAttr?.attr.languageDependent) {
+                            query += ` "values" ->> '${displayValue.value}' ->> '${langIdentifier}' in (:searchArr)`
+                        } else {
+                            query += `"values" ->> '${displayValue.value}' in (:searchArr)`
+                        }
+                    } else {
+                        query += `"name" ->> '${langIdentifier}' in (:searchArr)`
+                    }
+                query += ` limit ${limit} offset ${offset}`
+                const data = await sequelize.query(
+                    query, {
+                    replacements: {
+                        tenant: context.getCurrentUser()!.tenantId,
+                        itemTypes: itemTypes,
+                        searchArr
+                    },
+                    type: QueryTypes.SELECT
+                })
+                return data
+            }
+            throw new Error(`Can not find relation attribute with identifier ${attrIdentifier} or attribute "valid" field is empty`)
+        },
+        getItemsForRelationAttribute: async (parent: any, { attrIdentifier, value, searchStr, langIdentifier, limit, offset, order }: any, context: Context) => {
+            context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            const attr = mng.getRelationAttributes().find(el => el.identifier === attrIdentifier)
+            let itemTypes: number[] = []
+            if (attr && attr.valid && attr.valid.length) {
+                const relations = attr.relations ? attr.relations.map((relId: number) => mng.getRelationById(relId)) : []
+                attr.valid.forEach((typeId: number) => {
+                    for (let relIndx = 0; relIndx < relations.length; relIndx++) {
+                        const relation = relations[relIndx]
+                        const isSource = relation.sources.find((el: number) => el === typeId)
+                        if (isSource) {
+                            itemTypes = itemTypes.concat(relation.targets)
+                        } else {
+                            itemTypes = itemTypes.concat(relation.sources)
+                        }
+                    }
+                })
+
+                let query
+                // select 1 as sortid, * from items where id in (46087, 49022) AND "deletedAt" IS NULL union select 2 as sortid, * from items where "typeId" in (13) AND "deletedAt" IS null order by sortid, "name" limit 10 offset 0
+                if (value.length) {
+                    query = `select 1 as sortid, * from items where id in (:value) and "deletedAt" is null union select 2 as sortid, * from items where "typeId" in (:itemTypes) and "deletedAt" is null`
+                } else {
+                    query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null`
+                }
+                
+                const displayValue = attr.options.find((el: any) => el.name === 'displayvalue')
+
+                if (displayValue && displayValue.value && displayValue.value.length) {
+                    const displayValueAttr = mng.getAttributeByIdentifier(displayValue, true)
+                    if (displayValueAttr?.attr.languageDependent) {
+                        query += searchStr ? ` and lower("values" ->> '${displayValue.value}' ->> '${langIdentifier}') like lower('%${searchStr}%')` : ''
+                    } else {
+                        query += searchStr ? ` and lower("values" ->> '${displayValue.value}') like lower('%${searchStr}%')` : ''
+                    }
+                } else {
+                    query += searchStr ? ` and lower("name" ->> '${langIdentifier}') like lower('%${searchStr}%')` : ''
+                }
+
+                query += value.length ? ` order by sortid, "name" ${order}` : ` order by "name" ${order}`
+                query += ` limit ${limit} offset ${offset}`
+
+                const data = await sequelize.query(
+                    query, {
+                    replacements: {
+                        tenant: context.getCurrentUser()!.tenantId,
+                        itemTypes: itemTypes,
+                        value: value
+                    },
+                    type: QueryTypes.SELECT
+                })
+                return data
+            }
+            throw new Error(`Can not find relation attribute with identifier ${attrIdentifier} or attribute "valid" field is empty`)
+        }
     },
     Mutation: {
-        createItem: async (parent: any, { parentId, identifier, name, typeId, values, channels}: any, context: Context) => {
+        createItem: async (parent: any, { parentId, identifier, name, typeId, values, channels }: any, context: Context) => {
             context.checkAuth()
             if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
@@ -309,13 +412,13 @@ export default {
                 throw new Error('Failed to find type by id: ' + nTypeId + ', tenant: ' + mng.getTenantId())
             }
 
-            const results:any = await sequelize.query("SELECT nextval('items_id_seq')", { 
+            const results: any = await sequelize.query("SELECT nextval('items_id_seq')", {
                 type: QueryTypes.SELECT
             });
             const id = (results[0]).nextval
-            
-            let path:string
-            let parentIdentifier:string
+
+            let path: string
+            let parentIdentifier: string
             if (parentId) {
                 const pId = parseInt(parentId)
                 const parentItem = await Item.applyScope(context).findByPk(pId)
@@ -345,7 +448,7 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not create such item , tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const item = Item.build ({
+            const item = Item.build({
                 id: id,
                 path: path,
                 identifier: identifier,
@@ -355,7 +458,7 @@ export default {
                 name: name,
                 typeId: nTypeId,
                 typeIdentifier: type.getValue().identifier,
-                parentIdentifier: parentIdentifier, 
+                parentIdentifier: parentIdentifier,
                 values: null,
                 channels: null,
                 fileOrigName: '',
@@ -373,12 +476,13 @@ export default {
 
             filterValues(context.getEditItemAttributes2(nTypeId, path), values)
             checkValues(mng, values)
+            await checkRelationAttributes(context, mng, item, values)
 
             item.values = values
             item.channels = channels
 
             await sequelize.transaction(async (t) => {
-                await item.save({transaction: t})
+                await item.save({ transaction: t })
             })
 
             await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false)
@@ -391,7 +495,7 @@ export default {
                     values: values,
                     channels: channels
                 }
-                audit.auditItem(ChangeType.CREATE, item.id, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, item.createdAt)
+                audit.auditItem(ChangeType.CREATE, item.id, item.identifier, { added: itemChanges }, context.getCurrentUser()!.login, item.createdAt)
             }
 
             return item
@@ -417,16 +521,17 @@ export default {
             if (values) {
                 filterValues(context.getEditItemAttributes(item), values)
                 checkValues(mng, values)
+                await checkRelationAttributes(context, mng, item, values)
             }
 
             const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false, false)
 
-            if(actionResponse.some((resp) => resp.result === 'cancelSave')) {
+            if (actionResponse.some((resp) => resp.result === 'cancelSave')) {
                 return item
             }
 
             let itemDiff: AuditItem | null = null
-            if (audit.auditEnabled()) itemDiff = diff({name: item.name, values: item.values, channels: item.channels}, {name: name || item.name, values: values || item.values, channels: channels || item.channels})
+            if (audit.auditEnabled()) itemDiff = diff({ name: item.name, values: item.values, channels: item.channels }, { name: name || item.name, values: values || item.values, channels: channels || item.channels })
 
             if (channels) {
                 filterEditChannels(context, channels)
@@ -442,7 +547,7 @@ export default {
             if (name) item.name = name
 
             await sequelize.transaction(async (t) => {
-                await item.save({transaction: t})
+                await item.save({ transaction: t })
             })
 
             await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false)
@@ -475,18 +580,18 @@ export default {
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             const parentType = mng.getTypeById(parentItem.typeId)!
             const itemType = mng.getTypeByIdentifier(item.typeIdentifier)!
-    
+
             const tstType = parentType.getChildren().find(elem => (elem.getValue().identifier === item.typeIdentifier) || (elem.getValue().link === itemType.getValue().id))
             if (!tstType) throw new Error('Can not move this item to this parent because this is not allowed by data model.');
 
             await processItemActions(context, EventType.BeforeUpdate, item, parentItem.identifier, item.name, item.values, item.channels, false, false)
 
-            let newPath = parentItem.path+"."+item.id
+            let newPath = parentItem.path + "." + item.id
             if (newPath !== item.path) {
                 const old = item.parentIdentifier
                 // check children
-                const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
-                    replacements: { 
+                const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                    replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         lquery: item.path + '.*{1}',
                     },
@@ -497,7 +602,7 @@ export default {
                 const childrenNumber = parseInt(cnt.count)
                 if (childrenNumber > 0) { // move subtree
                     await sequelize.query('update items set path = text2ltree(:parentPath) || subpath(path,:level) where path <@ :oldPath and "tenantId"=:tenant', {
-                        replacements: { 
+                        replacements: {
                             tenant: context.getCurrentUser()!.tenantId,
                             oldPath: item.path,
                             parentPath: parentItem.path,
@@ -513,11 +618,11 @@ export default {
 
                 item.parentIdentifier = parentItem.identifier;
                 await sequelize.transaction(async (t) => {
-                    await item.save({transaction: t})
+                    await item.save({ transaction: t })
                 })
 
                 if (audit.auditEnabled()) {
-                    const itemDiff: AuditItem = {changed: {parentIdentifier: parentItem.identifier}, old: {parentIdentifier: old}}
+                    const itemDiff: AuditItem = { changed: { parentIdentifier: parentItem.identifier }, old: { parentIdentifier: old } }
                     audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff, context.getCurrentUser()!.login, item.updatedAt)
                 }
                 await processItemActions(context, EventType.AfterUpdate, item, parentItem.identifier, item.name, item.values, item.channels, false, false)
@@ -537,9 +642,9 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item :' + item.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const retArr:any = await processItemActions(context, EventType.BeforeDelete, item, "",  "", null, null, false, false)
+            const retArr: any = await processItemActions(context, EventType.BeforeDelete, item, "", "", null, null, false, false)
             const ret = retArr.length > 0 ? retArr[0] : null
-            const del:boolean = !ret || ret.data === undefined || ret.data === true
+            const del: boolean = !ret || ret.data === undefined || ret.data === true
 
             if (del) {
                 const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
@@ -548,11 +653,11 @@ export default {
                 if (tst1) throw new Error('Can not remove this item because there are roles linked to it.');
                 // check Attributes
                 // const tst2:any = await Attribute.applyScope(context).findOne({where: {visible: { [Op.contains]: nId}}})
-                const tst2:any = await Attribute.applyScope(context).findOne({where: literal("visible @> '"+nId+"'")})
+                const tst2: any = await Attribute.applyScope(context).findOne({ where: literal("visible @> '" + nId + "'") })
                 if (tst2) throw new Error('Can not remove this item because there are attributes linked to it.');
                 // check children
-                const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
-                    replacements: { 
+                const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                    replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         lquery: item.path + '.*{1}',
                     },
@@ -565,7 +670,7 @@ export default {
                 // check relations
                 const num = await ItemRelation.applyScope(context).count({
                     where: {
-                        [Op.or]: [{itemId: item.id}, {targetId: item.id}]
+                        [Op.or]: [{ itemId: item.id }, { targetId: item.id }]
                     },
                 })
                 if (num > 0) throw new Error('Can not remove item that has relations, remove them first.');
@@ -575,10 +680,10 @@ export default {
 
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
             const oldIdentifier = item.identifier
-            if (del) item.identifier = item.identifier + '_d_' + Date.now() 
+            if (del) item.identifier = item.identifier + '_d_' + Date.now()
             await sequelize.transaction(async (t) => {
-                await item.save({transaction: t})
-                if (del) await item.destroy({transaction: t})
+                await item.save({ transaction: t })
+                if (del) await item.destroy({ transaction: t })
             })
 
             if (del && item.storagePath) {
@@ -586,7 +691,7 @@ export default {
                 await fm.removeFile(item)
             }
 
-            await processItemActions(context, EventType.AfterDelete, item, "",  "", null, null,false, false)
+            await processItemActions(context, EventType.AfterDelete, item, "", "", null, null, false, false)
 
             if (audit.auditEnabled()) {
                 if (del) {
@@ -597,7 +702,7 @@ export default {
                         values: item.values,
                         channels: item.channels
                     }
-                    audit.auditItem(ChangeType.DELETE, item.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, item.updatedAt)
+                    audit.auditItem(ChangeType.DELETE, item.id, oldIdentifier, { deleted: itemChanges }, context.getCurrentUser()!.login, item.updatedAt)
                 }
             }
 
@@ -632,7 +737,7 @@ export default {
 
             item.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
-                await item.save({transaction: t})
+                await item.save({ transaction: t })
             })
 
             if (audit.auditEnabled()) {
