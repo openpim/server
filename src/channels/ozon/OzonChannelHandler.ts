@@ -978,7 +978,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 return null
             } else {
                 if (channel.config.debug) console.log('generateValue - entry found: '+entry.id)
-                return {dictionary_value_id: entry.id, value: value}
+                return {dictionary_value_id: entry.id, value: entry.value}
             }
         } else {
             return { value: ''+value }
