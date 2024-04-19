@@ -458,9 +458,9 @@ export default {
                 name: name,
                 typeId: nTypeId,
                 typeIdentifier: type.getValue().identifier,
-                parentIdentifier: parentIdentifier,
-                values: null,
-                channels: null,
+                parentIdentifier: parentIdentifier, 
+                values: {},
+                channels: {},
                 fileOrigName: '',
                 storagePath: '',
                 mimeType: ''

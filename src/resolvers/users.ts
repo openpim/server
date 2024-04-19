@@ -202,6 +202,14 @@ export default {
                             return user
                         })
                         mng.getUsers().push(new UserWrapper(user, userRoles))
+
+                        const token = await jwt.sign({
+                            id: user.id, 
+                            tenantId: user.tenantId, 
+                            login: user.login }, 
+                            <string>process.env.SECRET, { expiresIn: '1d' }
+                        )
+                        mng.reloadModelRemotely(user.id, null, 'USER', false, token)
                     }
                 } else {
                     if (user) {

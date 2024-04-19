@@ -35,13 +35,20 @@ import { initModels } from './models';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
 import version from './version';
+import promBundle from "express-prom-bundle";
 
+import userResolver from './resolvers/users'
+import { FileManager } from './media/FileManager';
+
+
+let isMetrics
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
 if (process.env.OPENPIM_DATABASE_NAME) process.env.DATABASE_NAME = process.env.OPENPIM_DATABASE_NAME
 if (process.env.OPENPIM_DATABASE_PORT) process.env.DATABASE_PORT = process.env.OPENPIM_DATABASE_PORT
 if (process.env.OPENPIM_DATABASE_USER) process.env.DATABASE_USER = process.env.OPENPIM_DATABASE_USER
 if (process.env.OPENPIM_DATABASE_PASSWORD) process.env.DATABASE_PASSWORD = process.env.OPENPIM_DATABASE_PASSWORD
 if (process.env.OPENPIM_AUDIT_URL) process.env.AUDIT_URL = process.env.OPENPIM_AUDIT_URL
+if (process.env.OPENPIM_ENABLE_METRICS) isMetrics = process.env.OPENPIM_ENABLE_METRICS === 'true' ? true : false
 
 dotenv.config();
 const app = express();
@@ -84,9 +91,25 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     }
   }
 
+  if (isMetrics) {
+    const metricsMiddleware = promBundle({
+      includeMethod: true, 
+      includePath: true, 
+      includeStatusCode: true, 
+      includeUp: true,
+      customLabels: {project_name: 'openpim', project_type: 'metrics_labels'},
+      promClient: {
+          collectDefaultMetrics: {
+          }
+        }
+    })
+    
+    app.use(metricsMiddleware)
+  }
+
   ModelsManager.getInstance().init(channelTypes)
   ChannelsManagerFactory.getInstance().init()
-  
+
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
@@ -264,6 +287,42 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       await downloadProcessFile(context, req, res, false)
     } catch (error: any) {
       res.status(400).send(error.message)
+    }
+  })
+
+  app.get('/server.log', async (request, response) => {
+    try {
+      if (!request.headers.authorization) {
+        logger.error('server.log - no login')
+        response.set('WWW-Authenticate', 'Basic realm="401"')
+        response.status(401).send('Authentication required.')
+        return
+      }
+      const b64auth = request.headers.authorization.split(' ')[1]
+      const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+      const { user } = await userResolver.Mutation.signIn(null, {login: login, password:password }, await Context.create(request))
+      if (user && user.roles.includes(1)) { // 1 is admin role
+        let bufSize = 10240
+        if (request.query.size) {
+          const sizeStr = ''+request.query.size
+          const sizeNum = parseInt(sizeStr)
+          if (!isNaN(sizeNum)) bufSize = sizeNum
+        }
+        const buf = await FileManager.getLastXBytesBuffer('/server/server.log', bufSize)
+        response.setHeader('Content-Type', 'text/plain');
+        response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.setHeader('Pragma', 'no-cache');
+        response.setHeader('Expires', '0');
+        response.setHeader('Surrogate-Control', 'no-store');
+        response.status(200).send(buf.toString());
+      } else {
+        logger.error('server.log - wrong user: '+JSON.stringify(user))
+        response.set('WWW-Authenticate', 'Basic realm="401"')
+        response.status(401).send('Authentication required.')
+        return
+      }
+    } catch (error: any) {
+      response.status(400).send(error.message)
     }
   })
 

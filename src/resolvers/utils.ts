@@ -41,9 +41,8 @@ import { Process } from "../models/processes"
 
 import { ImportConfig } from '../models/importConfigs'
 import { CollectionItems } from "../models/collectionItems"
-import { ChannelExecution } from "../models/channels"
+import { Channel, ChannelExecution } from "../models/channels"
 import { ChannelsManagerFactory } from "../channels"
-import actions from "./actions"
 
 export function replaceOperations(obj: any) {
     let include = []
@@ -563,6 +562,7 @@ export async function processItemActions(context: Context, event: EventType, ite
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -592,6 +592,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         rowData,
         models: { 
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -647,6 +648,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -700,6 +702,7 @@ export async function processBulkUpdateChannelsActions(context: Context, event: 
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -726,6 +729,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -763,6 +767,7 @@ export async function processAttrGroupActions(context: Context, event: EventType
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -795,6 +800,39 @@ export async function processAttributeActions(context: Context, event: EventType
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            process: Process.applyScope(context),
+            Item,
+            ItemRelation
+        } 
+    })
+}
+
+export async function processLOVActions(context: Context, event: EventType, lov: LOV, isImport: boolean, changes: any = null) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const actions = mng.getActions().filter(action => {
+        for (let i = 0; i < action.triggers.length; i++) {
+            const trigger = action.triggers[i]
+
+            const result = parseInt(trigger.type) === TriggerType.LOV && parseInt(trigger.event) === event
+            if (result) return true
+        }
+        return false
+    })
+    return await processActions(mng, actions, { Op: Op,
+        event: EventType[event],
+        user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
+        utils: new ActionUtils(context),
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
+        isImport: isImport, 
+        lov: lov,
+        changes: changes,
+        models: { 
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -831,6 +869,7 @@ export async function processImportActions(context: Context, event: EventType, p
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -1043,6 +1082,7 @@ export async function processItemRelationActions(context: Context, event: EventT
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -1166,6 +1206,75 @@ function makeLOVProxy(item: any) {
             if (
                 prop === 'name' ||
                 prop === 'values' ||
+                prop === 'updatedBy'
+            ) {
+                target[prop] = value
+                return true
+            } else {
+                return false
+            }
+        }
+    })
+}
+
+function makeChannelProxy(item: any) {
+    return new Proxy(item, {
+        get: function (target, property, receiver) {
+            if ((<string>property) == 'save') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
+                }
+            } else if ((<string>property) == 'destroy') {
+                return async (...args: any) => {
+                    target.set('identifier', target.identifier + "_d" + Date.now())
+                    target.save()
+                    return await target[property].apply(target, args)
+                }
+            } else if ((<string>property) == 'set') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
+                }
+            } else  if ((<string>property) =='changed') {
+                return async(...args: any) => {
+                    return await target[ property ].apply( target, args )
+                }
+            } else if ((<string>property) == 'id') {
+                return target[property]
+            } else if ((<string>property) == 'tenantId') {
+                return target[property]
+            } else if ((<string>property) == 'identifier') {
+                return target[property]
+            } else if ((<string>property) == 'name') {
+                return target[property]
+            } else if ((<string>property) == 'active') {
+                return target[property]
+            } else if ((<string>property) == 'type') {
+                return target[property]
+            } else if ((<string>property) == 'valid') {
+                return target[property]
+            } else if ((<string>property) == 'visible') {
+                return target[property]
+            } else if ((<string>property) == 'config') {
+                return target[property]
+            } else if ((<string>property) == 'mappings') {
+                return target[property]
+            } else if ((<string>property) == 'runtime') {
+                return target[property]
+            } else if ((<string>property) == 'createdBy') {
+                return target[property]
+            } else if ((<string>property) == 'updatedBy') {
+                return target[property]
+            } else if ((<string>property) == 'createdAt') {
+                return target[property]
+            } else if ((<string>property) == 'updatedAt') {
+                return target[property]
+            }
+        },
+        set: function (target, prop, value, receiver) {
+            if (
+                prop === 'name' ||
+                prop === 'config' ||
+                prop === 'mappings' ||
                 prop === 'updatedBy'
             ) {
                 target[prop] = value
@@ -1349,6 +1458,7 @@ class ActionUtils {
                 item: makeModelProxy(Item.applyScope(context), makeItemProxy),
                 itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
                 lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+                channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
                 process: Process.applyScope(context),
                 Item,
                 ItemRelation

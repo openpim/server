@@ -3,7 +3,7 @@ import { ModelsManager } from '../models/manager'
 import { sequelize } from '../models'
 import { Action } from '../models/actions'
 import { Item } from '../models/items'
-import { diff, isObjectEmpty, processItemButtonActions, processItemButtonActions2, processTableButtonActions, testAction } from './utils'
+import { diff, isObjectEmpty, mergeValues, processItemButtonActions, processItemButtonActions2, processTableButtonActions, testAction } from './utils'
 import audit, { AuditItem, ChangeType } from '../audit'
 
 export default {
@@ -198,7 +198,7 @@ export default {
             let itemDiff: AuditItem
             if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
 
-            item.values = values
+            item.values = mergeValues(values, item.values)
             item.changed("values", true)
             item.channels = channels
 

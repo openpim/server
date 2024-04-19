@@ -29,7 +29,7 @@ class Audit {
         }
         logger.debug('Sending item to the audit: ' + JSON.stringify(body))
         try {
-            this.getClient().index({
+            await this.getClient().index({
                 index: "items",
                 body: body
             })
@@ -51,7 +51,7 @@ class Audit {
             }
             logger.debug('Sending item relation to the audit: ' + JSON.stringify(body))
             try {
-            this.getClient().index({
+            await this.getClient().index({
                 index: "item_relations",
                 body: body
             })

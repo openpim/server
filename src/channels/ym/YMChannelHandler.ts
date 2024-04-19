@@ -146,26 +146,42 @@ export class YMChannelHandler extends ChannelHandler {
                 }
 
                 if (tst1 && tst2) {
-                    try {
-                        await this.processItemInCategory(channel, item, offers, categoryConfig, language, context)
-                        await sequelize.transaction(async (t) => {
-                            await item.save({transaction: t})
-                        })
-                    } catch (err) {
-                        logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
-                    }
+                    await this.processAndSaveItemInCategory(channel, item, offers, categoryConfig, language, context)
                     return
                 }
             }
         }
 
-        await this.processItemInCategory(channel, item, offers, channel.mappings._default, language, context)
-        await sequelize.transaction(async (t) => {
-            await item.save({transaction: t})
-        })
+        await this.processAndSaveItemInCategory(channel, item, offers, channel.mappings._default, language, context)
     }
 
-    async processItemInCategory(channel: Channel, item: Item, offers: any[], categoryConfig: any, language: string, context: JobContext) {
+    async processAndSaveItemInCategory(channel: Channel, item: Item, offers: any[], categoryConfig: any, language: string, context: JobContext) {
+        let variants:any[] = []
+        const tmp = await this.evaluateExpression(channel, item, channel.config.variantExpr)
+        if (tmp && Array.isArray(tmp)) {
+            for(const variant of tmp) {
+                try {
+                    await this.processItemInCategory(channel, item, offers, categoryConfig, language, context, variant)
+                    await sequelize.transaction(async (t) => {
+                        await item.save({transaction: t})
+                    })
+                } catch (err) {
+                    logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+                }
+            }
+        } else {
+            try {
+                await this.processItemInCategory(channel, item, offers, categoryConfig, language, context, null)
+                await sequelize.transaction(async (t) => {
+                    await item.save({transaction: t})
+                })
+            } catch (err) {
+                logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+            }
+        }
+    }
+
+    async processItemInCategory(channel: Channel, item: Item, offers: any[], categoryConfig: any, language: string, context: JobContext, variant: any) {
         context.log += 'Найдена категория "' + categoryConfig.name +'" для записи с идентификатором: ' + item.identifier + '\n'
 
         const data = item.channels[channel.identifier]
@@ -173,7 +189,7 @@ export class YMChannelHandler extends ChannelHandler {
 
         // const category: any ={$: {id: id}, _: name }
         const idConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'id')
-        const id = await this.getValueByMapping(channel, idConfig, item, language)
+        const id = await this.getValueByMapping2(channel, idConfig, item, language, variant)
         if (!id) {
             const msg = 'Не введена конфигурация для "id" для категории: ' + categoryConfig.name
             context.log += msg
@@ -186,18 +202,16 @@ export class YMChannelHandler extends ChannelHandler {
 
             if (categoryConfig.type === 'vendor.model') offer.$.type = 'vendor.model'
             if (categoryConfig.type === 'medicine') offer.$.type = 'medicine'
-            if (categoryConfig.type === 'books') offer.$.type = 'books'
-
-            const variant = this.isVariant(channel, item)
+            if (categoryConfig.type === 'books') offer.$.type = 'book'
 
             // atributes
             for (let i = 0; i < categoryConfig.attributes.length; i++) {
                 const attrConfig = categoryConfig.attributes[i]
                 
                 if (attrConfig.id != 'id') {
-                    const value = await this.getValueByMapping(channel, attrConfig, item, language)
+                    const value = await this.getValueByMapping2(channel, attrConfig, item, language, variant)
                     if (value != null) {
-                        if (attrConfig.id != 'group_id' || variant) {
+                        if (attrConfig.id != 'group_id') {
                             if (attrConfig.id.startsWith('delivery-option')) {
                                 const arr = value.split(',')
                                 if (!offer['delivery-options']) offer['delivery-options'] = {option: []}
@@ -229,7 +243,7 @@ export class YMChannelHandler extends ChannelHandler {
             // addition params
             for (let i = 0; i < categoryConfig.params.length; i++) {
                 const paramConfig = categoryConfig.params[i]
-                const value = await this.getValueByMapping(channel, paramConfig, item, language)
+                const value = await this.getValueByMapping2(channel, paramConfig, item, language, variant)
                 if (value) {
                     if (!offer.param) offer.param =[]
                     if (Array.isArray(value)) {
@@ -262,7 +276,7 @@ export class YMChannelHandler extends ChannelHandler {
                     const idx = name.indexOf(' (')
                     if (idx != -1) name = name.substring(0, idx)
                     const paramConfig = {id:name, attrIdent: attr.identifier}
-                    let value = await this.getValueByMapping(channel, paramConfig, item, language)
+                    let value = await this.getValueByMapping2(channel, paramConfig, item, language, variant)
                     if (value) {
                         if (!offer.param) offer.param =[]
                         if (Array.isArray(value)) {

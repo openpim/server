@@ -1,11 +1,13 @@
 import Context from "../../context"
 import { IImportConfig, ImportResponse, ReturnMessage, ImportResult, ImportMode, ILOVImportRequest } from "../../models/import"
 import { sequelize } from "../../models"
-import { ModelsManager, ModelManager, AttrGroupWrapper, UserWrapper } from "../../models/manager"
 import { LOV } from "../../models/lovs"
 import { Attribute } from "../../models/attributes"
 
 import logger from '../../logger'
+import { EventType } from "../../models/actions"
+import { processLOVActions } from "../utils"
+import { ModelManager, ModelsManager } from "../../models/manager"
 
 export async function importLOV(context: Context, config: IImportConfig, lov: ILOVImportRequest): Promise<ImportResponse> {
     const result = new ImportResponse(lov.identifier)
@@ -32,6 +34,8 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
                     return result
                 }
 
+                await processLOVActions(context, EventType.BeforeDelete, data, true)
+
                 data.updatedBy = context.getCurrentUser()!.login
                 // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
                 data.identifier = data.identifier + '_d_' + Date.now() 
@@ -39,7 +43,9 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
                     await data.save({transaction: t})
                     await data.destroy({transaction: t})
                 })
-                                    
+
+                await processLOVActions(context, EventType.AfterDelete, data, true)
+                
                 result.result = ImportResult.DELETED
             }
             return result
@@ -60,28 +66,46 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
         }        
 
         if (!data) {
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            checkLOVValues(mng, lov.values)
             // create
-            const data = await sequelize.transaction(async (t) => {
-                return await LOV.create ({
-                    identifier: lov.identifier,
-                    tenantId: context.getCurrentUser()!.tenantId,
-                    createdBy: context.getCurrentUser()!.login,
-                    updatedBy: context.getCurrentUser()!.login,
-                    name: lov.name,
-                    values: lov.values || []
-                }, {transaction: t})
+            const data = await LOV.build({
+                identifier: lov.identifier,
+                tenantId: context.getCurrentUser()!.tenantId,
+                createdBy: context.getCurrentUser()!.login,
+                updatedBy: context.getCurrentUser()!.login,
+                name: lov.name,
+                values: lov.values || []
             })
+
+            await processLOVActions(context, EventType.BeforeCreate, data, true)
+
+            await sequelize.transaction(async (t) => {
+                return await data.save({transaction: t})
+            })
+
+            await processLOVActions(context, EventType.AfterCreate, data, true)
 
             result.id = ""+data.id
             result.result = ImportResult.CREATED
         } else {
             // update
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            checkLOVValues(mng, lov.values)
+            const changes = {
+                name: lov.name,
+                values: lov.values
+            }
+            await processLOVActions(context, EventType.BeforeUpdate, data, true, changes)            
+
             if (lov.name) data.name = lov.name
             if (lov.values) data.values = lov.values
             data.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})
             })
+
+            await processLOVActions(context, EventType.AfterUpdate, data, true)
 
             result.id = ""+data.id
             result.result = ImportResult.UPDATED
@@ -93,4 +117,13 @@ export async function importLOV(context: Context, config: IImportConfig, lov: IL
     }
 
     return result
+}
+
+function checkLOVValues( mng: ModelManager, values: any): void {
+    if (!values) return
+    values.forEach((val:any) => {
+        if (val.attrs && val.attrs.length > 0) {
+            val.attrs = val.attrs.map((attrIdent:string) => mng.getAttributeByIdentifier(attrIdent, true)?.attr?.id).filter((elem:any) => !!elem)
+        }
+    })
 }

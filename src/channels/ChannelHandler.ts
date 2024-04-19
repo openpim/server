@@ -1,3 +1,5 @@
+const { Op } = require("sequelize");
+
 import NodeCache = require("node-cache")
 import { Channel, ChannelExecution } from "../models/channels"
 import { Item } from "../models/items"
@@ -7,6 +9,7 @@ import { sequelize } from '../models'
 import logger from "../logger"
 import { exec } from "child_process"
 import { ItemRelation } from "../models/itemRelations"
+import { replaceOperations } from '../resolvers/utils'
 
 export abstract class ChannelHandler {
   private lovCache = new NodeCache({useClones: false});
@@ -24,7 +27,7 @@ export abstract class ChannelHandler {
   asyncExec (cmd: string) {
     return new Promise(async (resolve) => {
         try {
-            exec(cmd, function (error: any, stdout: string, stderr: string) {
+            exec(cmd, {maxBuffer: 1024 * 10000}, function (error: any, stdout: string, stderr: string) {
                 resolve({ code: error ? error.code : 0, stdout:stdout, stderr: stderr } )
             })
         } catch (err:any) {
@@ -75,7 +78,41 @@ export abstract class ChannelHandler {
   }
 
   async evaluateExpression (channel: Channel, item: Item, expr: string): Promise<any> {
+    return await this.evaluateExpression2 (channel, item, expr, null)
+  }
+
+  async evaluateExpression2 (channel: Channel, item: Item, expr: string, data: any): Promise<any> {
+    if (!expr) return null
+    
     const utils = {
+      findItem: async (condition: any) => {
+        logger.debug(`Executing evaluateExpression findItem, condition: ${JSON.stringify(condition)}`)
+        replaceOperations(condition)
+        const item = await Item.findOne({
+            where: {
+                [Op.and]: [
+                    condition,
+                    { tenantId: channel.tenantId }
+                ]
+            }
+        })
+        logger.debug(`findItem result: ${item?.identifier}`)
+        return item
+      },
+      findItems: async (condition: any) => {
+        logger.debug(`Executing evaluateExpression findItems, condition: ${JSON.stringify(condition)}`)
+        replaceOperations(condition)
+        const items = await Item.findAll({
+            where: {
+                [Op.and]: [
+                    condition,
+                    { tenantId: channel.tenantId }
+                ]
+            }
+        })
+        logger.debug(`findItem result count: ${items?.length}`)
+        return items
+      },
       getItem: async (identifier: string) => {
         return await Item.findOne({
           where: {
@@ -180,17 +217,21 @@ export abstract class ChannelHandler {
       }
     }
     try {
-      const func = new Function('item', 'utils', '"use strict"; return (async () => { return (' + expr + ')})()')
-      return await func(item, utils)
+      const func = new Function('item', 'utils', 'channel', 'data', '"use strict"; return (async () => { return (' + expr + ')})()')
+      return await func(item, utils, channel, data)
     } catch (err:any) {
       logger.error('Failed to execute expression :[' + expr + '] for item with id: ' + item.id + ' with error: ' + err.message)
       throw err
     }
   }
   async getValueByMapping(channel: Channel, mapping: any, item: Item, language: string): Promise<any> {
+    return await this.getValueByMapping2(channel, mapping, item, language, null)
+  }
+
+  async getValueByMapping2(channel: Channel, mapping: any, item: Item, language: string, variant: any): Promise<any> {
     if (!mapping) return null
     if (mapping.expr) {
-      return await this.evaluateExpression(channel, item, mapping.expr)
+      return await this.evaluateExpression2(channel, item, mapping.expr, variant)
     } else if (mapping.attrIdent) {
       const tst = mapping.attrIdent.indexOf('#')
       if (tst === -1) {
@@ -200,7 +241,13 @@ export abstract class ChannelHandler {
         } else if (mapping.attrIdent === '$id') {
             return item.id
         } else {
-          return await this.checkLOV(channel, mapping.attrIdent, item.values[mapping.attrIdent], language)
+          let attrValue = item.values[mapping.attrIdent]
+          if (attrValue && mapping.options) {
+            const tst = mapping.options.find((elem:any) => elem.name === attrValue)
+            if (tst) attrValue = tst.value
+          }
+
+          return await this.checkLOV(channel, mapping.attrIdent, attrValue, language)
         }
       } else {
         const attr = mapping.attrIdent.substring(0, tst)
@@ -208,7 +255,11 @@ export abstract class ChannelHandler {
         if (attr === '$name') {
           return item.name[lang]
         } else {
-          const attrValue = item.values[attr] ? item.values[attr][lang] : null
+          let attrValue = item.values[attr] ? item.values[attr][lang] : null
+          if (attrValue && mapping.options) {
+            const tst = mapping.options.find((elem:any) => elem.name === attrValue)
+            if (tst) attrValue = tst.value
+          }
           return await this.checkLOV(channel, attr, attrValue, language)
         }
       }
@@ -254,6 +305,10 @@ export abstract class ChannelHandler {
             })
           } else {
             const value = lov.values.find((elem:any) => elem.id === attrValue)
+            if (!value) {
+              logger.error('Failed to find id '+attrValue+' in lov '+attr.lov+' during evaluation of attribute '+attrIdent)
+              return value
+            }
             return value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
           }
         }
@@ -296,4 +351,6 @@ export interface ChannelAttribute {
   dictionaryLinkPost?: any
   maxCount?: number
   isAspect?: boolean
+  attributeComplexId?: number
+  categoryDependent?: boolean
 }

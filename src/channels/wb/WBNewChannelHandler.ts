@@ -82,7 +82,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             return 
         }
 
-        const errorsResp = await fetch('https://suppliers-api.wildberries.ru/content/v1/cards/error/list', {
+        const errorsResp = await fetch('https://suppliers-api.wildberries.ru/content/v2/cards/error/list', {
             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
         })
         const errorsJson = await errorsResp.json()
@@ -288,8 +288,18 @@ export class WBNewChannelHandler extends ChannelHandler {
             return
         }
 
+
+        const lengthConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#length')
+        const length = await this.getValueByMapping(channel, lengthConfig, item, language)
+
+        const widthConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#width')
+        const width = await this.getValueByMapping(channel, widthConfig, item, language)
+
+        const heightConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#height')
+        const height = await this.getValueByMapping(channel, heightConfig, item, language)
+
         // request to WB
-        let request:any = {vendorCode:productCode, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: [''+barcode]}]}
+        let request:any = {vendorCode:productCode, dimensions: {length: length || 0, width: width || 0, height: height || 0}, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: Array.isArray(barcode) ? barcode : [''+barcode]}]}
 
         const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
@@ -318,6 +328,8 @@ export class WBNewChannelHandler extends ChannelHandler {
                 }
                 request.sizes[0].price = price
             }
+
+            request.nmID = nmID
         }
 
         // atributes
@@ -363,7 +375,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             }
         }        
 
-        await this.sendRequest(channel, item, request, context)
+        await this.sendRequest(channel, item, request, context, categoryConfig.id)
 
         // images
         if (!create) { // send images on update only because product is not exists at WB just after create
@@ -410,7 +422,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         if (tst != -1) arr.splice(tst, 1)
     }
 
-    async sendRequest(channel: Channel, item: Item, request: any, context: JobContext) {
+    async sendRequest(channel: Channel, item: Item, request: any, context: JobContext, categoryId: string) {
         const create = item.values[channel.config.nmIDAttr] ? false : true
 
         let grpItem = null
@@ -431,12 +443,15 @@ export class WBNewChannelHandler extends ChannelHandler {
         let url = ''
         let req
 
+        const idx = categoryId.indexOf('-')
+        const objId = parseInt(categoryId.substring(idx+1))
+
         if (grpItem) {
-            url = create ? 'https://suppliers-api.wildberries.ru/content/v1/cards/upload/add' : 'https://suppliers-api.wildberries.ru/content/v1/cards/update'
-            req = create ? { vendorCode: grpItem.values[channel.config.wbCodeAttr], cards: [request] } : [request]
+            url = create ? 'https://suppliers-api.wildberries.ru/content/v2/cards/upload/add' : 'https://suppliers-api.wildberries.ru/content/v2/cards/update'
+            req = create ? { imtID: item.values[channel.config.imtIDAttr], cardsToAdd: [request] } : [request]
         } else {
-            url = create ? 'https://suppliers-api.wildberries.ru/content/v1/cards/upload' : 'https://suppliers-api.wildberries.ru/content/v1/cards/update'
-            req = create ? [[request]] : [request]
+            url = create ? 'https://suppliers-api.wildberries.ru/content/v2/cards/upload' : 'https://suppliers-api.wildberries.ru/content/v2/cards/update'
+            req = create ? [{subjectID: objId,variants:[request]}] : [request]
         }
         
         let msg = "Sending request Windberries: " + url + " => " + JSON.stringify(req)
@@ -484,29 +499,54 @@ export class WBNewChannelHandler extends ChannelHandler {
     }
 
     public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
-        let data = this.cache.get('categories')
-        if (! data) {
-            const res = await fetch('https://suppliers-api.wildberries.ru/content/v1/object/all?top=10000', {
+        let tree:ChannelCategory | undefined = this.cache.get('categories')
+        if (!tree) {
+            const res = await fetch('https://suppliers-api.wildberries.ru/content/v2/object/parent/all', {
                 method: 'get',
                 body:    JSON.stringify(request),
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             const json = await res.json()
-            data = Object.values(json.data).map((value:any) => { return {id: this.transliterate((value.objectName).toLowerCase().replace('-','_')), name: value.objectName} })
-            this.cache.set('categories', data, 3600)
+            const data:ChannelCategory[] = Object.values(json.data).map((value:any) => { return {id: 'cat_'+value.id, name: value.name, children: []} })
+
+            let offset = 0
+            let length = 0
+            do {
+                const res2 = await fetch('https://suppliers-api.wildberries.ru/content/v2/object/all?limit=1000&offset='+offset, {
+                    method: 'get',
+                    body:    JSON.stringify(request),
+                    headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+                })
+                const json2 = await res2.json()
+
+                for(const obj of json2.data) {
+                    if (!obj.isVisible) continue
+                    const cat = 'cat_'+obj.parentID
+                    const parent = data.find(elem => elem.id === cat)
+                    if (!parent) {
+                        logger.warning(`Failed to find parent for ${JSON.stringify(obj)}`)
+                    } else {
+                        parent.children!.push({id: parent.id+'-'+obj.subjectID, name: obj.subjectName, children: []})
+                    }
+                }
+
+                length = json2.data.length
+                offset += 1000
+            } while (length > 0)
+
+            tree  = {id: '', name: 'root', children: data.filter(elem => elem.children!.length > 0)}
+            this.cache.set('categories', tree, 3600)
         }
-        return { list: <ChannelCategory[]>data, tree: null }
+        return { list: null, tree: tree }
     }
     
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_'+categoryId)
         if (!data) {
-            const categories = await this.getCategories(channel)
-            const category = categories.list!.find((elem:any) => elem.id === categoryId)
+            const idx = categoryId.indexOf('-')
+            const objId = categoryId.substring(idx+1)
 
-            if (!category) throw new Error('Failed to find category by id: ' + categoryId)
-
-            const res = await fetch('https://suppliers-api.wildberries.ru/content/v1/object/characteristics/' + encodeURIComponent(category.name), {
+            const res = await fetch('https://suppliers-api.wildberries.ru/content/v2/object/charcs/' + objId, {
                 method: 'get',
                 body:    JSON.stringify(request),
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
@@ -514,9 +554,9 @@ export class WBNewChannelHandler extends ChannelHandler {
             const json = await res.json()
             data = Object.values(json.data).map((data:any) => { 
                 return { 
-                    id: this.transliterate((<string>data.name).toLowerCase()), 
+                    id: 'wbattr_'+data.charcID, 
                     type: data.name,
-                    isNumber: data.charcType === 1 ? false : true,
+                    isNumber: data.charcType === 1 || data.charcType === 0 ? false : true,
                     name: data.name + (data.unitName ? ' (' + data.unitName + ')' : '') + (data.charcType === 4 ? ' [число]' : ''),
                     category: categoryId,
                     required: data.required,
