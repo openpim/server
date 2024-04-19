@@ -451,6 +451,10 @@ export class OzonChannelHandler extends ChannelHandler {
         const pricePrem = await this.getValueByMapping(channel, pricePremConfig, item, language)
         if (pricePrem) product.premium_price = ''+pricePrem
 
+        const colorImageConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#color_image')
+        const colorImage = await this.getValueByMapping(channel, colorImageConfig, item, language)
+        if (colorImage) product.color_image = colorImage
+
         // video processing
         const complex_attributes:any = [{attributes:[]}]
         let wasData = false
