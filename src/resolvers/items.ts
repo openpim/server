@@ -290,8 +290,12 @@ export default {
         },
         getItemsForRelationAttributeImport: async (parent: any, { attrIdentifier, searchArr, langIdentifier, limit, offset, order }: any, context: Context) => {
             context.checkAuth()
-            if (!searchArr.length) return []
+            const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chan => chan === 2000)
+            if (!isLicenceExists) {
+                throw new Error('Relation attributes licence does not exists!')
+            }
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            if (!searchArr.length) return []
             const attr = mng.getRelationAttributes().find(el => el.identifier === attrIdentifier)
             let itemTypes: number[] = []
             if (attr && attr.valid && attr.valid.length) {
@@ -336,6 +340,10 @@ export default {
         },
         getItemsForRelationAttribute: async (parent: any, { attrIdentifier, value, searchStr, langIdentifier, limit, offset, order }: any, context: Context) => {
             context.checkAuth()
+            const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chan => chan === 2000)
+            if (!isLicenceExists) {
+                throw new Error('Relation attributes licence does not exists!')
+            }
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             const attr = mng.getRelationAttributes().find(el => el.identifier === attrIdentifier)
             let itemTypes: number[] = []

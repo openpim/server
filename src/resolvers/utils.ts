@@ -321,6 +321,10 @@ export function checkValues(mng: ModelManager, values: any) {
 }
 
 export async function updateItemRelationAttributes(context: Context, mng: ModelManager, itemRelation: ItemRelation, del: Boolean) {
+    const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
+    if (!isLicenceExists) {
+        return
+    }
 
     const relationId = itemRelation.relationId
     // const relation = mng.getRelationById(relationId)
@@ -398,6 +402,10 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
 }
 
 export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any) {
+    const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
+    if (!isLicenceExists) {
+        return
+    }
 
     const utils = new ActionUtils(context)
 
