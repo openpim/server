@@ -124,6 +124,7 @@ export class FileManager {
         }
 
 		channel.config.template = fullPath
+        channel.config.originalFilename = file.originalFilename
 		channel.changed('config', true)
 
         return fullPath
