@@ -695,6 +695,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     // if (channel.config.debug) context.log += log+'\n'
                     let videoElem1
                     let videoElem2
+                    let videoCover
                     if (existingDataJson.result[0].complex_attributes) {
                         existingDataJson.result[0].complex_attributes.forEach((elem:any) => {
                             const data1 = elem.attributes.find((elem1:any) => elem1.attribute_id === 21837)
@@ -711,15 +712,31 @@ export class OzonChannelHandler extends ChannelHandler {
                                 videoElem2 = data2
                             }
 
+                            const data3 = elem.attributes.find((elem3:any) => elem3.attribute_id === 21845)
+                            if (data3) {
+                                delete(data3.attribute_id)
+                                data3.id = 21845
+                                videoCover = data3
+                            }
+
                         })
                     }
-                    if (videoElem1 && videoElem2) {
-                        const log = "Найдены загруженные видео: \n" + JSON.stringify(videoElem1) + "\n" + JSON.stringify(videoElem2)
+                    if ((videoElem1 && videoElem2) || videoCover)  {
+                        const log = "Найдены загруженные видео: \n" + JSON.stringify(videoElem1) + "\n" + JSON.stringify(videoElem2) + "\n" + JSON.stringify(videoCover)
                         logger.info(log)
                         if (channel.config.debug) context.log += log+'\n'
-                        if (!product.complex_attributes) product.complex_attributes = [{attributes:[]}]
-                        product.complex_attributes[0].attributes.push(videoElem1)
-                        product.complex_attributes[0].attributes.push(videoElem2)
+                        if (!product.complex_attributes) product.complex_attributes = []
+                        if (videoElem1 && videoElem2) {
+                            const data = {attributes:[]}
+                            data.attributes.push(videoElem1)
+                            data.attributes.push(videoElem2)
+                            product.complex_attributes.push(data)
+                        }
+                        if (videoCover) {
+                            const data = {attributes:[]}
+                            data.attributes.push(videoCover)
+                            product.complex_attributes.push(data)
+                        }
                     } else {
                         const log = "Загруженные видео не найдены"
                         logger.info(log)
