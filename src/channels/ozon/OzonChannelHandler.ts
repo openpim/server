@@ -991,14 +991,14 @@ export class OzonChannelHandler extends ChannelHandler {
 
             let entry = (dict as any[])!.find((elem:any) => elem.value == value)
             if (!entry) {
-                if (channel.config.debug) console.log('generateValue - entry not found 1')
+                if (channel.config.debug) console.log(`generateValue - entry not found 1: ${value} for attr: ${ozonAttrId}`)
                 entry = (dict as any[])!.find((elem:any) => elem.id == value)
             }
             if (!entry) {
-                if (channel.config.debug) console.log('generateValue - entry not found 2')
+                if (channel.config.debug) console.log(`generateValue - entry not found 2: ${value} for attr: ${ozonAttrId}`)
                 return null
             } else {
-                if (channel.config.debug) console.log('generateValue - entry found: '+entry.id)
+                if (channel.config.debug) console.log(`generateValue - entry found: ${entry.id} for attr: ${ozonAttrId} `)
                 return {dictionary_value_id: entry.id, value: entry.value}
             }
         } else {

@@ -230,7 +230,7 @@ export abstract class ChannelHandler {
 
   async getValueByMapping2(channel: Channel, mapping: any, item: Item, language: string, variant: any): Promise<any> {
     if (!mapping) return null
-    if (mapping.expr) {
+    if (mapping.expr && mapping.expr.trim()) {
       return await this.evaluateExpression2(channel, item, mapping.expr, variant)
     } else if (mapping.attrIdent) {
       const tst = mapping.attrIdent.indexOf('#')
@@ -286,7 +286,7 @@ export abstract class ChannelHandler {
     const attrNode = mng.getAttributeByIdentifier(attrIdent, true)
     if (attrNode) {
       const attr = attrNode.attr
-      if (attr.lov) {
+      if (attr.lov && attr.type == 7) {
         let lov:LOV | undefined | null = this.lovCache.get(attr.lov)
         if (!lov) {
           lov = await LOV.findByPk(attr.lov)
