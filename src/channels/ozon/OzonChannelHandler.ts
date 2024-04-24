@@ -59,6 +59,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 await this.syncJob(channel, context, data)
             } else if (data.clearCache) {
                 this.cache.flushAll()
+                this.clearLOVCache()
                 context.log += 'Кеш очищен'
             }
 
