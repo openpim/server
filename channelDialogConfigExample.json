@@ -1,0 +1,14 @@
+{
+	"channelCategories": [
+		{
+			"rootType": "ozon",
+			"childType": "categoryOZON",
+			"channelId": 40
+		},
+		{
+			"rootType": "wb",
+			"childType": "categoryWB",
+			"channelId": 15
+		}
+	]
+}
