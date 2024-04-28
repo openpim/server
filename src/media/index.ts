@@ -588,19 +588,17 @@ export async function downloadXlsxTemplateFile(context: Context, req: Request, r
 		throw new Error('Failed to find item by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
 	}
 
-    const { template } = channel.config
-
     const headers:any = {
         'Content-Type': "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     }
 
-	const extNum = template?.lastIndexOf('/')
-	const fileName = extNum !== -1 ? template?.substring(extNum! + 1) : ''
+	const extNum = channel.config.template?.lastIndexOf('/')
+	const fileName = channel.config.originalFilename ? channel.config.originalFilename : extNum !== -1 ? channel.config.template?.substring(extNum! + 1) : ''
 	//console.log('template=' + template)
 	//console.log('fileName=' + fileName)
 
     headers['Content-Disposition'] = fileName ? contentDisposition(fileName) : 'attachment; filename="template.xlsx"'
-    res.sendFile(template, {headers: headers})
+    res.sendFile(channel.config.template, {headers: headers})
 }
 
  export async function getImportConfigFileData(context: Context, req: Request, res: Response, thumbnail: boolean) {

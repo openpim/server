@@ -214,6 +214,28 @@ export abstract class ChannelHandler {
         } else {
           return items && items.length > 0 ? items : []
         }
+      },
+      getLOV: async (identifier: string) => {
+        const key = 'utilsLOV_'+identifier
+        let lov:LOV | undefined | null = this.lovCache.get(key)
+        if (!lov) {
+          lov = await LOV.findOne({
+            where: {
+              identifier: identifier,
+              tenantId: channel.tenantId,
+            }
+          })
+          this.lovCache.set(key, lov, 180)
+        }
+        return lov
+      },
+      getLOVValue: async (identifier: string, id: number, lang: string) => {
+        const lov = await utils.getLOV(identifier)
+        if (lov) {
+          const val = lov.values.find((elem:any) => elem.id == id)
+          if (val) return val.value[lang]
+        }
+        return null
       }
     }
     try {
@@ -230,7 +252,7 @@ export abstract class ChannelHandler {
 
   async getValueByMapping2(channel: Channel, mapping: any, item: Item, language: string, variant: any): Promise<any> {
     if (!mapping) return null
-    if (mapping.expr) {
+    if (mapping.expr && mapping.expr.trim()) {
       return await this.evaluateExpression2(channel, item, mapping.expr, variant)
     } else if (mapping.attrIdent) {
       const tst = mapping.attrIdent.indexOf('#')
@@ -286,7 +308,7 @@ export abstract class ChannelHandler {
     const attrNode = mng.getAttributeByIdentifier(attrIdent, true)
     if (attrNode) {
       const attr = attrNode.attr
-      if (attr.lov) {
+      if (attr.lov && attr.type == 7) {
         let lov:LOV | undefined | null = this.lovCache.get(attr.lov)
         if (!lov) {
           lov = await LOV.findByPk(attr.lov)
@@ -315,6 +337,10 @@ export abstract class ChannelHandler {
       }
     }
     return attrValue
+  }
+
+  public async clearLOVCache() {
+    this.lovCache.flushAll()
   }
 
   reportError(channel: Channel, item: Item, error: string) {

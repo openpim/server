@@ -501,26 +501,29 @@ export class WBNewChannelHandler extends ChannelHandler {
     public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
         let tree:ChannelCategory | undefined = this.cache.get('categories')
         if (!tree) {
-            const res = await fetch('https://suppliers-api.wildberries.ru/content/v2/object/parent/all', {
+            const url = 'https://suppliers-api.wildberries.ru/content/v2/object/parent/all'
+            logger.info("Sending GET request to WB: " + url)
+            const res = await fetch(url, {
                 method: 'get',
-                body:    JSON.stringify(request),
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             const json = await res.json()
+            if (channel.config.debug) logger.info('WB response: '+JSON.stringify(json))
             const data:ChannelCategory[] = Object.values(json.data).map((value:any) => { return {id: 'cat_'+value.id, name: value.name, children: []} })
 
             let offset = 0
             let length = 0
             do {
-                const res2 = await fetch('https://suppliers-api.wildberries.ru/content/v2/object/all?limit=1000&offset='+offset, {
+                const url2 = 'https://suppliers-api.wildberries.ru/content/v2/object/all?limit=1000&offset='+offset
+                logger.info("Sending GET request to WB: " + url2)
+                const res2 = await fetch(url2, {
                     method: 'get',
-                    body:    JSON.stringify(request),
                     headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
                 })
                 const json2 = await res2.json()
+                if (channel.config.debug) logger.info('WB response2: '+JSON.stringify(json2))
 
                 for(const obj of json2.data) {
-                    if (!obj.isVisible) continue
                     const cat = 'cat_'+obj.parentID
                     const parent = data.find(elem => elem.id === cat)
                     if (!parent) {
