@@ -354,7 +354,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                         if (!Array.isArray(currentAttrValue)) {
                             currentAttrValue = []
                         }
-                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) === parseInt(targetItem.id))
+                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == targetItem.id)
                         if (idx === -1 && !del) {
                             currentAttrValue.push(targetItem.id.toString())
                         } else if (idx && del) {
@@ -383,7 +383,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                         if (!Array.isArray(currentAttrValue)) {
                             currentAttrValue = []
                         }
-                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) === parseInt(item.id))
+                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == item.id)
                         if (idx === -1 && !del) {
                             currentAttrValue.push(item.id.toString())
                         } else if (idx && del) {
@@ -439,7 +439,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
     if (itemRelationsTypesUnique.length) {
         existedItemRelations = await ItemRelation.applyScope(context).findAll({
             where: {
-                relationIdentifier: itemRelationsTypesUnique.map(rel => rel.identifier),
+                relationIdentifier: itemRelationsTypesUnique.map((rel: any) => rel.identifier),
                 [Op.or]: [{ itemId: item.id }, { targetId: item.id }]
             },
             //include: [{model: Item, as: 'sourceItem'}, {model: Item, as: 'targetItem'}]
