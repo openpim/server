@@ -149,8 +149,16 @@ export class WBNewChannelHandler extends ChannelHandler {
                 item.channels[channel.identifier].status = 3
                 item.channels[channel.identifier].message = 'Не найдено значение артикула товара в атрибуте: ' + channel.config.wbCodeAttr
             } else {
-                const url = 'https://suppliers-api.wildberries.ru/content/v1/cards/filter'
-                const request = {vendorCodes: [''+article]}
+                const url = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
+                const request = {	
+                    settings: {
+                        filter: {
+                            withPhoto: -1,
+                            textSearch: ''+article
+                        }
+                    }
+                }
+    
                 let msg = "Запрос на WB: " + url + " => " + JSON.stringify(request)
                 logger.info(msg)
                 if (channel.config.debug) context.log += msg+'\n'
@@ -167,7 +175,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 } else {
                     const json = await res.json()
                     if (channel.config.debug) context.log += 'Ответ от WB '+JSON.stringify(json)+'\n'
-                    if (json.data[0]?.imtID) {
+                    if (json.cards[0]?.imtID) {
                         let status = 2
                         // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
                         if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) status = 1
@@ -176,8 +184,8 @@ export class WBNewChannelHandler extends ChannelHandler {
                         item.channels[channel.identifier].syncedAt = Date.now()
                         item.changed('channels', true)
                         
-                        if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.data[0].imtID
-                        if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.data[0].nmID
+                        if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.cards[0].imtID
+                        if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.cards[0].nmID
                         item.changed('values', true)
                     } else {
                         context.log += 'новых данных не получено\n'
@@ -303,8 +311,16 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
-            const existUrl = 'https://suppliers-api.wildberries.ru/content/v1/cards/filter'
-            const existsBody = {vendorCodes: [productCode]}
+            const existUrl = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
+            const existsBody = {	
+                settings: {
+                    filter: {
+                        withPhoto: -1,
+                        textSearch: productCode
+                    }
+                }
+            }
+
             let msg = "Sending request Windberries: " + existUrl + " => " + JSON.stringify(existsBody)
             logger.info(msg)
             const resExisting = await fetch(existUrl, {
@@ -313,14 +329,14 @@ export class WBNewChannelHandler extends ChannelHandler {
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             if (resExisting.status !== 200) {
-                const msg = 'Ошибка запроса на Wildberries - https://suppliers-api.wildberries.ru/content/v1/cards/filter: ' + resExisting.statusText
+                const msg = 'Ошибка запроса на Wildberries - https://suppliers-api.wildberries.ru/content/v2/get/cards/list: ' + resExisting.statusText
                 context.log += msg                      
                 this.reportError(channel, item, msg)
                 return
             } else {
                 const json = await resExisting.json()
                 // if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json)+'\n'
-                const tst = json.data.find((elem:any) => elem.nmID == nmID)
+                const tst = json.cards.find((elem:any) => elem.nmID == nmID)
                 if (tst) {
                     request = tst
                 } else {
