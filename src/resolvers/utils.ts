@@ -627,7 +627,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     return await processItemButtonActions2(context, actions, item, data, buttonText)
 }
 
-export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null) {
+export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null, headers: string = null) {
     let search: any
     if (where) {
         const whereObj = JSON.parse(where)
@@ -646,6 +646,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
         data: data,
         where: search,
         whereAsString: where,
+        headersAsString: headers,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
@@ -665,7 +666,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
     return { channels: channelsCopy, values: valuesCopy, result: ret[0] }
 }
 
-export async function processTableButtonActions(context: Context, buttonText: string, item: Item | null, where: any, data: string) {
+export async function processTableButtonActions(context: Context, buttonText: string, item: Item | null, where: any, headers: string, data: string) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item ? item.path.split('.').map((elem: string) => parseInt(elem)) : null
     const actions = mng.getActions().filter(action => {
@@ -681,7 +682,7 @@ export async function processTableButtonActions(context: Context, buttonText: st
         return false
     })
 
-    return await processItemButtonActions2(context, actions, item, data, buttonText, where)
+    return await processItemButtonActions2(context, actions, item, data, buttonText, where, headers)
 }
 
 export async function processBulkUpdateChannelsActions(context: Context, event: EventType, channels: any, where: any) {
