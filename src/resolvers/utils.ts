@@ -1327,6 +1327,11 @@ class ActionUtils {
         return this.#mng.getRelations()
     }
 
+    public getChannels() {
+        // TODO maybe we need to return copy of the data to avoid changing?
+        return this.#mng.getChannels()
+    }
+
     public getItemAttributes(item: Item, groupIdentifier?: string) {
         return this.getItemAttributesForGroups(item, groupIdentifier ? [groupIdentifier] : undefined)
     }
