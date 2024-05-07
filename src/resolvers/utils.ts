@@ -627,7 +627,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
     return await processItemButtonActions2(context, actions, item, data, buttonText)
 }
 
-export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null, headers: string = null) {
+export async function processItemButtonActions2(context: Context, actions: Action[], item: Item | null, data: string, buttonText: string, where: any = null, headers: string = '') {
     let search: any
     if (where) {
         const whereObj = JSON.parse(where)
