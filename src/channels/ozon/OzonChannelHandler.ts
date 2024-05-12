@@ -975,7 +975,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         })
                     }
                     const json = await res.json()
-                    if (channel.config.debug) console.log('generateValue - response: '+JSON.stringify(json))
+                    if (channel.config.debug) console.log(`generateValue - response: result length ${json.result.length}, has_next: ${json.has_next} `)
                     dict = dict.concat(json.result)
                     next = json.has_next
                     if (dict.length === 0) throw new Error('No data for attribute dictionary: '+ozonAttrId+', for category: '+ozonCategoryId)
