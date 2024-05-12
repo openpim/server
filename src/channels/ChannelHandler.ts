@@ -234,6 +234,8 @@ export abstract class ChannelHandler {
         if (lov) {
           const val = lov.values.find((elem:any) => elem.id == id)
           if (val) return val.value[lang]
+        } else {
+          logger.warn(`getLOVValue: LOV with identifier ${identifier} not found`)
         }
         return null
       }
