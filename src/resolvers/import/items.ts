@@ -4,7 +4,7 @@ import { Item } from '../../models/items'
 import { sequelize } from '../../models'
 import { QueryTypes, literal } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit, processDeletedChannels } from '../utils'
+import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit, processDeletedChannels, checkRelationAttributes } from '../utils'
 import { Attribute } from '../../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
@@ -208,6 +208,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             filterValues(context.getEditItemAttributes2(type!.getValue().id, path), item.values)
             try {
                 checkValues(mng, item.values)
+                await checkRelationAttributes(context, mng, data, item.values)
             } catch (err: any) {
                 result.addError(new ReturnMessage(0, err.message))
                 result.result = ImportResult.REJECTED
@@ -326,6 +327,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             filterValues(context.getEditItemAttributes(data), item.values)
             try {
                 checkValues(mng, item.values)
+                await checkRelationAttributes(context, mng, data, item.values)
             } catch (err:any) {
                 result.addError(new ReturnMessage(0, err.message))
                 result.result = ImportResult.REJECTED

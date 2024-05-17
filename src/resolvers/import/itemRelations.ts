@@ -5,7 +5,7 @@ import { sequelize } from "../../models"
 import { ModelsManager } from "../../models/manager"
 import { Item } from "../../models/items"
 import { Relation } from "../../models/relations"
-import { mergeValues, filterValues, checkValues, processItemRelationActions, diff, isObjectEmpty } from "../utils"
+import { mergeValues, filterValues, checkValues, processItemRelationActions, diff, isObjectEmpty, updateItemRelationAttributes } from "../utils"
 import { EventType } from "../../models/actions"
 
 import logger from '../../logger'
@@ -52,6 +52,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
     }
 
     try {
+        const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
         if (itemRelation.delete) {
             const data = await ItemRelation.applyScope(context).findOne({where: { identifier: itemRelation.identifier } })
             if (!data) {
@@ -86,6 +87,8 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     audit.auditItemRelation(ChangeType.DELETE, data.id, oldIdentifier, {deleted: itemRelationChanges}, context.getCurrentUser()!.login, data.updatedAt)
                 }
     
+                await updateItemRelationAttributes(context, mng, data, true)
+
                 result.result = ImportResult.DELETED
             }
             return result
@@ -106,7 +109,6 @@ export async function importItemRelation(context: Context, config: IImportConfig
             }
         }        
 
-        const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
         if (!data) {
             // create
             if (!itemRelation.relationIdentifier) {
@@ -190,6 +192,8 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 }
                 audit.auditItemRelation(ChangeType.CREATE, data.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, data.createdAt)
             }
+
+            await updateItemRelationAttributes(context, mng, data, false)
 
             result.id = ""+data.id
             result.result = ImportResult.CREATED
@@ -292,6 +296,8 @@ export async function importItemRelation(context: Context, config: IImportConfig
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, data.id, data.identifier, relDiff, context.getCurrentUser()!.login, data.updatedAt)
             }
+
+            await updateItemRelationAttributes(context, mng, data, false)
 
             result.id = ""+data.id
             result.result = ImportResult.UPDATED
