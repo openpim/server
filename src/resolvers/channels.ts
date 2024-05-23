@@ -7,6 +7,7 @@ import { fn, literal, Op } from 'sequelize'
 import { ChannelsManagerFactory } from '../channels'
 import { replaceOperations, processBulkUpdateChannelsActions } from './utils'
 import { EventType } from '../models/actions'
+import { updateChannelMappings } from './import/channels'
 
 export default {
     Query: {
@@ -258,17 +259,14 @@ export default {
                 }
                 chan.config = config
             }
+            const conflictedCategories: string[] = []
             if (mappings) {
-                const tmp = {...chan.mappings, ...mappings } // merge mappings to avoid deletion from another user
-                for (const prop in tmp) {
-                    if (tmp[prop].deleted) delete tmp[prop]
-                }
-                chan.mappings = tmp
+                chan.mappings = updateChannelMappings(context, chan, mappings, conflictedCategories)
             }
             if (runtime) chan.runtime = runtime
             chan.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
-                await chan!.save({transaction: t})
+                await chan!.save({ transaction: t })
             })
 
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
@@ -278,6 +276,9 @@ export default {
                 channelMng.stopChannel(chan)
             }
             await mng.reloadModelRemotely(chan.id, null, 'CHANNEL', false, context.getUserToken())
+            if (conflictedCategories.length > 0)
+                throw new Error('The following categories could not be updated due to conflicts: ' + conflictedCategories.join(', '))
+
             return chan.id
         },
         removeChannel: async (parent: any, { id }: any, context: Context) => {
