@@ -1461,7 +1461,11 @@ class ActionUtils {
         const startTS = Date.now()
         logger.debug(`Starting action ${action.identifier} at ${startTS}`)
         try {
-            const func = new Function('"use strict"; return (async () => { return (' + action.code + ')})()')
+            const code = `
+            (async () => {
+                ` + action.code + `
+            })()`
+            const func = new Function(code)
             const res =  await func.call(context)
             const finishTS = Date.now()
             logger.debug(`Finished action ${action.identifier} at ${finishTS}, duration is ${finishTS - startTS}`)
