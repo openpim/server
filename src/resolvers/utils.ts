@@ -1461,11 +1461,8 @@ class ActionUtils {
         const startTS = Date.now()
         logger.debug(`Starting action ${action.identifier} at ${startTS}`)
         try {
-            const code = `
-            (async () => {
-                ` + action.code + `
-            })()`
-            const func = new Function(code)
+            const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+            const func = new AsyncFunction(action.code)
             const res =  await func.call(context)
             const finishTS = Date.now()
             logger.debug(`Finished action ${action.identifier} at ${finishTS}, duration is ${finishTS - startTS}`)
