@@ -1468,6 +1468,29 @@ class ActionUtils {
         return !item.storagePath ? null : FileManager.getInstance().getFilesRoot() + item.storagePath
     }
 
+    public async runLibraryAction(context: any, actionIdentifier: string, ...args: any[]) {
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+
+        let action = mng.getActions().find(act => act.identifier === actionIdentifier)
+        if (!action) {
+            throw new Error('Failed to find action by identifier: ' + actionIdentifier + ', tenant: ' + mng.getTenantId())
+        }
+
+        const startTS = Date.now()
+        logger.debug(`Starting action ${action.identifier} at ${startTS}`)
+        try {
+            const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+            const func = new AsyncFunction('...args', action.code)
+            const res =  await func.call(context, ...args)
+            const finishTS = Date.now()
+            logger.debug(`Finished action ${action.identifier} at ${finishTS}, duration is ${finishTS - startTS}`)
+            return res
+        } catch (err:any) {
+            logger.error(`Failed to execute action ${action.identifier} -> [${action.code}] for item with error: ${err.message}`)
+            throw err
+          }
+    }
+
     public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
 
