@@ -314,16 +314,22 @@ export default {
 
                 let query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null and `
                 const displayValue = attr.options.find((el: any) => el.name === 'displayvalue')
-                    if (displayValue && displayValue.value && displayValue.value.length) {
-                        const displayValueAttr = mng.getAttributeByIdentifier(displayValue, true)
-                        if (displayValueAttr?.attr.languageDependent) {
-                            query += ` "values" ->> '${displayValue.value}' ->> '${langIdentifier}' in (:searchArr)`
-                        } else {
-                            query += `"values" ->> '${displayValue.value}' in (:searchArr)`
-                        }
+                if (displayValue && displayValue.value && displayValue.value.length) {
+                    const displayValueAttr = mng.getAttributeByIdentifier(displayValue, true)
+                    if (displayValueAttr?.attr.languageDependent) {
+                        query += ` "values" ->> '${displayValue.value}' ->> '${langIdentifier}' in (:searchArr)`
                     } else {
-                        query += `"name" ->> '${langIdentifier}' in (:searchArr)`
+                        query += `"values" ->> '${displayValue.value}' in (:searchArr)`
                     }
+                } else {
+                    query += `"name" ->> '${langIdentifier}' in (:searchArr)`
+                }
+
+                const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
+                if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
+                    query += ` and "values" ->> '${activeAttributeName.value}' = 'true'`
+                }
+
                 query += ` limit ${limit} offset ${offset}`
                 const data = await sequelize.query(
                     query, {
@@ -334,6 +340,7 @@ export default {
                     },
                     type: QueryTypes.SELECT
                 })
+
                 return data
             }
             throw new Error(`Can not find relation attribute with identifier ${attrIdentifier} or attribute "valid" field is empty`)
@@ -349,6 +356,7 @@ export default {
             let itemTypes: number[] = []
             if (attr && attr.valid && attr.valid.length) {
                 const relations = attr.relations ? attr.relations.map((relId: number) => mng.getRelationById(relId)) : []
+
                 attr.valid.forEach((typeId: number) => {
                     for (let relIndx = 0; relIndx < relations.length; relIndx++) {
                         const relation = relations[relIndx]
@@ -368,7 +376,7 @@ export default {
                 } else {
                     query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null`
                 }
-                
+
                 const displayValue = attr.options.find((el: any) => el.name === 'displayvalue')
 
                 if (displayValue && displayValue.value && displayValue.value.length) {
@@ -382,8 +390,18 @@ export default {
                     query += searchStr ? ` and lower("name" ->> '${langIdentifier}') like lower('%${searchStr}%')` : ''
                 }
 
+                const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
+
+                if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
+                    query += ` and "values" ->> '${activeAttributeName.value}' = 'true'`
+                }
+
                 query += value.length ? ` order by sortid, "name" ${order}` : ` order by "name" ${order}`
                 query += ` limit ${limit} offset ${offset}`
+
+                console.log(itemTypes)
+                console.log(value)
+                console.log(query)
 
                 const data = await sequelize.query(
                     query, {
@@ -394,6 +412,59 @@ export default {
                     },
                     type: QueryTypes.SELECT
                 })
+
+                /* const ids = data.map((el : any) => el.id)
+
+                let imageData: any[] = await sequelize.query(
+                    `SELECT distinct item."id" as "itemId", asset."id", asset."identifier", ir.values->'_itemRelationOrder'
+                        FROM "items" item, "items" asset, "itemRelations" ir, "types" itemType, "types" assetType where 
+                        item."id" in (:ids) and
+                        item."typeId"=itemType."id" and
+                        ir."itemId"=item."id" and
+                        asset."id"=ir."targetId" and
+                        asset."typeId"=assetType."id" and
+                        ir."relationId"=itemType."mainImage" and
+                        assetType."file"=true and
+                        coalesce(asset."storagePath", '') != '' and
+                        ir."deletedAt" is null and
+                        asset."deletedAt" is null and
+                        item."deletedAt" is null
+                        order by ir.values->'_itemRelationOrder', asset.id
+                        `, {
+                    replacements: {
+                        tenant: context.getCurrentUser()!.tenantId,
+                        ids: ids
+                    },
+                    type: QueryTypes.SELECT
+                })
+    
+                if (imageData && imageData.length === 0) { // if this is a file object send itself as main image
+                    imageData = await sequelize.query(
+                        `SELECT item."id" as "itemId", item."id", item."identifier" FROM "items" item where 
+                            item."id" in (:ids) and
+                            item."storagePath" is not null and
+                            item."storagePath" != '' and
+                            item."mimeType" like 'image/%' and
+                            item."deletedAt" is null
+                            `, {
+                        replacements: {
+                            tenant: context.getCurrentUser()!.tenantId,
+                            ids: ids
+                        },
+                        type: QueryTypes.SELECT
+                    })
+                }
+
+                console.log(imageData)
+
+                for (let i=0; i<data.length; i++) {
+                    const item: any = data[i]
+                    const found = imageData.find(img => parseInt(img.itemId) === parseInt(item.id))
+                    if (found) {
+                        item.values['imagedata'] = found
+                    }
+                } */
+
                 return data
             }
             throw new Error(`Can not find relation attribute with identifier ${attrIdentifier} or attribute "valid" field is empty`)
@@ -466,7 +537,7 @@ export default {
                 name: name,
                 typeId: nTypeId,
                 typeIdentifier: type.getValue().identifier,
-                parentIdentifier: parentIdentifier, 
+                parentIdentifier: parentIdentifier,
                 values: {},
                 channels: {},
                 fileOrigName: '',

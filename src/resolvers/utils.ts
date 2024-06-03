@@ -347,7 +347,13 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         const pathArr = item.path.split('.').map(elem => parseInt(elem))
         for (let i = 0; i < attrsFiltered.length; i++) {
             const attr = attrsFiltered[i]
+            const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
             if (attr.valid[0] && attr.valid.includes(item.typeId)) {
+                if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
+                    if (targetItem.values[activeAttributeName.value] !== true) {
+                        throw new Error(`Can not set value ${targetItem.id} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
+                    }
+                }
                 if (pathArr.some(r => attr.visible.indexOf(r) !== -1)) {
                     let currentAttrValue = item.values[attr.identifier]
                     if (attr.options.some((elem : any) => elem.name === 'multivalue' && elem.value === 'true')) {
@@ -362,6 +368,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                         }
                         item.values[attr.identifier] = currentAttrValue
                     } else {
+
                         item.values[attr.identifier] = !del ? targetItem.id.toString() : null
                     }
                     item.changed('values', true)
@@ -376,7 +383,13 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         const pathArr = targetItem.path.split('.').map(elem => parseInt(elem))
         for (let i = 0; i < attrsFiltered.length; i++) {
             const attr = attrsFiltered[i]
+            const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
             if (attr.valid[0] && attr.valid.includes(targetItem.typeId)) {
+                if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
+                    if (item.values[activeAttributeName.value] !== true) {
+                        throw new Error(`Can not set value ${item.id} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
+                    }
+                }
                 if (pathArr.some(r => attr.visible.indexOf(r) !== -1)) {
                     let currentAttrValue = item.values[attr.identifier]
                     if (attr.options.some((elem : any) => elem.name === 'multivalue' && elem.value === 'true')) {
@@ -498,6 +511,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                     }
                 }
 
+                const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
                 for (let valIndex = 0; valIndex < valsArray.length; valIndex++) {
                     const val = valsArray[valIndex]
                     if (val) {
@@ -505,6 +519,11 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                         if (!find) {
                             const relatedItem = isSource ? relatedItems.find((relItem: any) => (relItem.id === val && relation.targets.some((id: number) => (id === relItem.typeId)))) : relatedItems.find((relItem: any) => (relItem.id === val && relation.sources.some((id: number) => (id === relItem.typeId))))
                             if (relatedItem) {
+                                if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
+                                    if (relatedItem.values[activeAttributeName.value] !== true) {
+                                        throw new Error(`Can not set value ${val} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
+                                    }
+                                }
                                 if (isSource) {
                                     await utils.createItemRelation(relation.identifier, `${item.identifier}_${relation.identifier}_${relatedItem.identifier}`, item.identifier, relatedItem.identifier, {}, false)
                                 } else {
@@ -517,7 +536,6 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                         
                     }
                 }
-
             }
         }
     }
