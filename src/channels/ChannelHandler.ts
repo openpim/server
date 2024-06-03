@@ -229,11 +229,11 @@ export abstract class ChannelHandler {
         }
         return lov
       },
-      getLOVValue: async (identifier: string, id: number, lang: string) => {
+      getLOVValue: async (identifier: string, id: number, lang: string, channel: string) => {
         const lov = await utils.getLOV(identifier)
         if (lov) {
           const val = lov.values.find((elem:any) => elem.id == id)
-          if (val) return val.value[lang]
+          if (val) return val[channel ? channel : 'value']?.[lang]
         } else {
           logger.warn(`getLOVValue: LOV with identifier ${identifier} not found`)
         }
