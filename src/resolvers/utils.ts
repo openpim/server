@@ -1450,7 +1450,7 @@ class ActionUtils {
         return !item.storagePath ? null : FileManager.getInstance().getFilesRoot() + item.storagePath
     }
 
-    public async runLibraryAction(context: any, actionIdentifier: string) {
+    public async runLibraryAction(context: any, actionIdentifier: string, ...args: any[]) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
 
         let action = mng.getActions().find(act => act.identifier === actionIdentifier)
@@ -1462,8 +1462,8 @@ class ActionUtils {
         logger.debug(`Starting action ${action.identifier} at ${startTS}`)
         try {
             const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-            const func = new AsyncFunction(action.code)
-            const res =  await func.call(context)
+            const func = new AsyncFunction('...args', action.code)
+            const res =  await func.call(context, ...args)
             const finishTS = Date.now()
             logger.debug(`Finished action ${action.identifier} at ${finishTS}, duration is ${finishTS - startTS}`)
             return res
