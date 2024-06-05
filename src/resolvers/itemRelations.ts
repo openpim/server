@@ -258,6 +258,8 @@ export default {
             checkValues(mng, values)
             itemRelation.values = values
 
+            await updateItemRelationAttributes(context, mng, itemRelation, false)
+
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
             })
@@ -273,8 +275,6 @@ export default {
                 }
                 audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
             }
-
-            await updateItemRelationAttributes(context, mng, itemRelation, false)
 
             return itemRelation
         },
@@ -368,6 +368,9 @@ export default {
                 itemRelation.values = mergeValues(values, itemRelation.values)
             }
             itemRelation.updatedBy = context.getCurrentUser()!.login
+
+            await updateItemRelationAttributes(context, mng, itemRelation, false)
+
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
             })
@@ -376,8 +379,6 @@ export default {
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
-
-            await updateItemRelationAttributes(context, mng, itemRelation, false)
 
             return itemRelation
         },
@@ -407,13 +408,15 @@ export default {
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
             const oldIdentifier = itemRelation.identifier
             itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now() 
+
+            await updateItemRelationAttributes(context, mng, itemRelation, true)
+
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
                 await itemRelation.destroy({transaction: t})
             })
 
             await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false)
-            await updateItemRelationAttributes(context, mng, itemRelation, true)
 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {

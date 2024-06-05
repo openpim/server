@@ -399,10 +399,6 @@ export default {
                 query += value.length ? ` order by sortid, "name" ${order}` : ` order by "name" ${order}`
                 query += ` limit ${limit} offset ${offset}`
 
-                console.log(itemTypes)
-                console.log(value)
-                console.log(query)
-
                 const data = await sequelize.query(
                     query, {
                     replacements: {

@@ -326,7 +326,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         return
     }
 
-    const relationId = itemRelation.relationId
+    // const relationId = itemRelation.relationId
     // const relation = mng.getRelationById(relationId)
 
     const attrs = mng.getRelationAttributes()
@@ -343,75 +343,74 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         throw new Error(`Can not find item with id ${itemRelation.targetId}`)
     }
 
-    if (item) {
-        const pathArr = item.path.split('.').map(elem => parseInt(elem))
-        for (let i = 0; i < attrsFiltered.length; i++) {
-            const attr = attrsFiltered[i]
-            const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
-            if (attr.valid[0] && attr.valid.includes(item.typeId)) {
-                if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
-                    if (targetItem.values[activeAttributeName.value] !== true) {
-                        throw new Error(`Can not set value ${targetItem.id} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
-                    }
+    const itemPathArr = item.path.split('.').map(elem => parseInt(elem))
+    for (let i = 0; i < attrsFiltered.length; i++) {
+        const attr = attrsFiltered[i]
+        const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
+        if (attr.valid[0] && attr.valid.includes(item.typeId)) {
+            if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length && !del) {
+                if (targetItem.values[activeAttributeName.value] !== true) {
+                    throw new Error(`Can not set value ${targetItem.id} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
                 }
-                if (pathArr.some(r => attr.visible.indexOf(r) !== -1)) {
-                    let currentAttrValue = item.values[attr.identifier]
-                    if (attr.options.some((elem : any) => elem.name === 'multivalue' && elem.value === 'true')) {
-                        if (!Array.isArray(currentAttrValue)) {
-                            currentAttrValue = []
-                        }
-                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == targetItem.id)
-                        if (idx === -1 && !del) {
-                            currentAttrValue.push(targetItem.id.toString())
-                        } else if (idx && del) {
-                            currentAttrValue.splice(idx, 1)
-                        }
-                        item.values[attr.identifier] = currentAttrValue
-                    } else {
+            }
+            if (itemPathArr.some(r => attr.visible.indexOf(r) !== -1)) {
+                let currentAttrValue = item.values[attr.identifier]
+                if (attr.options.some((elem: any) => elem.name === 'multivalue' && elem.value === 'true')) {
+                    if (!Array.isArray(currentAttrValue)) {
+                        currentAttrValue = []
+                    }
+                    const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == targetItem.id)
+                    if (idx === -1 && !del) {
+                        currentAttrValue.push(targetItem.id)
+                    } else if (idx && del) {
+                        currentAttrValue.splice(idx, 1)
+                    }
+                    item.values[attr.identifier] = currentAttrValue
+                } else {
 
-                        item.values[attr.identifier] = !del ? targetItem.id.toString() : null
-                    }
-                    item.changed('values', true)
-                    await item.save()
+                    item.values[attr.identifier] = !del ? targetItem.id : null
                 }
+                item.changed('values', true)
             }
         }
     }
-    
 
-    if (targetItem) {
-        const pathArr = targetItem.path.split('.').map(elem => parseInt(elem))
-        for (let i = 0; i < attrsFiltered.length; i++) {
-            const attr = attrsFiltered[i]
-            const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
-            if (attr.valid[0] && attr.valid.includes(targetItem.typeId)) {
-                if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
-                    if (item.values[activeAttributeName.value] !== true) {
-                        throw new Error(`Can not set value ${item.id} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
-                    }
+
+    const targetPathArr = targetItem.path.split('.').map(elem => parseInt(elem))
+    for (let i = 0; i < attrsFiltered.length; i++) {
+        const attr = attrsFiltered[i]
+        const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
+        if (attr.valid[0] && attr.valid.includes(targetItem.typeId)) {
+            if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length && !del) {
+                if (item.values[activeAttributeName.value] !== true) {
+                    throw new Error(`Can not set value ${item.id} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
                 }
-                if (pathArr.some(r => attr.visible.indexOf(r) !== -1)) {
-                    let currentAttrValue = item.values[attr.identifier]
-                    if (attr.options.some((elem : any) => elem.name === 'multivalue' && elem.value === 'true')) {
-                        if (!Array.isArray(currentAttrValue)) {
-                            currentAttrValue = []
-                        }
-                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == item.id)
-                        if (idx === -1 && !del) {
-                            currentAttrValue.push(item.id.toString())
-                        } else if (idx && del) {
-                            currentAttrValue.splice(idx, 1)
-                        }
-                        targetItem.values[attr.identifier] = currentAttrValue
-                    } else {
-                        targetItem.values[attr.identifier] = !del ? item.id.toString(): null
+            }
+            if (targetPathArr.some(r => attr.visible.indexOf(r) !== -1)) {
+                let currentAttrValue = item.values[attr.identifier]
+                if (attr.options.some((elem: any) => elem.name === 'multivalue' && elem.value === 'true')) {
+                    if (!Array.isArray(currentAttrValue)) {
+                        currentAttrValue = []
                     }
-                    targetItem.changed('values', true)
-                    await targetItem.save()
+                    const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == item.id)
+                    if (idx === -1 && !del) {
+                        currentAttrValue.push(item.id)
+                    } else if (idx && del) {
+                        currentAttrValue.splice(idx, 1)
+                    }
+                    targetItem.values[attr.identifier] = currentAttrValue
+                } else {
+                    targetItem.values[attr.identifier] = !del ? item.id : null
                 }
+                targetItem.changed('values', true)
             }
         }
     }
+
+    await sequelize.transaction(async (t) => {
+        await item.save({ transaction: t })
+        await targetItem.save({ transaction: t })
+    })
 }
 
 export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any) {
@@ -491,7 +490,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                 const isSource = relation.sources.find((el: number) => el === item.typeId)
 
                 const existedItemRelationsForAttribute = existedItemRelations.filter(rel => rel.relationIdentifier === relation.identifier && (isSource ? rel.itemId === item.id : rel.targetId === item.id))
-                
+
                 // existedItemRelationsForAttribute  - existed relations for attr 
                 // valsArray - incoming data for attr
                 let valsArray: any[] = []
@@ -533,7 +532,6 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                                 throw new Error('Invalid item id')
                             }
                         }
-                        
                     }
                 }
             }
@@ -831,7 +829,7 @@ export async function processAttributeActions(context: Context, event: EventType
             process: Process.applyScope(context),
             Item,
             ItemRelation
-        } 
+        }
     })
 }
 
@@ -846,18 +844,19 @@ export async function processLOVActions(context: Context, event: EventType, lov:
         }
         return false
     })
-    return await processActions(mng, actions, { Op: Op,
+    return await processActions(mng, actions, {
+        Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
-        isImport: isImport, 
+        isImport: isImport,
         lov: lov,
         changes: changes,
-        models: { 
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),  
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),  
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             process: Process.applyScope(context),
@@ -1261,9 +1260,9 @@ function makeChannelProxy(item: any) {
                 return async (...args: any) => {
                     return await target[property].apply(target, args)
                 }
-            } else  if ((<string>property) =='changed') {
-                return async(...args: any) => {
-                    return await target[ property ].apply( target, args )
+            } else if ((<string>property) == 'changed') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'id') {
                 return target[property]
@@ -1479,16 +1478,16 @@ class ActionUtils {
         const startTS = Date.now()
         logger.debug(`Starting action ${action.identifier} at ${startTS}`)
         try {
-            const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+            const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
             const func = new AsyncFunction('...args', action.code)
-            const res =  await func.call(context, ...args)
+            const res = await func.call(context, ...args)
             const finishTS = Date.now()
             logger.debug(`Finished action ${action.identifier} at ${finishTS}, duration is ${finishTS - startTS}`)
             return res
-        } catch (err:any) {
+        } catch (err: any) {
             logger.error(`Failed to execute action ${action.identifier} -> [${action.code}] for item with error: ${err.message}`)
             throw err
-          }
+        }
     }
 
     public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean) {

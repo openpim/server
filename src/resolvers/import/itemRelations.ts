@@ -69,7 +69,10 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeDelete, data, null, null, true)
 
                 const oldIdentifier = data.identifier
-                data.identifier = itemRelation.identifier + '_d_' + Date.now() 
+                data.identifier = itemRelation.identifier + '_d_' + Date.now()
+
+                await updateItemRelationAttributes(context, mng, data, true)
+
                 await sequelize.transaction(async (t) => {
                     await data.save({transaction: t})
                     await data.destroy({transaction: t})
@@ -87,8 +90,6 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     audit.auditItemRelation(ChangeType.DELETE, data.id, oldIdentifier, {deleted: itemRelationChanges}, context.getCurrentUser()!.login, data.updatedAt)
                 }
     
-                await updateItemRelationAttributes(context, mng, data, true)
-
                 result.result = ImportResult.DELETED
             }
             return result
@@ -177,6 +178,8 @@ export async function importItemRelation(context: Context, config: IImportConfig
 
             data.values = itemRelation.values
 
+            await updateItemRelationAttributes(context, mng, data, false)
+
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})
             })
@@ -192,8 +195,6 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 }
                 audit.auditItemRelation(ChangeType.CREATE, data.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, data.createdAt)
             }
-
-            await updateItemRelationAttributes(context, mng, data, false)
 
             result.id = ""+data.id
             result.result = ImportResult.CREATED
@@ -287,6 +288,9 @@ export async function importItemRelation(context: Context, config: IImportConfig
             data.values = mergeValues(itemRelation.values, data.values)
 
             data.updatedBy = context.getCurrentUser()!.login
+
+            await updateItemRelationAttributes(context, mng, data, false)
+            
             await sequelize.transaction(async (t) => {
                 await data!.save({transaction: t})
             })
@@ -296,8 +300,6 @@ export async function importItemRelation(context: Context, config: IImportConfig
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, data.id, data.identifier, relDiff, context.getCurrentUser()!.login, data.updatedAt)
             }
-
-            await updateItemRelationAttributes(context, mng, data, false)
 
             result.id = ""+data.id
             result.result = ImportResult.UPDATED
