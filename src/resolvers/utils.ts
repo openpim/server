@@ -480,6 +480,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
         })
     }
 
+    let changed = false
     for (const prop in values) {
         const attr = mng.getRelationAttributes().find(el => (el.identifier === prop))
         if (attr) {
@@ -504,6 +505,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                 const existedItemRelationsForAttribute2Delete = existedItemRelationsForAttribute.filter(value => !valsArray.includes(isSource ? value.targetId : value.itemId))
                 for (let i = 0; i < existedItemRelationsForAttribute2Delete.length; i++) {
                     await utils.removeItemRelation(existedItemRelationsForAttribute2Delete[i].id.toString(), context)
+                    changed = true
                     const idx = existedItemRelations.findIndex(el => el.id === existedItemRelationsForAttribute2Delete[i].id)
                     if (idx !== -1) {
                         existedItemRelations.splice(idx, 1)
@@ -525,8 +527,10 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                                 }
                                 if (isSource) {
                                     await utils.createItemRelation(relation.identifier, `${item.identifier}_${relation.identifier}_${relatedItem.identifier}`, item.identifier, relatedItem.identifier, {}, false)
+                                    changed = true
                                 } else {
                                     await utils.createItemRelation(relation.identifier, `${relatedItem.identifier}_${relation.identifier}_${item.identifier}`, relatedItem.identifier, item.identifier, {}, false)
+                                    changed = true
                                 }
                             } else {
                                 throw new Error('Invalid item id')
@@ -537,6 +541,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
             }
         }
     }
+    if (changed) item.reload()
 }
 
 function checkInteger(attr: Attribute, value: any) {
