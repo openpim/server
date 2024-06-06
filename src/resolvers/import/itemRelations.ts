@@ -66,7 +66,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
         
                 data.updatedBy = context.getCurrentUser()!.login
 
-                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeDelete, data, null, null, true)
+                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeDelete, data, null, null, true, null)
 
                 const oldIdentifier = data.identifier
                 data.identifier = itemRelation.identifier + '_d_' + Date.now()
@@ -78,7 +78,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     await data.destroy({transaction: t})
                 })
 
-                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterDelete, data, null, null, true)
+                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterDelete, data, null, null, true, null)
 
                 if (audit.auditEnabled()) {
                     const itemRelationChanges: ItemRelationChanges = {
@@ -165,7 +165,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             })
 
             if (!itemRelation.values) itemRelation.values = {}
-            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeCreate, data, null, itemRelation.values, true)
+            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeCreate, data, null, itemRelation.values, true, null)
 
             filterValues(context.getEditItemRelationAttributes(relation.id), itemRelation.values)
             try {
@@ -184,7 +184,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 await data.save({transaction: t})
             })
 
-            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true)
+            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true, null)
 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
@@ -257,7 +257,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
 
             if (!itemRelation.values) itemRelation.values = {}
 
-            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeUpdate, data, changes, itemRelation.values, true)
+            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeUpdate, data, changes, itemRelation.values, true, null)
 
             if (changes.itemId) {
                 data.itemId = changes.itemId
@@ -295,7 +295,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 await data!.save({transaction: t})
             })
 
-            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterUpdate, data, null, itemRelation.values, true)
+            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterUpdate, data, null, itemRelation.values, true, null)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, data.id, data.identifier, relDiff, context.getCurrentUser()!.login, data.updatedAt)

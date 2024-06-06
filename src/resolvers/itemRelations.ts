@@ -252,7 +252,7 @@ export default {
             })
 
             if (!values) values = {}
-            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, values, false)
+            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, values, false, null)
 
             filterValues(context.getEditItemRelationAttributes(nRelationId), values)
             checkValues(mng, values)
@@ -264,7 +264,7 @@ export default {
                 await itemRelation.save({transaction: t})
             })
 
-            await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false)
+            await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, null)
  
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
@@ -341,7 +341,7 @@ export default {
                 }
             }
 
-            await processItemRelationActions(context, EventType.BeforeUpdate, itemRelation, changes, values, false)
+            await processItemRelationActions(context, EventType.BeforeUpdate, itemRelation, changes, values, false, null)
 
             if (changes.itemId) {
                 itemRelation.itemId = changes.itemId
@@ -374,7 +374,7 @@ export default {
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
             })
-            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false)
+            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, null)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
@@ -397,7 +397,7 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false)
+            const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, null)
             
             itemRelation.updatedBy = context.getCurrentUser()!.login
             if(actionResponse.some((resp) => resp.result === 'cancelDelete')) {
@@ -416,7 +416,7 @@ export default {
                 await itemRelation.destroy({transaction: t})
             })
 
-            await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false)
+            await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, null)
 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {

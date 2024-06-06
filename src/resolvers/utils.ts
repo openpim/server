@@ -526,11 +526,9 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                                     }
                                 }
                                 if (isSource) {
-                                    await utils.createItemRelation(relation.identifier, `${item.identifier}_${relation.identifier}_${relatedItem.identifier}`, item.identifier, relatedItem.identifier, {}, false)
-                                    changed = true
+                                    await utils.createItemRelation(relation.identifier, `${item.identifier}_${relation.identifier}_${relatedItem.identifier}`, item.identifier, relatedItem.identifier, {}, false, values)
                                 } else {
-                                    await utils.createItemRelation(relation.identifier, `${relatedItem.identifier}_${relation.identifier}_${item.identifier}`, relatedItem.identifier, item.identifier, {}, false)
-                                    changed = true
+                                    await utils.createItemRelation(relation.identifier, `${relatedItem.identifier}_${relation.identifier}_${item.identifier}`, relatedItem.identifier, item.identifier, {}, false, values)
                                 }
                             } else {
                                 throw new Error('Invalid item id')
@@ -541,7 +539,6 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
             }
         }
     }
-    if (changed) item.reload()
 }
 
 function checkInteger(attr: Attribute, value: any) {
@@ -1087,7 +1084,7 @@ function makeItemProxy(item: any, event: string) {
         }
     })
 }
-export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes: any, newValues: any, isImport: boolean) {
+export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes: any, newValues: any, isImport: boolean, newItemValues: any) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
@@ -1108,6 +1105,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip },
         isImport: isImport,
+        newItemValues: newItemValues,
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, changes: changes,
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
@@ -1634,7 +1632,7 @@ class ActionUtils {
         return makeItemProxy(item, 'createItem')
     }
 
-    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false) {
+    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, newItemValues: any) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
@@ -1699,7 +1697,7 @@ class ActionUtils {
         })
 
         if (!values) values = {}
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, newItemValues)
 
         filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
         checkValues(mng, values)
@@ -1710,7 +1708,7 @@ class ActionUtils {
             await itemRelation.save({ transaction: t })
         })
 
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, newItemValues)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {
@@ -1738,7 +1736,7 @@ class ActionUtils {
             throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
         }
 
-        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false)
+        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, null)
 
         itemRelation.updatedBy = context.getCurrentUser()!.login
         if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
@@ -1754,7 +1752,7 @@ class ActionUtils {
             await itemRelation.destroy({ transaction: t })
         })
 
-        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false)
+        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, null)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {

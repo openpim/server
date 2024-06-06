@@ -448,7 +448,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             })
 
             const irValues = {}
-            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false)
+            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, null)
 
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
@@ -471,7 +471,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
             }
 
-            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, itemRelation.values, false)
+            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, itemRelation.values, false, null)
 
 
             res.send('OK')
