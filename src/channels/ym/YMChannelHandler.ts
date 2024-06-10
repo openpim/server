@@ -62,9 +62,11 @@ export class YMChannelHandler extends ChannelHandler {
 
                     await this.processItems(channel, yml, language, context)
                     
+                    logger.info('start YML file creation.')
                     const builder = new xml2js.Builder()
                     const str = builder.buildObject(yml)
-                    logger.debug('YML file created. \n ' + str)
+                    logger.info('YML file created.')
+                    logger.debug('YML file: \n ' + str)
                     
                     await fsAsync.writeFile(fileName, str)
                     if (fs.existsSync(fileName)) {
@@ -99,6 +101,7 @@ export class YMChannelHandler extends ChannelHandler {
         } catch (err:any) {
             context.result = 3
             context.log += "Ошибка: " + err.message
+            logger.error('Failed to run YM Handler', err)
         } finally {
             await this.finishExecution(channel, chanExec, context.result, context.log)
         }

@@ -304,7 +304,7 @@ export class OzonChannelHandler extends ChannelHandler {
             const ctx = Context.createAs("admin", channel.tenantId)
 
             try {
-                await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.identifier, reloadedItem!.name, changedValues, newChannels, false, false)
+                await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, changedValues, newChannels, false, false)
 
                 if (valuesChanged) { 
                     reloadedItem!.values = {...reloadedItem!.values, ...changedValues}
@@ -624,45 +624,47 @@ export class OzonChannelHandler extends ChannelHandler {
 
         const ozonProductId = item.values[channel.config.ozonIdAttr] ? ''+item.values[channel.config.ozonIdAttr]: null
         if (ozonProductId && !ozonProductId.startsWith('task_id=')) {
-            // check if we have changed prices that we should leave unchanged
-            const existingPricesReq = {product_id: ozonProductId}
-            const existingPricesUrl = 'https://api-seller.ozon.ru/v2/product/info'
-            const logPr = "Sending request to Ozon: " + existingPricesUrl + " => " + JSON.stringify(existingPricesReq)
-            logger.info(logPr)
-            if (channel.config.debug) context.log += logPr+'\n'
-            const existingPricesRes = await fetch(existingPricesUrl, {
-                method: 'post',
-                body:    JSON.stringify(existingPricesReq),
-                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
-            logger.info("Response status from Ozon: " + existingPricesRes.status)
-            if (existingPricesRes.status !== 200) {
-                const text = await existingPricesRes.text()
-                const msg = 'Ошибка запроса на Ozon: ' + existingPricesRes.statusText + "   " + text
-                context.log += msg                      
-                this.reportError(channel, item, msg)
-                logger.error(msg)
-                return
-            } else {
-                const existingPricesJson = await existingPricesRes.json()
+            if (!channel.config.sendPriceUpdate) {
+                    // check if we have changed prices that we should leave unchanged
+                const existingPricesReq = {product_id: ozonProductId}
+                const existingPricesUrl = 'https://api-seller.ozon.ru/v2/product/info'
+                const logPr = "Sending request to Ozon: " + existingPricesUrl + " => " + JSON.stringify(existingPricesReq)
+                logger.info(logPr)
+                if (channel.config.debug) context.log += logPr+'\n'
+                const existingPricesRes = await fetch(existingPricesUrl, {
+                    method: 'post',
+                    body:    JSON.stringify(existingPricesReq),
+                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                })
+                logger.info("Response status from Ozon: " + existingPricesRes.status)
+                if (existingPricesRes.status !== 200) {
+                    const text = await existingPricesRes.text()
+                    const msg = 'Ошибка запроса на Ozon: ' + existingPricesRes.statusText + "   " + text
+                    context.log += msg                      
+                    this.reportError(channel, item, msg)
+                    logger.error(msg)
+                    return
+                } else {
+                    const existingPricesJson = await existingPricesRes.json()
 
-                const priceAttr = priceConfig.attrIdent
-                if (priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.result.price)) {
-                    changedValues[priceAttr] = parseFloat(existingPricesJson.result.price)
-                    product.price = existingPricesJson.result.price
-                }
-                const priceOldAttr = priceOldConfig?.attrIdent
-                if (priceOldAttr && existingPricesJson.result.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.result.old_price)) {
-                    changedValues[priceOldAttr] = parseFloat(existingPricesJson.result.old_price)
-                    product.old_price = existingPricesJson.result.old_price
-                }
-                const pricePremAttr = pricePremConfig?.attrIdent
-                if (pricePremAttr && existingPricesJson.result.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.result.premium_price)) {
-                    changedValues[pricePremAttr] = parseFloat(existingPricesJson.result.premium_price)
-                    product.premium_price = existingPricesJson.result.premium_price
+                    const priceAttr = priceConfig.attrIdent
+                    if (priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.result.price)) {
+                        changedValues[priceAttr] = parseFloat(existingPricesJson.result.price)
+                        product.price = existingPricesJson.result.price
+                    }
+                    const priceOldAttr = priceOldConfig?.attrIdent
+                    if (priceOldAttr && existingPricesJson.result.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.result.old_price)) {
+                        changedValues[priceOldAttr] = parseFloat(existingPricesJson.result.old_price)
+                        product.old_price = existingPricesJson.result.old_price
+                    }
+                    const pricePremAttr = pricePremConfig?.attrIdent
+                    if (pricePremAttr && existingPricesJson.result.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.result.premium_price)) {
+                        changedValues[pricePremAttr] = parseFloat(existingPricesJson.result.premium_price)
+                        product.premium_price = existingPricesJson.result.premium_price
+                    }
                 }
             }
-            
+
             if (channel.config.saveVideos) {
                 // check if we have loaded videos that we should leave unchanged
                 const existingDataReq = {
@@ -880,10 +882,12 @@ export class OzonChannelHandler extends ChannelHandler {
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
                         const url = image.values[channel.config.ozonImageAttr]
+                        let addition = ''
+                        if (channel.config.uniqueImages) addition = url.includes('?') ? '&timestamp='+Date.now() : '?timestamp='+Date.now()
                         if (url && !product.primary_image) {
-                            product.primary_image = url
-                        } else {
-                            data.push(url)
+                            product.primary_image = url + addition
+                        } else if (url) {
+                            data.push(url + addition)
                         }
                     }
                 }
@@ -915,7 +919,12 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (images) {
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
-                        if (image.values[channel.config.ozonImageAttr]) data.push(image.values[channel.config.ozonImageAttr])
+                        const url = image.values[channel.config.ozonImageAttr]
+                        if (url) {
+                            let addition = ''
+                            if (channel.config.uniqueImages) addition = url.includes('?') ? '&timestamp='+Date.now() : '?timestamp='+Date.now()
+                            data.push(url + addition)
+                        }
                     }
                 }
             }
