@@ -296,6 +296,14 @@ export class WBNewChannelHandler extends ChannelHandler {
             return
         }
 
+        const titleConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#title')
+        const title = await this.getValueByMapping(channel, titleConfig, item, language)
+
+        const descriptionConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#description')
+        const description = await this.getValueByMapping(channel, descriptionConfig, item, language)
+
+        const brandConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#brand')
+        const brand = await this.getValueByMapping(channel, brandConfig, item, language)
 
         const lengthConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#length')
         const length = await this.getValueByMapping(channel, lengthConfig, item, language)
@@ -307,7 +315,11 @@ export class WBNewChannelHandler extends ChannelHandler {
         const height = await this.getValueByMapping(channel, heightConfig, item, language)
 
         // request to WB
-        let request:any = {vendorCode:productCode, dimensions: {length: length || 0, width: width || 0, height: height || 0}, characteristics:[{"Предмет": categoryConfig.name}], sizes:[{wbSize:"", price: price, skus: Array.isArray(barcode) ? barcode : [''+barcode]}]}
+        let request:any = {vendorCode:productCode, dimensions: {length: length || 0, width: width || 0, height: height || 0}, characteristics:[], sizes:[{wbSize:"", price: price, skus: Array.isArray(barcode) ? barcode : [''+barcode]}]}
+
+        if (title) request.title = title
+        if (description) request.description = description
+        if (brand) request.brand = brand
 
         const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
@@ -353,10 +365,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i];
             
-            if (
-                attrConfig.id != '#productCode' && attrConfig.id != '#barcode' && attrConfig.id != '#price'
-                && attrConfig.id != '#images'
-            ) {
+            if (!attrConfig.id. startsWith('#')) {
                 const attr = (await this.getAttributes(channel, categoryConfig.id)).find(elem => elem.id === attrConfig.id)
                 if (!attr) {
                     logger.warn('Failed to find attribute in channel for attribute with id: ' + attrConfig.id)
@@ -366,15 +375,14 @@ export class WBNewChannelHandler extends ChannelHandler {
                     const value = await this.getValueByMapping(channel, attrConfig, item, language)
                     if (!create) this.clearPreviousValue(request.characteristics, attr.type)
                     if (value) {
+                        const data:any = {}
+                        data.id = attr.type
                         if (Array.isArray(value) && value.length > 0) {
-                            const data:any = {}
-                            data[attr.type] = attr.maxCount == 0 || attr.maxCount == 1 ? value[0] : value
-                            request.characteristics.push(data)
+                            data.value = attr.maxCount == 0 || attr.maxCount == 1 ? value[0] : value
                         } else {
-                            const data:any = {}
-                            data[attr.type] = attr.maxCount == 0 || attr.maxCount == 1 ? value : [value]
-                            request.characteristics.push(data)
+                            data.value = attr.maxCount == 0 || attr.maxCount == 1 ? value : [value]
                         }
+                        request.characteristics.push(data)
                     } else if (attr.required) {
                         const msg = 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                         context.log += msg                      
@@ -434,7 +442,7 @@ export class WBNewChannelHandler extends ChannelHandler {
     }
 
     private clearPreviousValue(arr: any[], type: string) {
-        const tst = arr.findIndex((elem:any) => elem.hasOwnProperty(type))
+        const tst = arr.findIndex((elem:any) => elem.id == type)
         if (tst != -1) arr.splice(tst, 1)
     }
 
@@ -574,7 +582,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             data = Object.values(json.data).map((data:any) => { 
                 return { 
                     id: 'wbattr_'+data.charcID, 
-                    type: data.name,
+                    type: data.charcID,
                     isNumber: data.charcType === 1 || data.charcType === 0 ? false : true,
                     name: data.name + (data.unitName ? ' (' + data.unitName + ')' : '') + (data.charcType === 4 ? ' [число]' : ''),
                     category: categoryId,
