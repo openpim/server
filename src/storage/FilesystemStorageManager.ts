@@ -20,15 +20,9 @@ export class FilesystemStorageManager extends StorageManager {
             })
         } else {
             logger.error(fullPath + ' no such file found for item id: ' + item.id);
+            return false
         }
-        const thumb = fullPath + '_thumb.jpg'
-        if (fs.existsSync(thumb)) {
-            fs.unlink(thumb, (err) => {
-                if (err) logger.error('Error deleting file:' + thumb, err)
-            })
-        } else {
-            logger.error(thumb + ' no such file found for item id: ' + item.id);
-        }     
+        return true     
     }
 
     public async saveFile(item: Item, filepath: string, clean = true ) {

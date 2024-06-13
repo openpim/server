@@ -39,6 +39,20 @@ export class FileManager {
     public async removeFile(item: Item) {
         StorageFactory.getStorageInstance().removeFile(item)
 
+        const folder = ~~(item.id/1000)
+        const filesPath = '/' +item.tenantId + '/' + folder
+        const relativePath = filesPath + '/' + item.id
+        const fullPath = this.filesRoot + relativePath
+        const thumb = fullPath + '_thumb.jpg'
+        if (fs.existsSync(thumb)) {
+            fs.unlink(thumb, (err) => {
+                if (err) logger.error('Error deleting file:' + thumb, err)
+            })
+        } else {
+            logger.error(thumb + ' no such file found for item id: ' + item.id);
+        }
+
+
         let values
         if (this.isImage(item.mimeType)) {
             values = {
