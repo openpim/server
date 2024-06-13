@@ -11,6 +11,7 @@ import { Process } from '../models/processes'
 import * as hasha from 'hasha'
 
 import { WebPInfo } from 'webpinfo'
+import { StorageFactory } from '../storage/StorageFactory'
 const webp=require('webp-converter')
 webp.grant_permission()
 
@@ -36,27 +37,7 @@ export class FileManager {
     }
 
     public async removeFile(item: Item) {
-        const folder = ~~(item.id/1000)
-
-        const filesPath = '/' +item.tenantId + '/' + folder
-        const relativePath = filesPath + '/' + item.id
-        const fullPath = this.filesRoot + relativePath
-
-        if (fs.existsSync(fullPath)) { 
-            fs.unlink(fullPath, (err) => {
-                if (err) logger.error('Error deleting file:' + fullPath, err)
-            })
-        } else {
-            logger.error(fullPath + ' no such file found for item id: ' + item.id);
-        }
-        const thumb = fullPath + '_thumb.jpg'
-        if (fs.existsSync(thumb)) {
-            fs.unlink(thumb, (err) => {
-                if (err) logger.error('Error deleting file:' + thumb, err)
-            })
-        } else {
-            logger.error(thumb + ' no such file found for item id: ' + item.id);
-        } 
+        StorageFactory.getStorageInstance().removeFile(item)
 
         let values
         if (this.isImage(item.mimeType)) {
@@ -169,20 +150,11 @@ export class FileManager {
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
 
+        await StorageFactory.getStorageInstance().saveFile(item, filepath, clean)
+
         let values:any = {}
         if (process.env.OPENPIM_FILE_HASH) {
             values.file_hash = await hasha.fromFile(filepath, {algorithm: process.env.OPENPIM_FILE_HASH})
-        }
-
-        if (clean) {
-            try {
-                fs.renameSync(filepath, fullPath)
-            } catch (e) { 
-                fs.copyFileSync(filepath, fullPath)
-                fs.unlinkSync(filepath)
-            }
-        } else {
-            fs.copyFileSync(filepath, fullPath)
         }
 
         item.storagePath = relativePath
