@@ -5,6 +5,7 @@ import { FileManager } from "../../media/FileManager"
 import * as fs from 'fs'
 import { User } from "../../models/users"
 import { Process } from "../../models/processes"
+import { StorageFactory } from "../../storage/StorageFactory"
 
 export class cleaningDatabase {
     static scheduledJobs: any = {};
@@ -76,12 +77,13 @@ export class cleaningDatabase {
             for (let i = 0; i < items2[1].rows.length; i++) {
                 const item : any = items2[1].rows[i]
                 if (item.storagePath === '') continue
-                const file : any = openpimDir + item.storagePath
 
-                if (fs.existsSync(file+'_thumb.jpg')) fs.unlinkSync(file+'_thumb.jpg')
-                if (fs.existsSync(file)) fs.unlinkSync(file)
-                else {
-                    msg = 'Failed to find file: ' + file
+                const file : any = openpimDir + item.storagePath
+                if (fs.existsSync(file+'_thumb.jpg')) fs.unlinkSync(file+'_thumb.jpg')                
+
+                const res = await StorageFactory.getStorageInstance().removeFile(item)
+                if (!res) {
+                    msg = 'Failed to find file, for item with id: ' + item.id
                     log += msg + '\n'
                     logger.info(msg)
                 }

@@ -20,6 +20,7 @@ import { Process } from '../models/processes'
 import { ImportConfig } from '../models/importConfigs'
 import { ImportManager } from './ImportManager'
 import i18next from '../i18n'
+import { StorageFactory } from '../storage/StorageFactory'
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -150,14 +151,25 @@ export async function processDownloadById(context: Context, id: number, res: Res
         return
     }
 
-    const hdrs:any = {
-        'Content-Type': item.mimeType
+    let data
+    if (thumbnail) {
+        const filePath = process.env.FILES_ROOT! + item.storagePath + '_thumb.jpg'
+        if (fs.existsSync(filePath)) {
+            data = fs.createReadStream(filePath)
+        }
+    } else {
+        data = await StorageFactory.getStorageInstance().getReadStream(item)
     }
-    if (!thumbnail && (inline === undefined || item.fileOrigName.toLowerCase().endsWith('.ai') || item.fileOrigName.toLowerCase().endsWith('.otf'))) {
-        hdrs['Content-Disposition'] = contentDisposition(item.fileOrigName)
+    if (data) {
+        res.setHeader('Content-Type', item.mimeType)
+        if (!thumbnail && (inline === undefined || item.fileOrigName.toLowerCase().endsWith('.ai') || item.fileOrigName.toLowerCase().endsWith('.otf'))) {
+            res.setHeader('Content-Disposition', contentDisposition(item.fileOrigName))
 
+        }
+        data.pipe(res)
+    } else {
+        res.status(404).send('Not found')
     }
-    res.sendFile(process.env.FILES_ROOT! + item.storagePath + (thumbnail ? '_thumb.jpg': ''), {headers: hdrs})
 }
 
 export async function processUploadXlsxTemplate(context: Context, req: Request, res: Response) {
