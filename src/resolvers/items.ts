@@ -313,8 +313,10 @@ export default {
                 })
 
                 let query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null and `
-                const displayValue = attr.options.find((el: any) => el.name === 'displayvalue')
-                if (displayValue && displayValue.value && displayValue.value.length) {
+                const displayValue = attr.options.find((el: any) => el.name === 'displayValue')
+                if (displayValue && displayValue.value && displayValue.value.startsWith('#')) {
+                    query +=  ` "${displayValue.value.substr(1)}" in (:searchArr)`
+                } else if (displayValue && displayValue.value && displayValue.value.length) {
                     const displayValueAttr = mng.getAttributeByIdentifier(displayValue, true)
                     if (displayValueAttr?.attr.languageDependent) {
                         query += ` "values" ->> '${displayValue.value}' ->> '${langIdentifier}' in (:searchArr)`
@@ -340,7 +342,6 @@ export default {
                     },
                     type: QueryTypes.SELECT
                 })
-
                 return data
             }
             throw new Error(`Can not find relation attribute with identifier ${attrIdentifier} or attribute "valid" field is empty`)
@@ -377,14 +378,15 @@ export default {
                     query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null`
                 }
 
-                const displayValue = attr.options.find((el: any) => el.name === 'displayvalue')
-
-                if (displayValue && displayValue.value && displayValue.value.length) {
+                const displayValue = attr.options.find((el: any) => el.name === 'displayValue')
+                if (displayValue && displayValue.value && displayValue.value.startsWith('#')) {
+                    query += searchStr ? ` and lower(cast("${displayValue.value.substr(1)}" as TEXT)) like lower('%${searchStr}%')` : ''
+                } else if (displayValue && displayValue.value && displayValue.value.length) {
                     const displayValueAttr = mng.getAttributeByIdentifier(displayValue, true)
                     if (displayValueAttr?.attr.languageDependent) {
                         query += searchStr ? ` and lower("values" ->> '${displayValue.value}' ->> '${langIdentifier}') like lower('%${searchStr}%')` : ''
                     } else {
-                        query += searchStr ? ` and lower("values" ->> '${displayValue.value}') like lower('%${searchStr}%')` : ''
+                        query += searchStr ? ` and lower(cast("values" ->> '${displayValue.value}' as TEXT)) like lower('%${searchStr}%')` : ''
                     }
                 } else {
                     query += searchStr ? ` and lower("name" ->> '${langIdentifier}') like lower('%${searchStr}%')` : ''
@@ -409,57 +411,58 @@ export default {
                     type: QueryTypes.SELECT
                 })
 
-                /* const ids = data.map((el : any) => el.id)
+                if (attr.options.some((option: any) => option.name === 'showThumbnail' && option.value === 'true')) {
+                    const ids = data.map((el: any) => el.id)
+                    if (ids.length) {
+                        let imageData: any[] = await sequelize.query(
+                            `SELECT distinct item."id" as "itemId", asset."id", asset."identifier", ir.values->'_itemRelationOrder'
+                                FROM "items" item, "items" asset, "itemRelations" ir, "types" itemType, "types" assetType where 
+                                item."id" in (:ids) and
+                                item."typeId"=itemType."id" and
+                                ir."itemId"=item."id" and
+                                asset."id"=ir."targetId" and
+                                asset."typeId"=assetType."id" and
+                                ir."relationId"=itemType."mainImage" and
+                                assetType."file"=true and
+                                coalesce(asset."storagePath", '') != '' and
+                                ir."deletedAt" is null and
+                                asset."deletedAt" is null and
+                                item."deletedAt" is null
+                                order by ir.values->'_itemRelationOrder', asset.id
+                                `, {
+                            replacements: {
+                                tenant: context.getCurrentUser()!.tenantId,
+                                ids: ids
+                            },
+                            type: QueryTypes.SELECT
+                        })
 
-                let imageData: any[] = await sequelize.query(
-                    `SELECT distinct item."id" as "itemId", asset."id", asset."identifier", ir.values->'_itemRelationOrder'
-                        FROM "items" item, "items" asset, "itemRelations" ir, "types" itemType, "types" assetType where 
-                        item."id" in (:ids) and
-                        item."typeId"=itemType."id" and
-                        ir."itemId"=item."id" and
-                        asset."id"=ir."targetId" and
-                        asset."typeId"=assetType."id" and
-                        ir."relationId"=itemType."mainImage" and
-                        assetType."file"=true and
-                        coalesce(asset."storagePath", '') != '' and
-                        ir."deletedAt" is null and
-                        asset."deletedAt" is null and
-                        item."deletedAt" is null
-                        order by ir.values->'_itemRelationOrder', asset.id
-                        `, {
-                    replacements: {
-                        tenant: context.getCurrentUser()!.tenantId,
-                        ids: ids
-                    },
-                    type: QueryTypes.SELECT
-                })
-    
-                if (imageData && imageData.length === 0) { // if this is a file object send itself as main image
-                    imageData = await sequelize.query(
-                        `SELECT item."id" as "itemId", item."id", item."identifier" FROM "items" item where 
-                            item."id" in (:ids) and
-                            item."storagePath" is not null and
-                            item."storagePath" != '' and
-                            item."mimeType" like 'image/%' and
-                            item."deletedAt" is null
-                            `, {
-                        replacements: {
-                            tenant: context.getCurrentUser()!.tenantId,
-                            ids: ids
-                        },
-                        type: QueryTypes.SELECT
-                    })
-                }
+                        if (imageData && imageData.length === 0) { // if this is a file object send itself as main image
+                            imageData = await sequelize.query(
+                                `SELECT item."id" as "itemId", item."id", item."identifier" FROM "items" item where 
+                                    item."id" in (:ids) and
+                                    item."storagePath" is not null and
+                                    item."storagePath" != '' and
+                                    item."mimeType" like 'image/%' and
+                                    item."deletedAt" is null
+                                    `, {
+                                replacements: {
+                                    tenant: context.getCurrentUser()!.tenantId,
+                                    ids: ids
+                                },
+                                type: QueryTypes.SELECT
+                            })
+                        }
 
-                console.log(imageData)
-
-                for (let i=0; i<data.length; i++) {
-                    const item: any = data[i]
-                    const found = imageData.find(img => parseInt(img.itemId) === parseInt(item.id))
-                    if (found) {
-                        item.values['imagedata'] = found
+                        for (let i = 0; i < data.length; i++) {
+                            const item: any = data[i]
+                            const found = imageData.find(img => parseInt(img.itemId) === parseInt(item.id))
+                            if (found) {
+                                item.values['__imagedata'] = found
+                            }
+                        }
                     }
-                } */
+                }
 
                 return data
             }
