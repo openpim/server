@@ -403,39 +403,45 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         // images
         if (!create) { // send images on update only because product is not exists at WB just after create
-            const imageConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
-            if (!imageConfig) return
-            const images = await this.getValueByMapping(channel, imageConfig, item, language)
-            if (images && images.length > 0) {
-                const imgRequest = {
-                    "vendorCode": productCode,
-                    "data": images
-                    }
-                const imgUrl = 'https://suppliers-api.wildberries.ru/content/v1/media/save'
-                let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
+            if (!nmID) {
+                let msg = "nmID is empty so images will not be send"
                 logger.info(msg)
                 if (channel.config.debug) context.log += msg+'\n'
-
-                if (process.env.OPENPIM_WB_EMULATION === 'true') {
-                    const msg = 'Включена эмуляция работы, сообщение не было послано на WB'
-                    if (channel.config.debug) context.log += msg+'\n'
+            } else {
+                const imageConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
+                if (!imageConfig) return
+                const images = await this.getValueByMapping(channel, imageConfig, item, language)
+                if (images && images.length > 0) {
+                    const imgRequest = {
+                        "nmId": nmID,
+                        "data": images
+                        }
+                    const imgUrl = 'https://suppliers-api.wildberries.ru/content/v3/media/save'
+                    let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
                     logger.info(msg)
-                    return
-                }
-        
-                const res = await fetch(imgUrl, {
-                    method: 'post',
-                    body:    JSON.stringify(imgRequest),
-                    headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
-                })
-                msg = "Response status from Windberries: " + res.status
-                logger.info(msg)
-                if (channel.config.debug) context.log += msg+'\n'
-                if (res.status !== 200) {
-                    const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
-                    context.log += msg                      
-                    this.reportError(channel, item, msg)
-                    return
+                    if (channel.config.debug) context.log += msg+'\n'
+
+                    if (process.env.OPENPIM_WB_EMULATION === 'true') {
+                        const msg = 'Включена эмуляция работы, сообщение не было послано на WB'
+                        if (channel.config.debug) context.log += msg+'\n'
+                        logger.info(msg)
+                        return
+                    }
+            
+                    const res = await fetch(imgUrl, {
+                        method: 'post',
+                        body:    JSON.stringify(imgRequest),
+                        headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+                    })
+                    msg = "Response status from Windberries: " + res.status
+                    logger.info(msg)
+                    if (channel.config.debug) context.log += msg+'\n'
+                    if (res.status !== 200) {
+                        const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+                        context.log += msg                      
+                        this.reportError(channel, item, msg)
+                        return
+                    }
                 }
             }
         }
