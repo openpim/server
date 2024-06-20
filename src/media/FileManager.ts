@@ -164,7 +164,7 @@ export class FileManager {
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
 
-        await StorageFactory.getStorageInstance().saveFile(item, filepath, clean)
+        await StorageFactory.getStorageInstance().saveFile(item, filepath, mimetype || 'application/octet-stream', clean)
 
         let values:any = {}
         if (process.env.OPENPIM_FILE_HASH) {

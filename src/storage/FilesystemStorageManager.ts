@@ -25,7 +25,7 @@ export class FilesystemStorageManager extends StorageManager {
         return true     
     }
 
-    public async saveFile(item: Item, filepath: string, clean = true ) {
+    public async saveFile(item: Item, filepath: string, mimetype: string, clean = true ) {
         const folder = ~~(item.id/1000)
 
         const filesPath = '/' + item.tenantId + '/' + folder
