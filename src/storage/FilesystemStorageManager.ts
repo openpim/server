@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import { Item } from "../models/items"
 import { StorageManager } from "./StorageManager"
 import logger from '../logger'
+import { Readable } from 'stream'
 
 
 export class FilesystemStorageManager extends StorageManager {
@@ -45,7 +46,7 @@ export class FilesystemStorageManager extends StorageManager {
         }
     }    
 
-    public async getReadStream(item: Item): Promise<fs.ReadStream | null> {
+    public async getReadStream(item: Item): Promise<Readable | null> {
         const filePath = this.filesRoot + item.storagePath
         if (fs.existsSync(filePath)) {
             return fs.createReadStream(filePath)

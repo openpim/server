@@ -164,8 +164,6 @@ export class FileManager {
         const relativePath = filesPath + '/' + item.id
         const fullPath = this.filesRoot + relativePath
 
-        await StorageFactory.getStorageInstance().saveFile(item, filepath, mimetype || 'application/octet-stream', clean)
-
         let values:any = {}
         if (process.env.OPENPIM_FILE_HASH) {
             values.file_hash = await hasha.fromFile(filepath, {algorithm: process.env.OPENPIM_FILE_HASH})
@@ -175,7 +173,7 @@ export class FileManager {
 
         if (this.isImage(mimetype||'')) {
             if (mimetype !== 'image/webp') {
-                const image = await Jimp.read(fullPath)
+                const image = await Jimp.read(filepath)
                 values.image_width=image.bitmap.width
                 values.image_height=image.bitmap.height
                 values.image_type=image.getExtension()
@@ -189,7 +187,7 @@ export class FileManager {
                 image.resize(w, h).quality(70).background(0xffffffff)
                 image.write(fullPath + '_thumb.jpg')    
             } else {
-                const info = await WebPInfo.from(fullPath);                
+                const info = await WebPInfo.from(filepath);                
                 values.image_width=info.summary.width
                 values.image_height=info.summary.height
                 values.image_type='webp'
@@ -207,6 +205,8 @@ export class FileManager {
             values.file_size=size
         }
         item.values = mergeValues(values, item.values)
+
+        await StorageFactory.getStorageInstance().saveFile(item, filepath, mimetype || 'application/octet-stream', clean)
     }
 
     private isImage(mimeType: string) : boolean {
