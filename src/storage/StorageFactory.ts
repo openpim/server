@@ -11,7 +11,7 @@ export class StorageFactory {
     public static getStorageInstance(): StorageManager {
         if (!StorageFactory.instance) {
             const serverConfig = ModelManager.getServerConfig()
-            if (serverConfig.storage.type === 's3') {
+            if (serverConfig?.storage?.type === 's3') {
                 StorageFactory.instance = new S3StorageManager()
             } else {
                 StorageFactory.instance = new FilesystemStorageManager()
