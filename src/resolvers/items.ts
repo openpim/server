@@ -10,6 +10,7 @@ import { Attribute } from '../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../models/actions'
 import { ItemRelation } from '../models/itemRelations'
+import { LOV } from '../models/lovs'
 
 import audit from '../audit'
 import { ChangeType, ItemChanges, AuditItem } from '../audit'
@@ -371,25 +372,39 @@ export default {
                 })
 
                 let query
-                // select 1 as sortid, * from items where id in (46087, 49022) AND "deletedAt" IS NULL union select 2 as sortid, * from items where "typeId" in (13) AND "deletedAt" IS null order by sortid, "name" limit 10 offset 0
                 if (value.length) {
                     query = `select 1 as sortid, * from items where id in (:value) and "deletedAt" is null union select 2 as sortid, * from items where "typeId" in (:itemTypes) and "deletedAt" is null`
                 } else {
                     query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null`
                 }
 
-                const displayValue = attr.options.find((el: any) => el.name === 'displayValue')
-                if (displayValue && displayValue.value && displayValue.value.startsWith('#')) {
-                    query += searchStr ? ` and lower(cast("${displayValue.value.substr(1)}" as TEXT)) like lower('%${searchStr}%')` : ''
-                } else if (displayValue && displayValue.value && displayValue.value.length) {
-                    const displayValueAttr = mng.getAttributeByIdentifier(displayValue, true)
-                    if (displayValueAttr?.attr.languageDependent) {
-                        query += searchStr ? ` and lower("values" ->> '${displayValue.value}' ->> '${langIdentifier}') like lower('%${searchStr}%')` : ''
+                let lovIds:any = []
+                if (searchStr && searchStr.length) {
+                    const displayValue = attr.options.find((el: any) => el.name === 'displayValue')
+                    if (displayValue && displayValue.value && displayValue.value.startsWith('#')) {
+                        query += ` and lower(cast("${displayValue.value.substr(1)}" as TEXT)) like lower('%${searchStr}%')`
+                    } else if (displayValue && displayValue.value && displayValue.value.length) {
+                        const displayValueAttr = mng.getAttributeByIdentifier(displayValue.value, true)
+                        if (displayValueAttr?.attr.languageDependent) {
+                            query += ` and lower("values" ->> '${displayValue.value}' ->> '${langIdentifier}') like lower('%${searchStr}%')`
+                        } else if (displayValueAttr?.attr.type === 7 && displayValueAttr?.attr.lov) {
+                            const lovId = displayValueAttr.attr.lov
+                            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+                            let lov:LOV | undefined | null = mng.getCache().get('REL_ATTR_LOV_' + lovId)
+                            if (!lov) {
+                                lov = await LOV.applyScope(context).findOne({where:{id: lovId}})
+                                if (!lov) throw new Error(`Failed to find LOV by id: ${lovId}`)
+                                mng.getCache().set('REL_ATTR_LOV_' + lovId, lov, 60*60)
+                            }
+                            lovIds = lov.values.filter((elem:any) => elem.value[langIdentifier].toLowerCase().includes(searchStr.toLowerCase())).map((el:any) => el.id + '')
+                            if (!lovIds.length) return []
+                            query += ` and "values" ->> '${displayValue.value}' in (:lovIds)`
+                        } else {
+                            query += ` and lower(cast("values" ->> '${displayValue.value}' as TEXT)) like lower('%${searchStr}%')`
+                        }
                     } else {
-                        query += searchStr ? ` and lower(cast("values" ->> '${displayValue.value}' as TEXT)) like lower('%${searchStr}%')` : ''
+                        query += ` and lower("name" ->> '${langIdentifier}') like lower('%${searchStr}%')`
                     }
-                } else {
-                    query += searchStr ? ` and lower("name" ->> '${langIdentifier}') like lower('%${searchStr}%')` : ''
                 }
 
                 const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
@@ -406,7 +421,8 @@ export default {
                     replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         itemTypes: itemTypes,
-                        value: value
+                        value: value,
+                        lovIds: lovIds
                     },
                     type: QueryTypes.SELECT
                 })
