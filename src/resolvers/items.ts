@@ -314,13 +314,29 @@ export default {
                 })
 
                 let query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null and `
+
+                let lovIds:any = []
                 const displayValue = attr.options.find((el: any) => el.name === 'displayValue')
                 if (displayValue && displayValue.value && displayValue.value.startsWith('#')) {
                     query +=  ` "${displayValue.value.substr(1)}" in (:searchArr)`
                 } else if (displayValue && displayValue.value && displayValue.value.length) {
-                    const displayValueAttr = mng.getAttributeByIdentifier(displayValue, true)
+                    const displayValueAttr = mng.getAttributeByIdentifier(displayValue.value, true)
                     if (displayValueAttr?.attr.languageDependent) {
                         query += ` "values" ->> '${displayValue.value}' ->> '${langIdentifier}' in (:searchArr)`
+                    } else if (displayValueAttr?.attr.type === 7 && displayValueAttr?.attr.lov) {
+                        const lovId = displayValueAttr.attr.lov
+                        let lov:LOV | undefined | null = mng.getCache().get('REL_ATTR_LOV_' + lovId)
+                        if (!lov) {
+                            lov = await LOV.applyScope(context).findOne({where:{id: lovId}})
+                            if (!lov) throw new Error(`Failed to find LOV by id: ${lovId}`)
+                            mng.getCache().set('REL_ATTR_LOV_' + lovId, lov, 60*60)
+                        }
+                        for (let i = 0; i < searchArr.length; i++) {
+                            const found = lov.values.find((elem:any) => elem.value[langIdentifier] === searchArr[i])
+                            if (found) lovIds.push(found.id + '')
+                        }
+                        if (!lovIds.length) return []
+                        query += `"values" ->> '${displayValue.value}' in (:lovIds)`
                     } else {
                         query += `"values" ->> '${displayValue.value}' in (:searchArr)`
                     }
@@ -332,17 +348,18 @@ export default {
                 if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
                     query += ` and "values" ->> '${activeAttributeName.value}' = 'true'`
                 }
-
                 query += ` limit ${limit} offset ${offset}`
                 const data = await sequelize.query(
                     query, {
                     replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
                         itemTypes: itemTypes,
-                        searchArr
+                        searchArr,
+                        lovIds
                     },
                     type: QueryTypes.SELECT
                 })
+                
                 return data
             }
             throw new Error(`Can not find relation attribute with identifier ${attrIdentifier} or attribute "valid" field is empty`)
@@ -389,7 +406,6 @@ export default {
                             query += ` and lower("values" ->> '${displayValue.value}' ->> '${langIdentifier}') like lower('%${searchStr}%')`
                         } else if (displayValueAttr?.attr.type === 7 && displayValueAttr?.attr.lov) {
                             const lovId = displayValueAttr.attr.lov
-                            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
                             let lov:LOV | undefined | null = mng.getCache().get('REL_ATTR_LOV_' + lovId)
                             if (!lov) {
                                 lov = await LOV.applyScope(context).findOne({where:{id: lovId}})
@@ -408,7 +424,6 @@ export default {
                 }
 
                 const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
-
                 if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
                     query += ` and "values" ->> '${activeAttributeName.value}' = 'true'`
                 }
@@ -420,9 +435,9 @@ export default {
                     query, {
                     replacements: {
                         tenant: context.getCurrentUser()!.tenantId,
-                        itemTypes: itemTypes,
-                        value: value,
-                        lovIds: lovIds
+                        itemTypes,
+                        value,
+                        lovIds
                     },
                     type: QueryTypes.SELECT
                 })
