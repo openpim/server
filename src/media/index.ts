@@ -483,7 +483,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
             }
 
-            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, itemRelation.values, false, null)
+            await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, itemRelation.values, false, null)
 
 
             res.send('OK')
