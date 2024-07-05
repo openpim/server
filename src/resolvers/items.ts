@@ -585,7 +585,6 @@ export default {
 
             filterValues(context.getEditItemAttributes2(nTypeId, path), values)
             checkValues(mng, values)
-            await checkRelationAttributes(context, mng, item, values)
 
             item.values = values
             item.channels = channels
@@ -593,6 +592,7 @@ export default {
             await sequelize.transaction(async (t) => {
                 await item.save({ transaction: t })
             })
+            await checkRelationAttributes(context, mng, item, values)
 
             await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false)
 
