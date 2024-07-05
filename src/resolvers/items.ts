@@ -630,7 +630,6 @@ export default {
             if (values) {
                 filterValues(context.getEditItemAttributes(item), values)
                 checkValues(mng, values)
-                await checkRelationAttributes(context, mng, item, values)
             }
 
             const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false, false)
@@ -649,6 +648,7 @@ export default {
                 processDeletedChannels(item.channels)
             }
             if (values) {
+                await checkRelationAttributes(context, mng, item, values)
                 item.values = mergeValues(values, item.values)
                 item.changed("values", true)
             }
