@@ -83,13 +83,57 @@ export class OzonChannelHandler extends ChannelHandler {
             let items = await Item.findAll({ 
                 where: { tenantId: channel.tenantId, values: query} 
             })
-            context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                await this.syncItem(channel, item, context, false)
+            context.log += 'Найдено ' + items.length + ' записей для обработки \n\n'
+            const itemsWithoutTaskId = items.filter(item => !('' + item.values[channel.config.ozonIdAttr]).startsWith('task_id='))
+            await this.syncItems(channel, itemsWithoutTaskId, context)
+
+            const itemsWithTaskId = items.filter(item => ('' + item.values[channel.config.ozonIdAttr]).startsWith('task_id='))
+            for (let item of itemsWithTaskId) {
+                await this.syncItem(channel, item!, context, false)
             }
+
         }
         context.log += 'Cинхронизация закончена'
+    }
+
+    processProductStatus(item: Item, result: any, channel: Channel, context: JobContext) {
+        const status = result.status
+        context.log += '   статус товара: ' + JSON.stringify(status)
+
+        if (status.is_created && !status.is_failed && status.moderate_status !== 'declined') {
+            item.channels[channel.identifier].status = 2
+            item.channels[channel.identifier].message = JSON.stringify(status)
+            item.channels[channel.identifier].syncedAt = new Date().getTime()
+            item.changed('channels', true)
+
+            logger.info('   product sources: ' + JSON.stringify(result.sources))
+            context.log += '   sources: ' + JSON.stringify(result.sources)
+
+            if (channel.config.ozonFBSIdAttr) {
+                const fbs = result.sources.find((elem: any) => elem.source === 'fbs')
+                if (fbs || result.sku) {
+                    item.values[channel.config.ozonFBSIdAttr] = '' + (fbs?.sku || result.sku)
+                    item.changed('values', true)
+                }
+            }
+            if (channel.config.ozonFBOIdAttr) {
+                const fbo = result.sources.find((elem: any) => elem.source === 'fbo')
+                if (fbo || result.sku) {
+                    item.values[channel.config.ozonFBOIdAttr] = '' + (fbo?.sku || result.sku)
+                    item.changed('values', true)
+                }
+            }
+        } else if (status.is_failed || status.moderate_status === 'declined') {
+            item.channels[channel.identifier].status = 3
+            item.channels[channel.identifier].message = JSON.stringify(status)
+            item.channels[channel.identifier].syncedAt = new Date().getTime()
+            item.changed('channels', true)
+        } else {
+            item.channels[channel.identifier].status = 4
+            item.channels[channel.identifier].message = 'Модерация: ' + JSON.stringify(status)
+            item.channels[channel.identifier].syncedAt = new Date().getTime()
+            item.changed('channels', true)
+        }
     }
 
     async syncItem(channel: Channel, item: Item, context: JobContext, singleSync: boolean) {
@@ -102,30 +146,30 @@ export class OzonChannelHandler extends ChannelHandler {
                 return
             }
 
-            const tst = ''+item.values[channel.config.ozonIdAttr]
+            const tst = '' + item.values[channel.config.ozonIdAttr]
             if (tst.startsWith('task_id=')) {
                 // receive product id first
                 const taskId = tst.substring(8)
                 const log2 = "Sending request to Ozon to check task id: " + taskId
                 logger.info(log2)
-                if (channel.config.debug) context.log += log2+'\n'
+                if (channel.config.debug) context.log += log2 + '\n'
                 const res2 = await fetch('https://api-seller.ozon.ru/v1/product/import/info', {
                     method: 'post',
-                    body:    JSON.stringify({task_id: taskId}),
+                    body: JSON.stringify({ task_id: taskId }),
                     headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
                 })
                 if (res2.status !== 200) {
                     const text = await res2.text()
-                    const msg = 'Ошибка запроса на Ozon: ' + res2.statusText + "   " + text
-                    context.log += msg                      
+                    const msg = 'Ошибка запроса на Ozon: ' + res2.statusText + " " + text
+                    context.log += msg
                     this.reportError(channel, item, msg)
                     logger.error(msg)
                     return
                 } else {
                     const json2 = await res2.json()
-                    const log3 = "Response 2 from Ozon: " + JSON.stringify(json2) 
+                    const log3 = "Response 2 from Ozon: " + JSON.stringify(json2)
                     logger.info(log3)
-                    if (channel.config.debug) context.log += log3+'\n'
+                    if (channel.config.debug) context.log += log3 + '\n'
                     if (json2.result.items.length === 0 || json2.result.items[0].product_id == 0) {
                         context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил product_id \n'
                         return
@@ -136,7 +180,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
             }
 
-            const tst2 = ''+item.values[channel.config.ozonIdAttr]
+            const tst2 = '' + item.values[channel.config.ozonIdAttr]
             if (tst2.startsWith('task_id=')) return
 
             // try to find current status
@@ -146,7 +190,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }
             const log = "Sending request Ozon: " + url + " => " + JSON.stringify(request)
             logger.info(log)
-            if (channel.config.debug) context.log += log+'\n'
+            if (channel.config.debug) context.log += log + '\n'
             const res = await fetch(url, {
                 method: 'post',
                 body: JSON.stringify(request),
@@ -160,51 +204,125 @@ export class OzonChannelHandler extends ChannelHandler {
                 const data = await res.json()
                 logger.info('   received data: ' + JSON.stringify(data))
                 const result = data.result
-                context.log += '   статус товара: ' + JSON.stringify(result.status)
-
-                if (result.status.is_created && !result.status.is_failed && result.status.moderate_status !== 'declined') {
-                    item.channels[channel.identifier].status = 2
-                    item.channels[channel.identifier].message = JSON.stringify(result.status)
-                    item.channels[channel.identifier].syncedAt = new Date().getTime()
-                    item.changed('channels', true)
-
-                    logger.info('   product sources: ' + JSON.stringify(result.sources))
-                    context.log += '   sources: ' + JSON.stringify(result.sources)
-
-                    if (channel.config.ozonFBSIdAttr) {
-                        const fbs = result.sources.find((elem: any) => elem.source === 'fbs')
-                        if (fbs || result.sku) {
-                            item.values[channel.config.ozonFBSIdAttr] = ''+(fbs?.sku || result.sku)
-                            item.changed('values', true)
-                        }
-                    }
-                    if (channel.config.ozonFBOIdAttr) {
-                        const fbo = result.sources.find((elem: any) => elem.source === 'fbo')
-                        if (fbo || result.sku) {
-                            item.values[channel.config.ozonFBOIdAttr] = ''+(fbo?.sku || result.sku)
-                            item.changed('values', true)
-                        }
-                    }
-                } else if (result.status.is_failed || result.status.moderate_status === 'declined') {
-                    item.channels[channel.identifier].status = 3
-                    item.channels[channel.identifier].message = JSON.stringify(result.status)
-                    item.channels[channel.identifier].syncedAt = new Date().getTime()
-                    item.changed('channels', true)
-                } else {
-                    item.channels[channel.identifier].status = 4
-                    item.channels[channel.identifier].message = 'Модерация: ' + JSON.stringify(result.status)
-                    item.channels[channel.identifier].syncedAt = new Date().getTime()
-                    item.changed('channels', true)
-                }
+                this.processProductStatus(item, result, channel, context)
             }
 
             await this.saveItemIfChanged(channel, item)
-
             context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
         } else {
             context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
         }
+    }
 
+    async syncItems(channel: Channel, items: Item[], context: JobContext) {
+        context.log += 'Обрабатываются товары c идентификаторами: [' + items.map(item => item.identifier).join(', ') + ']\n'
+
+        let filteredItems = items.filter(item => !(item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]))
+
+        for (const item of filteredItems) {
+            context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
+        }
+
+        filteredItems = items.filter(item => (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]))
+
+        const productIds = filteredItems.map(item => item.values[channel.config.ozonIdAttr].toString()).filter(id => !!id)
+
+        if (productIds.length === 0) {
+            context.log += 'Нет товаров для синхронизации\n'
+            return;
+        }
+
+        const skus = []
+        const chunkSize = 1000
+        for (let i = 0; i < productIds.length; i += chunkSize) {
+            const chunk = productIds.slice(i, i + chunkSize)
+            const request = {
+                "product_id": chunk,
+            }
+
+            const url = 'https://api-seller.ozon.ru/v2/product/info/list'
+            const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
+            logger.info(log)
+            if (channel.config.debug) context.log += log + '\n'
+
+            const res = await fetch(url, {
+                method: 'post',
+                body: JSON.stringify(request),
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+
+            if (res.status !== 200) {
+                const msg = 'Ошибка запроса на Ozon: ' + res.statusText
+                context.log += msg + '\n'
+                logger.error(msg)
+                return
+            }
+
+            const data = await res.json()
+            logger.info('Received data: ' + JSON.stringify(data))
+
+            for (const item of filteredItems) {
+                const result = data.result.items.find((elem: any) => elem.id === item.values[channel.config.ozonIdAttr])
+                
+                if (!result) {
+                    context.log += 'Товар c идентификатором ' + item.identifier + ' не найден в ответе Ozon\n'
+                    continue
+                }
+
+                context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
+
+                this.processProductStatus(item, result, channel, context)
+                await this.saveItemIfChanged(channel, item)
+
+                skus.push(result.sku)
+
+                context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
+            }
+        }
+        for (let j = 0; j < skus.length; j += chunkSize) {
+            const skusChunk = skus.slice(j, j + chunkSize)
+            const requestRating = {
+                "skus": skusChunk
+            };
+            const urlRating = 'https://api-seller.ozon.ru/v1/product/rating-by-sku'
+            const logRating = "Sending request to Ozon: " + urlRating + " => " + JSON.stringify(requestRating)
+            logger.info(logRating)
+            if (channel.config.debug) context.log += logRating + '\n'
+
+            const resRating = await fetch(urlRating, {
+                method: 'post',
+                body: JSON.stringify(requestRating),
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+
+            if (resRating.status !== 200) {
+                const msg = 'Ошибка запроса на Ozon: ' + resRating.statusText
+                context.log += msg + '\n'
+                logger.error(msg)
+                return
+            }
+
+            const dataRating = await resRating.json()
+            logger.info('Received data: ' + JSON.stringify(dataRating))
+
+            for (const item of filteredItems) {
+                const result = dataRating.products.find((elem: any) => elem.sku == item.values[channel.config.ozonFBOIdAttr])
+
+                if (!result) {
+                    context.log += 'Товар c идентификатором ' + item.identifier + ' не найден в ответе Ozon (Rating)\n'
+                    continue
+                }
+
+                context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
+
+                item.values[channel.config.ozonAttrContentRating] = '' + result.rating
+                item.changed('values', true)
+                await this.saveItemIfChanged(channel, item)
+
+                context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
+            }
+        }
+        context.log += 'Синхронизация товаров завершена\n'
     }
 
     async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
@@ -295,6 +413,11 @@ export class OzonChannelHandler extends ChannelHandler {
             changed = true
             valuesChanged = true
             changedValues[channel.config.ozonFBOIdAttr] = item.values[channel.config.ozonFBOIdAttr]
+        }
+        if (reloadedItem!.values[channel.config.ozonAttrContentRating] !== item.values[channel.config.ozonAttrContentRating]) {
+            changed = true
+            valuesChanged = true
+            changedValues[channel.config.ozonAttrContentRating] = item.values[channel.config.ozonAttrContentRating]
         }
         if (changedValues && Object.keys(changedValues).length > 0) {
             changed = true
