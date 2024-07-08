@@ -191,6 +191,7 @@ export class OzonChannelHandler extends ChannelHandler {
             const log = "Sending request Ozon: " + url + " => " + JSON.stringify(request)
             logger.info(log)
             if (channel.config.debug) context.log += log + '\n'
+            let sku
             const res = await fetch(url, {
                 method: 'post',
                 body: JSON.stringify(request),
@@ -204,11 +205,46 @@ export class OzonChannelHandler extends ChannelHandler {
                 const data = await res.json()
                 logger.info('   received data: ' + JSON.stringify(data))
                 const result = data.result
+                sku = result.sku
                 this.processProductStatus(item, result, channel, context)
             }
 
             await this.saveItemIfChanged(channel, item)
             context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
+            if (channel.config.ozonAttrContentRating && channel.config.ozonGetContentRating) {
+                const requestRating = {
+                    "skus": [sku]
+                }
+                const urlRating = 'https://api-seller.ozon.ru/v1/product/rating-by-sku'
+                const logRating = "Sending request to Ozon: " + urlRating + " => " + JSON.stringify(requestRating)
+                logger.info(logRating)
+                if (channel.config.debug) context.log += logRating + '\n'
+
+                const resRating = await fetch(urlRating, {
+                    method: 'post',
+                    body: JSON.stringify(requestRating),
+                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                })
+
+                if (resRating.status !== 200) {
+                    const msg = 'Ошибка запроса на Ozon: ' + resRating.statusText
+                    context.log += msg + '\n'
+                    logger.error(msg)
+                    return
+                }
+
+                const dataRating = await resRating.json()
+                logger.info('Received data: ' + JSON.stringify(dataRating))
+
+                context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
+
+                item.values[channel.config.ozonAttrContentRating] = '' + dataRating.products[0].rating
+
+                item.changed('values', true)
+                await this.saveItemIfChanged(channel, item)
+
+                context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
+            }
         } else {
             context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
         }
@@ -279,47 +315,49 @@ export class OzonChannelHandler extends ChannelHandler {
                 context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
             }
         }
-        for (let j = 0; j < skus.length; j += chunkSize) {
-            const skusChunk = skus.slice(j, j + chunkSize)
-            const requestRating = {
-                "skus": skusChunk
-            };
-            const urlRating = 'https://api-seller.ozon.ru/v1/product/rating-by-sku'
-            const logRating = "Sending request to Ozon: " + urlRating + " => " + JSON.stringify(requestRating)
-            logger.info(logRating)
-            if (channel.config.debug) context.log += logRating + '\n'
-
-            const resRating = await fetch(urlRating, {
-                method: 'post',
-                body: JSON.stringify(requestRating),
-                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
-
-            if (resRating.status !== 200) {
-                const msg = 'Ошибка запроса на Ozon: ' + resRating.statusText
-                context.log += msg + '\n'
-                logger.error(msg)
-                return
-            }
-
-            const dataRating = await resRating.json()
-            logger.info('Received data: ' + JSON.stringify(dataRating))
-
-            for (const item of filteredItems) {
-                const result = dataRating.products.find((elem: any) => elem.sku == item.values[channel.config.ozonFBOIdAttr])
-
-                if (!result) {
-                    context.log += 'Товар c идентификатором ' + item.identifier + ' не найден в ответе Ozon (Rating)\n'
-                    continue
+        if (channel.config.ozonAttrContentRating && channel.config.ozonGetContentRating) {
+            for (let j = 0; j < skus.length; j += chunkSize) {
+                const skusChunk = skus.slice(j, j + chunkSize)
+                const requestRating = {
+                    "skus": skusChunk
+                };
+                const urlRating = 'https://api-seller.ozon.ru/v1/product/rating-by-sku'
+                const logRating = "Sending request to Ozon: " + urlRating + " => " + JSON.stringify(requestRating)
+                logger.info(logRating)
+                if (channel.config.debug) context.log += logRating + '\n'
+    
+                const resRating = await fetch(urlRating, {
+                    method: 'post',
+                    body: JSON.stringify(requestRating),
+                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                })
+    
+                if (resRating.status !== 200) {
+                    const msg = 'Ошибка запроса на Ozon: ' + resRating.statusText
+                    context.log += msg + '\n'
+                    logger.error(msg)
+                    return
                 }
-
-                context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
-
-                item.values[channel.config.ozonAttrContentRating] = '' + result.rating
-                item.changed('values', true)
-                await this.saveItemIfChanged(channel, item)
-
-                context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
+    
+                const dataRating = await resRating.json()
+                logger.info('Received data: ' + JSON.stringify(dataRating))
+    
+                for (const item of filteredItems) {
+                    const result = dataRating.products.find((elem: any) => elem.sku == item.values[channel.config.ozonFBOIdAttr])
+    
+                    if (!result) {
+                        context.log += 'Товар c идентификатором ' + item.identifier + ' не найден в ответе Ozon (Rating)\n'
+                        continue
+                    }
+    
+                    context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
+    
+                    item.values[channel.config.ozonAttrContentRating] = '' + result.rating
+                    item.changed('values', true)
+                    await this.saveItemIfChanged(channel, item)
+    
+                    context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
+                }
             }
         }
         context.log += 'Синхронизация товаров завершена\n'
