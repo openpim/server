@@ -205,13 +205,17 @@ export class OzonChannelHandler extends ChannelHandler {
                 const data = await res.json()
                 logger.info('   received data: ' + JSON.stringify(data))
                 const result = data.result
-                sku = result.sku
+                if (result.sku) {
+                    sku = result.sku
+                } else {
+                    context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил sku (получение рейтинга недоступно) \n'
+                }
                 this.processProductStatus(item, result, channel, context)
             }
 
             await this.saveItemIfChanged(channel, item)
             context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
-            if (channel.config.ozonAttrContentRating && channel.config.ozonGetContentRating) {
+            if (channel.config.ozonAttrContentRating && channel.config.ozonGetContentRating && sku) {
                 const requestRating = {
                     "skus": [sku]
                 }
@@ -309,15 +313,19 @@ export class OzonChannelHandler extends ChannelHandler {
 
                 this.processProductStatus(item, result, channel, context)
                 await this.saveItemIfChanged(channel, item)
-
-                skus.push(result.sku)
+                if (result.sku) {
+                    skus.push(result.sku)
+                } else {
+                    context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил sku (получение рейтинга недоступно) \n'
+                }
 
                 context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
             }
         }
+        const chunkSizeSku = 100
         if (channel.config.ozonAttrContentRating && channel.config.ozonGetContentRating) {
-            for (let j = 0; j < skus.length; j += chunkSize) {
-                const skusChunk = skus.slice(j, j + chunkSize)
+            for (let j = 0; j < skus.length; j += chunkSizeSku) {
+                const skusChunk = skus.slice(j, j + chunkSizeSku)
                 const requestRating = {
                     "skus": skusChunk
                 };
