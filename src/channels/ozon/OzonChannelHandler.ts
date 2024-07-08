@@ -235,15 +235,15 @@ export class OzonChannelHandler extends ChannelHandler {
 
                 const dataRating = await resRating.json()
                 logger.info('Received data: ' + JSON.stringify(dataRating))
-
+                if (channel.config.debug)  context.log += 'Received data: ' + JSON.stringify(dataRating)+'\n'
                 context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
 
-                item.values[channel.config.ozonAttrContentRating] = '' + dataRating.products[0].rating
+                item.values[channel.config.ozonAttrContentRating] = '' + dataRating.products[0]?.rating
 
                 item.changed('values', true)
                 await this.saveItemIfChanged(channel, item)
 
-                context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
+                context.log += '  рейтинг для товар c идентификатором ' + item.identifier + ' синхронизирован\n'
             }
         } else {
             context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
@@ -349,14 +349,14 @@ export class OzonChannelHandler extends ChannelHandler {
                         context.log += 'Товар c идентификатором ' + item.identifier + ' не найден в ответе Ozon (Rating)\n'
                         continue
                     }
-    
+                    if (channel.config.debug)  context.log += 'Received data: ' + JSON.stringify(result)+'\n'
                     context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
     
                     item.values[channel.config.ozonAttrContentRating] = '' + result.rating
                     item.changed('values', true)
                     await this.saveItemIfChanged(channel, item)
     
-                    context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
+                    context.log += '  рейтинг для товара c идентификатором ' + item.identifier + ' синхронизирован\n'
                 }
             }
         }
