@@ -201,7 +201,11 @@ export class YMChannelHandler extends ChannelHandler {
         }
 
         try {
+            const availableConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'available')
+            const available = await this.getValueByMapping2(channel, availableConfig, item, language, variant)
+    
             const offer: any = {$: {id: id}}
+            if (available) offer.$.available = available
 
             if (categoryConfig.type === 'vendor.model') offer.$.type = 'vendor.model'
             if (categoryConfig.type === 'medicine') offer.$.type = 'medicine'
@@ -211,7 +215,7 @@ export class YMChannelHandler extends ChannelHandler {
             for (let i = 0; i < categoryConfig.attributes.length; i++) {
                 const attrConfig = categoryConfig.attributes[i]
                 
-                if (attrConfig.id != 'id') {
+                if (attrConfig.id != 'id' && attrConfig.id != 'available') {
                     const value = await this.getValueByMapping2(channel, attrConfig, item, language, variant)
                     if (value != null) {
                         if (attrConfig.id != 'group_id') {
