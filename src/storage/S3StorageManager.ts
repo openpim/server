@@ -7,6 +7,7 @@ import dotenv from 'dotenv'
 import { Readable } from "stream"
 dotenv.config()
 
+
 class S3StorageManager extends StorageManager {
     private s3Client: S3Client
     private bucketName: string
@@ -20,8 +21,11 @@ class S3StorageManager extends StorageManager {
             credentials: {
                 accessKeyId: serverConfig.storage.access.AWS_ACCESS_KEY_ID!,
                 secretAccessKey: serverConfig.storage.access.AWS_SECRET_ACCESS_KEY!
+            },
+            requestHandler: {
+                httpsAgent: { maxSockets: Infinity }
             }
-        })
+    })
         this.bucketName = serverConfig.storage.access.AWS_BUCKET_NAME!
     }
 
