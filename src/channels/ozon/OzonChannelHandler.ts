@@ -628,8 +628,12 @@ export class OzonChannelHandler extends ChannelHandler {
         // video processing
         const complex_attributes:any = [{attributes:[]}]
         let wasData = false
-        const videoUrlsConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#videoUrls')
+        let videoUrlsConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#videoUrls')
         let videoUrlsValue = await this.getValueByMapping(channel, videoUrlsConfig, item, language)
+        if (!videoUrlsValue) {
+            videoUrlsConfig = categoryConfig.attributes.find((elem: any) => elem.id === 'attr_21841')
+            videoUrlsValue = await this.getValueByMapping(channel, videoUrlsConfig, item, language)
+        }
         if (videoUrlsValue) {
             if (!Array.isArray(videoUrlsValue)) videoUrlsValue = [videoUrlsValue]
             const videos = {
@@ -652,9 +656,31 @@ export class OzonChannelHandler extends ChannelHandler {
               complex_attributes[0].attributes.push(videoNames)
               wasData = true
         }
-        if (wasData) product.complex_attributes = complex_attributes
+        const videoCoverConfig = categoryConfig.attributes.find((elem: any) => elem.id === 'attr_21845')
+        let videoCoverValue = await this.getValueByMapping(channel, videoCoverConfig, item, language)
+        if (videoCoverValue) {
+            if (!Array.isArray(videoCoverValue)) videoCoverValue = [videoCoverValue]
+            const videoNames = {
+                "id": 21845,
+                "complex_id": 100002,
+                "values": videoCoverValue.map((elem: any) => { return { dictionary_value_id: 0, value: elem } })
+            }
+            complex_attributes[0].attributes.push(videoNames)
+            wasData = true
+        }
 
         const attrs = await this.getAttributes(channel, categoryConfig.id)
+
+        if (!videoUrlsValue) {
+            await this.processItemVideo(channel, item, context, product, attrs, complex_attributes)
+            wasData = true
+        }
+        if (!videoCoverValue) {
+            await this.processItemVideoCover(channel, item, context, product, attrs, complex_attributes)
+            wasData = true
+        }
+        if (wasData) product.complex_attributes = complex_attributes
+        console.log(product.complex_attributes)
 
         const complexAttributesToProcess:number[] = []
         // atributes
@@ -1111,7 +1137,112 @@ export class OzonChannelHandler extends ChannelHandler {
                 } */
             }
         }
-    }    
+    }
+
+    async processItemVideo(channel: Channel, item: Item, context: JobContext, product: any, attrs: ChannelAttribute[], complex_attributes: any[]) {
+        if (channel.config.vidRelations && channel.config.vidRelations.length > 0) {
+            const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
+            const typeNode = mng.getTypeById(item.typeId)
+            if (!typeNode) {
+                throw new Error('Failed to find type by id: ' + item.typeId + ', tenant: ' + mng.getTenantId())
+            }
+
+            const data: string[] = []
+
+            const rels = channel.config.vidRelations
+            if (rels.length > 0) {
+                const videos: Item[] = await sequelize.query(
+                    `SELECT a.*
+                        FROM "items" a, "itemRelations" ir, "types" t where 
+                        a."tenantId"=:tenant and 
+                        ir."itemId"=:itemId and
+                        a."id"=ir."targetId" and
+                        a."typeId"=t."id" and
+                        t."file"=true and
+                        coalesce(a."storagePath", '') != '' and
+                        ir."deletedAt" is null and
+                        a."deletedAt" is null and
+                        ir."relationId" in (:relations)
+                        order by ir.values->'_itemRelationOrder', a.id`, {
+                    model: Item,
+                    mapToModel: true,
+                    replacements: {
+                        tenant: channel.tenantId,
+                        itemId: item.id,
+                        relations: rels
+                    }
+                })
+                if (videos) {
+                    for (let i = 0; i < videos.length; i++) {
+                        const video = videos[i]
+                        const url = video.values[channel.config.ozonVideoAttr]
+                        if (url) {
+                            data.push(url)
+                        }
+                    }
+                }
+            }
+            const videos = {
+                "complex_id": 100001,
+                "id": 21841,
+                "values": data.map((elem: any) => { return { value: elem } })
+            }
+            complex_attributes[0].attributes.push(videos)
+        }
+    }
+
+    async processItemVideoCover(channel: Channel, item: Item, context: JobContext, product: any, attrs: ChannelAttribute[], complex_attributes: any[]) {
+        if (channel.config.vidCoverRelations && channel.config.vidCoverRelations.length > 0) {
+            const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
+            const typeNode = mng.getTypeById(item.typeId)
+            if (!typeNode) {
+                throw new Error('Failed to find type by id: ' + item.typeId + ', tenant: ' + mng.getTenantId())
+            }
+            
+            const data: string[] = []
+
+            const rels = channel.config.vidCoverRelations
+            if (rels.length > 0) {
+                const videoCovers: Item[] = await sequelize.query(
+                    `SELECT a.*
+                        FROM "items" a, "itemRelations" ir, "types" t where 
+                        a."tenantId"=:tenant and 
+                        ir."itemId"=:itemId and
+                        a."id"=ir."targetId" and
+                        a."typeId"=t."id" and
+                        t."file"=true and
+                        coalesce(a."storagePath", '') != '' and
+                        ir."deletedAt" is null and
+                        a."deletedAt" is null and
+                        ir."relationId" in (:relations)
+                        order by ir.values->'_itemRelationOrder', a.id`, {
+                    model: Item,
+                    mapToModel: true,
+                    replacements: {
+                        tenant: channel.tenantId,
+                        itemId: item.id,
+                        relations: rels
+                    }
+                })
+                if (videoCovers) {
+                    for (let i = 0; i < videoCovers.length; i++) {
+                        const videoCover = videoCovers[i];
+                        const url = videoCover.values[channel.config.ozonVideoCoverAttr]
+                        if (url) {
+                            data.push(url)
+                        }
+                    }
+                }
+            }
+            const videoNames = {
+                "id": 21845,
+                "complex_id": 100002,
+                "values": data.map((elem: any) => { return { dictionary_value_id: 0, value: elem } })
+            }
+            complex_attributes[0].attributes.push(videoNames)
+        }
+    }
+
     private async generateValue(channel: Channel, ozonCategoryId: number, ozonTypeId: number|null, ozonAttrId: number, dictionary: boolean, value: any) {
         if (dictionary) {
             let dict: any[] | string | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId+'_'+ozonTypeId)
