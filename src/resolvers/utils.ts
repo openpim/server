@@ -149,6 +149,16 @@ export function filterValues(allowedAttributes: string[] | null, values: any) {
     }
 }
 
+export function filterValuesNotAllowed(notAllowedAttributes: string[] | null, values: any) {
+    if (notAllowedAttributes) {
+        for (const prop in values) {
+            if (notAllowedAttributes.includes(prop)) {
+                delete values[prop]
+            }
+        }
+    }
+}
+
 export function processDeletedChannels(channels: any) {
     if (channels) {
         for (const key in channels) {

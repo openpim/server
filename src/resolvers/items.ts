@@ -3,7 +3,7 @@ import { sequelize } from '../models'
 import { QueryTypes, literal } from 'sequelize'
 import { Item } from '../models/items'
 import { ModelManager, ModelsManager } from '../models/manager'
-import { filterValues, filterChannels, mergeValues, checkValues, checkRelationAttributes, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit, processDeletedChannels } from './utils'
+import { filterValues, filterChannels, mergeValues, checkValues, checkRelationAttributes, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit, processDeletedChannels, filterValuesNotAllowed } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
@@ -139,8 +139,8 @@ export default {
 
             const item = await Item.applyScope(context).findByPk(parseInt(id))
             if (item && context.canViewItem(item)) {
-                const allowedAttributes = context.getViewItemAttributes(item)
-                filterValues(allowedAttributes, item.values)
+                const notAllowedAttributes = context.getNotViewItemAttributes(item)
+                filterValuesNotAllowed(notAllowedAttributes, item.values)
                 filterChannels(context, item.channels)
                 return item
             } else {
@@ -164,8 +164,8 @@ export default {
             items = items.filter(item => context.canViewItem(item))
 
             items.forEach(item => {
-                const allowedAttributes = context.getViewItemAttributes(item)
-                filterValues(allowedAttributes, item.values)
+                const notAllowedAttributes = context.getNotViewItemAttributes(item)
+                filterValuesNotAllowed(notAllowedAttributes, item.values)
                 filterChannels(context, item.channels)
             })
 
@@ -184,8 +184,8 @@ export default {
                 }
             })
             if (item && context.canViewItem(item)) {
-                const allowedAttributes = context.getViewItemAttributes(item)
-                filterValues(allowedAttributes, item.values)
+                const notAllowedAttributes = context.getNotViewItemAttributes(item)
+                filterValuesNotAllowed(notAllowedAttributes, item.values)
                 filterChannels(context, item.channels)
                 return item
             } else {
