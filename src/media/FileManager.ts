@@ -179,8 +179,11 @@ export class FileManager {
                 values.file_size = size
                 values.image_rgba = metadata.hasAlpha
 
-                const w = metadata.width > metadata.height ? THUMB_SIZE : null
-                const h = metadata.width > metadata.height ? null : THUMB_SIZE
+                const meta_width = metadata.width !== undefined ? metadata.width : THUMB_SIZE
+                const meta_height = metadata.height !== undefined ? metadata.height : THUMB_SIZE
+                const w = meta_width > meta_height ? THUMB_SIZE : null
+                const h = meta_width > meta_height ? null : THUMB_SIZE
+                
                 await image
                     .resize(w, h)
                     .jpeg({ quality: 70 })
