@@ -39,6 +39,14 @@ export default class Context {
         return this.user
     }
 
+    public getUserLogin() {
+        return this.user ? this.user.getUserLogin() : null
+    }
+
+    public getUserRoles() {
+        return this.user ? this.user.getUserRoles() : []
+    }
+
     public getUserToken() {
         return this.token
     }

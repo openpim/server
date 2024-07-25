@@ -618,6 +618,14 @@ export class UserWrapper {
         return this.roles
     }
 
+    public getUserLogin() {
+        return this.user.login
+    }
+
+    public getUserRoles() {
+        return this.user.roles
+    }
+
     public setRoles(roles: Role[]) {
         this.roles = roles
     }

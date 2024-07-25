@@ -10,11 +10,12 @@ import logger from "../logger"
 import { exec } from "child_process"
 import { ItemRelation } from "../models/itemRelations"
 import { replaceOperations } from '../resolvers/utils'
+import Context from "../context"
 
 export abstract class ChannelHandler {
   private lovCache = new NodeCache({useClones: false});
 
-  abstract processChannel(channel: Channel, language: string, data: any): Promise<void>
+  abstract processChannel(channel: Channel, language: string, data: any, context?: Context): Promise<void>
 
   abstract getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}>
 
