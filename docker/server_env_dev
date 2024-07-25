@@ -1,0 +1,10 @@
+SECRET=jwt_secret_123
+
+FILES_ROOT=/filestorage
+
+PORT=80
+
+DATABASE_URL=localhost
+DATABASE_NAME=postgres
+DATABASE_USER=postgres
+DATABASE_PASSWORD=sa
