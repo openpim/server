@@ -21,7 +21,9 @@ export class FileManager {
 
     private constructor() {
         this.filesRoot = process.env.FILES_ROOT!
-        Jimp.decoders['image/jpeg'] = (data: Buffer) => JPEG.decode(data, { maxMemoryUsageInMB: 1024 })
+        const maxMemoryUsageInMB = process.env.OPENPIM_THUMBNAIL_MAX_MEMORY_MB ? parseInt(process.env.OPENPIM_THUMBNAIL_MAX_MEMORY_MB) : 1024
+        const maxResolutionInMP = process.env.OPENPIM_THUMBNAIL_MAX_RESOLUTION_MP ? parseInt(process.env.OPENPIM_THUMBNAIL_MAX_RESOLUTION_MP) : 100
+        Jimp.decoders['image/jpeg'] = (data: Buffer) => JPEG.decode(data, { maxMemoryUsageInMB, maxResolutionInMP })
     }
 
     public static getInstance(): FileManager {
