@@ -168,39 +168,28 @@ export class FileManager {
         item.storagePath = relativePath
 
         if (this.isImage(mimetype || '')) {
-            if (mimetype !== 'image/webp') {
-                const image = sharp(filepath, { limitInputPixels: MAX_RESOLUTION })
-                const metadata = await image.metadata()
-                values.image_width = metadata.width
-                values.image_height = metadata.height
-                values.image_type = metadata.format
-                values.file_type = metadata.format
-                values.file_name = originalFilename || ''
-                values.file_size = size
-                values.image_rgba = metadata.hasAlpha
 
-                const meta_width = metadata.width !== undefined ? metadata.width : THUMB_SIZE
-                const meta_height = metadata.height !== undefined ? metadata.height : THUMB_SIZE
-                const w = meta_width > meta_height ? THUMB_SIZE : null
-                const h = meta_width > meta_height ? null : THUMB_SIZE
-                
-                await image
-                    .resize(w, h)
-                    .jpeg({ quality: 70 })
-                    .toFile(fullPath + '_thumb.jpg')
-            } else {
-                const info = await WebPInfo.from(filepath)
-                values.image_width = info.summary.width
-                values.image_height = info.summary.height
-                values.image_type = 'webp'
-                values.file_type = 'image/webp'
-                values.file_name = originalFilename || ''
-                values.file_size = size
+            const image = sharp(filepath, { limitInputPixels: MAX_RESOLUTION })
+            const metadata = await image.metadata()
+            values.image_width = metadata.width
+            values.image_height = metadata.height
+            values.image_type = metadata.format
+            values.file_type = metadata.format
+            values.file_name = originalFilename || ''
+            values.file_size = size
+            values.image_rgba = metadata.hasAlpha
 
-                const w = values.image_width > values.image_height ? THUMB_SIZE : Math.round(parseInt(values.image_height) * THUMB_SIZE / parseInt(values.image_width))
-                const h = values.image_width > values.image_height ? Math.round(parseInt(values.image_height) * THUMB_SIZE / parseInt(values.image_width)) : THUMB_SIZE
-                const result = await webp.cwebp(filepath, fullPath + '_thumb.jpg', `-q 70 -resize ${w} ${h}`)
-            }
+            const meta_width = metadata.width !== undefined ? metadata.width : THUMB_SIZE
+            const meta_height = metadata.height !== undefined ? metadata.height : THUMB_SIZE
+
+            const w = meta_width > meta_height && meta_width > THUMB_SIZE ? THUMB_SIZE : undefined    
+            const h = meta_width <= meta_height && meta_height > THUMB_SIZE ? THUMB_SIZE : undefined
+
+            await image
+                .resize(w, h)
+                .jpeg({ quality: 70 })
+                .toFile(fullPath + '_thumb.jpg')
+
         } else {
             values.file_name = originalFilename || ''
             values.file_type = mimetype || ''
