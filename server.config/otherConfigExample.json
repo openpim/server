@@ -1,5 +1,3 @@
 {
-    "trimSearch": true,
-    "thumbnailMaxMemoryUsageInMB": 1500,
-    "thumbnailMaxResolutionInMP": 125
+    "trimSearch": true
 }
