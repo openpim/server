@@ -9,6 +9,7 @@ import { ExtChannelHandler } from "./ext/ExtChannelHandler"
 import { WBNewChannelHandler } from "./wb/WBNewChannelHandler"
 import { OzonChannelHandler } from "./ozon/OzonChannelHandler"
 import { YMChannelHandler } from "./ym/YMChannelHandler"
+import Context from "../context"
 
 export class ChannelsManager {
     private tenantId: string
@@ -27,7 +28,7 @@ export class ChannelsManager {
         if (tst && tst[0]) tst[0].cancel()
     }
 
-    public async triggerChannel(channel: Channel,language: string, data: any) {
+    public async triggerChannel(channel: Channel, language: string, data: any, context?: Context) {
         logger.info("Channel " + channel.identifier + " was triggered, tenant: " + this.tenantId)
 
         if (!language) {
@@ -69,7 +70,7 @@ export class ChannelsManager {
                             logger.info("Channel reloaded: " + channel.identifier + ", tenant: " + this.tenantId)
                         }
                     }
-                    await handler.processChannel(channel, language, data)
+                    await handler.processChannel(channel, language, data, context)
                 } else {
                     logger.info("Submitted items are not found for channel " + channel.identifier + ", skiping it, tenant: " + this.tenantId)
                 }
@@ -87,7 +88,7 @@ export class ChannelsManager {
                         logger.info("Channel reloaded: " + channel.identifier + ", tenant: " + this.tenantId)
                     }
                 }
-                await handler.processChannel(channel, language, data)
+                await handler.processChannel(channel, language, data, context)
             } finally {
                 jobDetails[1] = false
             }

@@ -4,14 +4,14 @@ import logger from "../../logger"
 import * as temp from 'temp'
 import * as fs from 'fs'
 import { FileManager } from "../../media/FileManager"
+import Context from "../../context"
 
 export class ExtChannelHandler extends ChannelHandler {
-    public async processChannel(channel: Channel, language: string): Promise<void> {
+    public async processChannel(channel: Channel, language: string, data: any, context?: Context): Promise<void> {
         if (channel.config.extCmd) {
             const chanExec = await this.createExecution(channel)
-    
-            const tempName = temp.path({prefix: 'openpim'})
-            const cmd = channel.config.extCmd.replaceAll('{channelIdentifier}', channel.identifier).replaceAll('{outputFile}', tempName).replaceAll('{language}', language)
+            const tempName = temp.path({ prefix: 'openpim' })
+            const cmd = channel.config.extCmd.replaceAll('{channelIdentifier}', channel.identifier).replaceAll('{outputFile}', tempName).replaceAll('{language}', language).replaceAll('{user}', JSON.stringify(context?.getUserLogin()) || '').replaceAll('{roles}', JSON.stringify(context?.getUserRoles().join(',')) || '')
             logger.info('Starting program :' + cmd + ' channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
             const result: any = await this.asyncExec(cmd)
             logger.debug('exec finished for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)

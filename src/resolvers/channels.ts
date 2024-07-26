@@ -190,7 +190,7 @@ export default {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to triger channel, tenant: ' + context.getCurrentUser()!.tenantId)
             }
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
-            channelMng.triggerChannel(chan, language, data)
+            channelMng.triggerChannel(chan, language, data, context)
         },
         createChannel: async (parent: any, {identifier, name, active, type, valid, visible, config, mappings, runtime}: any, context: Context) => {
             context.checkAuth()
