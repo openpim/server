@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:13
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: sa
+    volumes:
+      - ./docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgadmin4-data:/var/lib/pgadmin
+
+  openpim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    environment:
+      OPENPIM_DATABASE_ADDRESS: postgres
+      OPENPIM_DATABASE_PASSWORD: sa
+    depends_on:
+      postgres:
+        condition: service_started
+    ports:
+      - 80:80
+
+  pgadmin:
+    image: dpage/pgadmin4:6.5
+    restart: always
+    ports:
+      - 8080:80
+
+volumes:
+  pgadmin4-data:
