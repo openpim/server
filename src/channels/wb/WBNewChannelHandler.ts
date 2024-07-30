@@ -186,6 +186,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                         
                         if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.cards[0].imtID
                         if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.cards[0].nmID
+                        if (channel.config.wbBarcodeAttr) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
                         item.changed('values', true)
                     } else {
                         context.log += 'новых данных не получено\n'
@@ -280,7 +281,7 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         const barcodeConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#barcode')
         const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
-        if (!barcode) {
+        if (!barcode && !channel.config.barcodeBool) {
             const msg = 'Не введена конфигурация для "Баркода" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
@@ -315,7 +316,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         const height = await this.getValueByMapping(channel, heightConfig, item, language)
 
         // request to WB
-        let request:any = {vendorCode:productCode, dimensions: {length: length || 0, width: width || 0, height: height || 0}, characteristics:[], sizes:[{wbSize:"", price: price, skus: Array.isArray(barcode) ? barcode : [''+barcode]}]}
+        let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
 
         if (title) request.title = title
         if (description) request.description = description
