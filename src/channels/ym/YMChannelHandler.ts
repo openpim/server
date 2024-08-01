@@ -216,8 +216,9 @@ export class YMChannelHandler extends ChannelHandler {
                 const attrConfig = categoryConfig.attributes[i]
                 
                 if (attrConfig.id != 'id' && attrConfig.id != 'available') {
-                    const value = await this.getValueByMapping2(channel, attrConfig, item, language, variant)
+                    let value = await this.getValueByMapping2(channel, attrConfig, item, language, variant)
                     if (value != null) {
+                        if (typeof value === 'string') value = value.replaceAll(/((?:[\0-\x08\x0B\f\x0E-\x1F\uFFFD\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]))/g, '')
                         if (attrConfig.id != 'group_id') {
                             if (attrConfig.id.startsWith('delivery-option')) {
                                 const arr = value.split(',')
@@ -250,9 +251,10 @@ export class YMChannelHandler extends ChannelHandler {
             // addition params
             for (let i = 0; i < categoryConfig.params.length; i++) {
                 const paramConfig = categoryConfig.params[i]
-                const value = await this.getValueByMapping2(channel, paramConfig, item, language, variant)
+                let value = await this.getValueByMapping2(channel, paramConfig, item, language, variant)
                 if (value) {
-                    if (!offer.param) offer.param =[]
+                    if (typeof value === 'string') value = value.replaceAll(/((?:[\0-\x08\x0B\f\x0E-\x1F\uFFFD\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]))/g, '')
+                        if (!offer.param) offer.param =[]
                     if (Array.isArray(value)) {
                             if (paramConfig.id === 'picture') {
                                 if (offer.picture && !Array.isArray(offer.picture)) offer.picture = [offer.picture]
