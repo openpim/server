@@ -5,7 +5,7 @@ export function updateChannelMappings(context: Context, chan: any, mappings: any
     for (const prop in mappings) {
         if (mappings[prop].deleted) {
             delete tmp[prop]             
-        } else {
+        } else if (chan.type === 2 || chan.type === 3) { // WB || Ozon
             if (typeof mappings[prop] === 'object' && mappings[prop] !== null) {
                 const newMapping = mappings[prop]
                 const oldMapping = chan.mappings[prop]
