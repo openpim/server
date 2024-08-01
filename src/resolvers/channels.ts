@@ -260,7 +260,7 @@ export default {
                 chan.config = config
             }
             const conflictedCategories: string[] = []
-            if (mappings) {
+            if (mappings && (chan.type === 2 || chan.type === 3)) { // WB and Ozon
                 chan.mappings = updateChannelMappings(context, chan, mappings, conflictedCategories)
             }
             if (runtime) chan.runtime = runtime
