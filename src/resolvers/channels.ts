@@ -327,7 +327,7 @@ export default {
                 whereObj = {id: {[Op.in]: ids}}
             }
     
-            const { newChannels, newWhere, result } = await processBulkUpdateChannelsActions(context, EventType.BeforeBulkUpdateChannels, identifiers, whereObj)
+            const { newChannels, newWhere, result } = await processBulkUpdateChannelsActions(context, EventType.BeforeBulkUpdateChannels, identifiers, status, whereObj)
 
             identifiers = newChannels
             whereObj = newWhere
@@ -383,7 +383,7 @@ export default {
                 }
             )
 
-            await processBulkUpdateChannelsActions(context, EventType.AfterBulkUpdateChannels, identifiers, whereObj)
+            await processBulkUpdateChannelsActions(context, EventType.AfterBulkUpdateChannels, identifiers, status, whereObj)
           
             return true
         }

@@ -713,7 +713,7 @@ export async function processTableButtonActions(context: Context, buttonText: st
     return await processItemButtonActions2(context, actions, item, data, buttonText, where, headers)
 }
 
-export async function processBulkUpdateChannelsActions(context: Context, event: EventType, channels: any, where: any) {
+export async function processBulkUpdateChannelsActions(context: Context, event: EventType, channels: any, status: number, where: any) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions: Action[] = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
@@ -731,6 +731,7 @@ export async function processBulkUpdateChannelsActions(context: Context, event: 
         Op: Op,
         where: where,
         channels: channels,
+        status: status,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
@@ -997,6 +998,10 @@ function makeModelProxy(model: any, itemProxy: any) {
             } else if ((<string>property) == 'create') {
                 return async (...args: any) => {
                     return itemProxy(await target[property].apply(target, args))
+                }
+            } else if ((<string>property) == 'update') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'count') {
                 return async (...args: any) => {
