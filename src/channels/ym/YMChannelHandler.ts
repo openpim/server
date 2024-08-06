@@ -211,11 +211,16 @@ export class YMChannelHandler extends ChannelHandler {
             if (categoryConfig.type === 'medicine') offer.$.type = 'medicine'
             if (categoryConfig.type === 'books') offer.$.type = 'book'
 
+            const typeConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'offerType')
+            const type = await this.getValueByMapping2(channel, typeConfig, item, language, variant)
+            if (type) offer.$.type = type
+
+
             // atributes
             for (let i = 0; i < categoryConfig.attributes.length; i++) {
                 const attrConfig = categoryConfig.attributes[i]
                 
-                if (attrConfig.id != 'id' && attrConfig.id != 'available') {
+                if (attrConfig.id != 'id' && attrConfig.id != 'available' && attrConfig.id != 'offerType') {
                     let value = await this.getValueByMapping2(channel, attrConfig, item, language, variant)
                     if (value != null) {
                         if (typeof value === 'string') value = value.replaceAll(/((?:[\0-\x08\x0B\f\x0E-\x1F\uFFFD\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]))/g, '')
