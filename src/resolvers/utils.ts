@@ -599,6 +599,7 @@ export async function processItemActions(context: Context, event: EventType, ite
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -686,6 +687,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -741,6 +743,7 @@ export async function processBulkUpdateChannelsActions(context: Context, event: 
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -768,6 +771,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -806,6 +810,7 @@ export async function processAttrGroupActions(context: Context, event: EventType
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -839,6 +844,7 @@ export async function processAttributeActions(context: Context, event: EventType
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -872,6 +878,7 @@ export async function processLOVActions(context: Context, event: EventType, lov:
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -909,6 +916,7 @@ export async function processImportActions(context: Context, event: EventType, p
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -1127,6 +1135,7 @@ export async function processItemRelationActions(context: Context, event: EventT
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -1531,6 +1540,7 @@ class ActionUtils {
                 itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
                 lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
                 channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+                literal: sequelize.literal,
                 process: Process.applyScope(context),
                 Item,
                 ItemRelation
