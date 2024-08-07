@@ -372,13 +372,14 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                     const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == targetItem.id)
                     if (idx === -1 && !del) {
                         currentAttrValue.push(targetItem.id)
-                    } else if (idx && del) {
+                    } else if (idx !== -1 && del) {
                         currentAttrValue.splice(idx, 1)
                     }
                     item.values[attr.identifier] = currentAttrValue
                 } else {
 
                     item.values[attr.identifier] = !del ? targetItem.id : null
+                    console.log(222, attr.identifier, !del ? targetItem.id : null)
                 }
                 item.changed('values', true)
             }
