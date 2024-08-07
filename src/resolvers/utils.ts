@@ -377,9 +377,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                     }
                     item.values[attr.identifier] = currentAttrValue
                 } else {
-
                     item.values[attr.identifier] = !del ? targetItem.id : null
-                    console.log(222, attr.identifier, !del ? targetItem.id : null)
                 }
                 item.changed('values', true)
             }
