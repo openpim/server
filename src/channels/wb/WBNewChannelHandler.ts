@@ -192,6 +192,31 @@ export class WBNewChannelHandler extends ChannelHandler {
                         context.log += 'новых данных не получено\n'
                     }
                 }
+                if (channel.config.wbAttrContentRating && channel.config.wbGetContentRating && item.values[channel.config.nmIDAttr]) {
+                    const nmId = item.values[channel.config.nmIDAttr]
+                    const urlRating = `https://feedbacks-api.wildberries.ru/api/v1/feedbacks/products/rating/nmid?nmId=${nmId}`
+                    const logRating = "Sending request to WB: " + urlRating + " => nmId = " + JSON.stringify(nmId)
+                    logger.info(logRating)
+                    if (channel.config.debug) context.log += logRating + '\n'
+
+                    const resRating = await fetch(urlRating, {
+                        method: 'get',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken }
+                    })
+
+                    if (resRating.status !== 200) {
+                        const msg = 'Ошибка запроса на Ozon при получении средней оценки товара: ' + resRating.statusText
+                        context.log += msg + '\n'
+                        logger.error(msg)
+                    } else {
+                        const dataRating = await resRating.json()
+                        logger.info('Received data: ' + JSON.stringify(dataRating))
+                        if (channel.config.debug) context.log += 'Received data: ' + JSON.stringify(dataRating) + '\n'
+                        context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
+    
+                        item.values[channel.config.wbAttrContentRating] = '' + dataRating.data?.valuation
+                    }
+                }
             }
 
             await sequelize.transaction(async (t) => {
@@ -355,6 +380,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 } else {
                     logger.warn('Failed to find existing product by code: '+productCode)
                 }
+                request.sizes[0].skus = barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []
                 request.sizes[0].price = price
             }
 
