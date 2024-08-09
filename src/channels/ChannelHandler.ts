@@ -14,6 +14,7 @@ import Context from "../context"
 
 export abstract class ChannelHandler {
   private lovCache = new NodeCache({useClones: false});
+  private cache = new NodeCache({useClones: false});
 
   abstract processChannel(channel: Channel, language: string, data: any, context?: Context): Promise<void>
 
@@ -84,8 +85,9 @@ export abstract class ChannelHandler {
 
   async evaluateExpression2 (channel: Channel, item: Item, expr: string, data: any): Promise<any> {
     if (!expr) return null
-    
+    const tmp = this.cache
     const utils = {
+      getCache() { return tmp },
       findItem: async (condition: any) => {
         logger.debug(`Executing evaluateExpression findItem, condition: ${JSON.stringify(condition)}`)
         replaceOperations(condition)
