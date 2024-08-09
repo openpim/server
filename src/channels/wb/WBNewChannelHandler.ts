@@ -62,7 +62,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                     context.log += '\n\n'
                 }
             } else if (data.sync) {
-                await this.syncJob(channel, context, data)
+                await this.syncJob(channel, context, data, language)
             }
 
             await this.finishExecution(channel, chanExec, 2, context.log)
@@ -73,7 +73,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         }
     }
 
-    async syncJob(channel: Channel, context: JobContext, data: any) {
+    async syncJob(channel: Channel, context: JobContext, data: any, language: string) {
         context.log += 'Запущена синхронизация с WB\n'
 
         const wbCodeAttr = channel.config.wbCodeAttr
@@ -118,7 +118,7 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         if (data.item) {
             const item = await Item.findByPk(data.item)
-            await this.syncItem(channel, item!, context, true)
+            await this.syncItem(channel, item!, context, true, language)
         } else {
             const query:any = {}
             query[channel.identifier] = { status: 4 }
@@ -128,13 +128,13 @@ export class WBNewChannelHandler extends ChannelHandler {
             context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
-                await this.syncItem(channel, item, context, false)
+                await this.syncItem(channel, item, context, false, language)
             }
         }
         context.log += 'Cинхронизация закончена'
     }
 
-    async syncItem(channel: Channel, item: Item, context: JobContext, singleSync: boolean) {
+    async syncItem(channel: Channel, item: Item, context: JobContext, singleSync: boolean, language: string) {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.channels[channel.identifier]) {
@@ -186,7 +186,13 @@ export class WBNewChannelHandler extends ChannelHandler {
                         
                         if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.cards[0].imtID
                         if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.cards[0].nmID
-                        if (channel.config.wbBarcodeAttr) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
+                        if (channel.config.wbBarcodeAttr) {
+                            const categoryConfig = await this.getCategoryConfig(channel, item)
+                            const barcodeConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#barcode')
+                            const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
+
+                            if (!barcode) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
+                        }
                         item.changed('values', true)
                     } else {
                         context.log += 'новых данных не получено\n'
@@ -228,9 +234,7 @@ export class WBNewChannelHandler extends ChannelHandler {
 
     }    
 
-    async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
-        context.log += 'Обрабатывается запись с идентификатором: ' + item.identifier +'\n'
-
+    async getCategoryConfig(channel: Channel, item: Item) {
         for (const categoryId in channel.mappings) {
             const categoryConfig = channel.mappings[categoryId]
 
@@ -259,33 +263,39 @@ export class WBNewChannelHandler extends ChannelHandler {
                         tst = item.values[categoryConfig.categoryAttr] && item.values[categoryConfig.categoryAttr] == categoryConfig.categoryAttrValue
                     }
                     if (tst) {
-                        try {
-                            await this.processItemInCategory(channel, item, categoryConfig, language, context)
-                            await sequelize.transaction(async (t) => {
-                                await item.save({transaction: t})
-                            })
-
-                            // await new Promise(resolve => setTimeout(resolve, 5000))
-                        } catch (err) {
-                            logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
-                        }
-                        return
+                        return categoryConfig
                     }
                 }
-            } else {
-                context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
-                // logger.warn('No valid/visible configuration for : ' + channel.identifier + ' for item: ' + item.identifier + ', tenant: ' + channel.tenantId)
             }
         }
+        return null
+    }
 
-        const data = item.channels[channel.identifier]
-        data.status = 3
-        data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
-        context.log += 'Запись с идентификатором:' + item.identifier + ' не подходит ни под одну категорию из этого канала.\n'
-        item.changed('channels', true)
-        await sequelize.transaction(async (t) => {
-            await item.save({transaction: t})
-        })
+    async processItem(channel: Channel, item: Item, language: string, context: JobContext) {
+        context.log += 'Обрабатывается запись с идентификатором: ' + item.identifier +'\n'
+        const categoryConfig = await this.getCategoryConfig(channel, item)
+        if (categoryConfig) {
+            try {
+                await this.processItemInCategory(channel, item, categoryConfig, language, context)
+                await sequelize.transaction(async (t) => {
+                    await item.save({ transaction: t })
+                })
+
+                // await new Promise(resolve => setTimeout(resolve, 5000))
+            } catch (err) {
+                logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+            }
+        } else {
+            context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
+            const data = item.channels[channel.identifier]
+            data.status = 3
+            data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
+            context.log += 'Запись с идентификатором:' + item.identifier + ' не подходит ни под одну категорию из этого канала.\n'
+            item.changed('channels', true)
+            await sequelize.transaction(async (t) => {
+                await item.save({transaction: t})
+            })
+        }
     }
 
     async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext) {
