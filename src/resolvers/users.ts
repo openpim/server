@@ -4,7 +4,7 @@ import { sequelize } from '../models'
 import { User, Role } from '../models/users'
 import { GraphQLError } from 'graphql';
 import bcrypt from 'bcryptjs';
-import { ModelsManager, UserWrapper } from '../models/manager';
+import { ModelManager, ModelsManager, UserWrapper } from '../models/manager';
 import { Op, literal } from 'sequelize'
 import { cleaningDatabase } from './utils/cleaningDatabase'
 
@@ -172,8 +172,14 @@ export default {
                 logger.error("Password was not provided for: " + login)
                 throw new GraphQLError('Wrong login or password')
             }
+
+            let where = { login: login } 
+            if (ModelManager.getServerConfig()?.caseInsensitiveLogin) {
+                where = { login: {[Op.iLike]: login }}
+            }
+
             let user = await User.findOne({
-                where: { login: login }
+                where: where
             });
 
             if (!user || user.password === '#external#') {
@@ -191,7 +197,7 @@ export default {
                                 tenantId: tst.tenantId,
                                 createdBy: tst.login,
                                 updatedBy: '',
-                                login: login,
+                                login: tst.login,
                                 name: tst.name,
                                 password: '#external#',
                                 email: tst.email,
