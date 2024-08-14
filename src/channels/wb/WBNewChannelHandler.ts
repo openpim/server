@@ -390,6 +390,10 @@ export class WBNewChannelHandler extends ChannelHandler {
                 } else {
                     logger.warn('Failed to find existing product by code: '+productCode)
                 }
+                request.vendorCode = productCode
+                request.dimensions.length = length || 0
+                request.dimensions.width = width || 0
+                request.dimensions.height = height || 0
                 request.sizes[0].skus = barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []
                 request.sizes[0].price = price
             }
