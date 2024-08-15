@@ -205,7 +205,7 @@ export class YMChannelHandler extends ChannelHandler {
             const available = await this.getValueByMapping2(channel, availableConfig, item, language, variant)
     
             const offer: any = {$: {id: id}}
-            if (available) offer.$.available = available
+            if (available !== null && available !== undefined) offer.$.available = available
 
             if (categoryConfig.type === 'vendor.model') offer.$.type = 'vendor.model'
             if (categoryConfig.type === 'medicine') offer.$.type = 'medicine'
