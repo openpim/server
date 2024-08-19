@@ -209,11 +209,12 @@ export default {
                         })
                         mng.getUsers().push(new UserWrapper(user, userRoles))
 
+                        // send token with id 1 (admin) because this user is not at remote server yet so checkAuth will fail without this
                         const token = await jwt.sign({
-                            id: user.id, 
+                            id: 1, 
                             tenantId: user.tenantId, 
                             login: user.login }, 
-                            <string>process.env.SECRET, { expiresIn: '1d' }
+                            <string>process.env.SECRET, { expiresIn: 3 }
                         )
                         mng.reloadModelRemotely(user.id, null, 'USER', false, token)
                     }
