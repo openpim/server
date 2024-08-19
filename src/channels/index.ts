@@ -96,6 +96,7 @@ export class ChannelsManager {
     }
 
     public startChannel(channel: Channel) {
+        if (channel.group) return
         logger.info(`Starting channel ${channel.identifier}`)
         if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'true') {
             logger.info(`   Skip start because of OPENPIM_NO_CHANNEL_SCHEDULER=true`)
