@@ -244,8 +244,8 @@ export abstract class ChannelHandler {
       }
     }
     try {
-      const func = new Function('item', 'utils', 'channel', 'data', '"use strict"; return (async () => { return (' + expr + ')})()')
-      return await func(item, utils, channel, data)
+      const func = new Function('item', 'utils', 'channel', 'data', 'Op', '"use strict"; return (async () => { return (' + expr + ')})()')
+      return await func(item, utils, channel, data, Op)
     } catch (err:any) {
       logger.error('Failed to execute expression :[' + expr + '] for item with id: ' + item.id + ' with error: ' + err.message)
       throw err
