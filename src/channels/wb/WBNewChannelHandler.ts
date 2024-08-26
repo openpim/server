@@ -122,7 +122,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             await this.syncItem(channel, item!, context, true, language)
         } else {
             const query:any = {}
-            query[channel.identifier] = { status: 4 }
+            query[channel.identifier] = { status: { [Op.ne]: 1 }}
             let items = await Item.findAll({ 
                 where: { tenantId: channel.tenantId, channels: query} 
             })
@@ -139,11 +139,11 @@ export class WBNewChannelHandler extends ChannelHandler {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.channels[channel.identifier]) {
-            const chanData = item.channels[channel.identifier]
-            if (!singleSync && chanData.status === 3) {
+            /*const chanData = item.channels[channel.identifier]
+             if (!singleSync && chanData.status === 3) {
                 context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                 return
-            }
+            } */
 
             const article = item.values[channel.config.wbCodeAttr]
             if (!article) {
@@ -192,10 +192,12 @@ export class WBNewChannelHandler extends ChannelHandler {
                         if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.cards[0].nmID
                         if (channel.config.wbBarcodeAttr) {
                             const categoryConfig = await this.getCategoryConfig(channel, item)
-                            const barcodeConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#barcode')
-                            const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
+                            if (categoryConfig) {
+                                const barcodeConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#barcode')
+                                const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
 
-                            if (!barcode) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
+                                if (!barcode) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
+                            }
                         }
                         item.changed('values', true)
                     } else {
