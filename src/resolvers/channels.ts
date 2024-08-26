@@ -192,7 +192,7 @@ export default {
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
             channelMng.triggerChannel(chan, language, data, context)
         },
-        createChannel: async (parent: any, {identifier, name, active, type, valid, visible, config, mappings, runtime}: any, context: Context) => {
+        createChannel: async (parent: any, {identifier, name, order, group, active, type, valid, visible, config, mappings, runtime, parentId}: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.CHANNELS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create channel, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -215,13 +215,16 @@ export default {
                     createdBy: context.getCurrentUser()!.login,
                     updatedBy: context.getCurrentUser()!.login,
                     name: name,
+                    order: order != null ? order : null,
+                    group: group,
                     active: active,
                     type: type,
                     valid: val,
                     visible: vis,
                     config: config ? config : {},
                     mappings: mappings ? mappings : {},
-                    runtime: runtime ? runtime : {}
+                    runtime: runtime ? runtime : {},
+                    parentId: parentId != null ? parentId : 0,
                 }, {transaction: t})
                 return chan
             })
@@ -232,7 +235,7 @@ export default {
             await mng.reloadModelRemotely(chan.id, null, 'CHANNEL', false, context.getUserToken())
             return chan.id
         },
-        updateChannel: async (parent: any, { id, name, active, type, valid, visible, config, mappings, runtime }: any, context: Context) => {
+        updateChannel: async (parent: any, { id, name, order, group, active, type, valid, visible, config, mappings, runtime, parentId }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.CHANNELS)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update channel, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -247,6 +250,8 @@ export default {
             }
 
             if (name) chan.name = name
+            if (order != null) chan.order = order
+            if (group) chan.group = group
             if (active != null) chan.active = active
             if (type != null) chan.type = type
             if (valid) chan.valid = valid.map((elem: string) => parseInt(elem))
@@ -259,6 +264,7 @@ export default {
                 }
                 chan.config = config
             }
+            if (parentId != null) chan.parentId = parentId
             const conflictedCategories: string[] = []
             if (mappings) {
                 chan.mappings = updateChannelMappings(context, chan, mappings, conflictedCategories)

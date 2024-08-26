@@ -6,6 +6,8 @@ import Context from '../context'
 export class Channel extends Base {
   public identifier!: string
   public name!: any
+  public order!: number
+  public group!: boolean
   public active!: boolean
   public type!: number
   public valid!: any
@@ -13,6 +15,7 @@ export class Channel extends Base {
   public config!: any
   public mappings!: any
   public runtime!: any
+  public parentId!: any
   public static applyScope(context: Context) {
     return Channel.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
@@ -39,6 +42,14 @@ export function init(sequelize: Sequelize):void {
       },
       name: {
         type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      order: {
+        type: new DataTypes.INTEGER,
+        allowNull: false,
+      },
+      group: {
+        type: DataTypes.BOOLEAN,
         allowNull: false,
       },
       active: {
@@ -68,6 +79,10 @@ export function init(sequelize: Sequelize):void {
       runtime: {
         type: DataTypes.JSONB,
         allowNull: false,
+      },
+      parentId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false
       },
       ...BaseColumns,
       tenantId: { // override base for uniqueIdentifier
@@ -130,5 +145,5 @@ export function init(sequelize: Sequelize):void {
         }
       }
     }
-});
+  });
 }
