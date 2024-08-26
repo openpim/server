@@ -11,6 +11,7 @@ import * as fs from 'fs'
 import { Op } from 'sequelize'
 import { ItemRelation } from '../../models/itemRelations'
 import { request } from 'http'
+import { ModelManager } from '../../models/manager'
 
 interface JobContext {
     log: string
@@ -159,6 +160,9 @@ export class WBNewChannelHandler extends ChannelHandler {
                     }
                 }
     
+                const serverConfig = ModelManager.getServerConfig()
+                if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
+
                 let msg = "Запрос на WB: " + url + " => " + JSON.stringify(request)
                 logger.info(msg)
                 if (channel.config.debug) context.log += msg+'\n'
