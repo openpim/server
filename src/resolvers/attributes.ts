@@ -381,7 +381,7 @@ export default {
             if (attr.type === 9) {
                 const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === nId})
                 if (idx !== -1) {
-                    mng.getRelationAttributes()[idx] = attr
+                    mng.getRelationAttributes().splice(idx, 1)
                 }
             }
 

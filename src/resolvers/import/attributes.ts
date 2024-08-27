@@ -75,6 +75,13 @@ export async function importAttribute(context: Context, config: IImportConfig, a
                     }
                 }
                         
+                if (data.type === 9) {
+                    const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === data.id})
+                    if (idx !== -1) {
+                        mng.getRelationAttributes().splice(idx, 1)
+                    }
+                }
+
                 await processAttributeActions(context, EventType.AfterDelete, data, true)
                 
                 result.result = ImportResult.DELETED
@@ -151,6 +158,10 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             result.id = ""+data.id
             await processAttributeActions(context, EventType.AfterCreate, data, true)
             
+            if (data.type === 9) {
+                mng.getRelationAttributes().push(data)
+            }
+
             for (let i=0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]
                 const idx = grp.getAttributes().findIndex((attr) => { return attr.id === data.id })
@@ -244,6 +255,13 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             result.id = ""+data.id
             await processAttributeActions(context, EventType.AfterUpdate, data, true)
             
+            if (data.type === 9) {
+                const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === data.id })
+                if (idx !== -1) {
+                    mng.getRelationAttributes()[idx] = data
+                }
+            }
+
             for (let i=0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]
                 const idx = grp.getAttributes().findIndex((attr) => { return attr.id === data.id })
