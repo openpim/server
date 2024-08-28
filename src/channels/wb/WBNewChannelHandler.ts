@@ -139,11 +139,12 @@ export class WBNewChannelHandler extends ChannelHandler {
         context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
 
         if (item.channels[channel.identifier]) {
-            /*const chanData = item.channels[channel.identifier]
+            const chanData = item.channels[channel.identifier]
              if (!singleSync && chanData.status === 3) {
+                // если прочитать статус когда ошибка то он затрет ошибку
                 context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                 return
-            } */
+            }
 
             const article = item.values[channel.config.wbCodeAttr]
             if (!article) {
