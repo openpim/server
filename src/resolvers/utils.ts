@@ -336,9 +336,6 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         return
     }
 
-    // const relationId = itemRelation.relationId
-    // const relation = mng.getRelationById(relationId)
-
     const attrs = mng.getRelationAttributes()
     const attrsFiltered = attrs.filter(attr => attr.relations.some((el: number) => el === itemRelation.relationId))
 
@@ -384,41 +381,45 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         }
     }
 
-
-    const targetPathArr = targetItem.path.split('.').map(elem => parseInt(elem))
-    for (let i = 0; i < attrsFiltered.length; i++) {
-        const attr = attrsFiltered[i]
-        const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
-        if (attr.valid[0] && attr.valid.includes(targetItem.typeId)) {
-            if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length && !del) {
-                if (item.values[activeAttributeName.value] !== true) {
-                    throw new Error(`Can not set value ${item.id} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
-                }
-            }
-            if (targetPathArr.some(r => attr.visible.indexOf(r) !== -1)) {
-                let currentAttrValue = item.values[attr.identifier]
-                if (attr.options.some((elem: any) => elem.name === 'multivalue' && elem.value === 'true')) {
-                    if (!Array.isArray(currentAttrValue)) {
-                        currentAttrValue = []
+    // we don't update target item if source and targets have the same types
+    if (item.typeId !== targetItem.typeId) {
+        const targetPathArr = targetItem.path.split('.').map(elem => parseInt(elem))
+        for (let i = 0; i < attrsFiltered.length; i++) {
+            const attr = attrsFiltered[i]
+            const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
+            if (attr.valid[0] && attr.valid.includes(targetItem.typeId)) {
+                if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length && !del) {
+                    if (item.values[activeAttributeName.value] !== true) {
+                        throw new Error(`Can not set value ${item.id} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
                     }
-                    const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == item.id)
-                    if (idx === -1 && !del) {
-                        currentAttrValue.push(item.id)
-                    } else if (idx && del) {
-                        currentAttrValue.splice(idx, 1)
-                    }
-                    targetItem.values[attr.identifier] = currentAttrValue
-                } else {
-                    targetItem.values[attr.identifier] = !del ? item.id : null
                 }
-                targetItem.changed('values', true)
+                if (targetPathArr.some(r => attr.visible.indexOf(r) !== -1)) {
+                    let currentAttrValue = targetItem.values[attr.identifier]
+                    if (attr.options.some((elem: any) => elem.name === 'multivalue' && elem.value === 'true')) {
+                        if (!Array.isArray(currentAttrValue)) {
+                            currentAttrValue = []
+                        }
+                        const idx = currentAttrValue.findIndex((el: any) => parseInt(el) == item.id)
+                        if (idx === -1 && !del) {
+                            currentAttrValue.push(item.id)
+                        } else if (idx !== -1 && del) {
+                            currentAttrValue.splice(idx, 1)
+                        }
+                        targetItem.values[attr.identifier] = currentAttrValue
+                    } else {
+                        targetItem.values[attr.identifier] = !del ? item.id : null
+                    }
+                    targetItem.changed('values', true)
+                }
             }
         }
     }
 
     await sequelize.transaction(async (t) => {
         await item.save({ transaction: t })
-        await targetItem.save({ transaction: t })
+        if (item.typeId !== targetItem.typeId) {
+            await targetItem.save({ transaction: t })
+        }
     })
 }
 
