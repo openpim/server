@@ -1632,7 +1632,7 @@ class ActionUtils {
 
         if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false)
 
-        filterValues(this.#context.getEditItemAttributes2(nTypeId, path), values)
+        filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
         checkValues(mng, values)
 
         item.values = values

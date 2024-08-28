@@ -7,7 +7,7 @@ import { Relation } from '../models/relations'
 import { ItemRelation } from '../models/itemRelations'
 import { CollectionItems } from '../models/collectionItems'
 import { ModelsManager } from '../models/manager'
-import { filterChannels, filterValues, replaceOperations } from './utils'
+import { filterChannels, filterValues, filterValuesNotAllowed, replaceOperations } from './utils'
 import { User, Role } from '../models/users'
 import { LOV } from '../models/lovs'
 import { SavedColumns, SavedSearch } from '../models/search'
@@ -302,8 +302,8 @@ export default {
 
             for (let i = 0; i < rows.length; i++) {
                 const item = rows[i];
-                const allowedAttributes = context.getViewItemAttributes(item)
-                filterValues(allowedAttributes, item.values)
+                const notAllowedAttributes = context.getNotViewItemAttributes(item)
+                filterValuesNotAllowed(notAllowedAttributes, item.values)
                 filterChannels(context, item.channels)
             }
             return rows

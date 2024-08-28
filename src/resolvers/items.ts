@@ -105,8 +105,8 @@ export default {
             }
 
             items.forEach(item => {
-                const allowedAttributes = context.getViewItemAttributes(item)
-                filterValues(allowedAttributes, item.values)
+                const notAllowedAttributes = context.getNotViewItemAttributes(item)
+                filterValuesNotAllowed(notAllowedAttributes, item.values)
                 filterChannels(context, item.channels)
             })
             return items || []
@@ -583,7 +583,7 @@ export default {
             filterEditChannels(context, channels)
             checkSubmit(context, channels)
 
-            filterValues(context.getEditItemAttributes2(nTypeId, path), values)
+            filterValuesNotAllowed(context.getNotEditItemAttributes2(nTypeId, path), values)
             checkValues(mng, values)
 
             item.values = values
@@ -628,7 +628,7 @@ export default {
             if (!channels) channels = {}
 
             if (values) {
-                filterValues(context.getEditItemAttributes(item), values)
+                filterValuesNotAllowed(context.getNotEditItemAttributes(item), values)
                 checkValues(mng, values)
             }
 

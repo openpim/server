@@ -332,39 +332,9 @@ export default class Context {
 
         const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId);
         const groups = mng.getAttrGroups()
-        const allowedGroups: number[] = []
 
-        for (let j = 0; j < groups.length; j++) {
-            const group = groups[j].getGroup()
-            let access:number = -1
-            for (let i = 0; i < this.user.getRoles().length; i++) {
-                const role = this.user.getRoles()[i]
-                if(role.itemAccess.valid.some((tId:number) => tId === item.typeId)) {
-                    const pathArr = item.path.split('.').map((elem:string) => parseInt(elem))
-                    const tst = pathArr.find((id:number) => role.itemAccess.fromItems.includes(id))
-                    if (tst && (role.itemAccess.access === 1 || role.itemAccess.access === 2)) {
-                        const tst: { access: number; groupId: number; } = role.itemAccess.groups.find((elem: any) => elem.groupId === group.id)
-                        if (tst && tst.access > access) access = tst.access
-                    }
-                }
-            }
-            if (access !== 0) {
-                allowedGroups.push(group.id)
-            }
-        }
-        if (allowedGroups.length === 0) {
-            return null
-        } else {
-            return this.filterGroups(allowedGroups)
-        }
-    }
-
-    public getViewItemAttributes(item: Item): string[] | null {
-        if (!this.user) return []
-
-        const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId);
-        const groups = mng.getAttrGroups()
-        const forbiddenGroups: number[] = []
+        const allowedAttrMap:any = {}
+        const notAllowedAttrMap:any = {}
 
         for (let j = 0; j < groups.length; j++) {
             const group = groups[j].getGroup()
@@ -381,26 +351,38 @@ export default class Context {
                 }
             }
             if (access === 0) {
-                forbiddenGroups.push(group.id)
+                groups[j].getAttributes().forEach( attr => {
+                    if (!allowedAttrMap[attr.identifier]) {
+                        notAllowedAttrMap[attr.identifier] = 1
+                        if (attr.type === 8) notAllowedAttrMap[attr.identifier + '_text'] = 1 // URL attribute
+                    }
+                })
+            } else {
+                groups[j].getAttributes().forEach( attr => {
+                    allowedAttrMap[attr.identifier] = 1
+                    if (attr.type === 8) allowedAttrMap[attr.identifier + '_text'] = 1 // URL attribute
+                    if (notAllowedAttrMap[attr.identifier]) {
+                        delete notAllowedAttrMap[attr.identifier]
+                        if (attr.type === 8) delete notAllowedAttrMap[attr.identifier + '_text'] // URL attribute
+                    }
+                })                
             }
         }
-        if (forbiddenGroups.length === 0) {
-            return null
-        } else {
-            return this.filterGroups(forbiddenGroups)
-        }
+        return Object.keys(notAllowedAttrMap)
     }
 
-    public getEditItemAttributes(item: Item): string[] | null {
-        return this.getEditItemAttributes2(item.typeId, item.path)
+    public getNotEditItemAttributes(item: Item): string[] | null {
+        return this.getNotEditItemAttributes2(item.typeId, item.path)
     }
 
-    public getEditItemAttributes2(typeId: number, path: string): string[] | null {
+    public getNotEditItemAttributes2(typeId: number, path: string): string[] | null {
         if (!this.user) return []
 
         const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId);
         const groups = mng.getAttrGroups()
-        const forbiddenGroups: number[] = []
+
+        const allowedAttrMap:any = {}
+        const notAllowedAttrMap:any = {}
 
         for (let j = 0; j < groups.length; j++) {
             const group = groups[j].getGroup()
@@ -417,14 +399,24 @@ export default class Context {
                 }
             }
             if (access === 0 || access === 1) {
-                forbiddenGroups.push(group.id)
+                groups[j].getAttributes().forEach( attr => {
+                    if (!allowedAttrMap[attr.identifier]) {
+                        notAllowedAttrMap[attr.identifier] = 1
+                        if (attr.type === 8) notAllowedAttrMap[attr.identifier + '_text'] = 1 // URL attribute
+                    }
+                })
+            } else {
+                groups[j].getAttributes().forEach( attr => {
+                    allowedAttrMap[attr.identifier] = 1
+                    if (attr.type === 8) allowedAttrMap[attr.identifier + '_text'] = 1 // URL attribute
+                    if (notAllowedAttrMap[attr.identifier]) {
+                        delete notAllowedAttrMap[attr.identifier]
+                        if (attr.type === 8) delete notAllowedAttrMap[attr.identifier + '_text'] // URL attribute
+                    }
+                })                
             }
         }
-        if (forbiddenGroups.length === 0) {
-            return null
-        } else {
-            return this.filterGroups(forbiddenGroups)
-        }
+        return Object.keys(notAllowedAttrMap)
     }
 
     private filterGroups(forbiddenGroups: number[]): string[] {

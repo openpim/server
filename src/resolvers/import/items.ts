@@ -4,7 +4,7 @@ import { Item } from '../../models/items'
 import { sequelize } from '../../models'
 import { QueryTypes, literal } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit, processDeletedChannels, checkRelationAttributes } from '../utils'
+import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit, processDeletedChannels, checkRelationAttributes, filterValuesNotAllowed } from '../utils'
 import { Attribute } from '../../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
@@ -205,7 +205,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             filterEditChannels(context, item.channels)
             checkSubmit(context, item.channels)
 
-            filterValues(context.getEditItemAttributes2(type!.getValue().id, path), item.values)
+            filterValuesNotAllowed(context.getNotEditItemAttributes2(type!.getValue().id, path), item.values)
             try {
                 checkValues(mng, item.values)
                 await checkRelationAttributes(context, mng, data, item.values)
@@ -324,7 +324,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
             filterEditChannels(context, item.channels)
             checkSubmit(context, item.channels)
-            filterValues(context.getEditItemAttributes(data), item.values)
+            filterValuesNotAllowed(context.getNotEditItemAttributes(data), item.values)
             try {
                 checkValues(mng, item.values)
                 await checkRelationAttributes(context, mng, data, item.values)
