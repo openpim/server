@@ -544,8 +544,10 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                                 logger.error(`Failed to find item with id: ${val} from attribute: ${attr.identifier}`)
                                 if (!Array.isArray(values[prop])) {
                                     values[prop] = null
+                                    item.values[prop] = null
                                 } else {
-                                    values[prop] = values[prop].filter((elem:any) => elem == val)
+                                    values[prop] = values[prop].filter((elem:any) => elem != val)
+                                    if (item.values[prop] && Array.isArray(item.values[prop])) item.values[prop] = item.values[prop].filter((elem:any) => elem != val)
                                 }
                             }
                         }
