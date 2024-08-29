@@ -541,7 +541,12 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                                     await utils.createItemRelation(relation.identifier, `${relatedItem.identifier}_${relation.identifier}_${item.identifier}`, relatedItem.identifier, item.identifier, {}, false, values)
                                 }
                             } else {
-                                throw new Error('Invalid item id')
+                                logger.error(`Failed to find item with id: ${val} from attribute: ${attr.identifier}`)
+                                if (!Array.isArray(values[prop])) {
+                                    values[prop] = null
+                                } else {
+                                    values[prop] = values[prop].filter((elem:any) => elem == val)
+                                }
                             }
                         }
                     }
