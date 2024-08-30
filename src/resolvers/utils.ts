@@ -178,6 +178,9 @@ export function mergeValues(newValues: any, oldValues: any): any {
                 if (obj !== null && typeof obj === 'object' && typeof newobj === 'object' && !Array.isArray(newobj)) {
                     newValues[prop] = { ...oldValues[prop], ...newValues[prop] }
                 }
+                /* if (newobj === null) {
+                    oldValues[prop] = null
+                }*/
             }
             return { ...oldValues, ...newValues }
         } else {
