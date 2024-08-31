@@ -405,7 +405,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 request.sizes[0].price = price
             }
 
-            request.nmID = nmID
+            request.nmID = parseInt(nmID)
         }
 
         // atributes
@@ -461,7 +461,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 const images = await this.getValueByMapping(channel, imageConfig, item, language)
                 if (images && images.length > 0) {
                     const imgRequest = {
-                        "nmId": nmID,
+                        "nmId": parseInt(nmID),
                         "data": images
                         }
                     const imgUrl = 'https://suppliers-api.wildberries.ru/content/v3/media/save'
