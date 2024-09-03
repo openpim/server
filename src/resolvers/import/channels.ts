@@ -1,4 +1,5 @@
 import Context from "../../context"
+import logger from "../../logger"
 
 export function updateChannelMappings(context: Context, chan: any, mappings: any, conflictedCategories: string[]) {
     const tmp = { ...chan.mappings, ...mappings } // merge mappings to avoid deletion from another user
@@ -21,9 +22,14 @@ export function updateChannelMappings(context: Context, chan: any, mappings: any
                             }
                         }
                     } else {
+                        logger.info(`The following categories could not be updated due to conflicts: ${oldMapping.name}`)
+                        logger.info(`updatedAt -> ${oldMapping.updatedAt}`)
+                        logger.info(`readingTime -> ${newMapping.readingTime}`)
+                        logger.info(`oldMapping -> ${JSON.stringify(oldMapping)}`)
+                        logger.info(`newMapping -> ${JSON.stringify(newMapping)}`)
                         delete newMapping.readingTime
                         if (oldMapping) {
-                            conflictedCategories.push(oldMapping.name)
+                            if (process.env.MAPPING_ERROR) conflictedCategories.push(oldMapping.name)
                             tmp[prop] = oldMapping
                         } else {
                             tmp[prop] = {
