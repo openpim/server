@@ -22,13 +22,13 @@ export function updateChannelMappings(context: Context, chan: any, mappings: any
                             }
                         }
                     } else {
-                        logger.info(`The following categories could not be updated due to conflicts: ${oldMapping.name}`)
-                        logger.info(`updatedAt -> ${oldMapping.updatedAt}`)
-                        logger.info(`readingTime -> ${newMapping.readingTime}`)
-                        logger.info(`oldMapping -> ${JSON.stringify(oldMapping)}`)
-                        logger.info(`newMapping -> ${JSON.stringify(newMapping)}`)
                         delete newMapping.readingTime
                         if (oldMapping) {
+                            logger.info(`The following categories could not be updated due to conflicts: ${oldMapping.name}`)
+                            logger.info(`updatedAt -> ${oldMapping.updatedAt}`)
+                            logger.info(`readingTime -> ${newMapping.readingTime}`)
+                            logger.info(`oldMapping -> ${JSON.stringify(oldMapping)}`)
+                            logger.info(`newMapping -> ${JSON.stringify(newMapping)}`)
                             if (process.env.MAPPING_ERROR) conflictedCategories.push(oldMapping.name)
                             tmp[prop] = oldMapping
                         } else {
