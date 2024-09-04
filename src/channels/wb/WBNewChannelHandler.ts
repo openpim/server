@@ -250,13 +250,14 @@ export class WBNewChannelHandler extends ChannelHandler {
     }
 
     async processItemSync(channel: Channel, items: Item[], context: JobContext, language: string, json: any) {
-        if (channel.config.debug) context.log += 'Ответ от WB ' + JSON.stringify(json) + '\n'
-        logger.info('Ответ от WB \n')
-
         for (const card of json.cards) {
             const item = items.find(elem => elem.values[channel.config.nmIDAttr] == card.nmID)
             if (card.imtID) {
                 if (item) {
+                    const msg = 'Обрабатывается карточка' + JSON.stringify(card) + '\n'
+                    if (channel.config.debug) context.log += msg
+                    logger.info(msg)
+
                     const chanData = item.channels[channel.identifier]
                     if (chanData && chanData.status === 3) {
                         // если прочитать статус когда ошибка то он затрет ошибку
