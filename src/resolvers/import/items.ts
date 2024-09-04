@@ -343,6 +343,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             data.values = mergeValues(item.values, data.values)
+            data.changed('values', true)
             data.channels = mergeValues(item.channels, data.channels)
             processDeletedChannels(item.channels)
 
