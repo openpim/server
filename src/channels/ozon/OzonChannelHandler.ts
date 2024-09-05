@@ -348,7 +348,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
     
                 const dataRating = await resRating.json()
-                logger.info('Received data: ' + JSON.stringify(dataRating))
+                // logger.info('Received data: ' + JSON.stringify(dataRating))
     
                 for (const item of filteredItems) {
                     const result = dataRating.products.find((elem: any) => elem.sku == item.values[channel.config.ozonFBOIdAttr])

@@ -250,19 +250,35 @@ export class WBNewChannelHandler extends ChannelHandler {
     }
 
     async processItemSync(channel: Channel, items: Item[], context: JobContext, language: string, json: any) {
+        let msg = `Получено ${json.cards.length} карточек\n`
+        if (channel.config.debug) context.log += msg
+        logger.info(msg)
+
         for (const card of json.cards) {
             const item = items.find(elem => elem.values[channel.config.nmIDAttr] == card.nmID)
             if (card.imtID) {
+                msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}\n`
+                if (channel.config.debug) context.log += msg
+                logger.info(msg)
                 if (item) {
-                    const msg = 'Обрабатывается карточка' + JSON.stringify(card) + '\n'
+                    msg = `Найден товар: ${item.identifier}\n`
                     if (channel.config.debug) context.log += msg
                     logger.info(msg)
+
+                    if (!item.channels[channel.identifier]) {
+                        msg = 'у товара: ' + item.identifier + ' нет выгрузки в канал, синхронизация не будет проводиться \n'
+                        if (channel.config.debug) context.log += msg
+                        logger.info(msg)
+                        continue
+                    }
 
                     const chanData = item.channels[channel.identifier]
                     if (chanData && chanData.status === 3) {
                         // если прочитать статус когда ошибка то он затрет ошибку
-                        context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
-                        return
+                        msg = 'Статус товара - ошибка, синхронизация не будет проводиться \n'
+                        if (channel.config.debug) context.log += msg
+                        logger.info(msg)
+                        continue
                     }
                     let status = 2
                     // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
