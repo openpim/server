@@ -491,6 +491,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
     }
 
     let changed = false
+    const relations2Create = []
     for (const prop in values) {
         const attr = mng.getRelationAttributes().find(el => (el.identifier === prop))
         if (attr) {
@@ -535,11 +536,15 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                                         throw new Error(`Can not set value ${val} for relation attribute ${attr.identifier}. Please check activeAttribute option.`)
                                     }
                                 }
-                                if (isSource) {
-                                    await utils.createItemRelation(relation.identifier, `${item.identifier}_${relation.identifier}_${relatedItem.identifier}`, item.identifier, relatedItem.identifier, {}, false, values)
-                                } else {
-                                    await utils.createItemRelation(relation.identifier, `${relatedItem.identifier}_${relation.identifier}_${item.identifier}`, relatedItem.identifier, item.identifier, {}, false, values)
-                                }
+                                relations2Create.push({
+                                    relationIdentifier: relation.identifier,
+                                    identifier: isSource ? `${item.identifier}_${relation.identifier}_${relatedItem.identifier}` : `${relatedItem.identifier}_${relation.identifier}_${item.identifier}`,
+                                    itemIdentifier: isSource ? item.identifier : relatedItem.identifier,
+                                    targetIdentifier: isSource ? relatedItem.identifier : item.identifier,
+                                    values: {},
+                                    skipActions: false,
+                                    newItemValues: values
+                                })
                             } else {
                                 logger.error(`Failed to find item with id: ${val} from attribute: ${attr.identifier}`)
                                 if (!Array.isArray(values[prop])) {
@@ -555,6 +560,14 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                 }
             }
         }
+    }
+    return relations2Create
+}
+
+export async function createRelationsForItemRelAttributes(context: Context, arr: any) {
+    const utils = new ActionUtils(context)
+    for (let i = 0; i < arr.length; i++) {
+        await utils.createItemRelation(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, arr[i].newItemValues)
     }
 }
 

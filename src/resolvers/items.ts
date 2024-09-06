@@ -3,7 +3,7 @@ import { sequelize } from '../models'
 import { QueryTypes, literal } from 'sequelize'
 import { Item } from '../models/items'
 import { ModelManager, ModelsManager } from '../models/manager'
-import { filterValues, filterChannels, mergeValues, checkValues, checkRelationAttributes, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit, processDeletedChannels, filterValuesNotAllowed } from './utils'
+import { filterValues, filterChannels, mergeValues, checkValues, checkRelationAttributes, createRelationsForItemRelAttributes, processItemActions, diff, isObjectEmpty, filterEditChannels, checkSubmit, processDeletedChannels, filterValuesNotAllowed } from './utils'
 import { FileManager } from '../media/FileManager'
 import { Type } from '../models/types'
 import { Attribute } from '../models/attributes'
@@ -589,10 +589,14 @@ export default {
             item.values = values
             item.channels = channels
 
+            let relAttributesData: any = []
+            relAttributesData = await checkRelationAttributes(context, mng, item, values)
+
             await sequelize.transaction(async (t) => {
                 await item.save({ transaction: t })
             })
-            await checkRelationAttributes(context, mng, item, values)
+
+            await createRelationsForItemRelAttributes(context, relAttributesData)
 
             await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false)
 
@@ -647,8 +651,9 @@ export default {
                 item.channels = mergeValues(channels, item.channels)
                 processDeletedChannels(item.channels)
             }
+            let relAttributesData: any = []
             if (values) {
-                await checkRelationAttributes(context, mng, item, values)
+                relAttributesData = await checkRelationAttributes(context, mng, item, values)
                 item.values = mergeValues(values, item.values)
                 item.changed("values", true)
             }
@@ -658,6 +663,8 @@ export default {
             await sequelize.transaction(async (t) => {
                 await item.save({ transaction: t })
             })
+
+            await createRelationsForItemRelAttributes(context, relAttributesData)
 
             await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false)
 

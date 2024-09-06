@@ -4,7 +4,7 @@ import { Item } from '../../models/items'
 import { sequelize } from '../../models'
 import { QueryTypes, literal } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
-import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit, processDeletedChannels, checkRelationAttributes, filterValuesNotAllowed } from '../utils'
+import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit, processDeletedChannels, checkRelationAttributes, createRelationsForItemRelAttributes, filterValuesNotAllowed } from '../utils'
 import { Attribute } from '../../models/attributes'
 import { Op } from 'sequelize'
 import { EventType } from '../../models/actions'
@@ -206,9 +206,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             checkSubmit(context, item.channels)
 
             filterValuesNotAllowed(context.getNotEditItemAttributes2(type!.getValue().id, path), item.values)
+            let relAttributesData: any = []
             try {
                 checkValues(mng, item.values)
-                await checkRelationAttributes(context, mng, data, item.values)
+                relAttributesData = await checkRelationAttributes(context, mng, data, item.values)
             } catch (err: any) {
                 result.addError(new ReturnMessage(0, err.message))
                 result.result = ImportResult.REJECTED
@@ -221,6 +222,8 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             await sequelize.transaction(async (t) => {
                 await data.save({transaction: t})
             })
+
+            await createRelationsForItemRelAttributes(context, relAttributesData)
 
             if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
@@ -325,9 +328,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             filterEditChannels(context, item.channels)
             checkSubmit(context, item.channels)
             filterValuesNotAllowed(context.getNotEditItemAttributes(data), item.values)
+            let relAttributesData: any = []
             try {
                 checkValues(mng, item.values)
-                await checkRelationAttributes(context, mng, data, item.values)
+                relAttributesData = await checkRelationAttributes(context, mng, data, item.values)
             } catch (err:any) {
                 result.addError(new ReturnMessage(0, err.message))
                 result.result = ImportResult.REJECTED
@@ -348,9 +352,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             processDeletedChannels(item.channels)
 
             data.updatedBy = context.getCurrentUser()!.login
-            await sequelize.transaction(async (t) => {
-                await data!.save({transaction: t})
-            })
+
+            await data!.save()
+
+            await createRelationsForItemRelAttributes(context, relAttributesData)
 
             if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
