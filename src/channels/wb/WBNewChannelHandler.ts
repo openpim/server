@@ -587,7 +587,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                     logger.info(msg)
                     if (channel.config.debug) context.log += msg+'\n'
                     if (res.status !== 200) {
-                        const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+                        const msg = 'Ошибка запроса на Wildberries: ' + (await res.text())
                         context.log += msg                      
                         this.reportError(channel, item, msg)
                         return
