@@ -119,127 +119,229 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         if (data.item) {
             const item = await Item.findByPk(data.item)
-            await this.syncItem(channel, item!, context, true, language)
+            const items = []
+            if (item) {
+                items.push(item)
+                await this.syncItems(channel, items, context, true, language)
+            }
         } else {
             const query:any = {}
-            query[channel.identifier] = { status: { [Op.ne]: 1 }}
+            query[channel.config.nmIDAttr] = { [Op.ne]: '' }
             let items = await Item.findAll({ 
-                where: { tenantId: channel.tenantId, channels: query} 
+                where: { tenantId: channel.tenantId, values: query} 
             })
             context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                await this.syncItem(channel, item, context, false, language)
-            }
+            await this.syncItems(channel, items, context, false, language)
         }
         context.log += 'Cинхронизация закончена'
     }
 
-    async syncItem(channel: Channel, item: Item, context: JobContext, singleSync: boolean, language: string) {
-        context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
+    async syncItems(channel: Channel, items: Item[], context: JobContext, singleSync: boolean, language: string) {
+        if (singleSync) {
+            const item = items[0]
+            context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
+            
+            if (item.channels[channel.identifier]) {
+                const chanData = item.channels[channel.identifier]
+                if (chanData && chanData.status === 3) {
+                    // если прочитать статус когда ошибка то он затрет ошибку
+                    context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
+                    return
+                }
+    
+                const article = item.values[channel.config.wbCodeAttr]
+                if (!article) {
+                    item.channels[channel.identifier].status = 3
+                    item.channels[channel.identifier].message = 'Не найдено значение артикула товара в атрибуте: ' + channel.config.wbCodeAttr
+                } else {
+                    const url = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
+                    const request = {	
+                        settings: {
+                            filter: {
+                                withPhoto: -1,
+                                textSearch: ''+article
+                            }
+                        }
+                    }
+        
+                    const serverConfig = ModelManager.getServerConfig()
+                    if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
+    
+                    let msg = "Запрос на WB: " + url + " => " + JSON.stringify(request)
+                    logger.info(msg)
+                    if (channel.config.debug) context.log += msg+'\n'
+                    const res = await fetch(url, {
+                        method: 'post',
+                        body:    JSON.stringify(request),
+                        headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+                    })
+        
+                    if (res.status !== 200) {
+                        const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+                        context.log += msg                      
+                        return
+                    } else {
+                        const json = await res.json()
+                        if (json.cards.length === 0) {
+                            const msg = 'По данному запросу ничего не найдено'
+                            logger.info(msg)
+                            context.log += msg
+                            return
+                        }
 
-        if (item.channels[channel.identifier]) {
-            const chanData = item.channels[channel.identifier]
-             if (!singleSync && chanData.status === 3) {
-                // если прочитать статус когда ошибка то он затрет ошибку
-                context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
-                return
-            }
-
-            const article = item.values[channel.config.wbCodeAttr]
-            if (!article) {
-                item.channels[channel.identifier].status = 3
-                item.channels[channel.identifier].message = 'Не найдено значение артикула товара в атрибуте: ' + channel.config.wbCodeAttr
+                        await this.processItemSync(channel, items, context, language, json)
+                    }
+                }
             } else {
+                context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
+            }
+        } else {
+            let pageSize = 0
+            const limit = 100
+            let updatedAt
+            let nmID
+            do {
+                let cursor:any = { limit: limit }
+                if (updatedAt && nmID) cursor = { limit: limit, updatedAt: updatedAt, nmID: nmID }
                 const url = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
-                const request = {	
+                const request = {
                     settings: {
+                        cursor: cursor,
                         filter: {
-                            withPhoto: -1,
-                            textSearch: ''+article
+                            withPhoto: -1
                         }
                     }
                 }
-    
+
                 const serverConfig = ModelManager.getServerConfig()
                 if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
 
                 let msg = "Запрос на WB: " + url + " => " + JSON.stringify(request)
                 logger.info(msg)
-                if (channel.config.debug) context.log += msg+'\n'
+                if (channel.config.debug) context.log += msg + '\n'
                 const res = await fetch(url, {
                     method: 'post',
-                    body:    JSON.stringify(request),
+                    body: JSON.stringify(request),
                     headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
                 })
-    
+
                 if (res.status !== 200) {
                     const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
-                    context.log += msg                      
+                    logger.info(msg)
+                    context.log += msg
                     return
                 } else {
                     const json = await res.json()
-                    if (channel.config.debug) context.log += 'Ответ от WB '+JSON.stringify(json)+'\n'
-                    if (json.cards[0]?.imtID) {
-                        let status = 2
-                        // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
-                        if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) status = 1
-                        item.channels[channel.identifier].status = status
-                        item.channels[channel.identifier].message = ""
-                        item.channels[channel.identifier].syncedAt = Date.now()
-                        item.changed('channels', true)
-                        
-                        if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.cards[0].imtID
-                        if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.cards[0].nmID
-                        if (channel.config.wbBarcodeAttr) {
-                            const categoryConfig = await this.getCategoryConfig(channel, item)
-                            if (categoryConfig) {
-                                const barcodeConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#barcode')
-                                const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
-
-                                if (!barcode) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
-                            }
-                        }
-                        item.changed('values', true)
-                    } else {
-                        context.log += 'новых данных не получено\n'
+                    if (json.cards.length === 0) {
+                        const msg = 'По данному запросу ничего не найдено'
+                        logger.info(msg)
+                        context.log += msg
+                        return
                     }
+
+                    await this.processItemSync(channel, items, context, language, json)
+
+                    pageSize = json.cursor.total
+                    updatedAt = json.cursor.updatedAt
+                    nmID = json.cursor.nmID
                 }
-                if (channel.config.wbAttrContentRating && channel.config.wbGetContentRating && item.values[channel.config.nmIDAttr]) {
-                    const nmId = item.values[channel.config.nmIDAttr]
-                    const urlRating = `https://feedbacks-api.wildberries.ru/api/v1/feedbacks/products/rating/nmid?nmId=${nmId}`
-                    const logRating = "Sending request to WB: " + urlRating + " => nmId = " + JSON.stringify(nmId)
-                    logger.info(logRating)
-                    if (channel.config.debug) context.log += logRating + '\n'
-
-                    const resRating = await fetch(urlRating, {
-                        method: 'get',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken }
-                    })
-
-                    if (resRating.status !== 200) {
-                        const msg = 'Ошибка запроса на Ozon при получении средней оценки товара: ' + resRating.statusText
-                        context.log += msg + '\n'
-                        logger.error(msg)
-                    } else {
-                        const dataRating = await resRating.json()
-                        logger.info('Received data: ' + JSON.stringify(dataRating))
-                        if (channel.config.debug) context.log += 'Received data: ' + JSON.stringify(dataRating) + '\n'
-                        context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
-    
-                        item.values[channel.config.wbAttrContentRating] = '' + dataRating.data?.valuation
-                    }
-                }
-            }
-
-            await sequelize.transaction(async (t) => {
-                await item.save({ transaction: t })
-            })
-        } else {
-            context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
+            } while (pageSize === limit)
         }
+    }
 
-    }    
+    async processItemSync(channel: Channel, items: Item[], context: JobContext, language: string, json: any) {
+        let msg = `Получено ${json.cards.length} карточек\n`
+        if (channel.config.debug) context.log += msg
+        logger.info(msg)
+
+        for (const card of json.cards) {
+            const item = items.find(elem => elem.values[channel.config.nmIDAttr] == card.nmID)
+            if (card.imtID) {
+                msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}\n`
+                if (channel.config.debug) context.log += msg
+                logger.info(msg)
+                if (item) {
+                    msg = `Найден товар: ${item.identifier}\n`
+                    if (channel.config.debug) context.log += msg
+                    logger.info(msg)
+
+                    if (!item.channels[channel.identifier]) {
+                        msg = 'у товара: ' + item.identifier + ' нет выгрузки в канал, синхронизация не будет проводиться \n'
+                        if (channel.config.debug) context.log += msg
+                        logger.info(msg)
+                        continue
+                    }
+
+                    const chanData = item.channels[channel.identifier]
+                    if (chanData && chanData.status === 3) {
+                        // если прочитать статус когда ошибка то он затрет ошибку
+                        msg = 'Статус товара - ошибка, синхронизация не будет проводиться \n'
+                        if (channel.config.debug) context.log += msg
+                        logger.info(msg)
+                        continue
+                    }
+                    let status = 2
+                    // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
+                    if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) status = 1
+                    item.channels[channel.identifier].status = status
+                    item.channels[channel.identifier].message = ""
+                    item.channels[channel.identifier].syncedAt = Date.now()
+                    item.changed('channels', true)
+                    
+                    if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.cards[0].imtID
+                    if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.cards[0].nmID
+                    if (channel.config.wbBarcodeAttr) {
+                        const categoryConfig = await this.getCategoryConfig(channel, item)
+                        if (categoryConfig) {
+                            const barcodeConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#barcode')
+                            const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
+
+                            if (!barcode) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
+                        }
+                    }
+                    item.changed('values', true)
+
+                    if (channel.config.wbAttrContentRating && channel.config.wbGetContentRating && item.values[channel.config.nmIDAttr]) {
+                        const nmId = item.values[channel.config.nmIDAttr]
+                        const urlRating = `https://feedbacks-api.wildberries.ru/api/v1/feedbacks/products/rating/nmid?nmId=${nmId}`
+                        const logRating = "Sending request to WB: " + urlRating + " => nmId = " + JSON.stringify(nmId)
+                        logger.info(logRating)
+                        if (channel.config.debug) context.log += logRating + '\n'
+
+                        const serverConfig = ModelManager.getServerConfig()
+                        if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
+    
+                        const resRating = await fetch(urlRating, {
+                            method: 'get',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken }
+                        })
+    
+                        if (resRating.status !== 200) {
+                            const msg = 'Ошибка запроса на WB при получении средней оценки товара: ' + resRating.statusText
+                            context.log += msg + '\n'
+                            logger.error(msg)
+                        } else {
+                            const dataRating = await resRating.json()
+                            logger.info('Received data: ' + JSON.stringify(dataRating))
+                            if (channel.config.debug) context.log += 'Received data: ' + JSON.stringify(dataRating) + '\n'
+                            context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
+        
+                            item.values[channel.config.wbAttrContentRating] = '' + dataRating.data?.valuation
+                        }
+                    }
+
+                    await sequelize.transaction(async (t) => {
+                        await item.save({ transaction: t })
+                    })
+                } else {
+                    let msg = "Ошибка, не найден товар по артикулу для синхронизации: " + card.vendorCode
+                    context.log += msg+'\n'
+                }
+            } else {
+                context.log += 'новых данных не получено\n'
+            }
+        }
+    }
 
     async getCategoryConfig(channel: Channel, item: Item) {
         for (const categoryId in channel.mappings) {
@@ -485,7 +587,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                     logger.info(msg)
                     if (channel.config.debug) context.log += msg+'\n'
                     if (res.status !== 200) {
-                        const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
+                        const msg = 'Ошибка запроса на Wildberries: ' + (await res.text())
                         context.log += msg                      
                         this.reportError(channel, item, msg)
                         return
