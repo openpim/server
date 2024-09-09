@@ -255,9 +255,9 @@ export class WBNewChannelHandler extends ChannelHandler {
         logger.info(msg)
 
         for (const card of json.cards) {
-            const item = items.find(elem => elem.values[channel.config.nmIDAttr] == card.nmID)
+            const item = items.find(elem => elem.values[channel.config.wbCodeAttr] == card.vendorCode)
             if (card.imtID) {
-                msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}\n`
+                msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}, vendorCode: ${card.vendorCode}\n`
                 if (channel.config.debug) context.log += msg
                 logger.info(msg)
                 if (item) {
