@@ -288,15 +288,15 @@ export class WBNewChannelHandler extends ChannelHandler {
                     item.channels[channel.identifier].syncedAt = Date.now()
                     item.changed('channels', true)
                     
-                    if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.cards[0].imtID
-                    if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.cards[0].nmID
+                    if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = card.imtID
+                    if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = card.nmID
                     if (channel.config.wbBarcodeAttr) {
                         const categoryConfig = await this.getCategoryConfig(channel, item)
                         if (categoryConfig) {
                             const barcodeConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#barcode')
                             const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
 
-                            if (!barcode) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
+                            if (!barcode) item.values[channel.config.wbBarcodeAttr] = card.sizes[0].skus[0]
                         }
                     }
                     item.changed('values', true)
