@@ -459,6 +459,8 @@ export class WBNewChannelHandler extends ChannelHandler {
         const heightConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#height')
         const height = await this.getValueByMapping(channel, heightConfig, item, language)
 
+        const serverConfig = ModelManager.getServerConfig()
+
         // request to WB
         let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
 
@@ -478,6 +480,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 }
             }
 
+            if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
             let msg = "Sending request Windberries: " + existUrl + " => " + JSON.stringify(existsBody)
             logger.info(msg)
             const resExisting = await fetch(existUrl, {
@@ -549,6 +552,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             }
         }        
 
+        if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
         await this.sendRequest(channel, item, request, context, categoryConfig.id)
 
         // images
@@ -566,6 +570,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                         "nmId": parseInt(nmID),
                         "data": images
                         }
+                    if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
                     const imgUrl = 'https://suppliers-api.wildberries.ru/content/v3/media/save'
                     let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
                     logger.info(msg)
