@@ -29,7 +29,7 @@ export function updateChannelMappings(context: Context, chan: any, mappings: any
                             logger.info(`readingTime -> ${newMapping.readingTime}`)
                             logger.info(`oldMapping -> ${JSON.stringify(oldMapping)}`)
                             logger.info(`newMapping -> ${JSON.stringify(newMapping)}`)
-                            if (process.env.MAPPING_ERROR) conflictedCategories.push(oldMapping.name)
+                            if (!process.env.NO_MAPPING_ERROR) conflictedCategories.push(oldMapping.name)
                             tmp[prop] = oldMapping
                         } else {
                             tmp[prop] = {
