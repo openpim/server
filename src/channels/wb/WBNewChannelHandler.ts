@@ -83,6 +83,9 @@ export class WBNewChannelHandler extends ChannelHandler {
             return 
         }
 
+        let singleItem = null
+        if (data.item) singleItem = await Item.findByPk(data.item)
+
         const errorsResp = await fetch('https://suppliers-api.wildberries.ru/content/v2/cards/error/list', {
             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
         })
@@ -92,6 +95,8 @@ export class WBNewChannelHandler extends ChannelHandler {
         if (channel.config.debug) context.log += msg+'\n'
         for (let i = 0; i < errorsJson.data.length; i++) {
             const error = errorsJson.data[i];
+
+            if (singleItem && singleItem.values[channel.config.wbCodeAttr] != error.vendorCode) continue
             
             const query:any = {}
             query[wbCodeAttr] = error.vendorCode
@@ -118,17 +123,14 @@ export class WBNewChannelHandler extends ChannelHandler {
 
 
         if (data.item) {
-            const item = await Item.findByPk(data.item)
-            const items = []
-            if (item) {
-                items.push(item)
-                await this.syncItems(channel, items, context, true, language)
+            if (singleItem) {
+                await this.syncItems(channel, [singleItem], context, true, language)
             }
         } else {
             const query:any = {}
-            query[channel.config.nmIDAttr] = { [Op.ne]: '' }
+            query[channel.identifier] = { status: {[Op.ne]: null }}
             let items = await Item.findAll({ 
-                where: { tenantId: channel.tenantId, values: query} 
+                where: { tenantId: channel.tenantId, channels: query} 
             })
             context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
             await this.syncItems(channel, items, context, false, language)
@@ -287,6 +289,9 @@ export class WBNewChannelHandler extends ChannelHandler {
                     item.channels[channel.identifier].message = ""
                     item.channels[channel.identifier].syncedAt = Date.now()
                     item.changed('channels', true)
+                    msg = `Результат синхронизации: ${JSON.stringify(item.channels[channel.identifier])}\n`
+                    if (channel.config.debug) context.log += msg
+                    logger.info(msg)
                     
                     if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = card.imtID
                     if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = card.nmID
