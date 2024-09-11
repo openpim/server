@@ -209,26 +209,20 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 checkSubmit(context, item.channels)
 
                 filterValuesNotAllowed(context.getNotEditItemAttributes2(type!.getValue().id, path), item.values)
-                let relAttributesData: any = []
-
                 checkValues(mng, item.values)
+
+                let relAttributesData: any = []
                 relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction)
 
                 data.values = item.values
                 data.channels = item.channels
 
                 await data.save({transaction})
-
-                console.log('save')
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                console.log('createRelationsForItemRelAttributes')
                 if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
-                console.log('processItemActions')
                 await transaction.commit()
-                console.log('commit')
             } catch (err:any) {
                 transaction.rollback()
-                console.log('rollback')
                 throw new Error(err.message)
             }
 
@@ -337,15 +331,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 filterEditChannels(context, item.channels)
                 checkSubmit(context, item.channels)
                 filterValuesNotAllowed(context.getNotEditItemAttributes(data), item.values)
+                checkValues(mng, item.values)
+
                 let relAttributesData: any = []
-                try {
-                    checkValues(mng, item.values)
-                    relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction)
-                } catch (err:any) {
-                    result.addError(new ReturnMessage(0, err.message))
-                    result.result = ImportResult.REJECTED
-                    return result
-                }
+                relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction)
 
                 if (audit.auditEnabled()) {
                     const valuesDiff: AuditItem = diff({values:data.values, channels:data.channels}, {values:item.values, channels:item.channels})
@@ -357,24 +346,17 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 data.values = mergeValues(item.values, data.values)
                 data.changed('values', true)
-
                 data.channels = mergeValues(item.channels, data.channels)
                 processDeletedChannels(item.channels)
                 data.changed('channels', true)
-
                 data.updatedBy = context.getCurrentUser()!.login
 
                 await data.save({ transaction })
-                console.log('save')
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                console.log('createRelationsForItemRelAttributes')
                 if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
-                console.log('processItemActions')
                 await transaction.commit()
-                console.log('commit')
             } catch(err:any) {
                 await transaction.rollback()
-                console.log('rollback')
                 throw new Error(err.message)
             }
 

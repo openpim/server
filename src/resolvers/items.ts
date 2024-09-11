@@ -580,25 +580,28 @@ export default {
 
             await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, channels, false, false)
 
-            filterEditChannels(context, channels)
-            checkSubmit(context, channels)
+            const transaction = await sequelize.transaction()
+            try {
 
-            filterValuesNotAllowed(context.getNotEditItemAttributes2(nTypeId, path), values)
-            checkValues(mng, values)
+                filterEditChannels(context, channels)
+                checkSubmit(context, channels)
 
-            item.values = values
-            item.channels = channels
+                filterValuesNotAllowed(context.getNotEditItemAttributes2(nTypeId, path), values)
+                checkValues(mng, values)
 
-            let relAttributesData: any = []
-            relAttributesData = await checkRelationAttributes(context, mng, item, values)
+                item.values = values
+                item.channels = channels
 
-            await sequelize.transaction(async (t) => {
-                await item.save({ transaction: t })
-            })
-
-            await createRelationsForItemRelAttributes(context, relAttributesData)
-
-            await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false)
+                let relAttributesData: any = []
+                relAttributesData = await checkRelationAttributes(context, mng, item, values, transaction)
+                await item.save({ transaction })
+                await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
+                await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false)
+                await transaction.commit()
+            } catch(err:any) {
+                transaction.rollback()
+                throw new Error(err.message)
+            }
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -645,28 +648,32 @@ export default {
             let itemDiff: AuditItem | null = null
             if (audit.auditEnabled()) itemDiff = diff({ name: item.name, values: item.values, channels: item.channels }, { name: name || item.name, values: values || item.values, channels: channels || item.channels })
 
-            if (channels) {
-                filterEditChannels(context, channels)
-                checkSubmit(context, channels)
-                item.channels = mergeValues(channels, item.channels)
-                processDeletedChannels(item.channels)
+            const transaction = await sequelize.transaction()
+
+            try {
+
+                if (channels) {
+                    filterEditChannels(context, channels)
+                    checkSubmit(context, channels)
+                    item.channels = mergeValues(channels, item.channels)
+                    processDeletedChannels(item.channels)
+                }
+                let relAttributesData: any = []
+                if (values) {
+                    relAttributesData = await checkRelationAttributes(context, mng, item, values, transaction)
+                    item.values = mergeValues(values, item.values)
+                    item.changed("values", true)
+                }
+    
+                if (name) item.name = name
+                await item.save({ transaction })
+                await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
+                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false)
+                await transaction.commit()
+            } catch(err: any) {
+                await transaction.rollback()
+                throw new Error(err.message)
             }
-            let relAttributesData: any = []
-            if (values) {
-                relAttributesData = await checkRelationAttributes(context, mng, item, values)
-                item.values = mergeValues(values, item.values)
-                item.changed("values", true)
-            }
-
-            if (name) item.name = name
-
-            await sequelize.transaction(async (t) => {
-                await item.save({ transaction: t })
-            })
-
-            await createRelationsForItemRelAttributes(context, relAttributesData)
-
-            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false)
 
             if (audit.auditEnabled() && itemDiff) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
