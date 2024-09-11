@@ -426,7 +426,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
 export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any, transaction: Transaction) {
     const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
     if (!isLicenceExists) {
-        return
+        return []
     }
 
     const utils = new ActionUtils(context)

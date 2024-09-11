@@ -83,6 +83,9 @@ export class WBNewChannelHandler extends ChannelHandler {
             return 
         }
 
+        let singleItem = null
+        if (data.item) singleItem = await Item.findByPk(data.item)
+
         const errorsResp = await fetch('https://suppliers-api.wildberries.ru/content/v2/cards/error/list', {
             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
         })
@@ -92,6 +95,8 @@ export class WBNewChannelHandler extends ChannelHandler {
         if (channel.config.debug) context.log += msg+'\n'
         for (let i = 0; i < errorsJson.data.length; i++) {
             const error = errorsJson.data[i];
+
+            if (singleItem && singleItem.values[channel.config.wbCodeAttr] != error.vendorCode) continue
             
             const query:any = {}
             query[wbCodeAttr] = error.vendorCode
@@ -118,17 +123,14 @@ export class WBNewChannelHandler extends ChannelHandler {
 
 
         if (data.item) {
-            const item = await Item.findByPk(data.item)
-            const items = []
-            if (item) {
-                items.push(item)
-                await this.syncItems(channel, items, context, true, language)
+            if (singleItem) {
+                await this.syncItems(channel, [singleItem], context, true, language)
             }
         } else {
             const query:any = {}
-            query[channel.config.nmIDAttr] = { [Op.ne]: '' }
+            query[channel.identifier] = { status: {[Op.ne]: null }}
             let items = await Item.findAll({ 
-                where: { tenantId: channel.tenantId, values: query} 
+                where: { tenantId: channel.tenantId, channels: query} 
             })
             context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
             await this.syncItems(channel, items, context, false, language)
@@ -255,9 +257,9 @@ export class WBNewChannelHandler extends ChannelHandler {
         logger.info(msg)
 
         for (const card of json.cards) {
-            const item = items.find(elem => elem.values[channel.config.nmIDAttr] == card.nmID)
+            const item = items.find(elem => elem.values[channel.config.wbCodeAttr] == card.vendorCode)
             if (card.imtID) {
-                msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}\n`
+                msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}, vendorCode: ${card.vendorCode}\n`
                 if (channel.config.debug) context.log += msg
                 logger.info(msg)
                 if (item) {
@@ -287,16 +289,19 @@ export class WBNewChannelHandler extends ChannelHandler {
                     item.channels[channel.identifier].message = ""
                     item.channels[channel.identifier].syncedAt = Date.now()
                     item.changed('channels', true)
+                    msg = `Результат синхронизации: ${JSON.stringify(item.channels[channel.identifier])}\n`
+                    if (channel.config.debug) context.log += msg
+                    logger.info(msg)
                     
-                    if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = json.cards[0].imtID
-                    if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = json.cards[0].nmID
+                    if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = card.imtID
+                    if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = card.nmID
                     if (channel.config.wbBarcodeAttr) {
                         const categoryConfig = await this.getCategoryConfig(channel, item)
                         if (categoryConfig) {
                             const barcodeConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#barcode')
                             const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
 
-                            if (!barcode) item.values[channel.config.wbBarcodeAttr] = json.cards[0].sizes[0].skus[0]
+                            if (!barcode) item.values[channel.config.wbBarcodeAttr] = card.sizes[0].skus[0]
                         }
                     }
                     item.changed('values', true)
@@ -459,6 +464,8 @@ export class WBNewChannelHandler extends ChannelHandler {
         const heightConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#height')
         const height = await this.getValueByMapping(channel, heightConfig, item, language)
 
+        const serverConfig = ModelManager.getServerConfig()
+
         // request to WB
         let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
 
@@ -478,6 +485,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 }
             }
 
+            if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
             let msg = "Sending request Windberries: " + existUrl + " => " + JSON.stringify(existsBody)
             logger.info(msg)
             const resExisting = await fetch(existUrl, {
@@ -549,6 +557,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             }
         }        
 
+        if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
         await this.sendRequest(channel, item, request, context, categoryConfig.id)
 
         // images
@@ -566,6 +575,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                         "nmId": parseInt(nmID),
                         "data": images
                         }
+                    if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
                     const imgUrl = 'https://suppliers-api.wildberries.ru/content/v3/media/save'
                     let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
                     logger.info(msg)

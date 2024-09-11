@@ -18,6 +18,11 @@ export class cleaningDatabase {
 
         if (!user.props.startClean) return
 
+        if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'true') {
+            logger.info(`   Skip cleaning job start because of OPENPIM_NO_CHANNEL_SCHEDULER=true`)
+            return
+        }
+
         const openpimDir : any = FileManager.getInstance().getFilesRoot()
 
         const daysToSaveDeleted = user.props.daysToSaveDeleted
