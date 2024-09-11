@@ -202,30 +202,35 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             if (!item.channels) item.channels = {}
             if (!item.skipActions) await processItemActions(context, EventType.BeforeCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
-            filterEditChannels(context, item.channels)
-            checkSubmit(context, item.channels)
-
-            filterValuesNotAllowed(context.getNotEditItemAttributes2(type!.getValue().id, path), item.values)
-            let relAttributesData: any = []
+            const transaction = await sequelize.transaction()
             try {
+
+                filterEditChannels(context, item.channels)
+                checkSubmit(context, item.channels)
+
+                filterValuesNotAllowed(context.getNotEditItemAttributes2(type!.getValue().id, path), item.values)
+                let relAttributesData: any = []
+
                 checkValues(mng, item.values)
-                relAttributesData = await checkRelationAttributes(context, mng, data, item.values)
-            } catch (err: any) {
-                result.addError(new ReturnMessage(0, err.message))
-                result.result = ImportResult.REJECTED
-                return result
+                relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction)
+
+                data.values = item.values
+                data.channels = item.channels
+
+                await data.save({transaction})
+
+                console.log('save')
+                await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
+                console.log('createRelationsForItemRelAttributes')
+                if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
+                console.log('processItemActions')
+                await transaction.commit()
+                console.log('commit')
+            } catch (err:any) {
+                transaction.rollback()
+                console.log('rollback')
+                throw new Error(err.message)
             }
-
-            data.values = item.values
-            data.channels = item.channels
-
-            await sequelize.transaction(async (t) => {
-                await data.save({transaction: t})
-            })
-
-            await createRelationsForItemRelAttributes(context, relAttributesData)
-
-            if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -237,9 +242,9 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 }
                 audit.auditItem(ChangeType.CREATE, data.id, item.identifier, {added: itemChanges}, context.getCurrentUser()!.login, data.createdAt)
             }
-
             result.id = ""+data.id
             result.result = ImportResult.CREATED
+
         } else {
             // update
             if ((item.name || item.values) && !context.canEditItem(data)) {
@@ -325,39 +330,53 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 data.name = {...data.name, ...item.name}
             }
 
-            filterEditChannels(context, item.channels)
-            checkSubmit(context, item.channels)
-            filterValuesNotAllowed(context.getNotEditItemAttributes(data), item.values)
-            let relAttributesData: any = []
+            const transaction = await sequelize.transaction()
+
             try {
-                checkValues(mng, item.values)
-                relAttributesData = await checkRelationAttributes(context, mng, data, item.values)
-            } catch (err:any) {
-                result.addError(new ReturnMessage(0, err.message))
-                result.result = ImportResult.REJECTED
-                return result
+
+                filterEditChannels(context, item.channels)
+                checkSubmit(context, item.channels)
+                filterValuesNotAllowed(context.getNotEditItemAttributes(data), item.values)
+                let relAttributesData: any = []
+                try {
+                    checkValues(mng, item.values)
+                    relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction)
+                } catch (err:any) {
+                    result.addError(new ReturnMessage(0, err.message))
+                    result.result = ImportResult.REJECTED
+                    return result
+                }
+
+                if (audit.auditEnabled()) {
+                    const valuesDiff: AuditItem = diff({values:data.values, channels:data.channels}, {values:item.values, channels:item.channels})
+                    itemDiff.added = {...itemDiff.added, ...valuesDiff.added}
+                    itemDiff.changed = {...itemDiff.changed, ...valuesDiff.changed}
+                    itemDiff.old = {...itemDiff.old, ...valuesDiff.old}
+                    itemDiff.deleted = {...itemDiff.deleted, ...valuesDiff.deleted}
+                }
+
+                data.values = mergeValues(item.values, data.values)
+                data.changed('values', true)
+
+                data.channels = mergeValues(item.channels, data.channels)
+                processDeletedChannels(item.channels)
+                data.changed('channels', true)
+
+                data.updatedBy = context.getCurrentUser()!.login
+
+                await data.save({ transaction })
+                console.log('save')
+                await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
+                console.log('createRelationsForItemRelAttributes')
+                if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
+                console.log('processItemActions')
+                await transaction.commit()
+                console.log('commit')
+            } catch(err:any) {
+                await transaction.rollback()
+                console.log('rollback')
+                throw new Error(err.message)
             }
-
-            if (audit.auditEnabled()) {
-                const valuesDiff: AuditItem = diff({values:data.values, channels:data.channels}, {values:item.values, channels:item.channels})
-                itemDiff.added = {...itemDiff.added, ...valuesDiff.added}
-                itemDiff.changed = {...itemDiff.changed, ...valuesDiff.changed}
-                itemDiff.old = {...itemDiff.old, ...valuesDiff.old}
-                itemDiff.deleted = {...itemDiff.deleted, ...valuesDiff.deleted}
-            }
-
-            data.values = mergeValues(item.values, data.values)
-            data.changed('values', true)
-            data.channels = mergeValues(item.channels, data.channels)
-            processDeletedChannels(item.channels)
-
-            data.updatedBy = context.getCurrentUser()!.login
-
-            await data!.save()
-
-            await createRelationsForItemRelAttributes(context, relAttributesData)
-
-            if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, data.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)

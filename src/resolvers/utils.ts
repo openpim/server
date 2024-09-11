@@ -8,7 +8,7 @@ import { ItemRelation } from "../models/itemRelations"
 import { exec } from 'child_process'
 const { Op, literal } = require("sequelize");
 import { sequelize } from '../models'
-import { QueryTypes } from 'sequelize'
+import { QueryTypes, Transaction } from 'sequelize'
 import audit, { ChangeType, ItemChanges, ItemRelationChanges } from '../audit'
 
 const util = require('util');
@@ -423,7 +423,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
     })
 }
 
-export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any) {
+export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any, transaction: Transaction) {
     const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
     if (!isLicenceExists) {
         return
@@ -464,8 +464,9 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                 relationIdentifier: itemRelationsTypesUnique.map((rel: any) => rel.identifier),
                 [Op.or]: [{ itemId: item.id }, { targetId: item.id }]
             },
+            transaction
             //include: [{model: Item, as: 'sourceItem'}, {model: Item, as: 'targetItem'}]
-        })
+        },)
     }
 
     // all the items from values
@@ -480,13 +481,14 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
     }
     const sourceAndTargetItemTypesUnique = sourceAndTargetItemTypes.filter((item, pos) => sourceAndTargetItemTypes.indexOf(item) === pos)
 
-    let relatedItems: any = []
+    let relatedItems: Item[] = []
     if (relatedItemsIds.length) {
         relatedItems = await Item.applyScope(context).findAll({
             where: {
                 id: relatedItemsIds,
                 typeId: sourceAndTargetItemTypesUnique
-            }
+            },
+            transaction
         })
     }
 
@@ -515,7 +517,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                 // remove relations not existed in incoming array
                 const existedItemRelationsForAttribute2Delete = existedItemRelationsForAttribute.filter(value => !valsArray.includes(isSource ? value.targetId : value.itemId))
                 for (let i = 0; i < existedItemRelationsForAttribute2Delete.length; i++) {
-                    await utils.removeItemRelation(existedItemRelationsForAttribute2Delete[i].id.toString(), context)
+                    await utils.removeItemRelationTransactional(existedItemRelationsForAttribute2Delete[i].id.toString(), context, transaction)
                     changed = true
                     const idx = existedItemRelations.findIndex(el => el.id === existedItemRelationsForAttribute2Delete[i].id)
                     if (idx !== -1) {
@@ -564,10 +566,10 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
     return relations2Create
 }
 
-export async function createRelationsForItemRelAttributes(context: Context, arr: any) {
+export async function createRelationsForItemRelAttributes(context: Context, arr: any, transaction: Transaction) {
     const utils = new ActionUtils(context)
     for (let i = 0; i < arr.length; i++) {
-        await utils.createItemRelation(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, arr[i].newItemValues)
+        await utils.createItemRelationTransactional(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, arr[i].newItemValues, transaction)
     }
 }
 
@@ -1768,6 +1770,96 @@ class ActionUtils {
         return makeItemRelationProxy(itemRelation)
     }
 
+    public async createItemRelationTransactional(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, newItemValues: any, transaction: Transaction) {
+        if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+        const rel = mng.getRelationByIdentifier(relationIdentifier)
+        if (!rel) {
+            throw new Error('Failed to find relation by identifier: ' + relationIdentifier + ', tenant: ' + mng.getTenantId())
+        }
+
+        if (!this.#context.canEditItemRelation(rel.id)) {
+            throw new Error('User :' + this.#context.getCurrentUser()?.login + ' can not edit item relation:' + rel.identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const tst = await ItemRelation.applyScope(this.#context).findOne({
+            where: {
+                identifier: identifier
+            }, transaction
+        })
+        
+        if (tst) {
+            throw new Error('Identifier: ' + identifier + ' already exists, tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const item = await Item.applyScope(this.#context).findOne({ where: { identifier: itemIdentifier }, transaction })
+        if (!item) {
+            throw new Error('Failed to find item by id: ' + itemIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const targetItem = await Item.applyScope(this.#context).findOne({ where: { identifier: targetIdentifier }, transaction })
+        if (!targetItem) {
+            throw new Error('Failed to find target item by id: ' + targetIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
+        }
+
+        const tst3 = rel.targets.find((typeId: number) => typeId === targetItem.typeId)
+        if (!tst3) {
+            throw new Error('Relation with id: ' + relationIdentifier + ' can not have target with type: ' + targetItem.typeId + ', tenant: ' + mng.getTenantId())
+        }
+
+        if (!rel.multi) {
+            const count = await ItemRelation.applyScope(this.#context).count({
+                where: {
+                    itemIdentifier: itemIdentifier,
+                    relationId: rel.id
+                }, transaction
+            })
+
+            if (count > 0) {
+                throw new Error('Relation with id: ' + itemIdentifier + ' can not have more then one target, tenant: ' + mng.getTenantId())
+            }
+        }
+
+        const itemRelation = await ItemRelation.build({
+            identifier: identifier,
+            tenantId: this.#context.getCurrentUser()!.tenantId,
+            createdBy: this.#context.getCurrentUser()!.login,
+            updatedBy: this.#context.getCurrentUser()!.login,
+            relationId: rel.id,
+            relationIdentifier: rel.identifier,
+            itemId: item.id,
+            itemIdentifier: item.identifier,
+            targetId: targetItem.id,
+            targetIdentifier: targetItem.identifier,
+            values: null
+        })
+
+        if (!values) values = {}
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, newItemValues)
+
+        filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
+        checkValues(mng, values)
+
+        itemRelation.values = values
+
+        await itemRelation.save({ transaction })
+
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, newItemValues)
+
+        if (audit.auditEnabled()) {
+            const itemRelationChanges: ItemRelationChanges = {
+                relationIdentifier: itemRelation.relationIdentifier,
+                itemIdentifier: itemRelation.itemIdentifier,
+                targetIdentifier: itemRelation.targetIdentifier,
+                values: values
+            }
+            audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, { added: itemRelationChanges }, this.#context.getCurrentUser()!.login, itemRelation.createdAt)
+        }
+
+        return makeItemRelationProxy(itemRelation)
+    }
+
     public async removeItemRelation(id: string, context: Context) {
         context.checkAuth()
         const nId = parseInt(id)
@@ -1796,6 +1888,53 @@ class ActionUtils {
             await itemRelation.save({ transaction: t })
             await itemRelation.destroy({ transaction: t })
         })
+
+        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, null)
+
+        if (audit.auditEnabled()) {
+            const itemRelationChanges: ItemRelationChanges = {
+                relationIdentifier: itemRelation.relationIdentifier,
+                itemIdentifier: itemRelation.itemIdentifier,
+                targetIdentifier: itemRelation.targetIdentifier,
+                values: itemRelation.values
+            }
+            audit.auditItemRelation(ChangeType.DELETE, itemRelation.id, oldIdentifier, { deleted: itemRelationChanges }, context.getCurrentUser()!.login, itemRelation.updatedAt)
+        }
+
+        return true
+    }
+
+    public async removeItemRelationTransactional(id: string, context: Context, transaction: Transaction) {
+        context.checkAuth()
+        const nId = parseInt(id)
+
+        const itemRelation = await ItemRelation.applyScope(context).findByPk(nId, { transaction })
+        if (!itemRelation) {
+            throw new Error('Failed to find item relation by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+        }
+
+        if (!context.canEditItemRelation(itemRelation.relationId)) {
+            throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+        }
+
+        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, null)
+
+        itemRelation.updatedBy = context.getCurrentUser()!.login
+        if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
+            if (transaction) {
+                await itemRelation.save({ transaction })
+            } else {
+                await itemRelation.save()
+            }
+            return true
+        }
+
+        // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
+        const oldIdentifier = itemRelation.identifier
+        itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now()
+
+        await itemRelation.save({ transaction })
+        await itemRelation.destroy({ transaction })
 
         await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, null)
 
