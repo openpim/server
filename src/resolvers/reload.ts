@@ -15,8 +15,10 @@ import { ChannelsManagerFactory } from '../channels'
 export default {
   // TODO: should be mutation?
   Query: {
-    reloadModelRemotely: async (parent: any, { id, parentId, entity, del }: any, context: Context) => {
+    reloadModelRemotely: async (parent: any, { id, parentId, serverUuid, entity, del }: any, context: Context) => {
       context.checkAuth()
+      // we don't need to reload current server
+      if (ModelsManager.getInstance().getServerUuid() === serverUuid) return
       const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
       try {
         switch (entity) {

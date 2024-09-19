@@ -17,6 +17,7 @@ import { FileManager } from '../media/FileManager'
 import * as fs from 'fs'
 import i18next from '../i18n';
 import fetch from 'node-fetch'
+import { v4 as uuidv4 } from 'uuid';
 
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
@@ -120,11 +121,12 @@ export class ModelManager {
 
     public async reloadModelRemotely(id: number, parentId: number | null, entity: string, del: boolean, xToken: string | null) {
         const servers = process.env.OPENPIM_SERVERS
+        const serverUuid = ModelsManager.getInstance().getServerUuid()
         if (servers && servers.length && xToken) {
             const serversArr = servers.split(';')
             for (let i = 0; i < serversArr.length; i++) {
                 const server = serversArr[i]
-                const request = `query { reloadModelRemotely( id: "${id}", parentId: "${parentId}" entity: ${entity}, del: ${del} ) }`
+                const request = `query { reloadModelRemotely( id: "${id}", parentId: "${parentId}", serverUuid: "${serverUuid}", entity: ${entity}, del: ${del} ) }`
                 const query = { query: request }
                 logger.debug(`Reloading model remotely for server ${server}`)
                 try {
@@ -272,8 +274,11 @@ export class ModelsManager {
     private static instance: ModelsManager
     private tenantMap: Record<string, ModelManager> = {}
     private channelTypes: number[] = [1, 5, 6, 8] // external and external with mapping and MDM by default
+    private serverUuid: string
 
-    private constructor() { }
+    private constructor() { this.serverUuid = uuidv4() }
+
+    public getServerUuid() { return this.serverUuid }
 
     public static getInstance(): ModelsManager {
         if (!ModelsManager.instance) {

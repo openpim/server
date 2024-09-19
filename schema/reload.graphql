@@ -1,5 +1,5 @@
 type Query {
-  reloadModelRemotely(id: ID!, parentId: ID, entity: Entity!, del:Boolean): Boolean
+  reloadModelRemotely(id: ID!, parentId: ID, serverUuid: String!, entity: Entity!, del:Boolean): Boolean
 }
 
 enum Entity {
