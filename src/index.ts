@@ -29,7 +29,8 @@ import {
   getImportConfigFileData, 
   testImportConfig,
   processUploadXlsxTemplate, 
-  downloadXlsxTemplateFile, 
+  downloadXlsxTemplateFile,
+  processDownloadInline, 
 } from './media';
 import { initModels } from './models';
 import { ModelsManager } from './models/manager';
@@ -199,6 +200,15 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     }
   })
 
+  app.get('/asset/inline/:id', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      await processDownloadInline(context, req, res, false)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+  
   app.get('/asset/:id/thumb', async (req, res) => {
     try {
       const context = await Context.create(req)

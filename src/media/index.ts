@@ -71,6 +71,16 @@ export async function processDownload(context: Context, req: Request, res: Respo
     await processDownloadById(context, id, res, thumbnail, inline)
 }
 
+export async function processDownloadInline(context: Context, req: Request, res: Response, thumbnail: boolean) {
+    let idStr = req.params.id
+    const tst = idStr.indexOf('.')
+    if (tst !== -1) idStr = idStr.substring(0,tst)
+    const id = parseInt(idStr)
+    if (!id) throw new Error('Wrong "id" parameter')
+
+    await processDownloadById(context, id, res, thumbnail, true)
+}
+
 export async function processDownloadMain(context: Context, req: Request, res: Response, thumbnail: boolean) {
     let ident = req.params.identifier
     const tst = ident.lastIndexOf('.')
