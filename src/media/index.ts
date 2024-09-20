@@ -14,7 +14,7 @@ import { ItemRelation } from '../models/itemRelations'
 import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
 import { Channel, ChannelExecution } from '../models/channels'
 import contentDisposition = require('content-disposition')
-import { checkValues, filterValues, mergeValues, processItemActions, processItemRelationActions } from '../resolvers/utils'
+import { checkValues, filterValues, mergeValues, processItemActions, processItemRelationActions, updateItemRelationAttributes } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 import { Process } from '../models/processes'
 import { ImportConfig } from '../models/importConfigs'
@@ -472,6 +472,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             const irValues = {}
             await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, null)
 
+            await updateItemRelationAttributes(context, mng, itemRelation, false)
             await sequelize.transaction(async (t) => {
                 await itemRelation.save({transaction: t})
             })
