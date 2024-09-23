@@ -120,6 +120,10 @@ export class ModelManager {
     }
 
     public async reloadModelRemotely(id: number, parentId: number | null, entity: string, del: boolean, xToken: string | null) {
+        this.reloadModelRemotelyProcess(id, parentId, entity, del, xToken)
+    }   
+
+    public async reloadModelRemotelyProcess(id: number, parentId: number | null, entity: string, del: boolean, xToken: string | null) {
         const servers = process.env.OPENPIM_SERVERS
         const serverUuid = ModelsManager.getInstance().getServerUuid()
         if (servers && servers.length && xToken) {
