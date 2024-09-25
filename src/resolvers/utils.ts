@@ -1377,6 +1377,10 @@ class ActionUtils {
         return this.#mng.getAttrGroups()
     }
 
+    public getUserToken() {
+        return this.#context.getUserToken()
+    }
+
     public getUserByLogin(login: string) {
         const userWrapper = this.#mng.getUsers().find(user => user.getUser().login === login)
         return userWrapper ? userWrapper.getUser() : null
