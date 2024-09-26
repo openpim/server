@@ -134,6 +134,11 @@ export class OzonChannelHandler extends ChannelHandler {
             item.channels[channel.identifier].syncedAt = new Date().getTime()
             item.changed('channels', true)
         }
+
+        if (channel.config.ozonCategoryAttr) {
+            item.values[channel.config.ozonCategoryAttr] = result.description_category_id
+            item.changed('values', true)
+        }
     }
 
     async syncItem(channel: Channel, item: Item, context: JobContext, singleSync: boolean) {
@@ -464,6 +469,11 @@ export class OzonChannelHandler extends ChannelHandler {
             changed = true
             valuesChanged = true
             changedValues[channel.config.ozonAttrContentRating] = item.values[channel.config.ozonAttrContentRating]
+        }
+        if (reloadedItem!.values[channel.config.ozonCategoryAttr] !== item.values[channel.config.ozonCategoryAttr]) {
+            changed = true
+            valuesChanged = true
+            changedValues[channel.config.ozonCategoryAttr] = item.values[channel.config.ozonCategoryAttr]
         }
         if (changedValues && Object.keys(changedValues).length > 0) {
             changed = true
