@@ -219,12 +219,12 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 await data.save({transaction})
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
                 await transaction.commit()
             } catch (err:any) {
                 transaction.rollback()
                 throw new Error(err.message)
             }
+            if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -325,7 +325,6 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             }
 
             const transaction = await sequelize.transaction()
-
             try {
 
                 filterEditChannels(context, item.channels)
@@ -353,12 +352,12 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 await data.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
                 await transaction.commit()
             } catch(err:any) {
                 await transaction.rollback()
                 throw new Error(err.message)
             }
+            if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, data.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)

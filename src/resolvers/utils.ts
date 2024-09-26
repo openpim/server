@@ -330,7 +330,7 @@ export function checkValues(mng: ModelManager, values: any) {
     }
 }
 
-export async function updateItemRelationAttributes(context: Context, mng: ModelManager, itemRelation: ItemRelation, del: Boolean) {
+export async function updateItemRelationAttributes(context: Context, mng: ModelManager, itemRelation: ItemRelation, del: Boolean, transaction: Transaction) {
     const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
     if (!isLicenceExists) {
         return
@@ -339,8 +339,8 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
     const attrs = mng.getRelationAttributes()
     const attrsFiltered = attrs.filter(attr => attr.relations.some((el: number) => el === itemRelation.relationId))
 
-    const item = await Item.applyScope(context).findByPk(itemRelation.itemId)
-    const targetItem = await Item.applyScope(context).findByPk(itemRelation.targetId)
+    const item = await Item.applyScope(context).findByPk(itemRelation.itemId, { transaction })
+    const targetItem = await Item.applyScope(context).findByPk(itemRelation.targetId, { transaction })
 
     if (!item) {
         throw new Error(`Can not find item with id ${itemRelation.itemId}`)
@@ -415,12 +415,10 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         }
     }
 
-    await sequelize.transaction(async (t) => {
-        await item.save({ transaction: t })
-        if (item.typeId !== targetItem.typeId) {
-            await targetItem.save({ transaction: t })
-        }
-    })
+    await item.save({ transaction })
+    if (item.typeId !== targetItem.typeId) {
+        await targetItem.save({ transaction })
+    }
 }
 
 export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any, transaction: Transaction) {
@@ -1684,94 +1682,18 @@ class ActionUtils {
     }
 
     public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, newItemValues: any) {
-        if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
-
-        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
-        const rel = mng.getRelationByIdentifier(relationIdentifier)
-        if (!rel) {
-            throw new Error('Failed to find relation by identifier: ' + relationIdentifier + ', tenant: ' + mng.getTenantId())
+        let result = null
+        const transaction = await sequelize.transaction()
+        try {
+            result = await this.createItemRelationTransactional(relationIdentifier, identifier, itemIdentifier, targetIdentifier, values, skipActions, newItemValues, transaction)
+            transaction.commit()
+            return result
+        } catch(err:any) {
+            transaction.rollback()
+            logger.error("Failed to create itemRelation with identifier " + identifier)
+            logger.error(err.message)
         }
-
-        if (!this.#context.canEditItemRelation(rel.id)) {
-            throw new Error('User :' + this.#context.getCurrentUser()?.login + ' can not edit item relation:' + rel.identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
-        }
-
-        const tst = await ItemRelation.applyScope(this.#context).findOne({
-            where: {
-                identifier: identifier
-            }
-        })
-        if (tst) {
-            throw new Error('Identifier: ' + identifier + ' already exists, tenant: ' + this.#context.getCurrentUser()!.tenantId)
-        }
-
-        const item = await Item.applyScope(this.#context).findOne({ where: { identifier: itemIdentifier } })
-        if (!item) {
-            throw new Error('Failed to find item by id: ' + itemIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
-        }
-
-        const targetItem = await Item.applyScope(this.#context).findOne({ where: { identifier: targetIdentifier } })
-        if (!targetItem) {
-            throw new Error('Failed to find target item by id: ' + targetIdentifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
-        }
-
-        const tst3 = rel.targets.find((typeId: number) => typeId === targetItem.typeId)
-        if (!tst3) {
-            throw new Error('Relation with id: ' + relationIdentifier + ' can not have target with type: ' + targetItem.typeId + ', tenant: ' + mng.getTenantId())
-        }
-
-        if (!rel.multi) {
-            const count = await ItemRelation.applyScope(this.#context).count({
-                where: {
-                    itemIdentifier: itemIdentifier,
-                    relationId: rel.id
-                }
-            })
-
-            if (count > 0) {
-                throw new Error('Relation with id: ' + itemIdentifier + ' can not have more then one target, tenant: ' + mng.getTenantId())
-            }
-        }
-
-        const itemRelation = await ItemRelation.build({
-            identifier: identifier,
-            tenantId: this.#context.getCurrentUser()!.tenantId,
-            createdBy: this.#context.getCurrentUser()!.login,
-            updatedBy: this.#context.getCurrentUser()!.login,
-            relationId: rel.id,
-            relationIdentifier: rel.identifier,
-            itemId: item.id,
-            itemIdentifier: item.identifier,
-            targetId: targetItem.id,
-            targetIdentifier: targetItem.identifier,
-            values: null
-        })
-
-        if (!values) values = {}
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, newItemValues)
-
-        filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
-        checkValues(mng, values)
-
-        itemRelation.values = values
-
-        await sequelize.transaction(async (t) => {
-            await itemRelation.save({ transaction: t })
-        })
-
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, newItemValues)
-
-        if (audit.auditEnabled()) {
-            const itemRelationChanges: ItemRelationChanges = {
-                relationIdentifier: itemRelation.relationIdentifier,
-                itemIdentifier: itemRelation.itemIdentifier,
-                targetIdentifier: itemRelation.targetIdentifier,
-                values: values
-            }
-            audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, { added: itemRelationChanges }, this.#context.getCurrentUser()!.login, itemRelation.createdAt)
-        }
-
-        return makeItemRelationProxy(itemRelation)
+        return result
     }
 
     public async createItemRelationTransactional(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, newItemValues: any, transaction: Transaction) {
@@ -1865,47 +1787,18 @@ class ActionUtils {
     }
 
     public async removeItemRelation(id: string, context: Context) {
-        context.checkAuth()
-        const nId = parseInt(id)
-
-        const itemRelation = await ItemRelation.applyScope(context).findByPk(nId)
-        if (!itemRelation) {
-            throw new Error('Failed to find item relation by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+        let result = false
+        const transaction = await sequelize.transaction()
+        try {
+            result = await this.removeItemRelationTransactional(id, context, transaction)
+            transaction.commit()
+            return result
+        } catch(err:any) {
+            transaction.rollback()
+            logger.error("Failed to remove itemRelation with id " + id)
+            logger.error(err.message)
         }
-
-        if (!context.canEditItemRelation(itemRelation.relationId)) {
-            throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
-        }
-
-        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, null)
-
-        itemRelation.updatedBy = context.getCurrentUser()!.login
-        if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
-            await itemRelation.save()
-            return true
-        }
-
-        // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
-        const oldIdentifier = itemRelation.identifier
-        itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now()
-        await sequelize.transaction(async (t) => {
-            await itemRelation.save({ transaction: t })
-            await itemRelation.destroy({ transaction: t })
-        })
-
-        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, null)
-
-        if (audit.auditEnabled()) {
-            const itemRelationChanges: ItemRelationChanges = {
-                relationIdentifier: itemRelation.relationIdentifier,
-                itemIdentifier: itemRelation.itemIdentifier,
-                targetIdentifier: itemRelation.targetIdentifier,
-                values: itemRelation.values
-            }
-            audit.auditItemRelation(ChangeType.DELETE, itemRelation.id, oldIdentifier, { deleted: itemRelationChanges }, context.getCurrentUser()!.login, itemRelation.updatedAt)
-        }
-
-        return true
+        return result
     }
 
     public async removeItemRelationTransactional(id: string, context: Context, transaction: Transaction) {

@@ -596,12 +596,12 @@ export default {
                 relAttributesData = await checkRelationAttributes(context, mng, item, values, transaction)
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false)
                 await transaction.commit()
             } catch(err:any) {
                 transaction.rollback()
                 throw new Error(err.message)
             }
+            await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -668,13 +668,12 @@ export default {
                 if (name) item.name = name
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false)
                 await transaction.commit()
             } catch(err: any) {
                 await transaction.rollback()
                 throw new Error(err.message)
             }
-
+            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false)
             if (audit.auditEnabled() && itemDiff) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }

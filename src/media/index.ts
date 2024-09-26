@@ -399,104 +399,90 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             const values = {}
             await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, item.channels, false, true)
             checkValues(mng, values)
-            item.values = mergeValues(values, item.values)        
+            item.values = mergeValues(values, item.values)
             item.name = name
-
             item.updatedBy = context.getCurrentUser()!.login
 
-            await sequelize.transaction(async (t) => {
-                await item.save({transaction: t})
-            })
+            const transaction = await sequelize.transaction()
+            try {
+                await item.save({ transaction })
 
-            await processItemActions(context, EventType.AfterCreate, item, item.parentIdentifier, item.name, item.values, item.channels, false, true)
+                // *** create link to item ***
+                const rel = mng.getRelationById(parseInt(relationIdStr))
+                if (!rel) throw new Error('Failed to find relation by id: ' + relationIdStr)
 
-            if (audit.auditEnabled()) {
-                const itemChanges: AuditItem = {
-                    added: {
-                        mimeType: file.mimetype || '',
-                        fileOrigName: file.originalFilename || ''
+                if (!context.canEditItemRelation(rel.id)) {
+                    throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + rel.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
+                }
+
+                const nItemId = parseInt(itemIdStr)
+                const source = await Item.applyScope(context).findByPk(nItemId, { transaction })
+                if (!source) {
+                    throw new Error('Failed to find item by id: ' + itemIdStr + ', tenant: ' + context.getCurrentUser()!.tenantId)
+                }
+
+                const relIdent = source.identifier + "_" + fileItemIdent
+                const tst3 = rel.targets.find((typeId: number) => typeId === item.typeId)
+                if (!tst3) {
+                    throw new Error('Relation with id: ' + rel.id + ' can not have target with type: ' + item.typeId + ', tenant: ' + mng.getTenantId())
+                }
+                if (!rel.multi) {
+                    const count = await ItemRelation.applyScope(context).count({
+                        where: {
+                            itemId: nItemId,
+                            relationId: rel.id,
+                        }, transaction
+                    })
+                    if (count) {
+                        throw new Error('Relation with id: ' + rel.id + ' can not have more then one target, tenant: ' + mng.getTenantId())
                     }
                 }
-                audit.auditItem(ChangeType.CREATE, item.id, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
-            }
-
-
-            // *** create link to item ***
-            const rel = mng.getRelationById(parseInt(relationIdStr))
-            if (!rel) throw new Error('Failed to find relation by id: ' + relationIdStr)
-
-            if (!context.canEditItemRelation(rel.id)) {
-                throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + rel.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
-            }
-
-            const nItemId = parseInt(itemIdStr)
-            const source = await Item.applyScope(context).findByPk(nItemId)
-            if (!source) {
-                throw new Error('Failed to find item by id: ' + itemIdStr + ', tenant: ' + context.getCurrentUser()!.tenantId)
-            }
-
-            const relIdent = source.identifier + "_" + fileItemIdent
-
-            const tst3 = rel.targets.find((typeId: number) => typeId === item.typeId)
-            if (!tst3) {
-                throw new Error('Relation with id: ' + rel.id + ' can not have target with type: ' + item.typeId + ', tenant: ' + mng.getTenantId())
-            }
-
-            if (!rel.multi) {
-                const count = await ItemRelation.applyScope(context).count( {
-                    where: {
-                        itemId: nItemId,
-                        relationId: rel.id
-                    }
+                const itemRelation = await ItemRelation.build ({
+                    identifier: relIdent,
+                    tenantId: context.getCurrentUser()!.tenantId,
+                    createdBy: context.getCurrentUser()!.login,
+                    updatedBy: context.getCurrentUser()!.login,
+                    relationId: rel.id,
+                    relationIdentifier: rel.identifier,
+                    itemId: nItemId,
+                    itemIdentifier: source.identifier,
+                    targetId: item.id,
+                    targetIdentifier: item.identifier,
+                    values: {}
                 })
-
-                if (count > 0) {
-                    throw new Error('Relation with id: ' + rel.id + ' can not have more then one target, tenant: ' + mng.getTenantId())
+                const irValues = {}
+                await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, null)
+                await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
+                await itemRelation.save({ transaction })
+                if (irValues) {
+                    filterValues(context.getEditItemRelationAttributes(itemRelation.relationId), irValues)
+                    checkValues(mng, irValues)
+                    itemRelation.values = irValues
                 }
-            }
-
-            const itemRelation = await ItemRelation.build ({
-                identifier: relIdent,
-                tenantId: context.getCurrentUser()!.tenantId,
-                createdBy: context.getCurrentUser()!.login,
-                updatedBy: context.getCurrentUser()!.login,
-                relationId: rel.id,
-                relationIdentifier: rel.identifier,
-                itemId: nItemId,
-                itemIdentifier: source.identifier,
-                targetId: item.id,
-                targetIdentifier: item.identifier,
-                values: {}
-            })
-
-            const irValues = {}
-            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, null)
-
-            await updateItemRelationAttributes(context, mng, itemRelation, false)
-            await sequelize.transaction(async (t) => {
-                await itemRelation.save({transaction: t})
-            })
-
-            if (irValues) {
-                filterValues(context.getEditItemRelationAttributes(itemRelation.relationId), irValues)
-                checkValues(mng, irValues)
-
-                itemRelation.values = irValues
-            }
-
-            if (audit.auditEnabled()) {
-                const itemRelationChanges: ItemRelationChanges = {
-                    relationIdentifier: itemRelation.relationIdentifier,
-                    itemIdentifier: itemRelation.itemIdentifier,
-                    targetIdentifier: itemRelation.targetIdentifier,
-                    values: itemRelation.values
+                await transaction.commit()
+                if (audit.auditEnabled()) {
+                    const itemChanges: AuditItem = {
+                        added: {
+                            mimeType: file.mimetype || '',
+                            fileOrigName: file.originalFilename || ''
+                        }
+                    }
+                    audit.auditItem(ChangeType.CREATE, item.id, item.identifier, itemChanges, context.getCurrentUser()!.login, item.updatedAt)
+    
+                    const itemRelationChanges: ItemRelationChanges = {
+                        relationIdentifier: itemRelation.relationIdentifier,
+                        itemIdentifier: itemRelation.itemIdentifier,
+                        targetIdentifier: itemRelation.targetIdentifier,
+                        values: itemRelation.values
+                    }
+                    audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
                 }
-                audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
+                await processItemActions(context, EventType.AfterCreate, item, item.parentIdentifier, item.name, item.values, item.channels, false, true)
+                await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, itemRelation.values, false, null)
+            } catch(err:any) {
+                transaction.rollback()
+                throw new Error(err.message)
             }
-
-            await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, itemRelation.values, false, null)
-
-
             res.send('OK')
         } catch (error: any) {
             logger.error(error)

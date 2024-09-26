@@ -258,14 +258,16 @@ export default {
             checkValues(mng, values)
             itemRelation.values = values
 
-            await updateItemRelationAttributes(context, mng, itemRelation, false)
-
-            await sequelize.transaction(async (t) => {
-                await itemRelation.save({transaction: t})
-            })
-
+            const transaction = await sequelize.transaction()
+            try {
+                await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
+                await itemRelation.save({ transaction })
+                transaction.commit()
+            } catch(err: any) {
+                transaction.rollback()
+                throw new Error(err.message)
+            }
             await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, null)
- 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
                     relationIdentifier: itemRelation.relationIdentifier,
@@ -369,13 +371,16 @@ export default {
             }
             itemRelation.updatedBy = context.getCurrentUser()!.login
 
-            await updateItemRelationAttributes(context, mng, itemRelation, false)
-
-            await sequelize.transaction(async (t) => {
-                await itemRelation.save({transaction: t})
-            })
+            const transaction = await sequelize.transaction()
+            try {
+                await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
+                await itemRelation.save({ transaction })
+                transaction.commit()
+            } catch(err: any) {
+                transaction.rollback()
+                throw new Error(err.message)
+            }
             await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, null)
-
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
@@ -407,17 +412,19 @@ export default {
 
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
             const oldIdentifier = itemRelation.identifier
-            itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now() 
+            itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now()
 
-            await updateItemRelationAttributes(context, mng, itemRelation, true)
-
-            await sequelize.transaction(async (t) => {
-                await itemRelation.save({transaction: t})
-                await itemRelation.destroy({transaction: t})
-            })
-
+            const transaction = await sequelize.transaction()
+            try {
+                await updateItemRelationAttributes(context, mng, itemRelation, true, transaction)
+                await itemRelation.save({ transaction })
+                await itemRelation.destroy({ transaction })
+                transaction.commit()
+            } catch(err: any) {
+                transaction.rollback()
+                throw new Error(err.message)
+            }
             await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, null)
-
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
                     relationIdentifier: itemRelation.relationIdentifier,
@@ -427,7 +434,6 @@ export default {
                 }
                 audit.auditItemRelation(ChangeType.DELETE, itemRelation.id, oldIdentifier, {deleted: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
-
             return true
         }
     }
