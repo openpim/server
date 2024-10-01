@@ -104,6 +104,7 @@ export class OzonChannelHandler extends ChannelHandler {
             item.channels[channel.identifier].status = 2
             item.channels[channel.identifier].message = JSON.stringify(status)
             item.channels[channel.identifier].syncedAt = new Date().getTime()
+            item.channels[channel.identifier].ozonError = false
             item.changed('channels', true)
 
             logger.info('   product sources: ' + JSON.stringify(result.sources))
@@ -127,6 +128,7 @@ export class OzonChannelHandler extends ChannelHandler {
             item.channels[channel.identifier].status = 3
             item.channels[channel.identifier].message = JSON.stringify(status)
             item.channels[channel.identifier].syncedAt = new Date().getTime()
+            item.channels[channel.identifier].ozonError = true
             item.changed('channels', true)
         } else {
             item.channels[channel.identifier].status = 4
@@ -146,7 +148,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
         if (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]) {
             const chanData = item.channels[channel.identifier]
-            if (!singleSync && chanData.status === 3) {
+            if (chanData.status === 3 && !chanData.ozonError) {
                 context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                 return
             }
@@ -316,6 +318,10 @@ export class OzonChannelHandler extends ChannelHandler {
 
                 context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
 
+                if (item.channels[channel.identifier]?.status === 3 && !item.channels[channel.identifier]?.ozonError) {
+                    context.log += 'Статус товара ' + item.identifier + ' ошибка, синхронизация не будет проводиться \n'
+                    continue
+                }
                 this.processProductStatus(item, result, channel, context)
                 await this.saveItemIfChanged(channel, item)
                 if (result.sku) {
