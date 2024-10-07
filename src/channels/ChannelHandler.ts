@@ -170,6 +170,24 @@ export abstract class ChannelHandler {
           }
         })
       },
+      getSourceRelationsById: async (relationIdentifier: string, id: number) => {
+        return await ItemRelation.findAll({
+          where: {
+            relationIdentifier: relationIdentifier,
+            itemId: id,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
+      getTargetRelationsById: async (relationIdentifier: string, id: number) => {
+        return await ItemRelation.findAll({
+          where: {
+            relationIdentifier: relationIdentifier,
+            targetId: id,
+            tenantId: channel.tenantId,
+          }
+        })
+      },
       getTargetObject: async (relationIdentifier: string, full: false) => {
         const items: Item[] = await sequelize.query(
           `SELECT i.* FROM "items" i, "itemRelations" r where 

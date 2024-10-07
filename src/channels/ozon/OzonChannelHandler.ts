@@ -707,7 +707,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && attrConfig.id != '#oldprice' && attrConfig.id != '#premprice' && 
                 attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
                 && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames' && attrConfig.id != '#images360Urls' && attrConfig.id != 'attr_4194' // image attribute is filled automatically
-                && attrConfig.id != '#new_category'
+                && attrConfig.id != '#new_category' && attrConfig.id != '#images'
             ) {
                 const attr = attrs.find(elem => elem.id === attrConfig.id)
                 if (!attr) {
@@ -824,7 +824,7 @@ export class OzonChannelHandler extends ChannelHandler {
             } while (idx++ < maxLength-1)
         }
 
-        await this.processItemImages(channel, item, context, product, attrs)
+        await this.processItemImages(channel, item, context, product, attrs, categoryConfig, language)
 
         // images 360 processing
         const images360UrlsConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images360Urls')
@@ -1083,7 +1083,7 @@ export class OzonChannelHandler extends ChannelHandler {
         return await existingProductInfoRes.json()
     }
 
-    async processItemImages(channel: Channel, item: Item, context: JobContext, product: any, attrs: ChannelAttribute[]) {
+    async processItemImages(channel: Channel, item: Item, context: JobContext, product: any, attrs: ChannelAttribute[], categoryConfig: any, language: string) {
         if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
             const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
             const typeNode = mng.getTypeById(item.typeId)
@@ -1165,6 +1165,19 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 }
             }
+
+            const imagesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
+            const images = await this.getValueByMapping(channel, imagesConfig, item, language)
+            for (let i = 0; i < images.length; i++) {
+                const image = images[i];
+                const url = image.values[channel.config.ozonImageAttr]
+                if (url) {
+                    let addition = ''
+                    if (channel.config.uniqueImages) addition = url.includes('?') ? '&timestamp='+Date.now() : '?timestamp='+Date.now()
+                    data.push(url + addition)
+                }
+            }
+
             if (data.length > 0) {
                 product.images = data
 
