@@ -11,18 +11,19 @@ export class ExtChannelHandler extends ChannelHandler {
         if (channel.config.extCmd) {
             const chanExec = await this.createExecution(channel)
             const tempName = temp.path({ prefix: 'openpim' })
-            const cmd = channel.config.extCmd.replaceAll('{channelIdentifier}', channel.identifier).replaceAll('{outputFile}', tempName).replaceAll('{language}', language).replaceAll('{user}', JSON.stringify(context?.getUserLogin()) || '').replaceAll('{roles}', JSON.stringify(context?.getUserRoles().join(',')) || '')
+            const cmd = channel.config.extCmd.replaceAll('{executionId}', chanExec.id).replaceAll('{channelIdentifier}', channel.identifier).replaceAll('{outputFile}', tempName).replaceAll('{language}', language).replaceAll('{user}', JSON.stringify(context?.getUserLogin()) || '').replaceAll('{roles}', JSON.stringify(context?.getUserRoles().join(',')) || '')
             logger.info('Starting program :' + cmd + ' channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
             const result: any = await this.asyncExec(cmd)
-            logger.debug('exec finished for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
-    
-            if (fs.existsSync(tempName)) {
-                const fm = FileManager.getInstance()
-                await fm.saveChannelFile(channel.tenantId, channel.id, chanExec, tempName)
+            logger.debug('exec finished for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId + ', result: ' + JSON.stringify(result))
+            if (!channel.config.externalExecMng) {
+                if (fs.existsSync(tempName)) {
+                    const fm = FileManager.getInstance()
+                    await fm.saveChannelFile(channel.tenantId, channel.id, chanExec, tempName)
+                }
+        
+                const log = result.stdout + (result.stderr ? "\nERRORS:\n" + result.stderr : "") 
+                await this.finishExecution(channel, chanExec, result.code === 0 ? 2 : 3, log)
             }
-    
-            const log = result.stdout + (result.stderr ? "\nERRORS:\n" + result.stderr : "") 
-            await this.finishExecution(channel, chanExec, result.code === 0 ? 2 : 3, log)
         } else {
             throw new Error('Command is not defined for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
         }
