@@ -613,6 +613,7 @@ export class OzonChannelHandler extends ChannelHandler {
             ozonCategoryId = parseInt(arr[0])
             ozonTypeId = parseInt(arr[1])
             product.description_category_id = ozonCategoryId
+            product.type_id = ozonTypeId
         } else {
             ozonCategoryId = parseInt(categoryConfig.id.substring(4))
             product.category_id = ozonCategoryId
