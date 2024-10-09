@@ -1687,7 +1687,7 @@ class ActionUtils {
         const transaction = await sequelize.transaction()
         try {
             result = await this.createItemRelationTransactional(relationIdentifier, identifier, itemIdentifier, targetIdentifier, values, skipActions, transaction)
-            transaction.commit()
+            await transaction.commit()
             return result
         } catch(err:any) {
             transaction.rollback()
@@ -1792,7 +1792,7 @@ class ActionUtils {
         const transaction = await sequelize.transaction()
         try {
             result = await this.removeItemRelationTransactional(id, context, transaction)
-            transaction.commit()
+            await transaction.commit()
             return result
         } catch(err:any) {
             transaction.rollback()

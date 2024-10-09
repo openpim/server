@@ -73,7 +73,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     await updateItemRelationAttributes(context, mng, data, true, transaction)
                     await data.save({ transaction })
                     await data.destroy({ transaction })
-                    transaction.commit()
+                    await transaction.commit()
                 } catch(err: any) {
                     transaction.rollback()
                     throw new Error(err.message)
@@ -181,7 +181,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 await updateItemRelationAttributes(context, mng, data, false, transaction)
                 await data.save({ transaction })
-                transaction.commit()
+                await transaction.commit()
             } catch(err: any) {
                 transaction.rollback()
                 throw new Error(err.message)
@@ -294,7 +294,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 await updateItemRelationAttributes(context, mng, data, false, transaction)
                 await data!.save({transaction})
-                transaction.commit()
+                await transaction.commit()
             } catch(err: any) {
                 transaction.rollback()
                 throw new Error(err.message)

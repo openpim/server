@@ -262,7 +262,7 @@ export default {
             try {
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
-                transaction.commit()
+                await transaction.commit()
             } catch(err: any) {
                 transaction.rollback()
                 throw new Error(err.message)
@@ -375,7 +375,7 @@ export default {
             try {
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
-                transaction.commit()
+                await transaction.commit()
             } catch(err: any) {
                 transaction.rollback()
                 throw new Error(err.message)
@@ -419,7 +419,7 @@ export default {
                 await updateItemRelationAttributes(context, mng, itemRelation, true, transaction)
                 await itemRelation.save({ transaction })
                 await itemRelation.destroy({ transaction })
-                transaction.commit()
+                await transaction.commit()
             } catch(err: any) {
                 transaction.rollback()
                 throw new Error(err.message)
