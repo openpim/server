@@ -1169,13 +1169,15 @@ export class OzonChannelHandler extends ChannelHandler {
 
             const imagesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
             const images = await this.getValueByMapping(channel, imagesConfig, item, language)
-            for (let i = 0; i < images.length; i++) {
-                const image = images[i];
-                const url = image.values[channel.config.ozonImageAttr]
-                if (url) {
-                    let addition = ''
-                    if (channel.config.uniqueImages) addition = url.includes('?') ? '&timestamp='+Date.now() : '?timestamp='+Date.now()
-                    data.push(url + addition)
+            if (images && Array.isArray(images)) {
+                for (let i = 0; i < images.length; i++) {
+                    const image = images[i];
+                    const url = image.values[channel.config.ozonImageAttr]
+                    if (url) {
+                        let addition = ''
+                        if (channel.config.uniqueImages) addition = url.includes('?') ? '&timestamp='+Date.now() : '?timestamp='+Date.now()
+                        data.push(url + addition)
+                    }
                 }
             }
 
