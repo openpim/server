@@ -1128,7 +1128,7 @@ function makeItemProxy(item: any, event: string) {
         }
     })
 }
-export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes: any, newValues: any, isImport: boolean, newItemValues: any) {
+export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes: any, newValues: any, isImport: boolean, fromRelationAttribute: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
@@ -1149,7 +1149,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
         isImport: isImport,
-        newItemValues: newItemValues,
+        fromRelationAttribute: fromRelationAttribute,
         itemRelation: makeItemRelationProxy(itemRelation), values: newValues, changes: changes,
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
@@ -1763,7 +1763,7 @@ class ActionUtils {
         })
 
         if (!values) values = {}
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, newItemValues)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, true)
 
         filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
         checkValues(mng, values)
@@ -1772,7 +1772,7 @@ class ActionUtils {
 
         await itemRelation.save({ transaction })
 
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, newItemValues)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {
@@ -1815,7 +1815,7 @@ class ActionUtils {
             throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
         }
 
-        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, null)
+        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, true)
 
         itemRelation.updatedBy = context.getCurrentUser()!.login
         if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
@@ -1834,7 +1834,7 @@ class ActionUtils {
         await itemRelation.save({ transaction })
         await itemRelation.destroy({ transaction })
 
-        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, null)
+        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, true)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {

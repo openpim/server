@@ -252,7 +252,7 @@ export default {
             })
 
             if (!values) values = {}
-            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, values, false, null)
+            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, values, false, false)
 
             filterValues(context.getEditItemRelationAttributes(nRelationId), values)
             checkValues(mng, values)
@@ -267,7 +267,7 @@ export default {
                 transaction.rollback()
                 throw new Error(err.message)
             }
-            await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, null)
+            await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, false)
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
                     relationIdentifier: itemRelation.relationIdentifier,
@@ -343,7 +343,7 @@ export default {
                 }
             }
 
-            await processItemRelationActions(context, EventType.BeforeUpdate, itemRelation, changes, values, false, null)
+            await processItemRelationActions(context, EventType.BeforeUpdate, itemRelation, changes, values, false, false)
 
             if (changes.itemId) {
                 itemRelation.itemId = changes.itemId
@@ -380,7 +380,7 @@ export default {
                 transaction.rollback()
                 throw new Error(err.message)
             }
-            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, null)
+            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, false)
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
@@ -402,7 +402,7 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
-            const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, null)
+            const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, false)
             
             itemRelation.updatedBy = context.getCurrentUser()!.login
             if(actionResponse.some((resp) => resp.result === 'cancelDelete')) {
@@ -424,7 +424,7 @@ export default {
                 transaction.rollback()
                 throw new Error(err.message)
             }
-            await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, null)
+            await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, false)
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
                     relationIdentifier: itemRelation.relationIdentifier,

@@ -451,7 +451,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                     values: {}
                 })
                 const irValues = {}
-                await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, null)
+                await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, false)
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
                 if (irValues) {
@@ -478,7 +478,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                     audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, {added: itemRelationChanges}, context.getCurrentUser()!.login, itemRelation.createdAt)
                 }
                 await processItemActions(context, EventType.AfterCreate, item, item.parentIdentifier, item.name, item.values, item.channels, false, true)
-                await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, itemRelation.values, false, null)
+                await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, itemRelation.values, false, false)
             } catch(err:any) {
                 transaction.rollback()
                 throw new Error(err.message)
