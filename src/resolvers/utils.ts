@@ -568,7 +568,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
 export async function createRelationsForItemRelAttributes(context: Context, arr: any, transaction: Transaction) {
     const utils = new ActionUtils(context)
     for (let i = 0; i < arr.length; i++) {
-        await utils.createItemRelationTransactional(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, arr[i].newItemValues, transaction)
+        await utils.createItemRelationTransactional(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, transaction)
     }
 }
 
@@ -1682,11 +1682,11 @@ class ActionUtils {
         return makeItemProxy(item, 'createItem')
     }
 
-    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, newItemValues: any) {
+    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false) {
         let result = null
         const transaction = await sequelize.transaction()
         try {
-            result = await this.createItemRelationTransactional(relationIdentifier, identifier, itemIdentifier, targetIdentifier, values, skipActions, newItemValues, transaction)
+            result = await this.createItemRelationTransactional(relationIdentifier, identifier, itemIdentifier, targetIdentifier, values, skipActions, transaction)
             transaction.commit()
             return result
         } catch(err:any) {
@@ -1697,7 +1697,7 @@ class ActionUtils {
         return result
     }
 
-    public async createItemRelationTransactional(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, newItemValues: any, transaction: Transaction) {
+    public async createItemRelationTransactional(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, transaction: Transaction) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
