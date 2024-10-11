@@ -1658,14 +1658,21 @@ class ActionUtils {
 
         if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false)
 
-        filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
-        checkValues(mng, values)
+        const transaction = await sequelize.transaction()
+        try {
+            filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
+            checkValues(mng, values)
+            item.values = values
+            let relAttributesData: any = []
+            relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, transaction)
+            await item.save({ transaction })
+            await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
+            await transaction.commit()
+        } catch(err:any) {
+            transaction.rollback()
+            throw new Error(err.message)
+        }
 
-        item.values = values
-
-        await sequelize.transaction(async (t) => {
-            await item.save({ transaction: t })
-        })
 
         if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false)
 
@@ -1748,7 +1755,7 @@ class ActionUtils {
             }
         }
 
-        const itemRelation = await ItemRelation.build({
+        const itemRelation = ItemRelation.build({
             identifier: identifier,
             tenantId: this.#context.getCurrentUser()!.tenantId,
             createdBy: this.#context.getCurrentUser()!.login,
@@ -1770,6 +1777,7 @@ class ActionUtils {
 
         itemRelation.values = values
 
+        await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction)
         await itemRelation.save({ transaction })
 
         if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true)
@@ -1787,11 +1795,11 @@ class ActionUtils {
         return makeItemRelationProxy(itemRelation)
     }
 
-    public async removeItemRelation(id: string, context: Context) {
+    public async removeItemRelation(id: string) {
         let result = false
         const transaction = await sequelize.transaction()
         try {
-            result = await this.removeItemRelationTransactional(id, context, transaction)
+            result = await this.removeItemRelationTransactional(id, this.#context, transaction)
             await transaction.commit()
             return result
         } catch(err:any) {
@@ -1804,6 +1812,8 @@ class ActionUtils {
 
     public async removeItemRelationTransactional(id: string, context: Context, transaction: Transaction) {
         context.checkAuth()
+
+        const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
         const nId = parseInt(id)
 
         const itemRelation = await ItemRelation.applyScope(context).findByPk(nId, { transaction })
@@ -1826,6 +1836,8 @@ class ActionUtils {
             }
             return true
         }
+
+        await updateItemRelationAttributes(context, mng, itemRelation, true, transaction)
 
         // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
         const oldIdentifier = itemRelation.identifier
