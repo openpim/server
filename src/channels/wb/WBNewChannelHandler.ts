@@ -110,6 +110,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             } else {
                 if (item.channels[channel.identifier]) {
                     item.channels[channel.identifier].status = 3
+                    item.channels[channel.identifier].wbError = true
                     item.channels[channel.identifier].message = error.errors.join(', ')
                     data.syncedAt = Date.now()
                     item.changed('channels', true)
@@ -145,7 +146,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             
             if (item.channels[channel.identifier]) {
                 const chanData = item.channels[channel.identifier]
-                if (chanData && chanData.status === 3) {
+                if (chanData && chanData.status === 3 && !item.channels[channel.identifier]?.wbError) {
                     // если прочитать статус когда ошибка то он затрет ошибку
                     context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                     return
@@ -154,6 +155,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 const article = item.values[channel.config.wbCodeAttr]
                 if (!article) {
                     item.channels[channel.identifier].status = 3
+                    item.channels[channel.identifier].wbError = false
                     item.channels[channel.identifier].message = 'Не найдено значение артикула товара в атрибуте: ' + channel.config.wbCodeAttr
                 } else {
                     const url = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
@@ -275,7 +277,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                     }
 
                     const chanData = item.channels[channel.identifier]
-                    if (chanData && chanData.status === 3) {
+                    if (chanData && chanData.status === 3 && !item.channels[channel.identifier]?.wbError) {
                         // если прочитать статус когда ошибка то он затрет ошибку
                         msg = 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                         if (channel.config.debug) context.log += msg
@@ -286,6 +288,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                     // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
                     if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) status = 1
                     item.channels[channel.identifier].status = status
+                    item.channels[channel.identifier].wbError = false
                     item.channels[channel.identifier].message = ""
                     item.channels[channel.identifier].syncedAt = Date.now()
                     item.changed('channels', true)
@@ -403,6 +406,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
             const data = item.channels[channel.identifier]
             data.status = 3
+            data.wbError = false
             data.message = 'Этот объект не подходит ни под одну категорию из этого канала.'
             context.log += 'Запись с идентификатором:' + item.identifier + ' не подходит ни под одну категорию из этого канала.\n'
             item.changed('channels', true)
@@ -681,6 +685,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
                 const data = item.channels[channel.identifier]
                 data.status = 4
+                data.wbError = false
                 data.message = ''
                 data.syncedAt = Date.now()
                 item.changed('channels', true)
