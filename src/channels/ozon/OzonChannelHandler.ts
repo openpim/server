@@ -642,6 +642,13 @@ export class OzonChannelHandler extends ChannelHandler {
         const colorImage = await this.getValueByMapping(channel, colorImageConfig, item, language)
         if (colorImage) product.color_image = colorImage
 
+        const categoryIdConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#category')
+        const categoryId = await this.getValueByMapping2(channel, categoryIdConfig, item, language, {systemCategoryId: ozonCategoryId})
+        if (categoryId) {
+            logger.info(`Overriding description_category_id from ${product.description_category_id} to ${categoryId}`)
+            product.description_category_id = categoryId
+        }
+
         // video processing
         const complex_attributes:any = [{attributes:[]}]
         let wasData = false
@@ -708,7 +715,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && attrConfig.id != '#oldprice' && attrConfig.id != '#premprice' && 
                 attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
                 && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames' && attrConfig.id != '#images360Urls' && attrConfig.id != 'attr_4194' // image attribute is filled automatically
-                && attrConfig.id != '#new_category' && attrConfig.id != '#images'
+                && attrConfig.id != '#new_category' && attrConfig.id != '#category' && attrConfig.id != '#images'
             ) {
                 const attr = attrs.find(elem => elem.id === attrConfig.id)
                 if (!attr) {
@@ -839,7 +846,7 @@ export class OzonChannelHandler extends ChannelHandler {
         if (ozonProductId && !ozonProductId.startsWith('task_id=')) {
             let existingProductInfoJson = null
             const newCategoryConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#new_category')
-            const newCategory = await this.getValueByMapping(channel, newCategoryConfig, item, language)
+            const newCategory = await this.getValueByMapping2(channel, newCategoryConfig, item, language, {systemCategoryId: ozonCategoryId})
             if (newCategory) {
                 existingProductInfoJson = await this.getProductInfo(channel, context, item, ozonProductId)
                 if (!existingProductInfoJson) return
