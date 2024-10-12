@@ -370,6 +370,8 @@ export abstract class ChannelHandler {
     const data = item.channels[channel.identifier]
     data.status = 3
     data.message = error
+    delete data.wbError
+    delete data.ozonError
     item.changed('channels', true)
     return
   }
