@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize'
+import { getMetrics } from '../metrics'
 // import { createLtreeDataType } from './utils/ltreeSupport'
 // createLtreeDataType()
 
@@ -38,7 +39,13 @@ export async function initModels() {
         port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT) : 5432,
         dialect: 'postgres',
         dialectOptions: dialectOptions,
-        logging: logger.debug.bind(logger),
+        benchmark: true,
+        logging: (sql: string, timingMs?: number) => {
+            logger.info(`${sql} - [Execution time: ${timingMs}ms]`)
+            if (process.env.OPENPIM_DATABASE_METRICS && process.env.OPENPIM_DATABASE_METRICS === 'true') {
+                getMetrics(sql, timingMs)
+            }
+        },
         pool: {
             max: 50,
             min: 0,

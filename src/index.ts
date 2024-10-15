@@ -33,10 +33,20 @@ import {
   processDownloadInline, 
 } from './media';
 import { initModels } from './models';
+import { 
+  SQLMetrics, 
+  db_average_query_time_ms, 
+  db_query_time_counter05, 
+  db_query_time_counter1, 
+  db_query_time_counter3, 
+  db_query_time_counter5, 
+  db_query_time_counter10, 
+  db_query_time_counterInf, 
+  metricsMiddleware 
+} from './metrics'
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
 import version from './version';
-import promBundle from "express-prom-bundle";
 
 import userResolver from './resolvers/users'
 import { FileManager } from './media/FileManager';
@@ -93,18 +103,16 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   }
 
   if (isMetrics) {
-    const metricsMiddleware = promBundle({
-      includeMethod: true, 
-      includePath: true, 
-      includeStatusCode: true, 
-      includeUp: true,
-      customLabels: {project_name: 'openpim', project_type: 'metrics_labels'},
-      promClient: {
-          collectDefaultMetrics: {
-          }
-        }
+    app.use((req, res, next) => {
+      db_average_query_time_ms
+      db_query_time_counter05
+      db_query_time_counter1
+      db_query_time_counter3
+      db_query_time_counter5
+      db_query_time_counter10
+      db_query_time_counterInf
+      next()
     })
-    
     app.use(metricsMiddleware)
   }
 
@@ -334,6 +342,10 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     } catch (error: any) {
       response.status(400).send(error.message)
     }
+  })
+
+  app.get('/sqlmetrics', async (request, response) => {
+    await SQLMetrics(request, response)
   })
 
   await Context.init()
