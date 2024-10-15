@@ -54,7 +54,7 @@
     "nodemailer": "^6.7.3",
     "openid-client": "^5.5.0",
     "pg": "^8.7.3",
-    "sequelize": "^6.18.0",
+    "sequelize": "^7.0.0-alpha2.2",
     "temp": "^0.9.4",
     "uuid": "^8.3.2",
     "vm2": "^3.9.2",
