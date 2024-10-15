@@ -41,7 +41,7 @@ export async function initModels() {
         dialectOptions: dialectOptions,
         benchmark: true,
         logging: (sql: string, timingMs?: number) => {
-            logger.info(`${sql} - [Execution time: ${timingMs}ms]`)
+            logger.debug(`${sql} - [Execution time: ${timingMs}ms]`)
             if (process.env.OPENPIM_DATABASE_METRICS && process.env.OPENPIM_DATABASE_METRICS === 'true') {
                 getMetrics(sql, timingMs)
             }
