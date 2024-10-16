@@ -78,7 +78,12 @@ class Audit {
                     sort: sort
                 }
             })
-            return { count: response.hits.total.value, rows: response.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+            if (response.hits) {
+                return { count: response.hits.total.value, rows: response.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+            } else {
+                logger.error(`Error getting audit for item, received response: ${JSON.stringify(response)}`)
+                return { count: 0, rows: []}
+            }
         } catch (err) {
             logger.error("Error getting audit for item", err)
             return { count: 0, rows: []}
@@ -102,7 +107,12 @@ class Audit {
                         sort: sort
                     }
                 })
-            return { count: response.hits.total.value, rows: response.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+                if (response.hits) {
+                    return { count: response.hits.total.value, rows: response.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+                } else {
+                    logger.error(`Error getting audit for item relation, received response: ${JSON.stringify(response)}`)
+                    return { count: 0, rows: []}                
+                }
             } catch (err) {
                 logger.error("Error getting audit for item relation", err)
                 return { count: 0, rows: []}
