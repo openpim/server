@@ -16,7 +16,7 @@ let metricAverageTime: number = 0
 const bigQueries: any = Array(process.env.OPENPIM_DATABASE_METRICS_COUNT ? parseInt(process.env.OPENPIM_DATABASE_METRICS_COUNT) : 10).fill(null)
 const metrics: any = {}
 
-export function getMetrics(sql: string, timingMs: any) {
+export function calculateMetrics(sql: string, timingMs: any) {
     const date = new Date()
     for (let i = 0; i < bigQueries.length; i++) {
         const query = bigQueries[i]
@@ -61,7 +61,6 @@ export function getMetrics(sql: string, timingMs: any) {
     metrics.counter10Sec = counter10
     metrics.counterMoreThen10Sec = counterInf
 }
-export { metricAverageTime, counter05, counter1, counter3, counter5, counter10, counterInf, bigQueries }
 
 const register = new Prometheus.Registry()
 const db_average_query_time_ms = new Prometheus.Gauge({
@@ -141,7 +140,7 @@ const metricsMiddleware = promBundle({
 
 export { db_average_query_time_ms, db_query_time_counter05, db_query_time_counter1, db_query_time_counter3, db_query_time_counter5, db_query_time_counter10, db_query_time_counterInf, metricsMiddleware }
 
-export async function SQLMetrics(request: any, response: any) {
+export async function renderSQLMetrics(request: any, response: any) {
     try {
         if (!request.headers.authorization) {
             logger.error('server.log - no login')

@@ -34,7 +34,7 @@ import {
 } from './media';
 import { initModels } from './models';
 import { 
-  SQLMetrics, 
+  renderSQLMetrics, 
   db_average_query_time_ms, 
   db_query_time_counter05, 
   db_query_time_counter1, 
@@ -345,7 +345,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   })
 
   app.get('/sqlmetrics', async (request, response) => {
-    await SQLMetrics(request, response)
+    await renderSQLMetrics(request, response)
   })
 
   await Context.init()
