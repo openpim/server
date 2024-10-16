@@ -22,13 +22,12 @@ export function getMetrics(sql: string, timingMs: any) {
         const query = bigQueries[i]
         if (query === null && timingMs) {
             bigQueries[i] = {sql, timingMs, startTime: date}
-            console.log(bigQueries[i])
+            break
         } else if (query && timingMs && query.timingMs < timingMs) {
             for (let j = bigQueries.length - 1; j > i; j--) {
                 bigQueries[j] = bigQueries[j - 1]
             }
             bigQueries[i] = {sql, timingMs, startTime: date}
-            console.log(bigQueries[i])
             break
         }
     }
@@ -159,7 +158,23 @@ export async function SQLMetrics(request: any, response: any) {
             response.setHeader('Pragma', 'no-cache');
             response.setHeader('Expires', '0');
             response.setHeader('Surrogate-Control', 'no-store');
-            response.status(200).json(metrics);
+            if (request.query.clear && request.query.clear == 'true') {
+                allTime = 0
+                counter = 0
+                counter05 = 0
+                counter1 = 0
+                counter3 = 0
+                counter5 = 0
+                counter10 = 0
+                counterInf = 0
+                metricAverageTime = 0
+                for (let i = 0; i < bigQueries.length; i++) {
+                    bigQueries[i] = null
+                }
+                response.redirect('/sqlmetrics')
+            } else {
+                response.status(200).json(metrics);
+            }
         } else {
             logger.error('server.log - wrong user: ' + JSON.stringify(user))
             response.set('WWW-Authenticate', 'Basic realm="401"')
