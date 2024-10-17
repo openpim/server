@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize'
-import { getMetrics } from '../metrics'
+import { calculateMetrics } from '../metrics'
 // import { createLtreeDataType } from './utils/ltreeSupport'
 // createLtreeDataType()
 
@@ -43,7 +43,7 @@ export async function initModels() {
         logging: (sql: string, timingMs?: number) => {
             logger.debug(`${sql} - [Execution time: ${timingMs}ms]`)
             if (process.env.OPENPIM_DATABASE_METRICS && process.env.OPENPIM_DATABASE_METRICS === 'true') {
-                getMetrics(sql, timingMs)
+                calculateMetrics(sql, timingMs)
             }
         },
         pool: {
