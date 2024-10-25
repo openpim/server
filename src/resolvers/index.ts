@@ -56,6 +56,26 @@ const resolver = {
 
             logger.transports[0].level = level;
             return true
+        },
+        query: async (parent: any, {query}: any, context: Context) => {
+            context.checkAuth()    
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to execute queries, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+
+            logger.debug(`Received query: ${query}`)
+            const data:any = await sequelize.query(query, { raw: true })
+            if (Array.isArray(data) && data.length > 1) {
+                delete data[1].rows
+                delete data[1].fields
+                delete data[1]._parsers
+                delete data[1]._types
+                delete data[1].rowAsArray
+                delete data[1].RowCtor
+                delete data[1].oid
+            }
+            logger.debug(`data: ${JSON.stringify(data)}`)
+            return data
         }
     }
 }

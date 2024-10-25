@@ -31,4 +31,5 @@ type Query {
 
 type Mutation {
   logLevel(level: String!) : Boolean!
+  query(query: String!) : JSON!
 }
