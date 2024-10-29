@@ -500,7 +500,8 @@ export class WBNewChannelHandler extends ChannelHandler {
             if (resExisting.status !== 200) {
                 const msg = 'Ошибка запроса на Wildberries - https://suppliers-api.wildberries.ru/content/v2/get/cards/list: ' + resExisting.statusText
                 context.log += msg                      
-                this.reportError(channel, item, msg)
+                const data = this.reportError(channel, item, msg)
+                data.wbError = true
                 return
             } else {
                 const json = await resExisting.json()
@@ -603,7 +604,8 @@ export class WBNewChannelHandler extends ChannelHandler {
                     if (res.status !== 200) {
                         const msg = 'Ошибка запроса на Wildberries: ' + (await res.text())
                         context.log += msg                      
-                        this.reportError(channel, item, msg)
+                        const data = this.reportError(channel, item, msg)
+                        data.wbError = true
                         return
                     }
                 }
@@ -670,14 +672,16 @@ export class WBNewChannelHandler extends ChannelHandler {
         if (res.status !== 200) {
             const msg = 'Ошибка запроса на Wildberries: ' + (await res.text())
             context.log += msg                      
-            this.reportError(channel, item, msg)
+            const data = this.reportError(channel, item, msg)
+            data.wbError = true
             return
         } else {
             const json = await res.json()
             if (channel.config.debug) context.log += 'received response:'+JSON.stringify(json)+'\n'
             if (json.error) {
                 const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
-                this.reportError(channel, item, msg)
+                const data = this.reportError(channel, item, msg)
+                data.wbError = true
                 context.log += msg                      
                 logger.info("Error from Windberries: " + JSON.stringify(json))
                 return
