@@ -488,10 +488,6 @@ export class WBNewChannelHandler extends ChannelHandler {
         // request to WB
         let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
 
-        if (title) request.title = title
-        if (description) request.description = description
-        if (brand) request.brand = brand
-
         const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
             const existUrl = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
@@ -537,6 +533,10 @@ export class WBNewChannelHandler extends ChannelHandler {
 
             request.nmID = parseInt(nmID)
         }
+
+        if (title) request.title = title
+        if (description) request.description = description
+        if (brand) request.brand = brand
 
         // atributes
         const create = item.values[channel.config.imtIDAttr] ? false : true
