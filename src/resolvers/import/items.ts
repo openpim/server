@@ -181,6 +181,12 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 return result
             }
 
+            if (item.parentIdentifier === item.identifier) {
+                result.addError(ReturnMessage.WrongParent)
+                result.result = ImportResult.REJECTED
+                return result
+            }
+
             const data = await Item.build ({
                 id: id,
                 path: path,
@@ -269,6 +275,12 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             if (!item.skipActions) await processItemActions(context, EventType.BeforeUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             if (item.parentIdentifier && data.parentIdentifier !== item.parentIdentifier) {
+                if (item.parentIdentifier === data.identifier) {
+                    result.addError(ReturnMessage.WrongParent)
+                    result.result = ImportResult.REJECTED
+                    return result
+                }
+                
                 let parent = await checkParent(item, result, mng, context)
                 if (result.result) return result
 

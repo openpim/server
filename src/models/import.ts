@@ -45,6 +45,7 @@ export class ReturnMessage {
   public static ItemDeleteFailedChildren = new ReturnMessage(11, "Can not delete this item because it has children, remove them first")
   public static ItemDeleteFailedRelations = new ReturnMessage(12, "Can not delete this item because it has relations, remove them first")
   public static ItemMoveFailedChildren = new ReturnMessage(13, "Can not move this item because it has children, remove them first")
+  public static WrongParent = new ReturnMessage(14, "Failed to create item with parentIdentifier same as item identifier")
 
   public static ItemRelationNotFound = new ReturnMessage(100, "Failed to find Item Relation by identifier")
   public static ItemRelationExist = new ReturnMessage(101, "Item Relation with such identifier already exists")

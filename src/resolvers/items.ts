@@ -557,6 +557,10 @@ export default {
                 throw new Error('User :' + context.getCurrentUser()?.login + ' can not create such item , tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
+            if (parentIdentifier === identifier) {
+                throw new Error('Failed to create item with parentIdentifier same as item identifier')
+            }
+
             const item = Item.build({
                 id: id,
                 path: path,
@@ -739,6 +743,9 @@ export default {
                 }
 
                 item.parentIdentifier = parentItem.identifier;
+                if (parentItem.identifier === item.parentIdentifier) {
+                    throw new Error('Failed to create item with parentIdentifier same as item identifier')
+                }
                 await sequelize.transaction(async (t) => {
                     await item.save({ transaction: t })
                 })
