@@ -18,7 +18,10 @@ export default {
     reloadModelRemotely: async (parent: any, { id, parentId, serverUuid, entity, del }: any, context: Context) => {
       context.checkAuth()
       // we don't need to reload current server
-      if (ModelsManager.getInstance().getServerUuid() === serverUuid) return
+      if (ModelsManager.getInstance().getServerUuid() === serverUuid) {
+        logger.debug(`Received reload request for itself, skip it. ${serverUuid}`)
+        return
+      }
       const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
       try {
         switch (entity) {

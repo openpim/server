@@ -280,7 +280,10 @@ export class ModelsManager {
     private channelTypes: number[] = [1, 5, 6, 8] // external and external with mapping and MDM by default
     private serverUuid: string
 
-    private constructor() { this.serverUuid = uuidv4() }
+    private constructor() { 
+        this.serverUuid = uuidv4() 
+        logger.info(`Server UUID: ${this.serverUuid}`)
+    }
 
     public getServerUuid() { return this.serverUuid }
 

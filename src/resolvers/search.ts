@@ -77,6 +77,8 @@ export default {
                     offset: request.offset,
                     limit: request.limit
                 }
+                if (request.limit == -1) delete params.limit
+                if (request.offset == -1) delete params.offset
                 if (request.where) {
                     const include = replaceOperations(request.where)
                     params.where = request.where

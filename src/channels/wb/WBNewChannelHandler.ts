@@ -287,27 +287,38 @@ export class WBNewChannelHandler extends ChannelHandler {
                     let status = 2
                     // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
                     if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) status = 1
-                    item.channels[channel.identifier].status = status
-                    item.channels[channel.identifier].wbError = false
-                    item.channels[channel.identifier].message = ""
-                    item.channels[channel.identifier].syncedAt = Date.now()
-                    item.changed('channels', true)
+                    if (item.channels[channel.identifier].status != status) {
+                        item.channels[channel.identifier].status = status
+                        item.channels[channel.identifier].wbError = false
+                        item.channels[channel.identifier].message = ""
+                        item.channels[channel.identifier].syncedAt = Date.now()
+                        item.changed('channels', true)
+                    }
                     msg = `Результат синхронизации: ${JSON.stringify(item.channels[channel.identifier])}\n`
                     if (channel.config.debug) context.log += msg
                     logger.info(msg)
                     
-                    if (channel.config.imtIDAttr) item.values[channel.config.imtIDAttr] = card.imtID
-                    if (channel.config.nmIDAttr) item.values[channel.config.nmIDAttr] = card.nmID
+                    let changed = false
+                    if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) {
+                        item.values[channel.config.imtIDAttr] = card.imtID
+                        changed = true
+                    }
+                    if (channel.config.nmIDAttr && !item.values[channel.config.nmIDAttr]) {
+                        item.values[channel.config.nmIDAttr] = card.nmID
+                        changed = true
+                    }
                     if (channel.config.wbBarcodeAttr) {
                         const categoryConfig = await this.getCategoryConfig(channel, item)
                         if (categoryConfig) {
                             const barcodeConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#barcode')
                             const barcode = await this.getValueByMapping(channel, barcodeConfig, item, language)
 
-                            if (!barcode) item.values[channel.config.wbBarcodeAttr] = card.sizes[0].skus[0]
+                            if (!barcode && !item.values[channel.config.wbBarcodeAttr]) {
+                                item.values[channel.config.wbBarcodeAttr] = card.sizes[0].skus[0]
+                                changed = true
+                            }
                         }
                     }
-                    item.changed('values', true)
 
                     if (channel.config.wbAttrContentRating && channel.config.wbGetContentRating && item.values[channel.config.nmIDAttr]) {
                         const nmId = item.values[channel.config.nmIDAttr]
@@ -334,9 +345,13 @@ export class WBNewChannelHandler extends ChannelHandler {
                             if (channel.config.debug) context.log += 'Received data: ' + JSON.stringify(dataRating) + '\n'
                             context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
         
-                            item.values[channel.config.wbAttrContentRating] = '' + dataRating.data?.valuation
+                            if (!item.values[channel.config.wbAttrContentRating]) {
+                                item.values[channel.config.wbAttrContentRating] = '' + dataRating.data?.valuation
+                                changed = true
+                            }
                         }
                     }
+                    if (changed) item.changed('values', true)
 
                     await sequelize.transaction(async (t) => {
                         await item.save({ transaction: t })
@@ -473,10 +488,6 @@ export class WBNewChannelHandler extends ChannelHandler {
         // request to WB
         let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
 
-        if (title) request.title = title
-        if (description) request.description = description
-        if (brand) request.brand = brand
-
         const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
             const existUrl = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
@@ -500,7 +511,8 @@ export class WBNewChannelHandler extends ChannelHandler {
             if (resExisting.status !== 200) {
                 const msg = 'Ошибка запроса на Wildberries - https://suppliers-api.wildberries.ru/content/v2/get/cards/list: ' + resExisting.statusText
                 context.log += msg                      
-                this.reportError(channel, item, msg)
+                const data = this.reportError(channel, item, msg)
+                data.wbError = true
                 return
             } else {
                 const json = await resExisting.json()
@@ -521,6 +533,10 @@ export class WBNewChannelHandler extends ChannelHandler {
 
             request.nmID = parseInt(nmID)
         }
+
+        if (title) request.title = title
+        if (description) request.description = description
+        if (brand) request.brand = brand
 
         // atributes
         const create = item.values[channel.config.imtIDAttr] ? false : true
@@ -603,7 +619,8 @@ export class WBNewChannelHandler extends ChannelHandler {
                     if (res.status !== 200) {
                         const msg = 'Ошибка запроса на Wildberries: ' + (await res.text())
                         context.log += msg                      
-                        this.reportError(channel, item, msg)
+                        const data = this.reportError(channel, item, msg)
+                        data.wbError = true
                         return
                     }
                 }
@@ -670,14 +687,16 @@ export class WBNewChannelHandler extends ChannelHandler {
         if (res.status !== 200) {
             const msg = 'Ошибка запроса на Wildberries: ' + (await res.text())
             context.log += msg                      
-            this.reportError(channel, item, msg)
+            const data = this.reportError(channel, item, msg)
+            data.wbError = true
             return
         } else {
             const json = await res.json()
             if (channel.config.debug) context.log += 'received response:'+JSON.stringify(json)+'\n'
             if (json.error) {
                 const msg = 'Ошибка запроса на Wildberries: ' + json.error.message
-                this.reportError(channel, item, msg)
+                const data = this.reportError(channel, item, msg)
+                data.wbError = true
                 context.log += msg                      
                 logger.info("Error from Windberries: " + JSON.stringify(json))
                 return

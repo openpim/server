@@ -1037,6 +1037,10 @@ export class OzonChannelHandler extends ChannelHandler {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
                     data.status = 4
                     data.message = 'Товар находится на модерации ' + errors && errors.length > 0? JSON.stringify(errors) :''
+                    if (errors && errors.length > 0) {
+                        data.status = 3
+                        data.message = 'Ошибки: ' + JSON.stringify(errors)
+                    }
                     data.syncedAt = Date.now()
                     item.changed('channels', true)
                     if (json2.result.items[0].product_id == 0) {
