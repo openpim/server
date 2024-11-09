@@ -352,6 +352,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
     }
 
     const itemPathArr = item.path.split('.').map(elem => parseInt(elem))
+    const newValues:any = {}
     for (let i = 0; i < attrsFiltered.length; i++) {
         const attr = attrsFiltered[i]
         const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
@@ -373,18 +374,27 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                     } else if (idx !== -1 && del) {
                         currentAttrValue.splice(idx, 1)
                     }
-                    item.values[attr.identifier] = currentAttrValue
+                    newValues[attr.identifier] = currentAttrValue
                 } else {
-                    item.values[attr.identifier] = !del ? targetItem.id : null
+                    newValues[attr.identifier] = !del ? targetItem.id : null
                 }
-                item.changed('values', true)
             }
+        }
+    }
+    if (Object.getOwnPropertyNames(newValues).length > 0) {
+        const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, item.name, newValues, item.channels, false, false, true)
+        if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
+            item.values = mergeValues(newValues, item.values)
+            item.changed('values', true)
+            await item.save({ transaction })
+            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, false, true)
         }
     }
 
     // we don't update target item if source and targets have the same types
     if (item.typeId !== targetItem.typeId) {
         const targetPathArr = targetItem.path.split('.').map(elem => parseInt(elem))
+        const newTargetValues:any = {}
         for (let i = 0; i < attrsFiltered.length; i++) {
             const attr = attrsFiltered[i]
             const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
@@ -406,19 +416,23 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                         } else if (idx !== -1 && del) {
                             currentAttrValue.splice(idx, 1)
                         }
-                        targetItem.values[attr.identifier] = currentAttrValue
+                        newTargetValues[attr.identifier] = currentAttrValue
                     } else {
-                        targetItem.values[attr.identifier] = !del ? item.id : null
+                        newTargetValues[attr.identifier] = !del ? item.id : null
                     }
                     targetItem.changed('values', true)
                 }
             }
         }
-    }
-
-    await item.save({ transaction })
-    if (item.typeId !== targetItem.typeId) {
-        await targetItem.save({ transaction })
+        if (Object.getOwnPropertyNames(newTargetValues).length > 0) {
+            const actionResponse = await processItemActions(context, EventType.BeforeUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, newTargetValues, targetItem.channels, false, false, true)
+            if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
+                targetItem.values = mergeValues(newTargetValues, targetItem.values)
+                targetItem.changed('values', true)
+                await targetItem.save({ transaction })
+                await processItemActions(context, EventType.AfterUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, targetItem.values, targetItem.channels, false, false, true)
+            }
+        }
     }
 }
 
@@ -590,7 +604,7 @@ function checkInteger(attr: Attribute, value: any) {
     }
 }
 
-export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean, isFileUpload: boolean) {
+export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean, isFileUpload: boolean, fromRelationAttribute = false) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem: string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -609,6 +623,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         Op: Op,
         event: EventType[event],
         fileUpload: isFileUpload,
+        fromRelationAttribute: fromRelationAttribute,
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
