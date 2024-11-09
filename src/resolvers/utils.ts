@@ -530,7 +530,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                 // remove relations not existed in incoming array
                 const existedItemRelationsForAttribute2Delete = existedItemRelationsForAttribute.filter(value => !valsArray.includes(isSource ? value.targetId : value.itemId))
                 for (let i = 0; i < existedItemRelationsForAttribute2Delete.length; i++) {
-                    await utils.removeItemRelationTransactional(existedItemRelationsForAttribute2Delete[i].id.toString(), context, transaction)
+                    await utils.removeItemRelationTransactional(existedItemRelationsForAttribute2Delete[i].id.toString(), context, transaction, false)
                     changed = true
                     const idx = existedItemRelations.findIndex(el => el.id === existedItemRelationsForAttribute2Delete[i].id)
                     if (idx !== -1) {
@@ -582,7 +582,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
 export async function createRelationsForItemRelAttributes(context: Context, arr: any, transaction: Transaction) {
     const utils = new ActionUtils(context)
     for (let i = 0; i < arr.length; i++) {
-        await utils.createItemRelationTransactional(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, transaction)
+        await utils.createItemRelationTransactional(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, transaction, false)
     }
 }
 
@@ -1719,7 +1719,7 @@ class ActionUtils {
         return result
     }
 
-    public async createItemRelationTransactional(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, transaction: Transaction) {
+    public async createItemRelationTransactional(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, transaction: Transaction, processRelationAttributes = true) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
@@ -1792,7 +1792,7 @@ class ActionUtils {
 
         itemRelation.values = values
 
-        await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction)
+        if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction)
         await itemRelation.save({ transaction })
 
         if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true)
@@ -1825,7 +1825,7 @@ class ActionUtils {
         return result
     }
 
-    public async removeItemRelationTransactional(id: string, context: Context, transaction: Transaction) {
+    public async removeItemRelationTransactional(id: string, context: Context, transaction: Transaction, processRelationAttribute = true) {
         context.checkAuth()
 
         const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
@@ -1852,7 +1852,7 @@ class ActionUtils {
             return true
         }
 
-        await updateItemRelationAttributes(context, mng, itemRelation, true, transaction)
+        if(processRelationAttribute) await updateItemRelationAttributes(context, mng, itemRelation, true, transaction)
 
         // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
         const oldIdentifier = itemRelation.identifier
