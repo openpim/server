@@ -742,10 +742,10 @@ export default {
                     item.path = newPath
                 }
 
-                item.parentIdentifier = parentItem.identifier;
                 if (parentItem.identifier === item.parentIdentifier) {
                     throw new Error('Failed to create item with parentIdentifier same as item identifier')
                 }
+                item.parentIdentifier = parentItem.identifier;
                 await sequelize.transaction(async (t) => {
                     await item.save({ transaction: t })
                 })
