@@ -758,7 +758,9 @@ export class OzonChannelHandler extends ChannelHandler {
                             }
                             data.values.push(ozonValue)
                         }
-                        product.attributes.push(data)
+                        const tst = product.attributes.find((elem:any) => elem.id == ozonAttrId)
+                        if (!tst) product.attributes.push(data)
+                            else logger.error(`Атрибут ${ozonAttrId} уже был добавлен ${JSON.stringify(tst)}`)
                     } else if (attr.required) {
                         const msg = 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                         context.log += msg                      
