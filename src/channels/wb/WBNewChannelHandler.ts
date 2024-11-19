@@ -773,6 +773,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 return { 
                     id: 'wbattr_'+data.charcID, 
                     type: data.charcID,
+                    description: 'id: '+data.charcID+', category: '+objId,
                     isNumber: data.charcType === 1 || data.charcType === 0 ? false : true,
                     name: data.name + (data.unitName ? ' (' + data.unitName + ')' : '') + (data.charcType === 4 ? ' [число]' : ''),
                     category: categoryId,
