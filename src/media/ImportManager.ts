@@ -1,6 +1,7 @@
 const { Op } = require("sequelize");
 
 import * as fs from 'fs'
+import * as sax from 'sax'
 import { Process } from '../models/processes'
 import { ImportConfig } from '../models/importConfigs'
 import { IItemImportRequest, IImportConfig, ImportMode, ErrorProcessing } from '../models/import'
@@ -13,8 +14,8 @@ import { processImportActions, replaceOperations } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 import i18next from '../i18n'
 import { Item } from '../models/items'
-import { ModelsManager } from '../models/manager';
-import { LOV } from '../models/lovs';
+import { ModelsManager } from '../models/manager'
+import { LOV } from '../models/lovs'
 
 export class ImportManager {
     private static instance: ImportManager
@@ -32,9 +33,16 @@ export class ImportManager {
     }
 
     public async processImportFile(context: Context, process: Process, importConfig: ImportConfig, filepath: any, language: string) {
-        try {
-            const result:any = await processImportActions(context, EventType.ImportBeforeStart, process, importConfig, filepath)
+        if (importConfig.type !== 3) {
+            await this.processImportFileXLSX(context, process, importConfig, filepath, language)
+        } else {
+            await this.processImportFileXML(context, process, importConfig, filepath, language)
+        }
+    }
 
+    private async processImportFileXLSX(context: Context, process: Process, importConfig: ImportConfig, filepath: any, language: string) {
+        try {
+            const result: any = await processImportActions(context, EventType.ImportBeforeStart, process, importConfig, filepath)
             const config = importConfig.config
             const data: any = await this.getImportConfigFileData(result?.[0]?.data?.filepath || filepath)
 
@@ -87,7 +95,7 @@ export class ImportManager {
                         await process.save()
                     }
                 }
-            
+
                 process.log += '\n' + `${i18next.t('ImportManagerFileProcessingFinished', { lng: language })}`
             } else {
                 process.log += '\n' + `${i18next.t('ImportManagerUploadedFileHasInvalidFormat', { lng: language })}`
@@ -109,6 +117,167 @@ export class ImportManager {
         }
     }
 
+    private async processImportFileXML(context: Context, process: Process, importConfig: ImportConfig, filepath: any, language: string) {
+        try {
+            const result: any = await processImportActions(context, EventType.ImportBeforeStart, process, importConfig, filepath)
+            const mng = this
+
+            // let saxStream = sax.createStream(true, { lowercase: true })
+            let saxStream = sax.createStream(true)
+            const readable = fs.createReadStream(result?.[0]?.data?.filepath || filepath, { highWaterMark: 8 })
+            readable.pipe(saxStream)
+
+            let offerChilds: any = []
+            // let categoryChilds: any = []
+            let currentTag: any = null
+            let offersCount = 0
+            let categoriesCount = 0
+            let offer: any = null
+            let category: any = null
+
+            saxStream.on('opentag', function (node: any) {
+                currentTag = node
+                if (currentTag.name === 'offer') {
+                    offer = currentTag
+                }
+                if (offer && currentTag.name !== 'offer') {
+                    offerChilds.push(currentTag)
+                }
+                if (currentTag.name === 'category') {
+                    category = currentTag
+                }
+                /* if (category && currentTag.name !== 'category') {
+                    categoryChilds.push(currentTag)
+                } */
+            })
+
+            saxStream.on('closetag', async function (node: any) {
+                // const catCount = categoriesCount
+                // const offCount = offersCount
+                if (node === 'category') {
+                    categoriesCount++
+                    const data = { ...category }
+                    // data.childs = [...categoryChilds]
+                    category = null
+                    // categoryChilds = []
+                    readable.pause()
+                    await mng.updateItemByImportConfig(context, process, importConfig, data, 'category', language)
+                    readable.resume()
+                }
+                if (node === 'offer') {
+                    offersCount++
+                    const data = { ...offer }
+                    data.childs = [...offerChilds]
+                    offer = null
+                    offerChilds = []
+                    readable.pause()
+                    await mng.updateItemByImportConfig(context, process, importConfig, data, 'offer', language)
+                    readable.resume()
+                }
+                currentTag = null
+            })
+
+            saxStream.on('text', function (t: any) {
+                if (currentTag) currentTag.text = t
+            })
+
+            saxStream.on('end', async function () {
+                processImportActions(context, EventType.ImportAfterEnd, process, importConfig, filepath)
+                process.active = false
+                process.status = i18next.t('Finished', { lng: language })
+                process.finishTime = Date.now()
+                await process.save()
+            })
+
+            saxStream.on('error', async function (e:any) {
+                logger.error('Failed to import', e)
+                process.log += '\n' + `${i18next.t('ImportManagerError', { lng: language })} ${e}`
+                process.active = false
+                process.status = i18next.t('Finished', { lng: language })
+                process.finishTime = Date.now()
+                await process.save()
+            })
+
+        } catch (e) {
+            logger.error('Failed to import', e)
+            process.log += '\n' + `${i18next.t('ImportManagerError', { lng: language })} ${e}`
+            process.active = false
+            process.status = i18next.t('Finished', { lng: language })
+            process.finishTime = Date.now()
+            await process.save()
+        }
+    }
+
+    private async updateItemByImportConfig(context: Context, process: Process, importConfig: ImportConfig, data:any, entity:string, language: string) {
+        const config = importConfig.config
+        const importConfigOptions: IImportConfig = {
+            mode: ImportMode.CREATE_UPDATE,
+            errors: ErrorProcessing.PROCESS_WARN
+        }
+        try {
+            const res = (config.beforeEachRow && config.beforeEachRow.length) ? await this.evaluateExpression(data, null, config.beforeEachRow, context) : null
+            if (res && typeof res == 'boolean') {
+                process.log += '\n' + `${i18next.t('ImportManagerValueSkipped', { lng: language })} ${JSON.stringify(data)}`
+            }
+            if (res) {
+                process.log += '\n' + `${i18next.t('ImportManagerRowSkipped', { lng: language })} ${JSON.stringify(data)}`
+            }
+            const item = await this.mapLineXML(importConfig, entity, data, context)
+
+            process.log += '\n' + `${i18next.t('ImportManagerItem', { lng: language })} ` + JSON.stringify(item)
+            if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
+                const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
+                process.log += '\n' + `${i18next.t('ImportManagerImportResult', { lng: language })} ${JSON.stringify(importRes)}`
+            } else {
+                process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty', { lng: language })}`
+            }
+        } catch (e) {
+            process.log += '\n' + `${i18next.t('ImportManagerErrorUpdatingItem', { lng: language })} ${e}`
+        }
+        await process.save()
+    }
+
+    private async mapLineXML(importConfig: ImportConfig, entity: string, data: any, context: Context) {
+        const result: any = {
+            name: {},
+            values: {}
+        }
+        const entityMappings = entity === 'category' ? importConfig.mappings.categories : importConfig.mappings.offers
+        try {
+            for (let i = 0; i < entityMappings.length; i++) {
+                const mapping = entityMappings[i]
+
+                let found
+                
+                if (entity === 'offer') {
+                    if (mapping.source === 'attribute') {
+                        found = data.attributes[mapping.column.toLowerCase()]
+                    } else {
+                        found = !(mapping.source === 'parameter') ? data.childs.find((el: any) => el.name === mapping.column) : data.childs.find((el: any) => el.name === 'param' && el.attributes['name'] === mapping.column)
+                    }
+                    if (found && found.text) found = found.text
+                } else if (entity === 'category') {
+                    found = mapping.column === 'name' ? data.text : data.attributes[mapping.column]
+                }
+
+                if ((found || (!found && mapping.expression)) && mapping.attribute && mapping.attribute.length) {
+                    const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, found, mapping.expression, context) : found
+                    if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
+                        result.values[mapping.attribute] = mappedData
+                    } else if (mapping.attribute.startsWith('$name#')) {
+                        const langIdentifier = mapping.attribute.substring(6)
+                        result.name[langIdentifier] = mappedData
+                    } else {
+                        result[mapping.attribute] = mappedData
+                    }
+                }
+            }
+        } catch (e: any) {
+            throw new Error(e)
+        }
+        return result
+    }
+
     private async mapLine(headers: Array<any>, importConfig: ImportConfig, data: Array<any>, context: Context) {
         const result: any = {
             name: {},
@@ -117,15 +286,15 @@ export class ImportManager {
         try {
             for (let i = 0; i < importConfig.mappings.length; i++) {
                 const mapping = importConfig.mappings[i]
-    
+
                 let idx = -1
                 if (importConfig.config.noHeadersChecked && mapping.column) {
                     // calculates an index from string like 'Column 10'
-                    idx = parseInt(mapping.column.substring(7))-1
+                    idx = parseInt(mapping.column.substring(7)) - 1
                 } else if (mapping.column) {
                     idx = headers.indexOf(mapping.column)
                 }
-    
+
                 if ((idx !== -1 || (idx === -1 && mapping.expression)) && mapping.attribute && mapping.attribute.length) {
                     const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, data[idx], mapping.expression, context) : data[idx]
                     if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
@@ -138,10 +307,9 @@ export class ImportManager {
                     }
                 }
             }
-        } catch (e:any) {
+        } catch (e: any) {
             throw new Error(e)
         }
-        
         return result
     }
 
@@ -165,15 +333,15 @@ export class ImportManager {
                 findLOV: async (lovIdentifier: string, value: string, lang = 'en', caseInsensitive = false, createIfNotExists = false) => {
                     //console.log(JSON.stringify(value))
                     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-                    let lov:LOV | undefined | null = mng.getCache().get('IM_LOV_' + lovIdentifier)
+                    let lov: LOV | undefined | null = mng.getCache().get('IM_LOV_' + lovIdentifier)
                     if (!lov) {
-                        lov = await LOV.applyScope(context).findOne({where:{identifier: lovIdentifier}})
+                        lov = await LOV.applyScope(context).findOne({ where: { identifier: lovIdentifier } })
                         if (!lov) throw new Error(`Failed to find LOV by identifier: ${lovIdentifier}`)
                         logger.debug(`findLOV: lov found`)
-                        mng.getCache().set('IM_LOV_' + lovIdentifier, lov, 60*60)
+                        mng.getCache().set('IM_LOV_' + lovIdentifier, lov, 60 * 60)
                     }
-                    const valueLowerCase = value ? (''+value).toLowerCase() : null
-                    let val = lov.values.find((elem:any) => {
+                    const valueLowerCase = value ? ('' + value).toLowerCase() : null
+                    let val = lov.values.find((elem: any) => {
                         if (!caseInsensitive) {
                             return elem.value[lang] == value
                         } else {
@@ -183,8 +351,8 @@ export class ImportManager {
                     })
                     logger.debug(`findLOV: value found: ${JSON.stringify(val)}`)
                     if (!val && createIfNotExists) {
-                        const max = lov.values.reduce((prev:any, current:any) => (prev.id > current.id) ? prev : current)
-                        val = { id: max ? max.id+1 : 1, value: {}, filter: null}
+                        const max = lov.values.reduce((prev: any, current: any) => (prev.id > current.id) ? prev : current)
+                        val = { id: max ? max.id + 1 : 1, value: {}, filter: null }
                         val.value[lang] = value
                         lov.values.push(val)
                         lov.changed('values', true)
@@ -257,4 +425,21 @@ export class ImportManager {
             }
         })
     }
+
+/*     private async getImportConfigXMLFileData(filePath: string) {
+        return new Promise((resolve, reject) => {
+            if (!filePath) reject(new Error('No filepath specified'))
+            try {
+                const filedata = fs.readFileSync(filePath, 'utf8')
+                xml2js.parseString(filedata, function (err, result) {
+                    if (err) {
+                        reject(err)
+                    }
+                    resolve(result)
+                })
+            } catch (err) {
+                reject(err)
+            }
+        })
+    } */
 }
