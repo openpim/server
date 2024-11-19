@@ -73,7 +73,10 @@ export default {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update process: '+proc.id+', tenant: ' + context.getCurrentUser()!.tenantId)
 
             if (title) proc.title = title
-            if (active != null) proc.active = active
+            if (active !== null && active !== undefined) {
+                if (proc.active && !active) proc.finishTime = new Date()
+                proc.active = active
+            }
             if (status != null) proc.status = status
             if (log != null) proc.log = log
             if (runtime) proc.runtime = runtime
