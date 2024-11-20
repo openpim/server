@@ -1098,6 +1098,14 @@ export class OzonChannelHandler extends ChannelHandler {
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext, product: any, attrs: ChannelAttribute[], categoryConfig: any, language: string) {
+        // image_links_other processing
+        const otherImageLinksConfig = categoryConfig.attributes.find((elem: any) => elem.id === '#image_links_other')
+        let otherImageLinksValue = await this.getValueByMapping(channel, otherImageLinksConfig, item, language)
+        if (otherImageLinksValue) {
+            if (!Array.isArray(otherImageLinksValue)) otherImageLinksValue = [otherImageLinksValue]
+            product.images = otherImageLinksValue 
+            return
+        }
         if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
             const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
             const typeNode = mng.getTypeById(item.typeId)
