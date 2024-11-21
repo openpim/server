@@ -382,12 +382,12 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         }
     }
     if (Object.getOwnPropertyNames(newValues).length > 0) {
-        const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, item.name, newValues, item.channels, false, false, true)
+        const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, item.name, newValues, item.channels, false, false, true, transaction)
         if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
             item.values = mergeValues(newValues, item.values)
             item.changed('values', true)
             await item.save({ transaction })
-            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, false, true)
+            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, false, true, transaction)
         }
     }
 
@@ -425,12 +425,12 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
             }
         }
         if (Object.getOwnPropertyNames(newTargetValues).length > 0) {
-            const actionResponse = await processItemActions(context, EventType.BeforeUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, newTargetValues, targetItem.channels, false, false, true)
+            const actionResponse = await processItemActions(context, EventType.BeforeUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, newTargetValues, targetItem.channels, false, false, true, transaction)
             if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
                 targetItem.values = mergeValues(newTargetValues, targetItem.values)
                 targetItem.changed('values', true)
                 await targetItem.save({ transaction })
-                await processItemActions(context, EventType.AfterUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, targetItem.values, targetItem.channels, false, false, true)
+                await processItemActions(context, EventType.AfterUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, targetItem.values, targetItem.channels, false, false, true, transaction)
             }
         }
     }
@@ -604,7 +604,7 @@ function checkInteger(attr: Attribute, value: any) {
     }
 }
 
-export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean, isFileUpload: boolean, fromRelationAttribute = false) {
+export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean, isFileUpload: boolean, fromRelationAttribute = false, transaction: Transaction | null = null) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem: string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -629,10 +629,16 @@ export async function processItemActions(context: Context, event: EventType, ite
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
         isImport: isImport,
-        item: makeItemProxy(item, EventType[event]), values: newValues, channels: newChannels, name: newName, parent: newParent,
+        item: makeItemProxy(item, EventType[event], transaction), 
+        values:
+        newValues,
+        channels: newChannels,
+        name: newName,
+        transaction,
+        parent: newParent,
         models: {
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy, transaction),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy, transaction),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             literal: sequelize.literal,
@@ -1031,30 +1037,35 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
     return retArr
 }
 
-function makeModelProxy(model: any, itemProxy: any) {
+function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | null = null) {
     return new Proxy(model, {
         get: function (target, property, receiver) {
             if ((<string>property) == 'findOne') {
                 return async (...args: any) => {
+                    if (transaction) args.push({ transaction })
                     const tst = await target[property].apply(target, args)
-                    return tst ? itemProxy(tst) : undefined
+                    return tst ? itemProxy(tst, null, transaction) : undefined
                 }
             } else if ((<string>property) == 'create') {
                 return async (...args: any) => {
-                    return itemProxy(await target[property].apply(target, args))
+                    if (transaction) args.push({ transaction })
+                    return itemProxy(await target[property].apply(target, args), null, transaction)
                 }
             } else if ((<string>property) == 'update') {
                 return async (...args: any) => {
+                    if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'count') {
                 return async (...args: any) => {
+                    if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'findAll') {
                 return async (...args: any) => {
+                    if (transaction) args.push({ transaction })
                     const arr = await target[property].apply(target, args)
-                    return arr.map((elem: any) => itemProxy(elem))
+                    return arr.map((elem: any) => itemProxy(elem, null, transaction))
                 }
             } else {
                 return null
@@ -1063,18 +1074,24 @@ function makeModelProxy(model: any, itemProxy: any) {
     })
 }
 
-function makeItemProxy(item: any, event: string) {
+function makeItemProxy(item: any, event: string, transaction: Transaction | null = null) {
     return new Proxy(item, {
         get: function (target, property, receiver) {
             if ((<string>property) == 'save') {
                 if (event === 'BeforeCreate') throw new Error('It is forbidden to call method save() during BeforeCreate')
                 return async (...args: any) => {
+                    if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'destroy') {
                 return async (...args: any) => {
                     target.set('identifier', target.identifier + "_d" + Date.now())
-                    target.save()
+                    if (transaction) {
+                        args.push({ transaction })
+                        target.save({ transaction })
+                    } else {
+                        target.save()
+                    }
                     return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'set') {
@@ -1143,7 +1160,7 @@ function makeItemProxy(item: any, event: string) {
         }
     })
 }
-export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes: any, newValues: any, isImport: boolean, fromRelationAttribute: boolean) {
+export async function processItemRelationActions(context: Context, event: EventType, itemRelation: ItemRelation, changes: any, newValues: any, isImport: boolean, fromRelationAttribute: boolean, transaction: Transaction | null = null) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
@@ -1164,11 +1181,12 @@ export async function processItemRelationActions(context: Context, event: EventT
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
         isImport: isImport,
+        transaction,
         fromRelationAttribute: fromRelationAttribute,
-        itemRelation: makeItemRelationProxy(itemRelation), values: newValues, changes: changes,
+        itemRelation: makeItemRelationProxy(itemRelation, transaction), values: newValues, changes: changes,
         models: {
-            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
-            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy, transaction),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy, transaction),
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
             literal: sequelize.literal,
@@ -1179,17 +1197,23 @@ export async function processItemRelationActions(context: Context, event: EventT
     })
 }
 
-function makeItemRelationProxy(item: any) {
+function makeItemRelationProxy(item: any, transaction: Transaction | null = null) {
     return new Proxy(item, {
         get: function (target, property, receiver) {
             if ((<string>property) == 'save') {
                 return async (...args: any) => {
+                    if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'destroy') {
                 return async (...args: any) => {
                     target.set('identifier', target.identifier + "_d" + Date.now())
-                    target.save()
+                    if (transaction) {
+                        args.push({ transaction })
+                        target.save({ transaction })
+                    } else {
+                        target.save()
+                    }
                     return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'set') {
@@ -1557,7 +1581,7 @@ class ActionUtils {
         }
     }
 
-    public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean) {
+    public async processItemAction(actionIdentifier: string, event: string, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean, transaction: Transaction | null = null) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
 
         let action = mng.getActions().find(act => act.identifier === actionIdentifier)
@@ -1574,10 +1598,14 @@ class ActionUtils {
             utils: new ActionUtils(context),
             system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
             isImport: isImport,
-            item: makeItemProxy(item, event), values: newValues, channels: newChannels, name: newName, parent: newParent,
+            item: makeItemProxy(item, event, transaction), 
+            values: newValues, 
+            channels: newChannels, 
+            name: newName,
+            parent: newParent,
             models: {
-                item: makeModelProxy(Item.applyScope(context), makeItemProxy),
-                itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
+                item: makeModelProxy(Item.applyScope(context), makeItemProxy, transaction),
+                itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy, transaction),
                 lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
                 channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
                 literal: sequelize.literal,
@@ -1671,10 +1699,11 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false)
+        
 
         const transaction = await sequelize.transaction()
         try {
+            if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
             filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
             checkValues(mng, values)
             item.values = values
@@ -1682,14 +1711,12 @@ class ActionUtils {
             relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, transaction)
             await item.save({ transaction })
             await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
+            if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
             await transaction.commit()
         } catch(err:any) {
             transaction.rollback()
             throw new Error(err.message)
         }
-
-
-        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false)
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
@@ -1785,7 +1812,7 @@ class ActionUtils {
         })
 
         if (!values) values = {}
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, true)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, true, transaction)
 
         filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
         checkValues(mng, values)
@@ -1795,7 +1822,7 @@ class ActionUtils {
         if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction)
         await itemRelation.save({ transaction })
 
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true)
+        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true, transaction)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {
@@ -1840,7 +1867,7 @@ class ActionUtils {
             throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
         }
 
-        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, true)
+        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, true, transaction)
 
         itemRelation.updatedBy = context.getCurrentUser()!.login
         if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
@@ -1861,7 +1888,7 @@ class ActionUtils {
         await itemRelation.save({ transaction })
         await itemRelation.destroy({ transaction })
 
-        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, true)
+        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, true, transaction)
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {

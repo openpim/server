@@ -206,10 +206,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
             if (!item.values) item.values = {}
             if (!item.channels) item.channels = {}
-            if (!item.skipActions) await processItemActions(context, EventType.BeforeCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             const transaction = await sequelize.transaction()
             try {
+                if (!item.skipActions) await processItemActions(context, EventType.BeforeCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, transaction)
 
                 filterEditChannels(context, item.channels)
                 checkSubmit(context, item.channels)
@@ -225,12 +225,12 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 await data.save({transaction})
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
+                if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, transaction)
                 await transaction.commit()
             } catch (err:any) {
                 transaction.rollback()
                 throw new Error(err.message)
             }
-            if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -272,72 +272,71 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
             if (!item.values) item.values = {}
             if (!item.channels) item.channels = {}
-            if (!item.skipActions) await processItemActions(context, EventType.BeforeUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
-
-            if (item.parentIdentifier && data.parentIdentifier !== item.parentIdentifier) {
-                if (item.parentIdentifier === data.identifier) {
-                    result.addError(ReturnMessage.WrongParent)
-                    result.result = ImportResult.REJECTED
-                    return result
-                }
-                
-                let parent = await checkParent(item, result, mng, context)
-                if (result.result) return result
-
-                if (audit.auditEnabled()) {
-                    itemDiff.changed!.parentIdentifier = item.parentIdentifier
-                    itemDiff.old!.parentIdentifier = data.parentIdentifier
-                }
-
-                let newPath: string
-                if (parent) {
-                    newPath = parent.path+"."+data.id
-                } else {
-                    newPath = ""+data.id
-                }
-                if (newPath !== data.path) {
-                    // check children
-                    const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
-                        replacements: {
-                            tenant: context.getCurrentUser()!.tenantId,
-                            lquery: data.path + '.*{1}',
-                        },
-                        plain: true,
-                        raw: true,
-                        type: QueryTypes.SELECT
-                    })
-                    const childrenNumber = parseInt(cnt.count)
-                    if (childrenNumber > 0) { //move subtree
-                        await sequelize.query('update items set path = text2ltree(:parentPath) || subpath(path,:level) where path <@ :oldPath and "tenantId"=:tenant', {
-                            replacements: { 
-                                tenant: context.getCurrentUser()!.tenantId,
-                                oldPath: data.path,
-                                parentPath: parent ? parent.path : '',
-                                level: data.path.split('.').length - 1
-                            },
-                            plain: true,
-                            raw: true,
-                            type: QueryTypes.UPDATE
-                        })
-                    } else { // move leaf
-                        data.path = newPath
-                    }
-                    data.parentIdentifier = parent ? parent.identifier : ""
-                }
-            }
-
-            if (item.name) {
-                if (audit.auditEnabled()) {
-                    const nameDiff: AuditItem = diff({name:data.name}, {name:item.name})
-                    itemDiff.added = {...itemDiff.added, ...nameDiff.added}
-                    itemDiff.changed = {...itemDiff.changed, ...nameDiff.changed}
-                    itemDiff.old = {...itemDiff.old, ...nameDiff.old}
-                }
-                data.name = {...data.name, ...item.name}
-            }
 
             const transaction = await sequelize.transaction()
             try {
+                if (!item.skipActions) await processItemActions(context, EventType.BeforeUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, transaction)
+                if (item.parentIdentifier && data.parentIdentifier !== item.parentIdentifier) {
+                    if (item.parentIdentifier === data.identifier) {
+                        result.addError(ReturnMessage.WrongParent)
+                        result.result = ImportResult.REJECTED
+                        return result
+                    }
+                    
+                    let parent = await checkParent(item, result, mng, context)
+                    if (result.result) return result
+
+                    if (audit.auditEnabled()) {
+                        itemDiff.changed!.parentIdentifier = item.parentIdentifier
+                        itemDiff.old!.parentIdentifier = data.parentIdentifier
+                    }
+
+                    let newPath: string
+                    if (parent) {
+                        newPath = parent.path+"."+data.id
+                    } else {
+                        newPath = ""+data.id
+                    }
+                    if (newPath !== data.path) {
+                        // check children
+                        const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
+                            replacements: {
+                                tenant: context.getCurrentUser()!.tenantId,
+                                lquery: data.path + '.*{1}',
+                            },
+                            plain: true,
+                            raw: true,
+                            type: QueryTypes.SELECT
+                        })
+                        const childrenNumber = parseInt(cnt.count)
+                        if (childrenNumber > 0) { //move subtree
+                            await sequelize.query('update items set path = text2ltree(:parentPath) || subpath(path,:level) where path <@ :oldPath and "tenantId"=:tenant', {
+                                replacements: { 
+                                    tenant: context.getCurrentUser()!.tenantId,
+                                    oldPath: data.path,
+                                    parentPath: parent ? parent.path : '',
+                                    level: data.path.split('.').length - 1
+                                },
+                                plain: true,
+                                raw: true,
+                                type: QueryTypes.UPDATE
+                            })
+                        } else { // move leaf
+                            data.path = newPath
+                        }
+                        data.parentIdentifier = parent ? parent.identifier : ""
+                    }
+                }
+
+                if (item.name) {
+                    if (audit.auditEnabled()) {
+                        const nameDiff: AuditItem = diff({name:data.name}, {name:item.name})
+                        itemDiff.added = {...itemDiff.added, ...nameDiff.added}
+                        itemDiff.changed = {...itemDiff.changed, ...nameDiff.changed}
+                        itemDiff.old = {...itemDiff.old, ...nameDiff.old}
+                    }
+                    data.name = {...data.name, ...item.name}
+                }
 
                 filterEditChannels(context, item.channels)
                 checkSubmit(context, item.channels)
@@ -364,12 +363,12 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 await data.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
+                if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, transaction)
                 await transaction.commit()
             } catch(err:any) {
                 await transaction.rollback()
                 throw new Error(err.message)
             }
-            if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false)
 
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, data.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)
@@ -398,7 +397,6 @@ function checkType(item: IItemImportRequest, result: ImportResponse, mng: ModelM
         result.result = ImportResult.REJECTED
         return null
     }
-    
     return type
 }
 
@@ -427,8 +425,7 @@ async function checkParent(item: IItemImportRequest, result: ImportResponse, mng
             result.result = ImportResult.REJECTED
             return null
         }
-    }    
-
+    }
     return parent
 }
 

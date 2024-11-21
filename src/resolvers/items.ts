@@ -582,10 +582,9 @@ export default {
             if (!values) values = {}
             if (!channels) channels = {}
 
-            await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, channels, false, false)
-
             const transaction = await sequelize.transaction()
             try {
+                await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, channels, false, false, false, transaction)
 
                 filterEditChannels(context, channels)
                 checkSubmit(context, channels)
@@ -600,12 +599,12 @@ export default {
                 relAttributesData = await checkRelationAttributes(context, mng, item, values, transaction)
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
+                await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false, false, transaction)
                 await transaction.commit()
             } catch(err:any) {
                 transaction.rollback()
                 throw new Error(err.message)
             }
-            await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false)
 
             if (audit.auditEnabled()) {
                 const itemChanges: ItemChanges = {
@@ -643,19 +642,15 @@ export default {
                 checkValues(mng, values)
             }
 
-            const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false, false)
-
-            if (actionResponse.some((resp) => resp.result === 'cancelSave')) {
-                return item
-            }
-
             let itemDiff: AuditItem | null = null
-            if (audit.auditEnabled()) itemDiff = diff({ name: item.name, values: item.values, channels: item.channels }, { name: name || item.name, values: values || item.values, channels: channels || item.channels })
-
             const transaction = await sequelize.transaction()
-
             try {
-
+                const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false, false, false, transaction)
+                if (actionResponse.some((resp) => resp.result === 'cancelSave')) {
+                    transaction.commit()
+                    return item
+                }
+                if (audit.auditEnabled()) itemDiff = diff({ name: item.name, values: item.values, channels: item.channels }, { name: name || item.name, values: values || item.values, channels: channels || item.channels })
                 if (channels) {
                     filterEditChannels(context, channels)
                     checkSubmit(context, channels)
@@ -672,12 +667,12 @@ export default {
                 if (name) item.name = name
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
+                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false, false, transaction)
                 await transaction.commit()
             } catch(err: any) {
                 await transaction.rollback()
                 throw new Error(err.message)
             }
-            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false)
             if (audit.auditEnabled() && itemDiff) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }
