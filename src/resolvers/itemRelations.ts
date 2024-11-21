@@ -237,7 +237,7 @@ export default {
                 }
             }
 
-            const itemRelation = await ItemRelation.build ({
+            const itemRelation = ItemRelation.build ({
                 identifier: identifier,
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,
@@ -252,22 +252,21 @@ export default {
             })
 
             if (!values) values = {}
-            await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, values, false, false)
-
-            filterValues(context.getEditItemRelationAttributes(nRelationId), values)
-            checkValues(mng, values)
-            itemRelation.values = values
-
             const transaction = await sequelize.transaction()
             try {
+                await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, values, false, false, transaction)
+                filterValues(context.getEditItemRelationAttributes(nRelationId), values)
+                checkValues(mng, values)
+                itemRelation.values = values
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
+                await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, false, transaction)
                 await transaction.commit()
             } catch(err: any) {
                 transaction.rollback()
                 throw new Error(err.message)
             }
-            await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, false)
+            
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
                     relationIdentifier: itemRelation.relationIdentifier,
@@ -342,49 +341,43 @@ export default {
                     changes.targetIdentifier = targetItem.identifier
                 }
             }
-
-            await processItemRelationActions(context, EventType.BeforeUpdate, itemRelation, changes, values, false, false)
-
-            if (changes.itemId) {
-                itemRelation.itemId = changes.itemId
-                itemRelation.itemIdentifier = changes.itemIdentifier
-            }
-
-            if (changes.targetId) {
-                itemRelation.targetId = changes.targetId
-                itemRelation.targetIdentifier = changes.targetIdentifier
-            }
-
-            if (values) {
-                filterValues(context.getEditItemRelationAttributes(itemRelation.relationId), values)
-                checkValues(mng, values)
-
-                let valuesDiff: AuditItemRelation
-                if (audit.auditEnabled()) {
-                    valuesDiff = diff({values: itemRelation.values}, {values: values})
-                    relDiff.added = {...relDiff.added, ...valuesDiff.added}
-                    relDiff.changed = {...relDiff.changed, ...valuesDiff.changed}
-                    relDiff.old = {...relDiff.old, ...valuesDiff.old}
-                }
-
-                itemRelation.values = mergeValues(values, itemRelation.values)
-            }
-            itemRelation.updatedBy = context.getCurrentUser()!.login
-
             const transaction = await sequelize.transaction()
             try {
+                await processItemRelationActions(context, EventType.BeforeUpdate, itemRelation, changes, values, false, false, transaction)
+                if (changes.itemId) {
+                    itemRelation.itemId = changes.itemId
+                    itemRelation.itemIdentifier = changes.itemIdentifier
+                }
+                if (changes.targetId) {
+                    itemRelation.targetId = changes.targetId
+                    itemRelation.targetIdentifier = changes.targetIdentifier
+                }
+                if (values) {
+                    filterValues(context.getEditItemRelationAttributes(itemRelation.relationId), values)
+                    checkValues(mng, values)
+
+                    let valuesDiff: AuditItemRelation
+                    if (audit.auditEnabled()) {
+                        valuesDiff = diff({values: itemRelation.values}, {values: values})
+                        relDiff.added = {...relDiff.added, ...valuesDiff.added}
+                        relDiff.changed = {...relDiff.changed, ...valuesDiff.changed}
+                        relDiff.old = {...relDiff.old, ...valuesDiff.old}
+                    }
+
+                    itemRelation.values = mergeValues(values, itemRelation.values)
+                }
+                itemRelation.updatedBy = context.getCurrentUser()!.login
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
+                await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, false, transaction)
                 await transaction.commit()
             } catch(err: any) {
                 transaction.rollback()
                 throw new Error(err.message)
             }
-            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, false)
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
             }
-
             return itemRelation
         },
         removeItemRelation: async (parent: any, { id }: any, context: Context) => {

@@ -64,21 +64,23 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     result.result = ImportResult.REJECTED
                 }
                 data.updatedBy = context.getCurrentUser()!.login
-                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeDelete, data, null, null, true, false)
+                
                 const oldIdentifier = data.identifier
                 data.identifier = itemRelation.identifier + '_d_' + Date.now()
 
                 const transaction = await sequelize.transaction()
                 try {
+                    if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeDelete, data, null, null, true, false, transaction)
                     await updateItemRelationAttributes(context, mng, data, true, transaction)
                     await data.save({ transaction })
                     await data.destroy({ transaction })
+                    if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterDelete, data, null, null, true, false, transaction)
                     await transaction.commit()
                 } catch(err: any) {
                     transaction.rollback()
                     throw new Error(err.message)
                 }
-                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterDelete, data, null, null, true, false)
+                
                 if (audit.auditEnabled()) {
                     const itemRelationChanges: ItemRelationChanges = {
                         relationIdentifier: data.relationIdentifier,
@@ -164,8 +166,15 @@ export async function importItemRelation(context: Context, config: IImportConfig
             })
 
             if (!itemRelation.values) itemRelation.values = {}
-            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeCreate, data, null, itemRelation.values, true, false)
 
+            const transaction = await sequelize.transaction()
+            try {
+                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeCreate, data, null, itemRelation.values, true, false, transaction)
+            } catch (err: any) {
+                transaction.rollback()
+                throw new Error(err.message)
+            }
+            
             filterValues(context.getEditItemRelationAttributes(relation.id), itemRelation.values)
             try {
                 checkValues(mng, itemRelation.values)
@@ -177,16 +186,15 @@ export async function importItemRelation(context: Context, config: IImportConfig
 
             data.values = itemRelation.values
 
-            const transaction = await sequelize.transaction()
             try {
                 await updateItemRelationAttributes(context, mng, data, false, transaction)
                 await data.save({ transaction })
+                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true, false, transaction)
                 await transaction.commit()
             } catch(err: any) {
                 transaction.rollback()
                 throw new Error(err.message)
             }
-            if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true, false)
 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
