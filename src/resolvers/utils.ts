@@ -1042,7 +1042,7 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
         get: function (target, property, receiver) {
             if ((<string>property) == 'findOne') {
                 return async (...args: any) => {
-                    if (transaction) args.push({ transaction })
+                    if (transaction) args[0].transaction =  transaction
                     const tst = await target[property].apply(target, args)
                     return tst ? itemProxy(tst, null, transaction) : undefined
                 }
@@ -1058,12 +1058,12 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
                 }
             } else if ((<string>property) == 'count') {
                 return async (...args: any) => {
-                    if (transaction) args.push({ transaction })
+                    if (transaction) args[0].transaction =  transaction
                     return await target[property].apply(target, args)
                 }
             } else if ((<string>property) == 'findAll') {
                 return async (...args: any) => {
-                    if (transaction) args.push({ transaction })
+                    if (transaction) args[0].transaction =  transaction
                     const arr = await target[property].apply(target, args)
                     return arr.map((elem: any) => itemProxy(elem, null, transaction))
                 }
