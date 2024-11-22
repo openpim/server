@@ -106,22 +106,23 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 data.updatedBy = context.getCurrentUser()!.login
 
-                if (!item.skipActions) await processItemActions(context, EventType.BeforeDelete, data, "", "", null, null, true, false)
-
                 const oldIdentifier = item.identifier
-                data.identifier = item.identifier + '_d_' + Date.now() 
-                await sequelize.transaction(async (t) => {
-                    await data.save({transaction: t})
-                    await data.destroy({transaction: t})
-                })
-
-                if (data.storagePath) {
-                    const fm = FileManager.getInstance()
-                    await fm.removeFile(data)
+                const transaction = await sequelize.transaction()
+                try {
+                    if (!item.skipActions) await processItemActions(context, EventType.BeforeDelete, data, "", "", null, null, true, false, false, transaction)
+                    data.identifier = item.identifier + '_d_' + Date.now() 
+                    await data.save({ transaction })
+                    await data.destroy({ transaction })
+                    if (data.storagePath) {
+                        const fm = FileManager.getInstance()
+                        await fm.removeFile(data)
+                    }
+                    await transaction.commit()
+                    if (!item.skipActions) await processItemActions(context, EventType.AfterDelete, data, "", "", null, null, true, false)
+                } catch (err:any) {
+                    await transaction.rollback()
+                    throw new Error(err.message)
                 }
-    
-                if (!item.skipActions) await processItemActions(context, EventType.AfterDelete, data, "", "", null, null, true, false)
-
                 if (audit.auditEnabled()) {
                     const itemChanges: ItemChanges = {
                         typeIdentifier: data.typeIdentifier,
@@ -132,7 +133,6 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     }
                     audit.auditItem(ChangeType.DELETE, data.id, oldIdentifier, {deleted: itemChanges}, context.getCurrentUser()!.login, data.updatedAt)
                 }
-    
                 result.result = ImportResult.DELETED
             }
             return result
@@ -228,7 +228,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, transaction)
                 await transaction.commit()
             } catch (err:any) {
-                transaction.rollback()
+                await transaction.rollback()
                 throw new Error(err.message)
             }
 

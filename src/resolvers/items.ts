@@ -599,10 +599,10 @@ export default {
                 relAttributesData = await checkRelationAttributes(context, mng, item, values, transaction)
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false, false, transaction)
                 await transaction.commit()
+                await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false, false)
             } catch(err:any) {
-                transaction.rollback()
+                await transaction.rollback()
                 throw new Error(err.message)
             }
 
@@ -647,7 +647,7 @@ export default {
             try {
                 const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, name, values, channels, false, false, false, transaction)
                 if (actionResponse.some((resp) => resp.result === 'cancelSave')) {
-                    transaction.commit()
+                    await transaction.commit()
                     return item
                 }
                 if (audit.auditEnabled()) itemDiff = diff({ name: item.name, values: item.values, channels: item.channels }, { name: name || item.name, values: values || item.values, channels: channels || item.channels })
@@ -667,8 +667,8 @@ export default {
                 if (name) item.name = name
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false, false, transaction)
                 await transaction.commit()
+                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false, false)
             } catch(err: any) {
                 await transaction.rollback()
                 throw new Error(err.message)

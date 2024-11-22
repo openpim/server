@@ -260,10 +260,10 @@ export default {
                 itemRelation.values = values
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
-                await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, false, transaction)
                 await transaction.commit()
+                await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, false)
             } catch(err: any) {
-                transaction.rollback()
+                await transaction.rollback()
                 throw new Error(err.message)
             }
             
@@ -369,10 +369,10 @@ export default {
                 itemRelation.updatedBy = context.getCurrentUser()!.login
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
-                await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, false, transaction)
                 await transaction.commit()
+                await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, false)
             } catch(err: any) {
-                transaction.rollback()
+                await transaction.rollback()
                 throw new Error(err.message)
             }
             if (audit.auditEnabled()) {
@@ -414,7 +414,7 @@ export default {
                 await itemRelation.destroy({ transaction })
                 await transaction.commit()
             } catch(err: any) {
-                transaction.rollback()
+                await transaction.rollback()
                 throw new Error(err.message)
             }
             await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, false)

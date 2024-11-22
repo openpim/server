@@ -1714,7 +1714,7 @@ class ActionUtils {
             if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
             await transaction.commit()
         } catch(err:any) {
-            transaction.rollback()
+            await transaction.rollback()
             throw new Error(err.message)
         }
 
@@ -1739,7 +1739,7 @@ class ActionUtils {
             await transaction.commit()
             return result
         } catch(err:any) {
-            transaction.rollback()
+            await transaction.rollback()
             logger.error("Failed to create itemRelation with identifier " + identifier)
             logger.error(err.message)
         }
@@ -1845,7 +1845,7 @@ class ActionUtils {
             await transaction.commit()
             return result
         } catch(err:any) {
-            transaction.rollback()
+            await transaction.rollback()
             logger.error("Failed to remove itemRelation with id " + id)
             logger.error(err.message)
         }

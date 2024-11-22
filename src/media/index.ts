@@ -480,7 +480,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 await processItemActions(context, EventType.AfterCreate, item, item.parentIdentifier, item.name, item.values, item.channels, false, true)
                 await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, itemRelation.values, false, false)
             } catch(err:any) {
-                transaction.rollback()
+                await transaction.rollback()
                 throw new Error(err.message)
             }
             res.send('OK')
