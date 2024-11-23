@@ -874,17 +874,17 @@ export class OzonChannelHandler extends ChannelHandler {
 
                 const priceAttr = priceConfig.attrIdent
                 if (priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.result.price)) {
-                    changedValues[priceAttr] = parseFloat(existingPricesJson.result.price)
+                    if (channel.config.savePriceUpdate) changedValues[priceAttr] = parseFloat(existingPricesJson.result.price)
                     product.price = existingPricesJson.result.price
                 }
                 const priceOldAttr = priceOldConfig?.attrIdent
                 if (priceOldAttr && existingPricesJson.result.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.result.old_price)) {
-                    changedValues[priceOldAttr] = parseFloat(existingPricesJson.result.old_price)
+                    if (channel.config.savePriceUpdate) changedValues[priceOldAttr] = parseFloat(existingPricesJson.result.old_price)
                     product.old_price = existingPricesJson.result.old_price
                 }
                 const pricePremAttr = pricePremConfig?.attrIdent
                 if (pricePremAttr && existingPricesJson.result.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.result.premium_price)) {
-                    changedValues[pricePremAttr] = parseFloat(existingPricesJson.result.premium_price)
+                    if (channel.config.savePriceUpdate) changedValues[pricePremAttr] = parseFloat(existingPricesJson.result.premium_price)
                     product.premium_price = existingPricesJson.result.premium_price
                 }
             }
