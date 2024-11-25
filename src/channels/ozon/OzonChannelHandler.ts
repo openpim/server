@@ -715,7 +715,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && attrConfig.id != '#oldprice' && attrConfig.id != '#premprice' && 
                 attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
                 && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames' && attrConfig.id != '#images360Urls' && attrConfig.id != 'attr_4194' // image attribute is filled automatically
-                && attrConfig.id != '#new_category' && attrConfig.id != '#category' && attrConfig.id != '#images'
+                && attrConfig.id != '#new_category' && attrConfig.id != '#category' && attrConfig.id != '#images' && attrConfig.id != '#color_image' && attrConfig.id != '#image_links_other'
             ) {
                 const attr = attrs.find(elem => elem.id === attrConfig.id)
                 if (!attr) {
@@ -874,17 +874,17 @@ export class OzonChannelHandler extends ChannelHandler {
 
                 const priceAttr = priceConfig.attrIdent
                 if (priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.result.price)) {
-                    changedValues[priceAttr] = parseFloat(existingPricesJson.result.price)
+                    if (channel.config.savePriceUpdate) changedValues[priceAttr] = parseFloat(existingPricesJson.result.price)
                     product.price = existingPricesJson.result.price
                 }
                 const priceOldAttr = priceOldConfig?.attrIdent
                 if (priceOldAttr && existingPricesJson.result.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.result.old_price)) {
-                    changedValues[priceOldAttr] = parseFloat(existingPricesJson.result.old_price)
+                    if (channel.config.savePriceUpdate) changedValues[priceOldAttr] = parseFloat(existingPricesJson.result.old_price)
                     product.old_price = existingPricesJson.result.old_price
                 }
                 const pricePremAttr = pricePremConfig?.attrIdent
                 if (pricePremAttr && existingPricesJson.result.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.result.premium_price)) {
-                    changedValues[pricePremAttr] = parseFloat(existingPricesJson.result.premium_price)
+                    if (channel.config.savePriceUpdate) changedValues[pricePremAttr] = parseFloat(existingPricesJson.result.premium_price)
                     product.premium_price = existingPricesJson.result.premium_price
                 }
             }
@@ -1106,7 +1106,11 @@ export class OzonChannelHandler extends ChannelHandler {
             product.images = otherImageLinksValue 
             return
         }
-        if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
+
+        const imagesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
+        const images = await this.getValueByMapping(channel, imagesConfig, item, language)
+
+        if ((channel.config.imgRelations && channel.config.imgRelations.length > 0) || images) {
             const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
             const typeNode = mng.getTypeById(item.typeId)
             if (!typeNode) {
@@ -1188,8 +1192,6 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
             }
 
-            const imagesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
-            const images = await this.getValueByMapping(channel, imagesConfig, item, language)
             if (images && Array.isArray(images)) {
                 for (let i = 0; i < images.length; i++) {
                     const image = images[i];

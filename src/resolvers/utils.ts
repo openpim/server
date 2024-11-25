@@ -1002,7 +1002,7 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                         script.compile()
                     } catch (err: any) {
                         retArr.push({ identifier: action.identifier, compileError: err.message })
-                        logger.error('Failed to compile script.', err);
+                        logger.error(`Failed to compile script for action ${action.identifier}`, err);
                         script = { compileError: true, error: err.message }
                     }
                     mng.getActionsCache()[action.identifier] = script
