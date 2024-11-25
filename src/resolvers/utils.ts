@@ -530,7 +530,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                 // remove relations not existed in incoming array
                 const existedItemRelationsForAttribute2Delete = existedItemRelationsForAttribute.filter(value => !valsArray.includes(isSource ? value.targetId : value.itemId))
                 for (let i = 0; i < existedItemRelationsForAttribute2Delete.length; i++) {
-                    await utils.removeItemRelationTransactional(existedItemRelationsForAttribute2Delete[i].id.toString(), context, transaction, false)
+                    await utils.removeItemRelation(existedItemRelationsForAttribute2Delete[i].id.toString(), transaction, false)
                     changed = true
                     const idx = existedItemRelations.findIndex(el => el.id === existedItemRelationsForAttribute2Delete[i].id)
                     if (idx !== -1) {
@@ -582,7 +582,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
 export async function createRelationsForItemRelAttributes(context: Context, arr: any, transaction: Transaction) {
     const utils = new ActionUtils(context)
     for (let i = 0; i < arr.length; i++) {
-        await utils.createItemRelationTransactional(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, transaction, false)
+        await utils.createItemRelation(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, transaction, false)
     }
 }
 
@@ -1623,7 +1623,7 @@ class ActionUtils {
         return (results[0]).nextval
     }
 
-    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any, skipActions = false) {
+    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any, skipActions = false, transaction: Transaction) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const tst = await Item.applyScope(this.#context).findOne({
@@ -1699,24 +1699,15 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        
-
-        const transaction = await sequelize.transaction()
-        try {
-            if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
-            filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
-            checkValues(mng, values)
-            item.values = values
-            let relAttributesData: any = []
-            relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, transaction)
-            await item.save({ transaction })
-            await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
-            if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
-            await transaction.commit()
-        } catch(err:any) {
-            await transaction.rollback()
-            throw new Error(err.message)
-        }
+        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
+        filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
+        checkValues(mng, values)
+        item.values = values
+        let relAttributesData: any = []
+        relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, transaction)
+        await item.save({ transaction })
+        await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
+        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
@@ -1731,7 +1722,7 @@ class ActionUtils {
         return makeItemProxy(item, 'createItem')
     }
 
-    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false) {
+    /* public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false) {
         let result = null
         const transaction = await sequelize.transaction()
         try {
@@ -1744,9 +1735,9 @@ class ActionUtils {
             logger.error(err.message)
         }
         return result
-    }
+    } */
 
-    public async createItemRelationTransactional(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, transaction: Transaction, processRelationAttributes = true) {
+    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, transaction: Transaction, processRelationAttributes = true) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
@@ -1837,7 +1828,7 @@ class ActionUtils {
         return makeItemRelationProxy(itemRelation)
     }
 
-    public async removeItemRelation(id: string) {
+    /* public async removeItemRelation(id: string) {
         let result = false
         const transaction = await sequelize.transaction()
         try {
@@ -1850,9 +1841,10 @@ class ActionUtils {
             logger.error(err.message)
         }
         return result
-    }
+    } */
 
-    public async removeItemRelationTransactional(id: string, context: Context, transaction: Transaction, processRelationAttribute = true) {
+    public async removeItemRelation(id: string, transaction: Transaction, processRelationAttribute = true) {
+        const context = this.#context
         context.checkAuth()
 
         const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
