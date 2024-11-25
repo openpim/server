@@ -1106,7 +1106,11 @@ export class OzonChannelHandler extends ChannelHandler {
             product.images = otherImageLinksValue 
             return
         }
-        if (channel.config.imgRelations && channel.config.imgRelations.length > 0) {
+
+        const imagesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
+        const images = await this.getValueByMapping(channel, imagesConfig, item, language)
+
+        if ((channel.config.imgRelations && channel.config.imgRelations.length > 0) || images) {
             const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
             const typeNode = mng.getTypeById(item.typeId)
             if (!typeNode) {
@@ -1188,8 +1192,6 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
             }
 
-            const imagesConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#images')
-            const images = await this.getValueByMapping(channel, imagesConfig, item, language)
             if (images && Array.isArray(images)) {
                 for (let i = 0; i < images.length; i++) {
                     const image = images[i];
