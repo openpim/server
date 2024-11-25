@@ -715,7 +715,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 attrConfig.id != '#productCode' && attrConfig.id != '#name' && attrConfig.id != '#barcode' && attrConfig.id != '#price' && attrConfig.id != '#oldprice' && attrConfig.id != '#premprice' && 
                 attrConfig.id != '#weight' && attrConfig.id != '#depth' && attrConfig.id != '#height' && attrConfig.id != '#width' && attrConfig.id != '#vat'
                 && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames' && attrConfig.id != '#images360Urls' && attrConfig.id != 'attr_4194' // image attribute is filled automatically
-                && attrConfig.id != '#new_category' && attrConfig.id != '#category' && attrConfig.id != '#images'
+                && attrConfig.id != '#new_category' && attrConfig.id != '#category' && attrConfig.id != '#images' && attrConfig.id != '#color_image' && attrConfig.id != '#image_links_other'
             ) {
                 const attr = attrs.find(elem => elem.id === attrConfig.id)
                 if (!attr) {
