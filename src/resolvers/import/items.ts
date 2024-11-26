@@ -118,9 +118,9 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                         await fm.removeFile(data)
                     }
                     await transaction.commit()
-                    if (!item.skipActions) await processItemActions(context, EventType.AfterDelete, data, "", "", null, null, true, false)
+                    if (!item.skipActions) await processItemActions(context, EventType.AfterDelete, data, "", "", null, null, true, false, false, null)
                 } catch (err:any) {
-                    await transaction.rollback()
+                    if (transaction) await transaction.rollback()
                     throw new Error(err.message)
                 }
                 if (audit.auditEnabled()) {
@@ -225,10 +225,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 await data.save({transaction})
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, transaction)
                 await transaction.commit()
+                if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, null)
             } catch (err:any) {
-                await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
 
@@ -363,10 +363,10 @@ export async function importItem(context: Context, config: IImportConfig, item: 
 
                 await data.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
-                if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, transaction)
                 await transaction.commit()
+                if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, null)
             } catch(err:any) {
-                await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
 

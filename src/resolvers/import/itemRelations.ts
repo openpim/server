@@ -72,13 +72,13 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     await updateItemRelationAttributes(context, mng, data, true, transaction)
                     await data.save({ transaction })
                     await data.destroy({ transaction })
-                    if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterDelete, data, null, null, true, false, transaction)
                     await transaction.commit()
+                    if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterDelete, data, null, null, true, false, null)
                 } catch(err: any) {
-                    await transaction.rollback()
+                    if (transaction) await transaction.rollback()
                     throw new Error(err.message)
                 }
-                
+
                 if (audit.auditEnabled()) {
                     const itemRelationChanges: ItemRelationChanges = {
                         relationIdentifier: data.relationIdentifier,
@@ -169,7 +169,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeCreate, data, null, itemRelation.values, true, false, transaction)
             } catch (err: any) {
-                await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
             
@@ -187,10 +187,10 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 await updateItemRelationAttributes(context, mng, data, false, transaction)
                 await data.save({ transaction })
-                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true, false, transaction)
                 await transaction.commit()
+                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true, false, null)
             } catch(err: any) {
-                await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
 
@@ -269,7 +269,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeUpdate, data, changes, itemRelation.values, true, false, transaction)
             } catch(err: any) {
-                await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
 
@@ -305,10 +305,10 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 await updateItemRelationAttributes(context, mng, data, false, transaction)
                 await data!.save({transaction})
-                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterUpdate, data, null, itemRelation.values, true, false, transaction)
                 await transaction.commit()
+                if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterUpdate, data, null, itemRelation.values, true, false, null)
             } catch(err: any) {
-                await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
             

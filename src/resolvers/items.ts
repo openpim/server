@@ -600,9 +600,9 @@ export default {
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
                 await transaction.commit()
-                await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false, false)
+                await processItemActions(context, EventType.AfterCreate, item, parentIdentifier, name, values, channels, false, false, false, null)
             } catch(err:any) {
-                await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
 
@@ -668,11 +668,12 @@ export default {
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
                 await transaction.commit()
-                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false, false)
+                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, name, values, channels, false, false, false, null)
             } catch(err: any) {
-                await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
+            
             if (audit.auditEnabled() && itemDiff) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
             }
