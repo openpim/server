@@ -4,6 +4,7 @@ type Query {
   getChannelStatus(id: ID!) : [ChannelStatus]
   getChannelStatusByCategories(id: ID!) : [ChannelCategoryStatus]
   getExecutions(channelId: ID!, offset: Int!, limit: Int!, order: JSON): ExecutionsResponse
+  getExecutionById(id: ID!): Execution
   getChannelCategories(id: ID!) : ChannelCategoriesResponse
   getChannelAttributes(channelId: ID!, categoryId: ID!) : [ChannelAttribute]
   getChannelAttributeValues(channelId: ID!, categoryId: ID!, attributeId: ID!) : JSONObject

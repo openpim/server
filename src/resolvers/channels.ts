@@ -130,6 +130,33 @@ export default {
 
             return res
         },
+        getExecutionById: async (parent: any, { id }: any, context: Context) => {
+            context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const execution = await ChannelExecution.applyScope(context).findOne({
+                where: { id }
+            })
+
+            if (!execution) {
+                throw new Error(`Execution with id ${id} not found`)
+            }
+
+            const channelId = execution.channelId
+            const channel = mng.getChannels().find(chan => chan.id === channelId)
+
+            if (!channel) {
+                throw new Error(`Channel not found for id: ${channelId}, tenant: ${context.getCurrentUser()!.tenantId}`)
+            }
+
+            if (!context.canViewChannel(channel.identifier)) {
+                throw new Error(
+                    `User ${context.getCurrentUser()?.id} does not have permissions to view channel with identifier ${channel.identifier}, tenant: ${context.getCurrentUser()!.tenantId}`
+                )
+            }
+
+            return execution
+        },
         getChannelCategories: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
