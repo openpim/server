@@ -1623,13 +1623,13 @@ class ActionUtils {
         return (results[0]).nextval
     }
 
-    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any, skipActions = false, transaction: Transaction) {
+    public async createItem(parentIdentifier: string, typeIdentifier: string, identifier: string, name: any, values: any, skipActions = false, transaction: Transaction | null = null) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const tst = await Item.applyScope(this.#context).findOne({
             where: {
                 identifier: identifier
-            }
+            }, transaction
         })
         if (tst) {
             throw new Error('Identifier: ' + identifier + ' already exists, tenant: ' + this.#context.getCurrentUser()!.tenantId)
@@ -1699,15 +1699,36 @@ class ActionUtils {
 
         if (!values) values = {}
 
-        if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
-        filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
-        checkValues(mng, values)
-        item.values = values
-        let relAttributesData: any = []
-        relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, transaction)
-        await item.save({ transaction })
-        await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
-        if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
+        // method has been called from action with opened transaction
+        if (transaction) {
+            if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
+            filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
+            checkValues(mng, values)
+            item.values = values
+            let relAttributesData: any = []
+            relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, transaction)
+            await item.save({ transaction })
+            await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
+            if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
+        } else {
+            const localTransaction = await sequelize.transaction()
+            try {
+                if (!skipActions) await processItemActions(this.#context, EventType.BeforeCreate, item, parentIdentifier, name, values, {}, false, false, false, localTransaction)
+                filterValuesNotAllowed(this.#context.getNotEditItemAttributes2(nTypeId, path), values)
+                checkValues(mng, values)
+                item.values = values
+                let relAttributesData: any = []
+                relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, localTransaction)
+                await item.save({ transaction: localTransaction })
+                await createRelationsForItemRelAttributes(this.#context, relAttributesData, localTransaction)
+                await localTransaction.commit()
+                if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false, false, null)
+            } catch(err: any) {
+                if (localTransaction) await localTransaction.rollback()
+                logger.error("Failed to create item with identifier " + identifier)
+                logger.error(err.message)
+            }
+        }
 
         if (audit.auditEnabled()) {
             const itemChanges: ItemChanges = {
@@ -1737,7 +1758,7 @@ class ActionUtils {
         return result
     } */
 
-    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, transaction: Transaction, processRelationAttributes = true) {
+    public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false, transaction: Transaction | null = null, processRelationAttributes = true) {
         if (!/^[A-Za-z0-9_-]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + this.#context.getCurrentUser()!.tenantId)
 
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
@@ -1803,17 +1824,32 @@ class ActionUtils {
         })
 
         if (!values) values = {}
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, true, transaction)
 
-        filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
-        checkValues(mng, values)
-
-        itemRelation.values = values
-
-        if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction)
-        await itemRelation.save({ transaction })
-
-        if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true, transaction)
+        if (transaction) {
+            if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, true, transaction)
+            filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
+            checkValues(mng, values)
+            itemRelation.values = values
+            if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction)
+            await itemRelation.save({ transaction })
+            if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true, transaction)
+        } else {
+            const localTransaction = await sequelize.transaction()
+            try {
+                if (!skipActions) await processItemRelationActions(this.#context, EventType.BeforeCreate, itemRelation, null, values, false, true, localTransaction)
+                filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
+                checkValues(mng, values)
+                itemRelation.values = values
+                if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, localTransaction)
+                await itemRelation.save({ transaction: localTransaction })
+                await localTransaction.commit()
+                if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true, null)
+            } catch(err: any) {
+                if (localTransaction) await localTransaction.rollback()
+                logger.error("Failed to create itemRelation with identifier " + identifier)
+                logger.error(err.message)
+            }
+        }
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {
@@ -1843,7 +1879,7 @@ class ActionUtils {
         return result
     } */
 
-    public async removeItemRelation(id: string, transaction: Transaction, processRelationAttribute = true) {
+    public async removeItemRelation(id: string, transaction: Transaction | null = null, processRelationAttribute = true) {
         const context = this.#context
         context.checkAuth()
 
@@ -1859,28 +1895,48 @@ class ActionUtils {
             throw new Error('User :' + context.getCurrentUser()?.login + ' can not edit item relation:' + itemRelation.relationId + ', tenant: ' + context.getCurrentUser()!.tenantId)
         }
 
-        const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, true, transaction)
-
-        itemRelation.updatedBy = context.getCurrentUser()!.login
-        if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
-            if (transaction) {
-                await itemRelation.save({ transaction })
-            } else {
-                await itemRelation.save()
-            }
-            return true
-        }
-
-        if(processRelationAttribute) await updateItemRelationAttributes(context, mng, itemRelation, true, transaction)
-
-        // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
         const oldIdentifier = itemRelation.identifier
-        itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now()
+        if (transaction) {
+            const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, true, transaction)
 
-        await itemRelation.save({ transaction })
-        await itemRelation.destroy({ transaction })
-
-        await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, true, transaction)
+            itemRelation.updatedBy = context.getCurrentUser()!.login
+            if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
+                await itemRelation.save({ transaction })
+                return true
+            }
+    
+            if(processRelationAttribute) await updateItemRelationAttributes(context, mng, itemRelation, true, transaction)
+    
+            // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
+            
+            itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now()
+    
+            await itemRelation.save({ transaction })
+            await itemRelation.destroy({ transaction })
+    
+            await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, true, transaction)
+        } else {
+            const localTransaction = await sequelize.transaction()
+            try {
+                const actionResponse = await processItemRelationActions(context, EventType.BeforeDelete, itemRelation, null, null, false, true, localTransaction)
+                itemRelation.updatedBy = context.getCurrentUser()!.login
+                if (actionResponse.some((resp) => resp.result === 'cancelDelete')) {
+                    await itemRelation.save({ transaction: localTransaction })
+                    await localTransaction.commit()
+                    return true
+                }
+                if(processRelationAttribute) await updateItemRelationAttributes(context, mng, itemRelation, true, localTransaction)
+                itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now()
+                await itemRelation.save({ transaction: localTransaction })
+                await itemRelation.destroy({ transaction: localTransaction })
+                await localTransaction.commit()
+                await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, true, null)
+            } catch(err: any) {
+                if (localTransaction) await localTransaction.rollback()
+                logger.error("Failed to remove itemRelation with identifier " + id)
+                logger.error(err.message)
+            }
+        }
 
         if (audit.auditEnabled()) {
             const itemRelationChanges: ItemRelationChanges = {
