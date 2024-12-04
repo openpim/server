@@ -584,13 +584,13 @@ export default {
 
             const transaction = await sequelize.transaction()
             try {
-                await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, channels, false, false, false, transaction)
-
                 filterEditChannels(context, channels)
                 checkSubmit(context, channels)
 
                 filterValuesNotAllowed(context.getNotEditItemAttributes2(nTypeId, path), values)
                 checkValues(mng, values)
+
+                await processItemActions(context, EventType.BeforeCreate, item, parentIdentifier, name, values, channels, false, false, false, transaction)
 
                 item.values = values
                 item.channels = channels
