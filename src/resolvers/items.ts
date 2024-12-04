@@ -706,53 +706,57 @@ export default {
             const tstType = parentType.getChildren().find(elem => (elem.getValue().identifier === item.typeIdentifier) || (elem.getValue().link === itemType.getValue().id))
             if (!tstType) throw new Error('Can not move this item to this parent because this is not allowed by data model.');
 
-            await processItemActions(context, EventType.BeforeUpdate, item, parentItem.identifier, item.name, item.values, item.channels, false, false)
-
-            let newPath = parentItem.path + "." + item.id
-            if (newPath !== item.path) {
-                const old = item.parentIdentifier
-                // check children
-                const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
-                    replacements: {
-                        tenant: context.getCurrentUser()!.tenantId,
-                        lquery: item.path + '.*{1}',
-                    },
-                    plain: true,
-                    raw: true,
-                    type: QueryTypes.SELECT
-                })
-                const childrenNumber = parseInt(cnt.count)
-                if (childrenNumber > 0) { // move subtree
-                    await sequelize.query('update items set path = text2ltree(:parentPath) || subpath(path,:level) where path <@ :oldPath and "tenantId"=:tenant', {
+            const old = item.parentIdentifier
+            const transaction = await sequelize.transaction()
+            try {
+                await processItemActions(context, EventType.BeforeUpdate, item, parentItem.identifier, item.name, item.values, item.channels, false, false, false, transaction)
+                let newPath = parentItem.path + "." + item.id
+                if (newPath !== item.path) {
+                    // check children
+                    const cnt: any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
                         replacements: {
                             tenant: context.getCurrentUser()!.tenantId,
-                            oldPath: item.path,
-                            parentPath: parentItem.path,
-                            level: item.path.split('.').length - 1
+                            lquery: item.path + '.*{1}',
                         },
                         plain: true,
                         raw: true,
-                        type: QueryTypes.UPDATE
+                        type: QueryTypes.SELECT,
+                        transaction
                     })
-                } else { // move leaf
-                    item.path = newPath
+                    const childrenNumber = parseInt(cnt.count)
+                    if (childrenNumber > 0) { // move subtree
+                        await sequelize.query('update items set path = text2ltree(:parentPath) || subpath(path,:level) where path <@ :oldPath and "tenantId"=:tenant', {
+                            replacements: {
+                                tenant: context.getCurrentUser()!.tenantId,
+                                oldPath: item.path,
+                                parentPath: parentItem.path,
+                                level: item.path.split('.').length - 1
+                            },
+                            plain: true,
+                            raw: true,
+                            type: QueryTypes.UPDATE,
+                            transaction
+                        })
+                    } else { // move leaf
+                        item.path = newPath
+                    }
+    
+                    if (parentItem.identifier === item.parentIdentifier) {
+                        throw new Error('Failed to create item with parentIdentifier same as item identifier')
+                    }
+                    item.parentIdentifier = parentItem.identifier
+                    await item.save({ transaction })
+                    await transaction.commit()
+                    await processItemActions(context, EventType.AfterUpdate, item, parentItem.identifier, item.name, item.values, item.channels, false, false)
                 }
-
-                if (parentItem.identifier === item.parentIdentifier) {
-                    throw new Error('Failed to create item with parentIdentifier same as item identifier')
-                }
-                item.parentIdentifier = parentItem.identifier;
-                await sequelize.transaction(async (t) => {
-                    await item.save({ transaction: t })
-                })
-
-                if (audit.auditEnabled()) {
-                    const itemDiff: AuditItem = { changed: { parentIdentifier: parentItem.identifier }, old: { parentIdentifier: old } }
-                    audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff, context.getCurrentUser()!.login, item.updatedAt)
-                }
-                await processItemActions(context, EventType.AfterUpdate, item, parentItem.identifier, item.name, item.values, item.channels, false, false)
+            } catch(err: any) {
+                if (transaction) await transaction.rollback()
+                throw new Error(err.message)
             }
-
+            if (audit.auditEnabled()) {
+                const itemDiff: AuditItem = { changed: { parentIdentifier: parentItem.identifier }, old: { parentIdentifier: old } }
+                audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff, context.getCurrentUser()!.login, item.updatedAt)
+            }
             return item
         },
         removeItem: async (parent: any, { id }: any, context: Context) => {

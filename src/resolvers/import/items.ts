@@ -187,7 +187,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 return result
             }
 
-            const data = await Item.build ({
+            const data = Item.build ({
                 id: id,
                 path: path,
                 identifier: item.identifier,
@@ -306,7 +306,8 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                             },
                             plain: true,
                             raw: true,
-                            type: QueryTypes.SELECT
+                            type: QueryTypes.SELECT,
+                            transaction
                         })
                         const childrenNumber = parseInt(cnt.count)
                         if (childrenNumber > 0) { //move subtree
@@ -319,7 +320,8 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                                 },
                                 plain: true,
                                 raw: true,
-                                type: QueryTypes.UPDATE
+                                type: QueryTypes.UPDATE,
+                                transaction
                             })
                         } else { // move leaf
                             data.path = newPath
