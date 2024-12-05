@@ -69,7 +69,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 try {
                     if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeDelete, data, null, null, true, false, transaction)
                     data.identifier = itemRelation.identifier + '_d_' + Date.now()
-                    await updateItemRelationAttributes(context, mng, data, true, transaction)
+                    await updateItemRelationAttributes(context, mng, data, true, transaction, itemRelation.skipActions)
                     await data.save({ transaction })
                     await data.destroy({ transaction })
                     await transaction.commit()
@@ -185,7 +185,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             data.values = itemRelation.values
 
             try {
-                await updateItemRelationAttributes(context, mng, data, false, transaction)
+                await updateItemRelationAttributes(context, mng, data, false, transaction, itemRelation.skipActions)
                 await data.save({ transaction })
                 await transaction.commit()
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true, false, null)
@@ -303,7 +303,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             data.updatedBy = context.getCurrentUser()!.login
 
             try {
-                await updateItemRelationAttributes(context, mng, data, false, transaction)
+                await updateItemRelationAttributes(context, mng, data, false, transaction, itemRelation.skipActions)
                 await data!.save({transaction})
                 await transaction.commit()
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterUpdate, data, null, itemRelation.values, true, false, null)

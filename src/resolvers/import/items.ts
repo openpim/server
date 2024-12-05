@@ -218,7 +218,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 checkValues(mng, item.values)
 
                 let relAttributesData: any = []
-                relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction)
+                relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction, item.skipActions)
 
                 data.values = item.values
                 data.channels = item.channels
@@ -346,7 +346,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 checkValues(mng, item.values)
 
                 let relAttributesData: any = []
-                relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction)
+                relAttributesData = await checkRelationAttributes(context, mng, data, item.values, transaction, item.skipActions)
 
                 if (audit.auditEnabled()) {
                     const valuesDiff: AuditItem = diff({values:data.values, channels:data.channels}, {values:item.values, channels:item.channels})

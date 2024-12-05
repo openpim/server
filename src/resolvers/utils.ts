@@ -331,7 +331,7 @@ export function checkValues(mng: ModelManager, values: any) {
     }
 }
 
-export async function updateItemRelationAttributes(context: Context, mng: ModelManager, itemRelation: ItemRelation, del: Boolean, transaction: Transaction) {
+export async function updateItemRelationAttributes(context: Context, mng: ModelManager, itemRelation: ItemRelation, del: Boolean, transaction: Transaction, skipActions: Boolean = false) {
     const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
     if (!isLicenceExists) {
         return
@@ -382,12 +382,18 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         }
     }
     if (Object.getOwnPropertyNames(newValues).length > 0) {
-        const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, item.name, newValues, item.channels, false, false, true, transaction)
-        if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
+        if (!skipActions) {
+            const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, item.name, newValues, item.channels, false, false, true, transaction)
+            if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
+                item.values = mergeValues(newValues, item.values)
+                item.changed('values', true)
+                await item.save({ transaction })
+                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, false, true, transaction)
+            }
+        } else {
             item.values = mergeValues(newValues, item.values)
             item.changed('values', true)
             await item.save({ transaction })
-            await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, false, true, transaction)
         }
     }
 
@@ -425,18 +431,24 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
             }
         }
         if (Object.getOwnPropertyNames(newTargetValues).length > 0) {
-            const actionResponse = await processItemActions(context, EventType.BeforeUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, newTargetValues, targetItem.channels, false, false, true, transaction)
-            if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
+            if (!skipActions) {
+                const actionResponse = await processItemActions(context, EventType.BeforeUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, newTargetValues, targetItem.channels, false, false, true, transaction)
+                if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
+                    targetItem.values = mergeValues(newTargetValues, targetItem.values)
+                    targetItem.changed('values', true)
+                    await targetItem.save({ transaction })
+                    await processItemActions(context, EventType.AfterUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, targetItem.values, targetItem.channels, false, false, true, transaction)
+                }
+            } else {
                 targetItem.values = mergeValues(newTargetValues, targetItem.values)
                 targetItem.changed('values', true)
                 await targetItem.save({ transaction })
-                await processItemActions(context, EventType.AfterUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, targetItem.values, targetItem.channels, false, false, true, transaction)
             }
         }
     }
 }
 
-export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any, transaction: Transaction) {
+export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any, transaction: Transaction, skipActions: Boolean = false) {
     const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
     if (!isLicenceExists) {
         return []
@@ -557,7 +569,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                                     itemIdentifier: isSource ? item.identifier : relatedItem.identifier,
                                     targetIdentifier: isSource ? relatedItem.identifier : item.identifier,
                                     values: {},
-                                    skipActions: false,
+                                    skipActions,
                                     newItemValues: values
                                 })
                             } else {
@@ -1706,7 +1718,7 @@ class ActionUtils {
             checkValues(mng, values)
             item.values = values
             let relAttributesData: any = []
-            relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, transaction)
+            relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, transaction, skipActions)
             await item.save({ transaction })
             await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
             if (!skipActions) await processItemActions(this.#context, EventType.AfterCreate, item, parentIdentifier, name, values, {}, false, false, false, transaction)
@@ -1718,7 +1730,7 @@ class ActionUtils {
                 checkValues(mng, values)
                 item.values = values
                 let relAttributesData: any = []
-                relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, localTransaction)
+                relAttributesData = await checkRelationAttributes(this.#context, mng, item, values, localTransaction, skipActions)
                 await item.save({ transaction: localTransaction })
                 await createRelationsForItemRelAttributes(this.#context, relAttributesData, localTransaction)
                 await localTransaction.commit()
@@ -1830,7 +1842,7 @@ class ActionUtils {
             filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
             checkValues(mng, values)
             itemRelation.values = values
-            if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction)
+            if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction, skipActions)
             await itemRelation.save({ transaction })
             if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true, transaction)
         } else {
@@ -1840,7 +1852,7 @@ class ActionUtils {
                 filterValues(this.#context.getEditItemRelationAttributes(rel.id), values)
                 checkValues(mng, values)
                 itemRelation.values = values
-                if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, localTransaction)
+                if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, localTransaction, skipActions)
                 await itemRelation.save({ transaction: localTransaction })
                 await localTransaction.commit()
                 if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true, null)
