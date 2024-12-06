@@ -551,7 +551,10 @@ export class WBNewChannelHandler extends ChannelHandler {
                 }
                 try {
                     const value = await this.getValueByMapping(channel, attrConfig, item, language)
-                    if (!create) this.clearPreviousValue(request.characteristics, attr.type)
+                    if (!create) {
+                        if (!request.characteristics) request.characteristics = []
+                        this.clearPreviousValue(request.characteristics, attr.type)
+                    }
                     if (value) {
                         const data:any = {}
                         data.id = attr.type
