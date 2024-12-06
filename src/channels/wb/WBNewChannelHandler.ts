@@ -629,6 +629,7 @@ export class WBNewChannelHandler extends ChannelHandler {
     }
 
     private clearPreviousValue(arr: any[], type: string) {
+        if (!arr) return
         const tst = arr.findIndex((elem:any) => elem.id == type)
         if (tst != -1) arr.splice(tst, 1)
     }
