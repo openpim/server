@@ -1,0 +1,28 @@
+type Query {
+  getTemplates(where: JSONObject, order: JSON, offset: Int!, limit: Int!): GetTemplatesResponse
+}
+
+type Mutation {
+  createTemplate(identifier: String!, title: String!, template: String!, order: Int!, valid: [String], visible: [String]): Template!
+  updateTemplate(id: ID!, title: String, template: String, order: Int, valid: [String], visible: [String]): Template!
+  removeTemplate(id: ID!): Boolean!
+}
+
+type Template {
+  id: ID!
+  identifier: String!
+  title: String!
+  template: String!
+  order: Int!
+  valid: [String]
+  visible: [String]
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+}
+
+type GetTemplatesResponse {
+  count: Int
+  rows: [Template]
+}

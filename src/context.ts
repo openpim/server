@@ -145,6 +145,8 @@ export default class Context {
                     return true
                 case ConfigAccess.COLLECTIONITEMS:
                     return true
+                case ConfigAccess.TEMPLATES:
+                    if (role.configAccess && role.configAccess.templates === 2) return true
                 }
         }
         return false
@@ -547,5 +549,6 @@ export enum ConfigAccess {
     DASHBOARDS,
     IMPORTCONFIGS,
     COLLECTIONS,
-    COLLECTIONITEMS
+    COLLECTIONITEMS,
+    TEMPLATES
 }
