@@ -274,6 +274,9 @@ export async function processUpload(context: Context, req: Request, res: Respons
             await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, true)
 
             item.updatedBy = context.getCurrentUser()!.login
+
+            item.changed('values', true) // force item update at upload
+
             await sequelize.transaction(async (t) => {
                 await item.save({transaction: t})
             })
