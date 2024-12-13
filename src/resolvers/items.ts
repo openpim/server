@@ -304,14 +304,16 @@ export default {
                 attr.valid.forEach((typeId: number) => {
                     for (let relIndx = 0; relIndx < relations.length; relIndx++) {
                         const relation = relations[relIndx]
+                        const isTarget = relation.targets.find((el: number) => el === typeId)
                         const isSource = relation.sources.find((el: number) => el === typeId)
-                        if (isSource) {
-                            itemTypes = itemTypes.concat(relation.targets)
-                        } else {
+                        if (isTarget) {
                             itemTypes = itemTypes.concat(relation.sources)
+                        } else if (isSource) {
+                            itemTypes = itemTypes.concat(relation.targets)
                         }
                     }
                 })
+                itemTypes = [...new Set(itemTypes)]
 
                 let query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null and `
 
@@ -379,14 +381,16 @@ export default {
                 attr.valid.forEach((typeId: number) => {
                     for (let relIndx = 0; relIndx < relations.length; relIndx++) {
                         const relation = relations[relIndx]
+                        const isTarget = relation.targets.find((el: number) => el === typeId)
                         const isSource = relation.sources.find((el: number) => el === typeId)
-                        if (isSource) {
-                            itemTypes = itemTypes.concat(relation.targets)
-                        } else {
+                        if (isTarget) {
                             itemTypes = itemTypes.concat(relation.sources)
+                        } else if (isSource) {
+                            itemTypes = itemTypes.concat(relation.targets)
                         }
                     }
                 })
+                itemTypes = [...new Set(itemTypes)]
 
                 let query
                 if (value.length) {
