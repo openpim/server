@@ -225,7 +225,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             let relDiff: AuditItemRelation = {added:{}, changed: {}, old: {}, deleted: {}}
 
             const changes:any = {}
-            if (data.itemIdentifier !== itemRelation.itemIdentifier) {
+            if (itemRelation.itemIdentifier && data.itemIdentifier !== itemRelation.itemIdentifier) {
                 const relation = mng.getRelationByIdentifier(data.relationIdentifier)
                 if (!relation) {
                     result.addError(ReturnMessage.ItemRelationRelationNotFound)
@@ -244,7 +244,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 changes.itemIdentifier = source!.identifier
             }
 
-            if (data.targetIdentifier !== itemRelation.targetIdentifier) {
+            if (itemRelation.targetIdentifier && data.targetIdentifier !== itemRelation.targetIdentifier) {
                 const relation = mng.getRelationByIdentifier(data.relationIdentifier)
                 if (!relation) {
                     result.addError(ReturnMessage.ItemRelationRelationNotFound)
