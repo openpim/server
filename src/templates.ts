@@ -4,16 +4,27 @@ import logger from './logger'
 import { Item } from './models/items'
 import { Template } from './models/templates'
 import { LOV } from './models/lovs'
-import promisedHandlebars from 'promised-handlebars'
-import Q from 'q'
 import hbs from 'handlebars'
-import { ChannelHandler } from './channels/ChannelHandler'
+import { ChannelCategory, ChannelHandler } from './channels/ChannelHandler'
+import { Channel } from './models/channels'
+import promisedHandlebars from 'promised-handlebars';
+import Q from 'q';
 
 const Handlebars = promisedHandlebars(hbs, { Promise: Q.Promise })
 
-class MyChannelHandler extends ChannelHandler {}
+class templateHandler extends ChannelHandler {
+    processChannel(channel: Channel, language: string, data: any, context?: Context): Promise<void> {
+        return Promise.resolve()
+    }
+    getCategories(channel: Channel): Promise<{ list: ChannelCategory[] | null; tree: ChannelCategory | null }> {
+        return Promise.resolve({ list: null, tree: null })
+    }
+    getAttributes(channel: Channel, categoryId: string): Promise<{ id: string; name: string; required: boolean; dictionary: boolean; dictionaryLink?: string }[]> {
+        return Promise.resolve([])
+    }
+}
 
-const handler = new MyChannelHandler()
+const handler = new templateHandler()
 
 export async function generateTemplate(context: Context, request: Request, response: Response) {
     try {
