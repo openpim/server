@@ -353,7 +353,6 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     try {
       const context = await Context.create(req)
       context.checkAuth()
-      // Проверка на чтение
       await generateTemplate(context, req, res)
     } catch (error: any) {
       res.status(400).send(error.message)
