@@ -19,6 +19,7 @@ import * as importConfigs from './importConfigs'
 import * as collections from './collections'
 import * as collectionItems from './collectionItems'
 import * as processes from './processes'
+import * as templates from './templates'
 
 import logger from '../logger'
 
@@ -71,6 +72,7 @@ export async function initModels() {
     collections.init(sequelize)
     collectionItems.init(sequelize)
     processes.init(sequelize)
+    templates.init(sequelize)
 
     items.Item.hasMany(itemRelations.ItemRelation, {sourceKey: 'id', as: 'sourceRelation', foreignKey: 'itemId'})
     itemRelations.ItemRelation.belongsTo(items.Item,{targetKey: 'id', as: 'sourceItem', foreignKey: 'itemId'})

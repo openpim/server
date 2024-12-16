@@ -15,6 +15,7 @@ import auditResolvers from './audit'
 import chanResolvers from './channels'
 import colResolvers from './collections'
 import procResolvers from './processes'
+import tempResolvers from './templates'
 import authResolvers from './auth'
 import reloadResolvers from './reload'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
@@ -103,6 +104,7 @@ export default {
         ...importConfigResolvers.Query,
         ...colResolvers.Query,
         ...procResolvers.Query,
+        ...tempResolvers.Query,
         ...authResolvers.Query,
         ...reloadResolvers.Query
     },
@@ -123,6 +125,7 @@ export default {
         ...chanResolvers.Mutation,
         ...colResolvers.Mutation,
         ...procResolvers.Mutation,
+        ...tempResolvers.Mutation,
         ...importConfigResolvers.Mutation
     },
     SearchResponse: {
