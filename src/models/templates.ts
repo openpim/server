@@ -5,7 +5,7 @@ import Context from '../context'
 
 export class Template extends Base {
   public identifier!: string
-  public title!: string
+  public name!: any
   public template!: string
   public order!: number
   public valid!: any
@@ -22,8 +22,8 @@ export function init(sequelize: Sequelize):void {
         allowNull: false,
         unique: 'uniqueIdentifier'
       },
-      title: {
-        type: new DataTypes.STRING(2500),
+      name: {
+        type: DataTypes.JSONB,
         allowNull: false,
       },
       template: {

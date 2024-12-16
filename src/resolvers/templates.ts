@@ -29,14 +29,14 @@ export default {
         }
     },
     Mutation: {
-        createTemplate: async (parent: any, { identifier, title, template, order, valid, visible }: any, context: Context) => {
+        createTemplate: async (parent: any, { identifier, name, template, order, valid, visible }: any, context: Context) => {
             context.checkAuth()
             if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             if (!context.canEditConfig(ConfigAccess.TEMPLATES)) {
                 throw new Error('User: ' + context.getCurrentUser()?.login + ' can not edit templates, tenant: ' + context.getCurrentUser()!.tenantId)
             }
-            
+
             const tst = await Template.applyScope(context).findOne({
                 where: {
                     identifier: identifier
@@ -55,7 +55,7 @@ export default {
                     tenantId: context.getCurrentUser()!.tenantId,
                     createdBy: context.getCurrentUser()!.login,
                     updatedBy: context.getCurrentUser()!.login,
-                    title: title,
+                    name: name,
                     template: template,
                     order: order != null ? order : 0,
                     valid: val,
@@ -66,7 +66,7 @@ export default {
 
             return temp
         },
-        updateTemplate: async (parent: any, { id, title, template, order, valid, visible }: any, context: Context) => {
+        updateTemplate: async (parent: any, { id, name, template, order, valid, visible }: any, context: Context) => {
             context.checkAuth()
 
             if (!context.canEditConfig(ConfigAccess.TEMPLATES)) {
@@ -79,7 +79,7 @@ export default {
             if (temp.createdBy !== context.getCurrentUser()?.login)
                 throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to update template: ' + temp.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
-            if (title) temp.title = title
+            if (name) temp.name = name
             if (template) temp.template = template
             if (order != null) temp.order = order
             if (valid) temp.valid = valid.map((elem: string) => parseInt(elem))

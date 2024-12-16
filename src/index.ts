@@ -44,6 +44,7 @@ import {
   db_query_time_counterInf, 
   metricsMiddleware 
 } from './metrics'
+import { generateTemplate } from './templates';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
 import version from './version';
@@ -346,6 +347,17 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/sqlmetrics', async (request, response) => {
     await renderSQLMetrics(request, response)
+  })
+
+  app.get('/template/:template_id/:id', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+      // Проверка на чтение
+      await generateTemplate(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
   })
 
   await Context.init()

@@ -83,7 +83,12 @@ export abstract class ChannelHandler {
     return await this.evaluateExpression2 (channel, item, expr, null)
   }
 
-  async evaluateExpression2 (channel: Channel, item: Item, expr: string, data: any): Promise<any> {
+  async evaluateExpression2(channel: Channel, item: Item, expr: string, data: any): Promise<any> {
+    const tenantId = channel ? channel.tenantId : item.tenantId
+    return await this.evaluateExpressionCommon(tenantId, item, expr, data, channel)
+  }
+
+  async evaluateExpressionCommon(tenantId: string, item: Item, expr: string, data: any, channel: Channel | null): Promise<any> {
     if (!expr) return null
     const tmp = this.localCache
     const utils = {
@@ -95,7 +100,7 @@ export abstract class ChannelHandler {
             where: {
                 [Op.and]: [
                     condition,
-                    { tenantId: channel.tenantId }
+                    { tenantId }
                 ]
             }
         })
@@ -109,7 +114,7 @@ export abstract class ChannelHandler {
             where: {
                 [Op.and]: [
                     condition,
-                    { tenantId: channel.tenantId }
+                    { tenantId }
                 ]
             }
         })
@@ -120,7 +125,7 @@ export abstract class ChannelHandler {
         return await Item.findOne({
           where: {
             identifier: identifier,
-            tenantId: channel.tenantId,
+            tenantId
           }
         })
       },
@@ -128,7 +133,7 @@ export abstract class ChannelHandler {
         return await ItemRelation.findOne({
           where: {
             relationIdentifier: relationIdentifier,
-            tenantId: channel.tenantId,
+            tenantId
           }
         })
       },
@@ -137,7 +142,7 @@ export abstract class ChannelHandler {
           where: {
             relationIdentifier: relationIdentifier,
             targetId: item.id,
-            tenantId: channel.tenantId,
+            tenantId
           }
         })
       },
@@ -146,7 +151,7 @@ export abstract class ChannelHandler {
           where: {
             relationIdentifier: relationIdentifier,
             itemId: item.id,
-            tenantId: channel.tenantId,
+            tenantId
           }
         })
       },
@@ -156,7 +161,7 @@ export abstract class ChannelHandler {
             relationIdentifier: relationIdentifier,
             targetId: item.id,
             itemIdentifier: itemIdentifier,
-            tenantId: channel.tenantId,
+            tenantId
           }
         })
       },
@@ -166,7 +171,7 @@ export abstract class ChannelHandler {
             relationIdentifier: relationIdentifier,
             itemId: item.id,
             targetIdentifier: targetIdentifier,
-            tenantId: channel.tenantId,
+            tenantId
           }
         })
       },
@@ -175,7 +180,7 @@ export abstract class ChannelHandler {
           where: {
             relationIdentifier: relationIdentifier,
             itemId: id,
-            tenantId: channel.tenantId,
+            tenantId
           }
         })
       },
@@ -184,7 +189,7 @@ export abstract class ChannelHandler {
           where: {
             relationIdentifier: relationIdentifier,
             targetId: id,
-            tenantId: channel.tenantId,
+            tenantId
           }
         })
       },
@@ -199,7 +204,7 @@ export abstract class ChannelHandler {
               r."itemId"=:itemId 
               order by i.id`, {
           replacements: { 
-              tenant: channel.tenantId,
+              tenant: tenantId,
               relationIdentifier: relationIdentifier,
               itemId: item.id
           },
@@ -223,7 +228,7 @@ export abstract class ChannelHandler {
               r."targetId"=:itemId 
               order by i.id`, {
           replacements: { 
-              tenant: channel.tenantId,
+              tenant: tenantId,
               relationIdentifier: relationIdentifier,
               itemId: item.id
           },
@@ -243,7 +248,7 @@ export abstract class ChannelHandler {
           lov = await LOV.findOne({
             where: {
               identifier: identifier,
-              tenantId: channel.tenantId,
+              tenantId
             }
           })
           this.lovCache.set(key, lov, 180)
