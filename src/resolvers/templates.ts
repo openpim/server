@@ -13,13 +13,12 @@ export default {
                 offset: request.offset,
                 limit: request.limit
             }
-            const whereAdd = { createdBy: context.getCurrentUser()!.login }
             if (request.where) {
                 const include = replaceOperations(request.where)
-                params.where = { [Op.and]: [whereAdd, request.where] }
+                params.where = request.where
                 if (include && include.length > 0) params.include = include
             } else {
-                params.where = whereAdd
+                params.where = {}
             }
 
             if (request.order) params.order = request.order
@@ -76,8 +75,6 @@ export default {
             const nId = parseInt(id)
             const temp = await Template.applyScope(context).findByPk(nId)
             if (!temp) throw new Error('Failed to find template by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
-            if (temp.createdBy !== context.getCurrentUser()?.login)
-                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to update template: ' + temp.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             if (name) temp.name = name
             if (template) temp.template = template
@@ -101,8 +98,6 @@ export default {
             const nId = parseInt(id)
             const temp = await Template.applyScope(context).findByPk(nId)
             if (!temp) throw new Error('Failed to find template by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
-            if (temp.createdBy !== context.getCurrentUser()?.login)
-                throw new Error('User ' + context.getCurrentUser()?.id + ' does not has permissions to delete template: ' + temp.id + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
             temp.updatedBy = context.getCurrentUser()!.login
             // we have to change identifier during deletion to make possible that it will be possible to make new type with same identifier
