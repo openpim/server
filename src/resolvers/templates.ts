@@ -14,7 +14,7 @@ export default {
                 limit: request.limit
             }
             if (request.where) {
-                const include = replaceOperations(request.where)
+                const include = replaceOperations(request.where, context)
                 params.where = request.where
                 if (include && include.length > 0) params.include = include
             } else {

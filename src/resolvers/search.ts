@@ -51,7 +51,7 @@ query { search(
 export function prepareWhere (context: Context, where: any) {
     const params: any = {}
     if (where) {
-        const include = replaceOperations(where)
+        const include = replaceOperations(where, context)
         params.where = where
         if (include && include.length > 0) params.include = include
     }
@@ -80,7 +80,7 @@ export default {
                 if (request.limit == -1) delete params.limit
                 if (request.offset == -1) delete params.offset
                 if (request.where) {
-                    const include = replaceOperations(request.where)
+                    const include = replaceOperations(request.where, context)
                     params.where = request.where
                     if (include && include.length > 0) params.include = include
             

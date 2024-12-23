@@ -45,7 +45,7 @@ import { CollectionItems } from "../models/collectionItems"
 import { Channel, ChannelExecution } from "../models/channels"
 import { ChannelsManagerFactory } from "../channels"
 
-export function replaceOperations(obj: any) {
+export function replaceOperations(obj: any, context: Context | null) {
     let include = []
     for (const prop in obj) {
         let value = obj[prop]
@@ -72,6 +72,18 @@ export function replaceOperations(obj: any) {
             if (!Number.isNaN(min)) value = moment().add(min, 'minutes').utc().format()
         }
 
+        if (typeof value === 'string' && value.startsWith('#USER#') && context) {
+            value = context.getCurrentUser()?.login
+        }
+
+        if (typeof value === 'string' && value.startsWith('#USER_OPTION#') && context) {
+            const tst = value.substring(13)
+            if (tst && tst.length) {
+                const foundOption = context.getUser()?.getOptions().find((el: any) => el.name === tst)
+                if (foundOption) value = foundOption.value
+            }
+        }
+
         if (prop.startsWith('OP_')) {
             const operation = prop.substr(3)
             delete obj[prop]
@@ -81,30 +93,30 @@ export function replaceOperations(obj: any) {
         if (prop === 'collectionId') {
             include = [{ as: "collectionItems", where: { "collectionId": value } }]
             delete obj[prop]
-            fillInclude(include)
+            fillInclude(include, context)
         }
 
         if (prop === 'include' && Array.isArray(value)) {
             include = value
             delete obj[prop]
-            fillInclude(include)
+            fillInclude(include, context)
         }
 
         if (prop !== 'include' && value === Object(value)) {
-            replaceOperations(value)
+            replaceOperations(value, context)
         }
     }
     return include
 }
-function fillInclude(include: any[]) {
+function fillInclude(include: any[], context: Context | null) {
     include.forEach(elem => {
         if (elem.as && elem.as.endsWith('Item')) elem.model = Item
         if (elem.as && elem.as.endsWith('Relation')) elem.model = ItemRelation
         if (elem.as && elem.as.endsWith('collectionItems')) elem.model = CollectionItems
 
-        if (elem.where && elem.model !== CollectionItems) replaceOperations(elem.where)
+        if (elem.where && elem.model !== CollectionItems) replaceOperations(elem.where, context)
 
-        if (elem.include && Array.isArray(elem.include)) fillInclude(elem.include)
+        if (elem.include && Array.isArray(elem.include)) fillInclude(elem.include, context)
     })
 }
 
@@ -714,7 +726,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
     let search: any
     if (where) {
         const whereObj = JSON.parse(where)
-        const include = replaceOperations(whereObj)
+        const include = replaceOperations(whereObj, context)
         search = { where: whereObj }
         if (include && include.length > 0) search.include = include
     }

@@ -95,7 +95,7 @@ export abstract class ChannelHandler {
       getCache() { return tmp },
       findItem: async (condition: any) => {
         logger.debug(`Executing evaluateExpression findItem, condition: ${JSON.stringify(condition)}`)
-        replaceOperations(condition)
+        replaceOperations(condition, null)
         const item = await Item.findOne({
             where: {
                 [Op.and]: [
@@ -109,7 +109,7 @@ export abstract class ChannelHandler {
       },
       findItems: async (condition: any) => {
         logger.debug(`Executing evaluateExpression findItems, condition: ${JSON.stringify(condition)}`)
-        replaceOperations(condition)
+        replaceOperations(condition, null)
         const items = await Item.findAll({
             where: {
                 [Op.and]: [
