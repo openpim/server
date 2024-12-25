@@ -456,15 +456,6 @@ export class WBNewChannelHandler extends ChannelHandler {
             return
         }
 
-        const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
-        const price = await this.getValueByMapping(channel, priceConfig, item, language)
-        if (!price) {
-            const msg = 'Не введена конфигурация для "Цены" для категории: ' + categoryConfig.name
-            context.log += msg
-            this.reportError(channel, item, msg)
-            return
-        }
-
         const titleConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#title')
         const title = await this.getValueByMapping(channel, titleConfig, item, language)
 
@@ -485,10 +476,20 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         const serverConfig = ModelManager.getServerConfig()
 
+        const nmID = item.values[channel.config.nmIDAttr]
+        const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
+        const price = await this.getValueByMapping(channel, priceConfig, item, language)
+        if (!nmID && !price) { 
+            // price is necessary only for creation
+            const msg = 'Не введена конфигурация для "Цены" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }
+
         // request to WB
         let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
 
-        const nmID = item.values[channel.config.nmIDAttr]
         if (nmID) {
             const existUrl = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
             const existsBody = {	
@@ -528,7 +529,6 @@ export class WBNewChannelHandler extends ChannelHandler {
                 request.dimensions.width = width || 0
                 request.dimensions.height = height || 0
                 request.sizes[0].skus = barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []
-                request.sizes[0].price = price
             }
 
             request.nmID = parseInt(nmID)
