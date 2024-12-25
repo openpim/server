@@ -7,8 +7,11 @@ import { LOV } from './models/lovs'
 import hbs from 'handlebars'
 import { ChannelCategory, ChannelHandler } from './channels/ChannelHandler'
 import { Channel } from './models/channels'
-import promisedHandlebars from 'promised-handlebars';
-import Q from 'q';
+import promisedHandlebars from 'promised-handlebars'
+import Q from 'q'
+import helpers from 'handlebars-helpers'
+
+const handlebarsHelpers = helpers()
 
 const Handlebars = promisedHandlebars(hbs, { Promise: Q.Promise })
 
@@ -41,12 +44,20 @@ export async function generateTemplate(context: Context, request: Request, respo
             logger.error(`Template not found: ${templateId}`)
             return response.status(404).send('Template not found')
         }
+        const skipAuth = template.options.some((elem: any) => elem.name === 'directUrl' && elem.value === 'true')
+        if (!skipAuth) {
+            context.checkAuth()
+        }
 
         const item = await Item.findByPk(itemId)
         if (!item) {
             logger.error(`Item not found: ${itemId}`)
             return response.status(404).send('Item not found')
         }
+
+        Object.keys(handlebarsHelpers).forEach(helperName => {
+            Handlebars.registerHelper(helperName, handlebarsHelpers[helperName])
+        })
 
         Handlebars.registerHelper('LOVvalue', async function (args: any) {
             const { identifier, valueId, language, context } = args.hash

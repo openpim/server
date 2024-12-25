@@ -10,6 +10,7 @@ export class Template extends Base {
   public order!: number
   public valid!: any
   public visible!: any
+  public options!: any
   public static applyScope(context: Context) {
     return Template.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
@@ -41,6 +42,10 @@ export function init(sequelize: Sequelize):void {
       visible: {
         type: DataTypes.JSONB,
         allowNull: true,
+      },
+      options: {
+        type: DataTypes.JSONB,
+        allowNull: false,
       },
       ...BaseColumns,
       tenantId: { // override base for uniqueIdentifier
