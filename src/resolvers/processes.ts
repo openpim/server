@@ -15,7 +15,7 @@ export default {
             }
             const whereAdd = {createdBy: context.getCurrentUser()!.login}
             if (request.where) {
-                const include = replaceOperations(request.where)
+                const include = replaceOperations(request.where, context)
                 params.where = { [Op.and]: [whereAdd, request.where] }
                 if (include && include.length > 0) params.include = include
             } else {

@@ -318,7 +318,7 @@ export class ImportManager {
             const utils = {
                 findItem: async (condition: any) => {
                     logger.debug(`Executing evaluateExpression findItem, condition: ${JSON.stringify(condition)}`)
-                    replaceOperations(condition)
+                    replaceOperations(condition, context)
                     const item = await Item.findOne({
                         where: {
                             [Op.and]: [

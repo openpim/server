@@ -350,7 +350,7 @@ export default {
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
             let whereObj = JSON.parse(where)
-            const include = replaceOperations(whereObj)
+            const include = replaceOperations(whereObj, context)
             if (include && include.length > 0) {
                 // update does not support include, so we have to change where to "select in" if we have include
                 const search:any = {where: whereObj}

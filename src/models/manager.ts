@@ -626,6 +626,10 @@ export class UserWrapper {
         return this.user
     }
 
+    public getOptions() {
+        return this.user.options
+    }
+
     public getRoles() {
         return this.roles
     }

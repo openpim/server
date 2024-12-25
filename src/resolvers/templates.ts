@@ -14,7 +14,7 @@ export default {
                 limit: request.limit
             }
             if (request.where) {
-                const include = replaceOperations(request.where)
+                const include = replaceOperations(request.where, context)
                 params.where = request.where
                 if (include && include.length > 0) params.include = include
             } else {
@@ -28,7 +28,7 @@ export default {
         }
     },
     Mutation: {
-        createTemplate: async (parent: any, { identifier, name, template, order, valid, visible }: any, context: Context) => {
+        createTemplate: async (parent: any, { identifier, name, template, order, valid, visible, options }: any, context: Context) => {
             context.checkAuth()
             if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
@@ -58,14 +58,15 @@ export default {
                     template: template,
                     order: order != null ? order : 0,
                     valid: val,
-                    visible: vis
+                    visible: vis,
+                    options: options
                 }, { transaction: t })
                 return temp
             })
 
             return temp
         },
-        updateTemplate: async (parent: any, { id, name, template, order, valid, visible }: any, context: Context) => {
+        updateTemplate: async (parent: any, { id, name, template, order, valid, visible, options }: any, context: Context) => {
             context.checkAuth()
 
             if (!context.canEditConfig(ConfigAccess.TEMPLATES)) {
@@ -81,6 +82,7 @@ export default {
             if (order != null) temp.order = order
             if (valid) temp.valid = valid.map((elem: string) => parseInt(elem))
             if (visible) temp.visible = visible.map((elem: string) => parseInt(elem))
+            if (options) temp.options = options
             temp.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await temp!.save({ transaction: t })
