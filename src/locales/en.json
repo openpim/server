@@ -2,7 +2,6 @@
     "RunningaGraphQLAPIserver": "Running a GraphQL API server at",
     "Serverversion": "Server version",
     "Arguments": "Arguments",
-    "FoundKeyForCompany": "Found key for company: {{ split }} with data: {{ channelTypes }}",
     "WrongKey": "Wrong key",
     "Data models were loaded": "Data models were loaded",
     "ImportManagerValueSkipped": "Value skipped:",

@@ -2,7 +2,6 @@
     "RunningaGraphQLAPIserver" : "Запуск сервера GraphQL API по адресу",
     "Serverversion": "Версия сервера",
     "Arguments": "Аргументы",
-    "FoundKeyForCompany": "Найден ключ для компании: {{ split }} с данными: {{ channelTypes }}",
     "WrongKey": "Неправильный ключ",
     "Data models were loaded": "Модели данных были загружены",
     "ImportManagerValueSkipped": "Значение пропущено:",

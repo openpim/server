@@ -96,7 +96,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     const isVerified = crypto.verify( "sha256", Buffer.from(data), options, Buffer.from(sign, 'base64'))
     if (isVerified) {
       channelTypes = JSON.parse("[" + split[0] + "]")
-      logger.info(`${i18next.t('FoundKeyForCompany', { split: split[1], channelTypes: channelTypes })}`)
+      logger.info(`Found key for company: ${split[1]} with data: ${channelTypes}`)
     } else {
       logger.error(`${i18next.t('WrongKey')}`)
       channelTypes = []
