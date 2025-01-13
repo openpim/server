@@ -44,7 +44,7 @@ import {
   db_query_time_counterInf, 
   metricsMiddleware 
 } from './metrics'
-import { generateTemplate } from './templates';
+import { generateTemplate, generateTemplateForItems } from './templates';
 import { ModelsManager } from './models/manager';
 import resolvers from './resolvers';
 import version from './version';
@@ -353,6 +353,15 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     try {
       const context = await Context.create(req)
       await generateTemplate(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.post('/templateforitems', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      await generateTemplateForItems(context, req, res)
     } catch (error: any) {
       res.status(400).send(error.message)
     }
