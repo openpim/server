@@ -454,7 +454,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                     values: {}
                 })
                 const irValues = {}
-                await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, false)
+                await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, false, transaction)
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
                 if (irValues) {
