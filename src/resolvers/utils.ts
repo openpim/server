@@ -2014,4 +2014,11 @@ class ActionUtils {
         const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(this.#context.getCurrentUser()!.tenantId)
         await channelMng.triggerChannel(chan, language, data, context)
     }
+
+    public async processRelationAttributes(item: Item,  values: any, transaction: Transaction | null = null, skipActions: Boolean = false) {
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+        const localTransaction = transaction || await sequelize.transaction()
+        const relAttributesData: any = checkRelationAttributes(this.#context, mng, item, values, localTransaction, skipActions)
+        await createRelationsForItemRelAttributes(this.#context, relAttributesData, localTransaction)
+    }
 }
