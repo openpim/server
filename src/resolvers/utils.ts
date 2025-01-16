@@ -2018,7 +2018,7 @@ class ActionUtils {
     public async processRelationAttributes(item: Item,  values: any, transaction: Transaction | null = null, skipActions: Boolean = false) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
         const localTransaction = transaction || await sequelize.transaction()
-        const relAttributesData: any = checkRelationAttributes(this.#context, mng, item, values, localTransaction, skipActions)
+        const relAttributesData: any = await checkRelationAttributes(this.#context, mng, item, values, localTransaction, skipActions)
         await createRelationsForItemRelAttributes(this.#context, relAttributesData, localTransaction)
     }
 }
