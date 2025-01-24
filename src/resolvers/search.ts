@@ -1,11 +1,10 @@
 import Context, { ConfigAccess } from '../context'
 import { Type } from '../models/types'
 import { Item } from '../models/items'
-import { FindAndCountOptions, CountWithOptions, FindOptions, WhereOptions, Includeable } from 'sequelize'
+import { FindAndCountOptions } from 'sequelize'
 import { Attribute, AttrGroup } from '../models/attributes'
 import { Relation } from '../models/relations'
 import { ItemRelation } from '../models/itemRelations'
-import { CollectionItems } from '../models/collectionItems'
 import { ModelsManager } from '../models/manager'
 import { filterChannels, filterValues, filterValuesNotAllowed, replaceOperations } from './utils'
 import { User, Role } from '../models/users'
@@ -15,6 +14,7 @@ import { sequelize } from '../models'
 import { Op, literal } from 'sequelize'
 import moment = require('moment')
 import e = require('cors')
+import { Action, EventType, TriggerType } from '../models/actions'
 
 /* sample search request
 query { search(
@@ -245,6 +245,27 @@ export default {
                         })
                     })
                     res.type = 'LOVsResponse'
+                } else if (request.entity === 'ACTION') {
+                    if (!context.canViewConfig(ConfigAccess.ACTIONS)) 
+                        throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to view actions, tenant: ' + context.getCurrentUser()!.tenantId)
+
+                    res = await Action.applyScope(context).findAndCountAll(params)
+                    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+                    for (const action of res.rows) {
+                        if (!action.triggers) continue
+                        for (const trigger of action.triggers) {
+                            trigger.type = TriggerType[trigger.type]
+                            trigger.event = EventType[trigger.event]
+                            if (trigger.roles) trigger.roles = trigger.roles.map((id: number) => mng.getRoles().find(role => role.id === id)?.identifier)
+                            if (trigger.itemFrom) trigger.itemFrom = (await Item.applyScope(context).findByPk(trigger.itemFrom))?.identifier
+                                else trigger.itemFrom = null
+                            if (trigger.itemType) trigger.itemType = mng.getTypeById(trigger.itemType)?.getValue().identifier
+                                else trigger.itemType = null
+                            if (trigger.relation) trigger.relation = mng.getRelationById(trigger.relation)?.identifier
+                                else trigger.relation = null
+                        }
+                    }
+                    res.type = 'SearchActionResponse'
                 }
                 arr.push(res)
             }
