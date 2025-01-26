@@ -97,7 +97,7 @@ export class OzonChannelHandler extends ChannelHandler {
     }
 
     processProductStatus(item: Item, result: any, channel: Channel, context: JobContext) {
-        const status = result.status
+        const status = result.statuses
         context.log += '   статус товара: ' + JSON.stringify(status)
 
         if (status.is_created && !status.is_failed && status.moderate_status !== 'declined') {
@@ -111,7 +111,7 @@ export class OzonChannelHandler extends ChannelHandler {
             context.log += '   sources: ' + JSON.stringify(result.sources)
 
             if (channel.config.ozonFBSIdAttr) {
-                const fbs = result.sources.find((elem: any) => elem.source === 'fbs')
+                const fbs = result.sources.find((elem: any) => elem.source === 'sds')
                 if (fbs || result.sku) {
                     item.values[channel.config.ozonFBSIdAttr] = '' + (fbs?.sku || result.sku)
                     item.changed('values', true)
@@ -287,7 +287,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 "product_id": chunk,
             }
 
-            const url = 'https://api-seller.ozon.ru/v2/product/info/list'
+            const url = 'https://api-seller.ozon.ru/v3/product/info/list'
             const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
             logger.info(log)
             if (channel.config.debug) context.log += log + '\n'
@@ -309,7 +309,7 @@ export class OzonChannelHandler extends ChannelHandler {
             logger.info('Received data: ' + JSON.stringify(data))
 
             for (const item of filteredItems) {
-                const result = data.result.items.find((elem: any) => elem.id === item.values[channel.config.ozonIdAttr])
+                const result = data.items.find((elem: any) => elem.id === item.values[channel.config.ozonIdAttr])
                 
                 if (!result) {
                     context.log += 'Товар c идентификатором ' + item.identifier + ' не найден в ответе Ozon\n'
