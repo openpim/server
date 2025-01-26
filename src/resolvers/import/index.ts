@@ -1,5 +1,5 @@
 import Context, { ConfigAccess } from '../../context'
-import { IItemImportRequest, IImportConfig, ImportResponses, IItemRelationImportRequest, ImportMode, ErrorProcessing, ITypeImportRequest, IRelationImportRequest, IAttrGroupImportRequest, IAttributeImportRequest, IRoleImportRequest, IUserImportRequest, ILOVImportRequest, ICollectionImportRequest, ICollectionItemsImportRequest } from '../../models/import'
+import { IItemImportRequest, IImportConfig, ImportResponses, IItemRelationImportRequest, ImportMode, ErrorProcessing, ITypeImportRequest, IRelationImportRequest, IAttrGroupImportRequest, IAttributeImportRequest, IRoleImportRequest, IUserImportRequest, ILOVImportRequest, ICollectionImportRequest, ICollectionItemsImportRequest, IActionImportRequest } from '../../models/import'
 import { importItem } from './items'
 import { importItemRelation } from './itemRelations'
 import { importType } from './types'
@@ -11,10 +11,11 @@ import { importUser } from './users'
 import { importLOV } from './lovs'
 import { importCollection } from './collections'
 import { importCollectionItems } from './collections'
+import { importAction } from './actions'
 
 export default {
     Mutation: {
-        import: async (parent: any, { config, types, relations, items, itemRelations, attrGroups, attributes, roles, users, lovs, collections, collectionItems }: any, context: Context) => {
+        import: async (parent: any, { config, types, relations, items, itemRelations, attrGroups, attributes, roles, users, lovs, collections, collectionItems, actions }: any, context: Context) => {
             context.checkAuth()
 
             config.mode = ImportMode[config.mode]
@@ -134,6 +135,17 @@ export default {
                     const collectionItem = collectionItems[index];
                     const resp = await importCollectionItems(context, <IImportConfig>config, <ICollectionItemsImportRequest>collectionItem)
                     responses.collectionItems.push(resp)
+                }
+            }
+            if (actions && actions.length > 0) {
+                if (!context.canEditConfig(ConfigAccess.ACTIONS)) 
+                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit actions, tenant: ' + context.getCurrentUser()!.tenantId)
+
+                responses.actions = []
+                for (let index = 0; index < actions.length; index++) {
+                    const action = actions[index];
+                    const resp = await importAction(context, <IImportConfig>config, <IActionImportRequest>action)
+                    responses.actions.push(resp)
                 }
             }
 

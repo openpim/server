@@ -11,6 +11,7 @@ type Mutation {
     lovs: [LOVImportRequest]
     collections: [CollectionImportRequest]
     collectionItems: [CollectionItemsImportRequest]
+    actions: [ActionImportRequest]
     ): ImportResponses!
 }
 
@@ -42,6 +43,7 @@ type ImportResponses {
   lovs: [ImportResponse]
   collections: [ImportResponse]
   collectionItems: [ImportResponse]
+  actions: [ImportResponse]
 }
 
 enum ImportResult {
@@ -217,3 +219,25 @@ input CollectionItemsImportRequest {
   collectionIdentifier: String!
   itemIdentifiers: [String]!
 }
+
+input ActionImportRequest {
+  delete: Boolean
+  identifier: String!
+  name: LanguageDependentString
+  code: String
+  triggers: [ActionTriggerImportRequest]
+}
+
+input ActionTriggerImportRequest {
+  type: ActionTypeEnum!
+  event: ActionEventEnum
+  roles: [String]
+  itemFrom: String
+  itemType: String
+  relation: String
+  itemButton: String
+  selectItems: Boolean
+  askBeforeExec: Boolean
+  selectItemsFilter: String
+}
+

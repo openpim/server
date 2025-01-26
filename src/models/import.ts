@@ -101,7 +101,11 @@ export class ReturnMessage {
   public static CollectionNotFound = new ReturnMessage(900, "Failed to find collection by identifier")
   public static CollectionExist = new ReturnMessage(901, "Collection with such identifier already exists")
   public static CollectionItemsAddFailed = new ReturnMessage(902, "User does not has permissions to add items from collection")
-  
+
+  public static ActionNotFound = new ReturnMessage(1000, "Failed to find action by identifier")
+  public static ActionExist = new ReturnMessage(1001, "Action with such identifier already exists")
+  public static ActionItemFromNotFound = new ReturnMessage(1002, "Failed to find item specified in itemFrom by identifier")
+
   code: number
   message: string
   constructor(code: number, message: string) {
@@ -145,6 +149,7 @@ export class ImportResponses {
   lovs: ImportResponse[] = []
   collections: ImportResponse[] = []
   collectionItems: ImportResponse[] = []
+  actions: ImportResponse[] = []
 }
 
 export interface IItemRelationImportRequest {
@@ -290,4 +295,26 @@ export interface ICollectionItemsImportRequest {
   delete: boolean
   collectionIdentifier: String
   itemIdentifiers: [string]
+}
+
+export interface IActionImportRequest {
+  delete: boolean
+  identifier: string
+  name: any
+  code: string
+  triggers: [IActionTriggerImportRequest]
+  order: number
+}
+
+export interface IActionTriggerImportRequest {
+  type: string
+  event: string
+  roles: [string]
+  itemFrom: string
+  itemType: string
+  relation: string
+  itemButton: string
+  selectItems: boolean
+  askBeforeExec: boolean
+  selectItemsFilter: string
 }
