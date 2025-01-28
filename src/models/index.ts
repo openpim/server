@@ -48,11 +48,11 @@ export async function initModels() {
             }
         },
         pool: {
-            max: 50,
+            max: 100,
             min: 0,
-            idle: 30000,
-            acquire: 600000,
-            evict: 1000
+            idle: 0,
+            acquire: 60000,
+            evict: 10000
         }
     })
 
