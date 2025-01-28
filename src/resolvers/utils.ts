@@ -460,7 +460,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
     }
 }
 
-export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any, transaction: Transaction, skipActions: Boolean = false) {
+export async function checkRelationAttributes(context: Context, mng: ModelManager, item: Item, values: any, transaction: Transaction | null, skipActions: Boolean = false) {
     const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
     if (!isLicenceExists) {
         return []
@@ -603,7 +603,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
     return relations2Create
 }
 
-export async function createRelationsForItemRelAttributes(context: Context, arr: any, transaction: Transaction) {
+export async function createRelationsForItemRelAttributes(context: Context, arr: any, transaction: Transaction | null) {
     const utils = new ActionUtils(context)
     for (let i = 0; i < arr.length; i++) {
         await utils.createItemRelation(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, transaction, false)
@@ -2017,8 +2017,7 @@ class ActionUtils {
 
     public async processRelationAttributes(item: Item,  values: any, transaction: Transaction | null = null, skipActions: Boolean = false) {
         const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
-        const localTransaction = transaction || await sequelize.transaction()
-        const relAttributesData: any = await checkRelationAttributes(this.#context, mng, item, values, localTransaction, skipActions)
-        await createRelationsForItemRelAttributes(this.#context, relAttributesData, localTransaction)
+        const relAttributesData: any = await checkRelationAttributes(this.#context, mng, item, values, transaction, skipActions)
+        await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
     }
 }
