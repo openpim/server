@@ -191,9 +191,9 @@ export class OzonChannelHandler extends ChannelHandler {
             if (tst2.startsWith('task_id=')) return
 
             // try to find current status
-            const url = 'https://api-seller.ozon.ru/v2/product/info'
+            const url = 'https://api-seller.ozon.ru/v3/product/info/list'
             const request = {
-                "product_id": item.values[channel.config.ozonIdAttr]
+                "product_id": [item.values[channel.config.ozonIdAttr]]
             }
             const log = "Sending request Ozon: " + url + " => " + JSON.stringify(request)
             logger.info(log)
@@ -211,7 +211,11 @@ export class OzonChannelHandler extends ChannelHandler {
             } else {
                 const data = await res.json()
                 logger.info('   received data: ' + JSON.stringify(data))
-                const result = data.result
+                if (data.items.length == 0) {
+                    context.log += '  ОШИБКА: НЕ НАЙДЕН товар на Озоне с product id ' + item.values[channel.config.ozonIdAttr] + ' \n'
+                    return
+                }
+                const result = data.items[0]
                 if (result.sku) {
                     sku = result.sku
                 } else {
