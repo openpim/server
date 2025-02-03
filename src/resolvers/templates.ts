@@ -28,7 +28,7 @@ export default {
         }
     },
     Mutation: {
-        createTemplate: async (parent: any, { identifier, name, template, order, valid, visible, options }: any, context: Context) => {
+        createTemplate: async (parent: any, { identifier, name, template, templateRichtext, order, valid, visible, options }: any, context: Context) => {
             context.checkAuth()
             if (!/^[A-Za-z0-9_]*$/.test(identifier)) throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
@@ -56,6 +56,7 @@ export default {
                     updatedBy: context.getCurrentUser()!.login,
                     name: name,
                     template: template,
+                    templateRichtext: templateRichtext,
                     order: order != null ? order : 0,
                     valid: val,
                     visible: vis,
@@ -66,7 +67,7 @@ export default {
 
             return temp
         },
-        updateTemplate: async (parent: any, { id, name, template, order, valid, visible, options }: any, context: Context) => {
+        updateTemplate: async (parent: any, { id, name, template, templateRichtext, order, valid, visible, options }: any, context: Context) => {
             context.checkAuth()
 
             if (!context.canEditConfig(ConfigAccess.TEMPLATES)) {
@@ -79,6 +80,7 @@ export default {
 
             if (name) temp.name = name
             if (template) temp.template = template
+            if (templateRichtext) temp.templateRichtext = templateRichtext
             if (order != null) temp.order = order
             if (valid) temp.valid = valid.map((elem: string) => parseInt(elem))
             if (visible) temp.visible = visible.map((elem: string) => parseInt(elem))
