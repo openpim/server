@@ -733,9 +733,9 @@ export class OzonChannelHandler extends ChannelHandler {
                 }
                 try {
                     let value = await this.getValueByMapping(channel, attrConfig, item, language)
+                    const ozonAttrId = parseInt(attrConfig.id.substring(5))
                     if (value) {
                         if (typeof value === 'string' || value instanceof String) value = value.trim()
-                        const ozonAttrId = parseInt(attrConfig.id.substring(5))
                         const data = {complex_id:0, id: ozonAttrId, values: <any[]>[]}
                         if (Array.isArray(value)) {
                             for (let j = 0; j < value.length; j++) {
@@ -765,7 +765,8 @@ export class OzonChannelHandler extends ChannelHandler {
                         const tst = product.attributes.find((elem:any) => elem.id == ozonAttrId)
                         if (!tst) product.attributes.push(data)
                             else logger.error(`Атрибут ${ozonAttrId} уже был добавлен ${JSON.stringify(tst)}`)
-                    } else if (attr.required) {
+                    } else if (attr.required && ozonAttrId != 8229) {
+                        // 8229 - старый атрибут - "тип" который переехал в type_id, он в модели обязательный, хотя реально нет
                         const msg = 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
                         context.log += msg                      
                         this.reportError(channel, item, msg)
