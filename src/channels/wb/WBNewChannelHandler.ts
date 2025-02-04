@@ -581,10 +581,10 @@ export class WBNewChannelHandler extends ChannelHandler {
         }        
 
         if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
-        await this.sendRequest(channel, item, request, context, categoryConfig.id)
+        const tst = await this.sendRequest(channel, item, request, context, categoryConfig.id)
 
         // images
-        if (!create) { // send images on update only because product is not exists at WB just after create
+        if (!create && tst) { // send images on update only because product is not exists at WB just after create
             if (!nmID) {
                 let msg = "nmID is empty so images will not be send"
                 logger.info(msg)
@@ -677,7 +677,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             const msg = 'Включена эмуляция работы, сообщение не было послано на WB'
             if (channel.config.debug) context.log += msg+'\n'
             logger.info(msg)
-            return
+            return true
         }
 
         const res = await fetch(url, {
@@ -693,7 +693,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             context.log += msg                      
             const data = this.reportError(channel, item, msg)
             data.wbError = true
-            return
+            return false
         } else {
             const json = await res.json()
             if (channel.config.debug) context.log += 'received response:'+JSON.stringify(json)+'\n'
@@ -703,7 +703,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 data.wbError = true
                 context.log += msg                      
                 logger.info("Error from Windberries: " + JSON.stringify(json))
-                return
+                return false
             } else {
                 context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно.\n'
                 const data = item.channels[channel.identifier]
@@ -712,6 +712,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 data.message = ''
                 data.syncedAt = Date.now()
                 item.changed('channels', true)
+                return true
             }
         }
     }
