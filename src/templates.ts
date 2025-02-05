@@ -4,6 +4,8 @@ import logger from './logger'
 import { Item } from './models/items'
 import { Template } from './models/templates'
 import { LOV } from './models/lovs'
+import { Attribute } from './models/attributes'
+import { ItemRelation } from './models/itemRelations'
 import hbs from 'handlebars'
 import { ChannelCategory, ChannelHandler } from './channels/ChannelHandler'
 import { Channel } from './models/channels'
@@ -11,6 +13,7 @@ import promisedHandlebars from 'promised-handlebars'
 import Q from 'q'
 import helpers from 'handlebars-helpers'
 import { replaceOperations } from './resolvers/utils'
+import { Op } from 'sequelize'
 
 const handlebarsHelpers = helpers()
 
@@ -56,42 +59,164 @@ export async function generateTemplate(context: Context, request: Request, respo
             return response.status(404).send('Item not found')
         }
 
-        Object.keys(handlebarsHelpers).forEach(helperName => {
-            Handlebars.registerHelper(helperName, handlebarsHelpers[helperName])
-        })
+        if (template?.templateRichtext != null && template.templateRichtext.trim() !== '') {
+            const regex = /<attr\s+([^>]*)>\s*([\s\S]*?)\s*<\/attr>/g
+            const matches = []
+            let match
 
-        Handlebars.registerHelper('LOVvalue', async function (args: any) {
-            const { identifier, valueId, language, lovCache = {} } = args.hash
+            while ((match = regex.exec(template.templateRichtext.trim())) !== null) {
+                const attrString = match[1]
+                const value = match[2]
 
-            if (identifier in lovCache) {
-                return lovCache[identifier].find((lov: any) => lov.id === valueId)?.value?.[language] || ''
+                const attributes: { [key: string]: string } = {
+                    identifier: "",
+                    language: "",
+                    relidentifier: "",
+                    order: "",
+                    mapping: "",
+                    value
+                }
+
+                attrString.replace(/(\w+)="([^"]*)"/g, (_, key, val) => {
+                    attributes[key as keyof typeof attributes] = val
+                    return ""
+                })
+
+                matches.push(attributes)
             }
 
-            const result = await LOV.findOne({ where: { identifier } })
-            if (result) {
-                lovCache[identifier] = result.values
-                return lovCache[identifier].find((lov: any) => lov.id === valueId)?.value?.[language] || ''
+            const attributes = await Attribute.findAll({
+                where: {
+                    identifier: {
+                        [Op.in]: matches.map((match) => match.identifier)
+                    }
+                }
+            })
+
+            const lovsIds = attributes
+                .filter((attr) => attr.type === 7)
+                .map((attr) => attr.lov)
+
+            const lovs = await LOV.findAll({
+                where: {
+                    id: {
+                        [Op.in]: lovsIds
+                    },
+                }
+            })
+
+            const lovsMap: Record<number, any> = {}
+            lovs.forEach((lov) => {
+                lovsMap[lov.id] = lov.values
+            })
+
+            const updatedRichtext = async () => {
+                const matches = [...template.templateRichtext.matchAll(regex)]
+
+                const replacements = matches.map(async ([match, attrString, value]) => {
+                    const attrData: { [key: string]: string } = {}
+
+                    attrString.replace(/(\w+)="([^"]*)"/g, (_, key, val) => {
+                        attrData[key] = val
+                        return ""
+                    })
+
+                    const attr = attrData.identifier || ""
+                    const language = attrData.language || ""
+                    const relIdentifier = attrData.relidentifier || ""
+                    const order = attrData.order || ""
+                    let mapping = attrData.mapping || ""
+                    if (mapping) {
+                        mapping = mapping.replace(/&quot;/g, '"')
+                    }
+                    if (relIdentifier) {
+                        const itemRel = await ItemRelation.findOne({
+                            where: {
+                                itemId: itemId,
+                                relationIdentifier: relIdentifier,
+                                [Op.or]: [
+                                    { values: { _itemRelationOrder: order } },
+                                    { values: { _itemRelationOrder: { [Op.is]: null } } }
+                                ]
+                            }
+                        })
+
+                        return itemRel && itemRel.targetId != null
+                            ? value.replace(/(src=['"][^'"]*\/asset\/inline\/)(\d+)(['"])/, `$1${itemRel?.targetId}$3`)
+                            : '';
+
+                    } else {
+                        let replacement = item.values[attr] || ""
+
+                        const attribute = attributes.find(attribute => attribute.identifier === attr)
+                        if (attribute && attribute.type === 7) {
+                            replacement = lovsMap[attribute.lov]?.find((el: { id: number }) => el.id == replacement)?.value?.[language] || replacement
+                        }
+
+                        if (mapping) {
+                            for (const { before, after } of JSON.parse(mapping)) {
+                                if (replacement === before) {
+                                    replacement = after
+                                    break
+                                }
+                            }
+                        }
+
+                        return replacement ?? match
+                    }
+                })
+
+                const replacedValues = await Promise.all(replacements)
+
+                let index = 0
+                return template.templateRichtext.replace(regex, () => replacedValues[index++])
             }
 
-            return ''
-        })
+            const updatedRichtextResult = await updatedRichtext()
 
-        Handlebars.registerHelper('evaluateExpression', async function (args: any) {
-            const { expr } = args.hash
-            const value = await handler.evaluateExpressionCommon(item.get().tenantId, item.get(), expr, null, null)
-            return value
-        })
+            response.setHeader("Content-Type", "text/html")
+            response.status(200).send(updatedRichtextResult)
+            return
+        } else {
+            Object.keys(handlebarsHelpers).forEach(helperName => {
+                Handlebars.registerHelper(helperName, handlebarsHelpers[helperName])
+            })
 
-        const compiledTemplate = Handlebars.compile(template.template)
-        const html = await compiledTemplate({
-            item: item.get(),
-            context: {
-                lovCache: {}
-            }})
+            Handlebars.registerHelper('LOVvalue', async function (args: any) {
+                const { identifier, valueId, language, lovCache = {} } = args.hash
 
-        response.setHeader('Content-Type', 'text/html')
-        response.status(200).send(html)
-        return
+                if (identifier in lovCache) {
+                    return lovCache[identifier].find((lov: any) => lov.id === valueId)?.value?.[language] || ''
+                }
+
+                const result = await LOV.findOne({ where: { identifier } })
+                if (result) {
+                    lovCache[identifier] = result.values
+                    return lovCache[identifier].find((lov: any) => lov.id === valueId)?.value?.[language] || ''
+                }
+
+                return ''
+            })
+
+            Handlebars.registerHelper('evaluateExpression', async function (args: any) {
+                const { expr } = args.hash
+                const value = await handler.evaluateExpressionCommon(item.get().tenantId, item.get(), expr, null, null)
+                return value
+            })
+
+            const compiledTemplate = Handlebars.compile(template.template)
+            const html = await compiledTemplate({
+                item: item.get(),
+                context: {
+                    lovCache: {}
+                }
+            })
+
+            response.setHeader('Content-Type', 'text/html')
+            response.status(200).send(html)
+            return
+        }
+
     } catch (error) {
         logger.error('Error generating template', error)
         response.status(500).send('Internal Server Error')

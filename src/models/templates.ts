@@ -7,6 +7,7 @@ export class Template extends Base {
   public identifier!: string
   public name!: any
   public template!: string
+  public templateRichtext!: string
   public order!: number
   public valid!: any
   public visible!: any
@@ -29,7 +30,11 @@ export function init(sequelize: Sequelize):void {
       },
       template: {
         type: new DataTypes.TEXT,
-        allowNull: false,
+        allowNull: true,
+      },
+      templateRichtext: {
+        type: new DataTypes.TEXT,
+        allowNull: true,
       },
       order: {
         type: new DataTypes.INTEGER,

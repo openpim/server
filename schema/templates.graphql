@@ -3,8 +3,8 @@ type Query {
 }
 
 type Mutation {
-  createTemplate(identifier: String!, name: LanguageDependentString!, template: String!, order: Int!, valid: [String], visible: [String], options: JSON): Template!
-  updateTemplate(id: ID!, name: LanguageDependentString, template: String, order: Int, valid: [String], visible: [String], options: JSON): Template!
+  createTemplate(identifier: String!, name: LanguageDependentString!, template: String, templateRichtext: String, order: Int!, valid: [String], visible: [String], options: JSON): Template!
+  updateTemplate(id: ID!, name: LanguageDependentString, template: String, templateRichtext: String, order: Int, valid: [String], visible: [String], options: JSON): Template!
   removeTemplate(id: ID!): Boolean!
 }
 
@@ -12,7 +12,8 @@ type Template {
   id: ID!
   identifier: String!
   name: LanguageDependentString!
-  template: String!
+  template: String
+  templateRichtext: String
   order: Int!
   valid: [String]
   visible: [String]
