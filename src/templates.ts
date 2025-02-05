@@ -125,8 +125,10 @@ export async function generateTemplate(context: Context, request: Request, respo
                     const language = attrData.language || ""
                     const relIdentifier = attrData.relidentifier || ""
                     const order = attrData.order || ""
-                    const mapping = attrData.mapping || ""
-
+                    let mapping = attrData.mapping || ""
+                    if (mapping) {
+                        mapping = mapping.replace(/&quot;/g, '"')
+                    }
                     if (relIdentifier) {
                         const itemRel = await ItemRelation.findOne({
                             where: {
@@ -149,6 +151,15 @@ export async function generateTemplate(context: Context, request: Request, respo
                         const attribute = attributes.find(attribute => attribute.identifier === attr)
                         if (attribute && attribute.type === 7) {
                             replacement = lovsMap[attribute.lov]?.find((el: { id: number }) => el.id == replacement)?.value?.[language] || replacement
+                        }
+
+                        if (mapping) {
+                            for (const { before, after } of JSON.parse(mapping)) {
+                                if (replacement === before) {
+                                    replacement = after
+                                    break
+                                }
+                            }
                         }
 
                         return replacement ?? match
