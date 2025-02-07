@@ -629,7 +629,7 @@ function checkInteger(attr: Attribute, value: any) {
     }
 }
 
-export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean, isFileUpload: boolean, fromRelationAttribute = false, transaction: Transaction | null = null) {
+export async function processItemActions(context: Context, event: EventType, item: Item, newParent: string, newName: string, newValues: any, newChannels: any, isImport: boolean, isFileUpload: boolean, fromRelationAttribute = false, transaction: Transaction | null = null, data: any = null) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const pathArr = item.path.split('.').map((elem: string) => parseInt(elem))
     const actions = mng.getActions().filter(action => {
@@ -661,6 +661,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         name: newName,
         transaction,
         parent: newParent,
+        data: data,
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy, transaction),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy, transaction),

@@ -659,6 +659,7 @@ export default {
                     filterEditChannels(context, channels)
                     checkSubmit(context, channels)
                     item.channels = mergeValues(channels, item.channels)
+                    item.changed("channels", true)
                     processDeletedChannels(item.channels)
                 }
                 let relAttributesData: any = []
