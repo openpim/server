@@ -93,6 +93,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         let msg = "Найдено "+errorsJson.data.length+" ошибок"
         logger.info(msg)
         if (channel.config.debug) context.log += msg+'\n'
+        const processedItems = []
         for (let i = 0; i < errorsJson.data.length; i++) {
             const error = errorsJson.data[i];
 
@@ -109,6 +110,8 @@ export class WBNewChannelHandler extends ChannelHandler {
                 context.log += msg+'\n'
             } else {
                 if (item.channels[channel.identifier]) {
+                    processedItems.push(item.identifier)
+
                     item.channels[channel.identifier].status = 3
                     item.channels[channel.identifier].wbError = true
                     item.channels[channel.identifier].message = error.errors.join(', ')
@@ -125,7 +128,7 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         if (data.item) {
             if (singleItem) {
-                await this.syncItems(channel, [singleItem], context, true, language)
+                await this.syncItems(channel, [singleItem], context, true, language, processedItems)
             }
         } else {
             const query:any = {}
@@ -134,14 +137,15 @@ export class WBNewChannelHandler extends ChannelHandler {
                 where: { tenantId: channel.tenantId, channels: query} 
             })
             context.log += 'Найдено ' + items.length +' записей для обработки \n\n'
-            await this.syncItems(channel, items, context, false, language)
+            await this.syncItems(channel, items, context, false, language, processedItems)
         }
         context.log += 'Cинхронизация закончена'
     }
 
-    async syncItems(channel: Channel, items: Item[], context: JobContext, singleSync: boolean, language: string) {
+    async syncItems(channel: Channel, items: Item[], context: JobContext, singleSync: boolean, language: string, processedItems: string[]) {
         if (singleSync) {
             const item = items[0]
+            if (processedItems.includes(item.identifier)) return
             context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
             
             if (item.channels[channel.identifier]) {
@@ -193,7 +197,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                             return
                         }
 
-                        await this.processItemSync(channel, items, context, language, json)
+                        await this.processItemSync(channel, items, context, language, json, processedItems)
                     }
                 }
             } else {
@@ -243,7 +247,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                         return
                     }
 
-                    await this.processItemSync(channel, items, context, language, json)
+                    await this.processItemSync(channel, items, context, language, json, processedItems)
 
                     pageSize = json.cursor.total
                     updatedAt = json.cursor.updatedAt
@@ -253,13 +257,14 @@ export class WBNewChannelHandler extends ChannelHandler {
         }
     }
 
-    async processItemSync(channel: Channel, items: Item[], context: JobContext, language: string, json: any) {
+    async processItemSync(channel: Channel, items: Item[], context: JobContext, language: string, json: any, processedItems: string[]) {
         let msg = `Получено ${json.cards.length} карточек\n`
         if (channel.config.debug) context.log += msg
         logger.info(msg)
 
         for (const card of json.cards) {
             const item = items.find(elem => elem.values[channel.config.wbCodeAttr] == card.vendorCode)
+            if (item && processedItems.includes(item.identifier)) continue
             if (card.imtID) {
                 msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}, vendorCode: ${card.vendorCode}\n`
                 if (channel.config.debug) context.log += msg
