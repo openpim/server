@@ -903,7 +903,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     },
                     "limit": 1000
                 }
-                const existingDataUrl = 'https://api-seller.ozon.ru/v3/products/info/attributes'
+                const existingDataUrl = 'https://api-seller.ozon.ru/v4/product/info/attributes'
                 const log = "Sending request to Ozon: " + existingDataUrl + " => " + JSON.stringify(existingDataReq)
                 logger.info(log)
                 if (channel.config.debug) context.log += log+'\n'
