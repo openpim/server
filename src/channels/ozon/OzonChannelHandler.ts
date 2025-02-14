@@ -98,6 +98,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
     processProductStatus(item: Item, result: any, channel: Channel, context: JobContext) {
         const status = result.statuses
+        if (result.errors) status.errors = result.errors
         context.log += '   статус товара: ' + JSON.stringify(status)
 
         if (status.is_created && !status.is_failed && status.moderate_status !== 'declined') {
