@@ -2,6 +2,7 @@ type Query {
   getAttributesInfo: JSON
   getAttributeGroup(id: ID!): AttrGroup
   getAttribute(id: ID!): Attribute
+  getAttributeValues(attrIdentifier: String!, limit: Int, offset: Int): AttributeValues
 }
 
 type Mutation {
@@ -49,4 +50,9 @@ type Attribute {
   createdAt: UTCDateTime!
   updatedBy: String!
   updatedAt: UTCDateTime!
+}
+
+type AttributeValues {
+  rows: [String]!,
+  total: Int!
 }

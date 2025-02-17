@@ -3,7 +3,7 @@ import { ModelManager, ModelsManager, AttrGroupWrapper } from '../models/manager
 import { AttrGroup, Attribute, GroupsAttributes } from '../models/attributes'
 import { sequelize } from '../models'
 import { QueryTypes } from 'sequelize'
-import { processAttrGroupActions, processAttributeActions } from './utils'
+import { processAttrGroupActions, processAttributeActions, filterValuesNotAllowed, filterChannels } from './utils'
 import { EventType } from '../models/actions'
 
 export default {
@@ -36,7 +36,36 @@ export default {
                 })
             }
             return tst ? tst.attr : null
-        }
+        },
+        getAttributeValues: async (parent: any, { attrIdentifier, limit, offset }: any, context: Context) => {
+            context.checkAuth()
+            const items: any[] = await sequelize.query(
+            `select distinct "values"->> :attrIdentifier as value from items where "deletedAt" is null and "values" ->> :attrIdentifier is not null and "tenantId" = :tenant order by "values" ->> :attrIdentifier limit ${limit || 500} offset ${offset || 0}`,
+                {
+                    replacements: {
+                        tenant: context.getCurrentUser()!.tenantId,
+                        attrIdentifier,
+                    },
+                    type: QueryTypes.SELECT
+                }
+            )
+            const total: any = await sequelize.query(
+                `select count(distinct "values"->>:attrIdentifier ) as counter from items where "deletedAt" is null and "values" ->> :attrIdentifier is not null and "tenantId" = :tenant`,
+                {
+                    replacements: {
+                        tenant: context.getCurrentUser()!.tenantId,
+                        attrIdentifier,
+                    },
+                    type: QueryTypes.SELECT
+                }
+            )
+            items.forEach(item => {
+                const notAllowedAttributes = context.getNotViewItemAttributes(item)
+                filterValuesNotAllowed(notAllowedAttributes, item.values)
+                filterChannels(context, item.channels)
+            })
+            return { rows: items.map(el => el.value.toString()), total: parseInt(total[0].counter, 10) }
+        },
     },
     Mutation: {
         createAttributeGroup: async (parent: any, { identifier, name, order, visible, options }: any, context: Context) => {
