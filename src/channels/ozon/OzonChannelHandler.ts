@@ -98,6 +98,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
     processProductStatus(item: Item, result: any, channel: Channel, context: JobContext) {
         const status = result.statuses
+        if (result.errors) status.errors = result.errors
         context.log += '   статус товара: ' + JSON.stringify(status)
 
         if (status.is_created && !status.is_failed && status.moderate_status !== 'declined') {
@@ -929,29 +930,14 @@ export class OzonChannelHandler extends ChannelHandler {
                     let videoElem2
                     let videoCover
                     if (existingDataJson.result[0].complex_attributes) {
-                        existingDataJson.result[0].complex_attributes.forEach((elem:any) => {
-                            const data1 = elem.attributes.find((elem1:any) => elem1.attribute_id === 21837)
-                            if (data1) {
-                                delete(data1.attribute_id)
-                                data1.id = 21837
-                                videoElem1 = data1
-                            }
+                            const data1 = existingDataJson.result[0].complex_attributes.find((elem1:any) => elem1.id === 21837)
+                            if (data1) videoElem1 = data1
 
-                            const data2 = elem.attributes.find((elem2:any) => elem2.attribute_id === 21841)
-                            if (data2) {
-                                delete(data2.attribute_id)
-                                data2.id = 21841
-                                videoElem2 = data2
-                            }
+                            const data2 = existingDataJson.result[0].complex_attributes.find((elem2:any) => elem2.id === 21841)
+                            if (data2) videoElem2 = data2
 
-                            const data3 = elem.attributes.find((elem3:any) => elem3.attribute_id === 21845)
-                            if (data3) {
-                                delete(data3.attribute_id)
-                                data3.id = 21845
-                                videoCover = data3
-                            }
-
-                        })
+                            const data3 = existingDataJson.result[0].complex_attributes.find((elem3:any) => elem3.id === 21845)
+                            if (data3) videoCover = data3
                     }
                     if ((videoElem1 && videoElem2) || videoCover)  {
                         const log = "Найдены загруженные видео: \n" + JSON.stringify(videoElem1) + "\n" + JSON.stringify(videoElem2) + "\n" + JSON.stringify(videoCover)
@@ -959,13 +945,13 @@ export class OzonChannelHandler extends ChannelHandler {
                         if (channel.config.debug) context.log += log+'\n'
                         if (!product.complex_attributes) product.complex_attributes = []
                         if (videoElem1 && videoElem2) {
-                            const data = {attributes:[]}
+                            const data:any = {attributes:[]}
                             data.attributes.push(videoElem1)
                             data.attributes.push(videoElem2)
                             product.complex_attributes.push(data)
                         }
                         if (videoCover) {
-                            const data = {attributes:[]}
+                            const data:any = {attributes:[]}
                             data.attributes.push(videoCover)
                             product.complex_attributes.push(data)
                         }
