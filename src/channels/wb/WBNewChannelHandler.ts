@@ -86,7 +86,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         let singleItem = null
         if (data.item) singleItem = await Item.findByPk(data.item)
 
-        const errorsResp = await fetch('https://suppliers-api.wildberries.ru/content/v2/cards/error/list', {
+        const errorsResp = await fetch('https://content-api.wildberries.ru/content/v2/cards/error/list', {
             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
         })
         const errorsJson = await errorsResp.json()
@@ -162,7 +162,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                     item.channels[channel.identifier].wbError = false
                     item.channels[channel.identifier].message = 'Не найдено значение артикула товара в атрибуте: ' + channel.config.wbCodeAttr
                 } else {
-                    const url = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
+                    const url = 'https://content-api.wildberries.ru/content/v2/get/cards/list'
                     const request = {	
                         settings: {
                             filter: {
@@ -211,7 +211,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             do {
                 let cursor:any = { limit: limit }
                 if (updatedAt && nmID) cursor = { limit: limit, updatedAt: updatedAt, nmID: nmID }
-                const url = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
+                const url = 'https://content-api.wildberries.ru/content/v2/get/cards/list'
                 const request = {
                     settings: {
                         cursor: cursor,
@@ -496,7 +496,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
 
         if (nmID) {
-            const existUrl = 'https://suppliers-api.wildberries.ru/content/v2/get/cards/list'
+            const existUrl = 'https://content-api.wildberries.ru/content/v2/get/cards/list'
             const existsBody = {	
                 settings: {
                     filter: {
@@ -515,7 +515,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             if (resExisting.status !== 200) {
-                const msg = 'Ошибка запроса на Wildberries - https://suppliers-api.wildberries.ru/content/v2/get/cards/list: ' + resExisting.statusText
+                const msg = 'Ошибка запроса на Wildberries - https://content-api.wildberries.ru/content/v2/get/cards/list: ' + resExisting.statusText
                 context.log += msg                      
                 const data = this.reportError(channel, item, msg)
                 data.wbError = true
@@ -604,7 +604,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                         "data": images
                         }
                     if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
-                    const imgUrl = 'https://suppliers-api.wildberries.ru/content/v3/media/save'
+                    const imgUrl = 'https://content-api.wildberries.ru/content/v3/media/save'
                     let msg = "Sending request Windberries: " + imgUrl + " => " + JSON.stringify(imgRequest)
                     logger.info(msg)
                     if (channel.config.debug) context.log += msg+'\n'
@@ -667,10 +667,10 @@ export class WBNewChannelHandler extends ChannelHandler {
         const objId = parseInt(categoryId.substring(idx+1))
 
         if (grpItem) {
-            url = create ? 'https://suppliers-api.wildberries.ru/content/v2/cards/upload/add' : 'https://suppliers-api.wildberries.ru/content/v2/cards/update'
+            url = create ? 'https://content-api.wildberries.ru/content/v2/cards/upload/add' : 'https://content-api.wildberries.ru/content/v2/cards/update'
             req = create ? { imtID: item.values[channel.config.imtIDAttr], cardsToAdd: [request] } : [request]
         } else {
-            url = create ? 'https://suppliers-api.wildberries.ru/content/v2/cards/upload' : 'https://suppliers-api.wildberries.ru/content/v2/cards/update'
+            url = create ? 'https://content-api.wildberries.ru/content/v2/cards/upload' : 'https://content-api.wildberries.ru/content/v2/cards/update'
             req = create ? [{subjectID: objId,variants:[request]}] : [request]
         }
         
@@ -725,7 +725,7 @@ export class WBNewChannelHandler extends ChannelHandler {
     public async getCategories(channel: Channel): Promise<{list: ChannelCategory[]|null, tree: ChannelCategory|null}> {
         let tree:ChannelCategory | undefined = this.cache.get('categories')
         if (!tree) {
-            const url = 'https://suppliers-api.wildberries.ru/content/v2/object/parent/all'
+            const url = 'https://content-api.wildberries.ru/content/v2/object/parent/all'
             logger.info("Sending GET request to WB: " + url)
             const res = await fetch(url, {
                 method: 'get',
@@ -738,7 +738,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             let offset = 0
             let length = 0
             do {
-                const url2 = 'https://suppliers-api.wildberries.ru/content/v2/object/all?limit=1000&offset='+offset
+                const url2 = 'https://content-api.wildberries.ru/content/v2/object/all?limit=1000&offset='+offset
                 logger.info("Sending GET request to WB: " + url2)
                 const res2 = await fetch(url2, {
                     method: 'get',
@@ -773,7 +773,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             const idx = categoryId.indexOf('-')
             const objId = categoryId.substring(idx+1)
 
-            const res = await fetch('https://suppliers-api.wildberries.ru/content/v2/object/charcs/' + objId, {
+            const res = await fetch('https://content-api.wildberries.ru/content/v2/object/charcs/' + objId, {
                 method: 'get',
                 body:    JSON.stringify(request),
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
