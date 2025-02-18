@@ -858,9 +858,9 @@ export class OzonChannelHandler extends ChannelHandler {
             if (newCategory) {
                 existingProductInfoJson = await this.getProductInfo(channel, context, item, ozonProductId)
                 if (!existingProductInfoJson) return
-                if (existingProductInfoJson.result.description_category_id != newCategory) {
+                if (existingProductInfoJson.description_category_id != newCategory) {
                     product.new_description_category_id = newCategory
-                    const str = `Sending new category. Current caterory: ${existingProductInfoJson.result.description_category_id}, new category: ${newCategory}`
+                    const str = `Sending new category. Current caterory: ${existingProductInfoJson.description_category_id}, new category: ${newCategory}`
                     logger.info(str)
                     if (channel.config.debug) context.log += str+'\n'
                 } else {
@@ -879,19 +879,19 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (!existingPricesJson) return
 
                 const priceAttr = priceConfig.attrIdent
-                if (priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.result.price)) {
-                    if (channel.config.savePriceUpdate) changedValues[priceAttr] = parseFloat(existingPricesJson.result.price)
-                    product.price = existingPricesJson.result.price
+                if (priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.price)) {
+                    if (channel.config.savePriceUpdate) changedValues[priceAttr] = parseFloat(existingPricesJson.price)
+                    product.price = existingPricesJson.price
                 }
                 const priceOldAttr = priceOldConfig?.attrIdent
-                if (priceOldAttr && existingPricesJson.result.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.result.old_price)) {
-                    if (channel.config.savePriceUpdate) changedValues[priceOldAttr] = parseFloat(existingPricesJson.result.old_price)
-                    product.old_price = existingPricesJson.result.old_price
+                if (priceOldAttr && existingPricesJson.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.old_price)) {
+                    if (channel.config.savePriceUpdate) changedValues[priceOldAttr] = parseFloat(existingPricesJson.old_price)
+                    product.old_price = existingPricesJson.old_price
                 }
                 const pricePremAttr = pricePremConfig?.attrIdent
-                if (pricePremAttr && existingPricesJson.result.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.result.premium_price)) {
-                    if (channel.config.savePriceUpdate) changedValues[pricePremAttr] = parseFloat(existingPricesJson.result.premium_price)
-                    product.premium_price = existingPricesJson.result.premium_price
+                if (pricePremAttr && existingPricesJson.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.premium_price)) {
+                    if (channel.config.savePriceUpdate) changedValues[pricePremAttr] = parseFloat(existingPricesJson.premium_price)
+                    product.premium_price = existingPricesJson.premium_price
                 }
             }
 
@@ -1066,8 +1066,8 @@ export class OzonChannelHandler extends ChannelHandler {
     }
 
     async getProductInfo(channel: Channel, context: JobContext, item: Item, ozonProductId: string) {
-        const existingProductInfoReq = {product_id: ozonProductId}
-        const existingProductInfoUrl = 'https://api-seller.ozon.ru/v2/product/info'
+        const existingProductInfoReq = {product_id: [ozonProductId]}
+        const existingProductInfoUrl = 'https://api-seller.ozon.ru/v3/product/info/list'
         const logPr = "Sending request to Ozon: " + existingProductInfoUrl + " => " + JSON.stringify(existingProductInfoReq)
         logger.info(logPr)
         if (channel.config.debug) context.log += logPr+'\n'
@@ -1085,7 +1085,8 @@ export class OzonChannelHandler extends ChannelHandler {
             logger.error(msg)
             return null
         }
-        return await existingProductInfoRes.json()
+        const json = await existingProductInfoRes.json()
+        return json.items.length > 0 ? json.items[0] : null
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext, product: any, attrs: ChannelAttribute[], categoryConfig: any, language: string) {
