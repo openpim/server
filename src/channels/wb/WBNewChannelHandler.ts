@@ -145,7 +145,6 @@ export class WBNewChannelHandler extends ChannelHandler {
     async syncItems(channel: Channel, items: Item[], context: JobContext, singleSync: boolean, language: string, processedItems: string[]) {
         if (singleSync) {
             const item = items[0]
-            if (processedItems.includes(item.identifier)) return
             context.log += 'Обрабатывается товар c идентификатором: [' + item.identifier + ']\n'
             
             if (item.channels[channel.identifier]) {
@@ -264,7 +263,6 @@ export class WBNewChannelHandler extends ChannelHandler {
 
         for (const card of json.cards) {
             const item = items.find(elem => elem.values[channel.config.wbCodeAttr] == card.vendorCode)
-            if (item && processedItems.includes(item.identifier)) continue
             if (card.imtID) {
                 msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}, vendorCode: ${card.vendorCode}\n`
                 if (channel.config.debug) context.log += msg
@@ -289,19 +287,21 @@ export class WBNewChannelHandler extends ChannelHandler {
                         logger.info(msg)
                         continue
                     }
-                    let status = 2
-                    // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
-                    if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) status = 1
-                    if (item.channels[channel.identifier].status != status) {
-                        item.channels[channel.identifier].status = status
-                        item.channels[channel.identifier].wbError = false
-                        item.channels[channel.identifier].message = ""
-                        item.channels[channel.identifier].syncedAt = Date.now()
-                        item.changed('channels', true)
+                    if (!processedItems.includes(item.identifier)) {
+                        let status = 2
+                        // if item was created first time (imtIDAttr is empty) send it agin to WB to send images (images can be assigned only to existing items)
+                        if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) status = 1
+                        if (item.channels[channel.identifier].status != status) {
+                            item.channels[channel.identifier].status = status
+                            item.channels[channel.identifier].wbError = false
+                            item.channels[channel.identifier].message = ""
+                            item.channels[channel.identifier].syncedAt = Date.now()
+                            item.changed('channels', true)
+                        }
+                        msg = `Результат синхронизации: ${JSON.stringify(item.channels[channel.identifier])}\n`
+                        if (channel.config.debug) context.log += msg
+                        logger.info(msg)
                     }
-                    msg = `Результат синхронизации: ${JSON.stringify(item.channels[channel.identifier])}\n`
-                    if (channel.config.debug) context.log += msg
-                    logger.info(msg)
                     
                     let changed = false
                     if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) {
