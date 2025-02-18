@@ -18,6 +18,7 @@ import procResolvers from './processes'
 import tempResolvers from './templates'
 import authResolvers from './auth'
 import reloadResolvers from './reload'
+import mediaResolvers from './media'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
 import LanguageDependentString from './utils/languageDependentString'
 import { GraphQLDateTime } from 'graphql-iso-date'
@@ -106,7 +107,8 @@ export default {
         ...procResolvers.Query,
         ...tempResolvers.Query,
         ...authResolvers.Query,
-        ...reloadResolvers.Query
+        ...reloadResolvers.Query,
+        ...mediaResolvers.Query
     },
     Mutation: {
         ...resolver.Mutation,

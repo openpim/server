@@ -1,4 +1,4 @@
 type Query {
   auth(id: ID!, uri: String!): String
-  callback(id: ID!, uri: String!, rederectURI: String!): LoginResponse!
+  callback(id: ID!, uri: String!, redirectURI: String!): LoginResponse!
 }

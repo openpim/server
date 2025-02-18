@@ -1,0 +1,24 @@
+type Query {
+  getFonts: FontsResponse
+  getImages: ImagesResponse
+}
+
+type FontsResponse {
+  count: Int!
+  rows: [Font!]!
+}
+
+type ImagesResponse {
+  count: Int!
+  rows: [Image!]!
+}
+
+type Font {
+  name: String!
+  url: String!
+}
+
+type Image {
+  name: String!
+  url: String!
+}

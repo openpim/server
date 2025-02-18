@@ -14,6 +14,7 @@ import Q from 'q'
 import helpers from 'handlebars-helpers'
 import { replaceOperations } from './resolvers/utils'
 import { Op } from 'sequelize'
+import { JSDOM } from "jsdom"
 
 const handlebarsHelpers = helpers()
 
@@ -66,7 +67,8 @@ export async function generateTemplate(context: Context, request: Request, respo
 
             while ((match = regex.exec(template.templateRichtext.trim())) !== null) {
                 const attrString = match[1]
-                const value = match[2]
+                const rawValue = match[2].trim()
+                const value = rawValue.replace(/<[^>]+>/g, "")
 
                 const attributes: { [key: string]: string } = {
                     identifier: "",
@@ -74,7 +76,8 @@ export async function generateTemplate(context: Context, request: Request, respo
                     relidentifier: "",
                     order: "",
                     mapping: "",
-                    value
+                    value,
+                    rawValue
                 }
 
                 attrString.replace(/(\w+)="([^"]*)"/g, (_, key, val) => {
@@ -162,7 +165,25 @@ export async function generateTemplate(context: Context, request: Request, respo
                             }
                         }
 
-                        return replacement ?? match
+                        const replaceInnerText = (htmlString: string, newText: string): string => {
+                            const dom = new JSDOM(htmlString)
+                            const doc = dom.window.document.body
+
+                            const replaceTextNodes = (node: ChildNode) => {
+                                node.childNodes.forEach((child: any) => {
+                                    if (child.nodeType === doc.TEXT_NODE) {
+                                        child.nodeValue = newText
+                                    } else {
+                                        replaceTextNodes(child)
+                                    }
+                                })
+                            }
+
+                            replaceTextNodes(doc)
+                            return doc.innerHTML
+                        }
+
+                        return replaceInnerText(value, replacement)
                     }
                 })
 
@@ -172,7 +193,47 @@ export async function generateTemplate(context: Context, request: Request, respo
                 return template.templateRichtext.replace(regex, () => replacedValues[index++])
             }
 
-            const updatedRichtextResult = await updatedRichtext()
+            let updatedRichtextResult = await updatedRichtext()
+
+            const generateFontFaceCSS = (htmlContent: string) => {
+                const fontRegex = /font-family:\s*['"]?([\w\s-]+)['"]?/gi
+                const foundFonts = new Set<string>()
+
+                htmlContent.replace(fontRegex, (_, font) => {
+                    if (!font.toLowerCase().includes("sans-serif") && !font.toLowerCase().includes("arial")) {
+                        foundFonts.add(font.trim())
+                    }
+                    return ''
+                })
+
+                function getFontFormat (filename: any) {
+                    const ext = filename.split('.').pop().toLowerCase()
+                    switch (ext) {
+                        case 'ttf': return 'truetype'
+                        case 'otf': return 'opentype'
+                        case 'woff': return 'woff'
+                        case 'woff2': return 'woff2'
+                        default: return 'truetype'
+                    }
+                }
+
+                const fontFaceCSS = Array.from(foundFonts).map(font => `
+                    @font-face {
+                        font-family: '${font}';
+                        src: url('/static/fonts/${font}.ttf') format('${getFontFormat(font)}');
+                        font-weight: normal;
+                        font-style: normal;
+                    }`).join('\n')
+                return `<style>
+                ${fontFaceCSS}
+                body {
+                    margin: 0
+                }
+                </style>`
+            }
+
+            const fontStyles = generateFontFaceCSS(updatedRichtextResult)
+            updatedRichtextResult = updatedRichtextResult + '\n' + fontStyles
 
             response.setHeader("Content-Type", "text/html")
             response.status(200).send(updatedRichtextResult)
@@ -216,7 +277,6 @@ export async function generateTemplate(context: Context, request: Request, respo
             response.status(200).send(html)
             return
         }
-
     } catch (error) {
         logger.error('Error generating template', error)
         response.status(500).send('Internal Server Error')

@@ -26,7 +26,7 @@ export default {
             });
             return authorizationUrl
         },
-        callback: async (parent: any, { id, uri, rederectURI }: any, context: Context) => {
+        callback: async (parent: any, { id, uri, redirectURI }: any, context: Context) => {
             const serverConfig = ModelManager.getServerConfig().auth.find((obj: { id: any }) => obj.id === id)
             const issuer = await Issuer.discover(serverConfig.IssuerURL)
 
@@ -36,19 +36,32 @@ export default {
                 redirect_uris: [uri + '/openid'],
                 response_types: ['code']
             })
-            const params  = client.callbackParams(uri)
+            const params = client.callbackParams(uri)
             params.client_id = serverConfig.CLIENT_ID
             params.client_secret = serverConfig.CLIENT_SECRET
-            params.grant_type = 'authorization_code';
-            const tokenSet = await client.callback(rederectURI, params)
+            params.grant_type = 'authorization_code'
+
+            const tokenSet = await client.callback(redirectURI, params)
             const userinfo = await client.userinfo(tokenSet)
-            let user = await User.findOne({
-                where: { login: userinfo.email }
-            })
+            logger.debug(`tokenSet - ${JSON.stringify(tokenSet)}`)
+            logger.debug(`userinfo - ${JSON.stringify(userinfo)}`)
+
+            let user = await User.findOne({ where: { login: userinfo.email } })
+
+            const mng = ModelsManager.getInstance().getModelManager(serverConfig.tenantId)
+
+            const resolveUserRoles = () => (Array.isArray(userinfo.group) ? userinfo.group : [])
+                .map((role: string) =>
+                    mng.getRoles().find((elem: any) =>
+                        elem.options.some((opt: any) => opt.name === 'openid' && opt.value === role)
+                    )
+                )
+                .filter((role): role is any => role !== undefined)
+
             if (!user) {
                 // create external user on the fly
                 user = await sequelize.transaction(async (t) => {
-                    const user = await User.create({
+                    const newUser = await User.create({
                         tenantId: serverConfig.tenantId,
                         createdBy: 'system',
                         updatedBy: '',
@@ -59,27 +72,34 @@ export default {
                         roles: serverConfig.roles,
                         props: {},
                         options: []
-                        }, {transaction: t});
-                    return user
+                    }, { transaction: t })
+                    return newUser
                 })
-                const mng = ModelsManager.getInstance().getModelManager(serverConfig.tenantId)
-                const userRoles : any = serverConfig.roles.map((id:number) =>  mng.getRoles().find(elem => elem.id === id))
-                mng.getUsers().push(new UserWrapper(user, userRoles))
+
+                if (serverConfig.rolesMapping) {
+                    const userRoles = resolveUserRoles()
+                    mng.getUsers().push(new UserWrapper(user, userRoles))
+                }
+            } else {
+                if (serverConfig.rolesMapping) {
+                    const userRoles = resolveUserRoles()
+                    mng.getUsers().push(new UserWrapper(user, userRoles))
+                }
             }
-            const tst = user.options.find((elem:any) => elem.name === 'expiresIn')
+
+            const tst = user.options.find((elem: any) => elem.name === 'expiresIn')
             const expiresIn = tst ? tst.value : '1d'
             const token = await jwt.sign({
-                id: user.id, 
-                tenantId: user.tenantId, 
-                login: user.login }, 
-                <string>process.env.SECRET, { expiresIn: expiresIn }
-            );            
-
+                id: user.id,
+                tenantId: user.tenantId,
+                login: user.login
+            }, <string>process.env.SECRET, { expiresIn });
+            
             (<any>user).internalId = user.id
 
             logger.info("User " + userinfo.email + " was logged on.")
 
-            return {token, user, auditEnabled: audit.auditEnabled(), locale: serverConfig.locale}
+            return { token, user, auditEnabled: audit.auditEnabled(), locale: serverConfig.locale }
         },
     }
 }
