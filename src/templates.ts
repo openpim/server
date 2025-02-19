@@ -206,21 +206,13 @@ export async function generateTemplate(context: Context, request: Request, respo
                     return ''
                 })
 
-                function getFontFormat (filename: any) {
-                    const ext = filename.split('.').pop().toLowerCase()
-                    switch (ext) {
-                        case 'ttf': return 'truetype'
-                        case 'otf': return 'opentype'
-                        case 'woff': return 'woff'
-                        case 'woff2': return 'woff2'
-                        default: return 'truetype'
-                    }
-                }
-
                 const fontFaceCSS = Array.from(foundFonts).map(font => `
                     @font-face {
                         font-family: '${font}';
-                        src: url('/static/fonts/${font}.ttf') format('${getFontFormat(font)}');
+                        src: url('/static/fonts/${font}.woff2') format('woff2'),
+                             url('/static/fonts/${font}.woff') format('woff'),
+                             url('/static/fonts/${font}.ttf') format('truetype'),
+                             url('/static/fonts/${font}.otf') format('opentype');
                         font-weight: normal;
                         font-style: normal;
                     }`).join('\n')
