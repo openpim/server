@@ -12,18 +12,27 @@ export default {
     Query: {
         auth: async (parent: any, { id, uri }: any, context: Context) => {
             const serverConfig = ModelManager.getServerConfig().auth.find((obj: { id: any }) => obj.id === id)
+
+            if (!serverConfig || !serverConfig.IssuerURL) {
+                throw new Error("IssuerURL is missing in serverConfig")
+            }
+            logger.debug(`Connecting to OpenID at: ${serverConfig.IssuerURL}`)
+
             const issuer = await Issuer.discover(serverConfig.IssuerURL)
+            logger.debug(`Discovered issuer: ${issuer.metadata}`)
 
             const client: Client = new issuer.Client({
                 client_id: serverConfig.CLIENT_ID,
                 client_secret: serverConfig.CLIENT_SECRET,
                 redirect_uris: [uri + '/openid.html'],
                 response_types: ['code']
-            });
+            })
 
             const authorizationUrl = client.authorizationUrl({
                 scope: 'openid profile email'
-            });
+            })
+            logger.debug("Authorization URL:", authorizationUrl)
+
             return authorizationUrl
         },
         callback: async (parent: any, { id, uri, redirectURI }: any, context: Context) => {
