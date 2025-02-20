@@ -115,6 +115,7 @@ export class ModelManager {
             } else {
                 this.serverConfig = {}
             }
+            if (process.env.OPENPIM_TITLE) this.serverConfig.title = process.env.OPENPIM_TITLE
         }
         return this.serverConfig
     }

@@ -1,4 +1,5 @@
 {
+    "title": "OpenPim instance title",
     "trimSearch": true,
     "caseInsensitiveLogin": true,
     "wbRequestDelay": 700
