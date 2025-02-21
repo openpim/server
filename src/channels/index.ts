@@ -9,6 +9,7 @@ import { ExtChannelHandler } from "./ext/ExtChannelHandler"
 import { WBNewChannelHandler } from "./wb/WBNewChannelHandler"
 import { OzonChannelHandler } from "./ozon/OzonChannelHandler"
 import { YMChannelHandler } from "./ym/YMChannelHandler"
+import { YandexChannelHandler } from "./yandex/YandexChannelHandler"
 import Context from "../context"
 
 export class ChannelsManager {
@@ -187,12 +188,14 @@ export class ChannelsManager {
     private wbNewChannelHandler = new WBNewChannelHandler()
     private ozonChannelHandler = new OzonChannelHandler()
     private ymChannelHandler = new YMChannelHandler()
+    private yandexChannelHandler = new YandexChannelHandler()
     public getHandler(channel: Channel): ChannelHandler {
         if (channel.type === 1 || channel.type === 5 || channel.type === 6 || channel.type === 7 || channel.type === 8) return this.extChannelHandler
         // if (channel.type === 2) return this.wbChannelHandler
         if (channel.type === 2) return this.wbNewChannelHandler
         if (channel.type === 3) return this.ozonChannelHandler
         if (channel.type === 4) return this.ymChannelHandler
+        if (channel.type === 9) return this.yandexChannelHandler
         throw new Error('Failed to find handler for channel type: ' + channel.type)
     }
 }
