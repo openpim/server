@@ -69,7 +69,8 @@ export default {
             if (!user) {
                 // create external user on the fly
                 const userRoles = serverConfig.rolesMapping ? resolveUserRoles() : serverConfig.roles.map((roleId: number) => mng!.getRoles().find(elem => elem.id === roleId))
-                logger.debug(`userRoles - ${JSON.stringify(userRoles)}`)
+                const rolesId = userRoles.map((role: any) => role.id)
+                logger.debug(`userRoles - ${JSON.stringify(rolesId)}`)
                 user = await sequelize.transaction(async t => {
                     return User.create({
                         tenantId: serverConfig.tenantId,
@@ -79,7 +80,7 @@ export default {
                         name: userinfo.name,
                         password: '#external#',
                         email: userinfo.email,
-                        roles: userRoles.map((role: any) => role.id) || [],
+                        roles: rolesId || [],
                         props: {},
                         options: []
                     }, { transaction: t })
@@ -88,22 +89,15 @@ export default {
                 mng.getUsers().push(new UserWrapper(user, userRoles))
             } else if (serverConfig.rolesMapping) {
                 const userRoles = resolveUserRoles()
-                logger.debug(`userRoles - ${JSON.stringify(userRoles)}`)
-                user = await sequelize.transaction(async t => {
-                    await User.update(
-                        {
-                            name: userinfo.name,
-                            email: userinfo.email,
-                            roles: userRoles.map((role: any) => role.id) || []
-                        },
-                        { where: { email: userinfo.email }, transaction: t }
-                    )
+                const rolesId = userRoles.map((role: any) => role.id)
+                if (JSON.stringify(rolesId) !== JSON.stringify(user.roles)) {
+                    logger.debug(`update userRoles - ${JSON.stringify(rolesId)}`)
+                    user.roles = rolesId
+                    await user.save()
 
-                    const updatedUser = await User.findOne({ where: { email: userinfo.email }, transaction: t })
-
-                    return updatedUser
-                })
-                if (user) mng.getUsers().push(new UserWrapper(user, userRoles))
+                    const wrapper  = mng.getUsers().find(usr => usr.getUser().id === user!.id)
+                    wrapper!.getUser().roles = rolesId
+                }
             }
 
             logger.debug(`mng.getUsers() - ${JSON.stringify(mng.getUsers())}`)
