@@ -1012,6 +1012,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 context.log += msg                      
                 this.reportError(channel, item, msg)
                 logger.error(msg)
+                item.channels[channel.identifier].ozonError = true
                 return
             } else {    
                 const json2 = await res2.json()
@@ -1033,6 +1034,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     if (errors && errors.length > 0) {
                         data.status = 3
                         data.message = 'Ошибки: ' + JSON.stringify(errors)
+                        data.ozonError = true
                     }
                     data.syncedAt = Date.now()
                     item.changed('channels', true)
@@ -1045,6 +1047,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 } else if (status === 'failed') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана с ошибкой.\n'
                     data.status = 3
+                    data.ozonError = true
                     data.message = errors && errors.length > 0? 'Ошибки:'+JSON.stringify(errors) :''
                     item.changed('channels', true)            
                 } else {
