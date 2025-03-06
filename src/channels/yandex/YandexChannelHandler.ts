@@ -613,6 +613,11 @@ export class YandexChannelHandler extends ChannelHandler {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Api-Key': channel.config.apiToken }
             })
+            if (!res.ok) {
+                const text = await res.text()
+                logger.error(`Failed to receive attributes - ${text}`)
+                return []
+            }
             const json = await res.json()
             data = Object.values(json.result.parameters).map((param: any) => {
                 const dataType: keyof typeof YMDataTypes = param.type
@@ -642,6 +647,7 @@ export class YandexChannelHandler extends ChannelHandler {
                     dictionaryLink: param.type === 'ENUM' ? `https://api.partner.market.yandex.ru/category/${categoryId}/parameters` : null
                 }
             })
+            this.cache.set('attr_' + categoryId, data, 3600)
         }
         return <ChannelAttribute[]>data
     }
