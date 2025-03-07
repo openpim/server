@@ -479,6 +479,9 @@ export class WBNewChannelHandler extends ChannelHandler {
         const heightConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#height')
         const height = await this.getValueByMapping(channel, heightConfig, item, language)
 
+        const weightBruttoConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#weightBrutto')
+        const weightBrutto = await this.getValueByMapping(channel, weightBruttoConfig, item, language)
+
         const serverConfig = ModelManager.getServerConfig()
 
         const nmID = item.values[channel.config.nmIDAttr]
@@ -493,7 +496,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         }
 
         // request to WB
-        let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
+        let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0, weightBrutto: weightBrutto || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
 
         if (nmID) {
             const existUrl = 'https://content-api.wildberries.ru/content/v2/get/cards/list'
@@ -533,6 +536,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 request.dimensions.length = length || 0
                 request.dimensions.width = width || 0
                 request.dimensions.height = height || 0
+                request.dimensions.weightBrutto = weightBrutto || 0
                 request.sizes[0].skus = barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []
             }
 
