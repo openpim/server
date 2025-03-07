@@ -385,14 +385,14 @@ export class YandexChannelHandler extends ChannelHandler {
                             if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
                             const yandexValue = await this.generateValue(channel, yandexCategoryId, yandexAttrId, attr, elem)
                             if (!yandexValue) {
-                                const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + yandexAttrId + '/' + yandexCategoryId + '/)'
+                                const msg = 'Значение из массива "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + yandexAttrId + '/' + yandexCategoryId + '/)'
                                 context.log += msg
                                 this.reportError(channel, item, msg)
                                 return
                             };
                             if (attr.dictionary) {
                                 data.valueId = yandexValue
-                                data.value = value + ''
+                                data.value = elem + ''
                             } else {
                                 data.value = yandexValue
                             }
