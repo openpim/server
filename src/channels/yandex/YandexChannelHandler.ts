@@ -10,6 +10,7 @@ import { ItemRelation } from '../../models/itemRelations'
 import Context from '../../context'
 import { processItemActions } from '../../resolvers/utils'
 import { EventType } from '../../models/actions'
+import { ModelManager } from '../../models/manager'
 
 interface JobContext {
     log: string
@@ -34,22 +35,23 @@ interface UpdateOfferDTO {
     cofinancePrice?: any,
     commodityCodes?: any[],
     condition?: any,
-    description: string,
+    description?: string,
     downloadable?: boolean,
     firstVideoAsCover?: boolean,
     guaranteePeriod?: any,
     lifeTime?: any,
     manuals?: any,
     manufacturerCountries?: string[],
-    marketCategoryId: number,
+    marketCategoryId?: number,
     name?: string,
-    parameterValues: ParameterValueDTO[],
-    pictures: string[],
+    deleteParameters?: string[],
+    parameterValues?: ParameterValueDTO[],
+    pictures?: string[],
     purchasePrice?: any,
     shelfLife?: any,
     tags?: string[],
     type?: any,
-    vendor: string,
+    vendor?: string,
     vendorCode?: string,
     videos?: string[],
     weightDimensions?: any
@@ -397,11 +399,11 @@ export class YandexChannelHandler extends ChannelHandler {
                                 data.value = yandexValue
                             }
                             // В YM we need to add several parameters in case of multivalue
-                            offer.parameterValues.push(data)
+                            offer.parameterValues!.push(data)
                         }
                     } else if (typeof value === 'object') {
                         const data: ParameterValueDTO = { parameterId: yandexAttrId, value }
-                        offer.parameterValues.push(data)
+                        offer.parameterValues!.push(data)
                     } else {
                         const yandexValue = await this.generateValue(channel, yandexCategoryId, yandexAttrId, attr, value)
                         if (!yandexValue) {
@@ -417,7 +419,7 @@ export class YandexChannelHandler extends ChannelHandler {
                         } else {
                             data.value = yandexValue
                         }
-                        offer.parameterValues.push(data)
+                        offer.parameterValues!.push(data)
                     }
                 } else if (attr.required) {
                     const msg = 'Нет значения для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
@@ -437,6 +439,43 @@ export class YandexChannelHandler extends ChannelHandler {
         const businessId = channel.config.businessId
         const url = `https://api.partner.market.yandex.ru/businesses/${businessId}/offer-mappings/update`
 
+        const serverConfig = ModelManager.getServerConfig()
+
+        const sku = item.values[channel.config.marketSkuAttr]
+        if(sku) {
+            const deleteParamsOffer: UpdateOfferDTO = { 
+                offerId,
+                deleteParameters: ['PARAMETERS']
+            }
+            const deleteParamsRequest: any = { offerMappings: [{offer:deleteParamsOffer}] }
+            const log = "Sending request to yandex: " + url + " => " + JSON.stringify(deleteParamsRequest)
+
+            logger.info(log)
+            if (channel.config.debug) context.log += log + '\n'
+    
+            if (process.env.OPENPIM_YANDEX_EMULATION === 'true') {
+                const msg = 'Включена эмуляция работы, сообщение не было послано на Yandex Market'
+                if (channel.config.debug) context.log += msg + '\n'
+            } else {
+                const res = await fetch(url, {
+                    method: 'post',
+                    body: JSON.stringify(deleteParamsRequest),
+                    headers: { 'Api-Key': channel.config.apiToken }
+                })
+                logger.info("Response status from Yandex market: " + res.status)
+                if (res.status !== 200) {
+                    const text = await res.text()
+                    const msg = 'Ошибка запроса на yandex: ' + res.statusText + "   " + text
+                    context.log += msg
+                    this.reportError(channel, item, msg)
+                    logger.error(msg)
+                    return
+                }       
+                await this.sleep(5000)
+            }     
+        }
+
+        if (serverConfig.ymRequestDelay) await this.sleep(serverConfig.ymRequestDelay)
         const log = "Sending request to yandex: " + url + " => " + JSON.stringify(request)
         logger.info(log)
         if (channel.config.debug) context.log += log + '\n'
@@ -572,6 +611,7 @@ export class YandexChannelHandler extends ChannelHandler {
          NO_CARD_ADD_TO_CAMPAIGN - Разместите товар в магазине.
         */
         const status = result.cardStatus
+        delete result.parameterValues
         if (status === 'HAS_CARD_CAN_UPDATE_ERRORS' || status === 'NO_CARD_ERRORS' || status === 'NO_CARD_NEED_CONTENT') {
             item.channels[channel.identifier].status = 3
             item.channels[channel.identifier].message = JSON.stringify(result)
