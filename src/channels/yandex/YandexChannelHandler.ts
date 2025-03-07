@@ -657,16 +657,20 @@ export class YandexChannelHandler extends ChannelHandler {
         const attr = attrs.find(elem => elem.id === attributeId)
         const paramId = attributeId.substring(11)
         if (attr && attr.dictionaryLinkPost) {
-            const resp = await fetch(attr.dictionaryLink!, {
-                method: 'POST',
-                headers: attr.dictionaryLinkPost.headers,
-                body: JSON.stringify(attr.dictionaryLinkPost.body)
-            })
-            const json = await resp.json()
-            const params = json.result?.parameters || []
-            const param = params.find((el: any) => el.id === parseInt(paramId, 10))
-            const result = {
-                values: param?.values || []
+            let result = this.cache.get('val_' + categoryId + '_' + attributeId)
+            if (!result) {
+                const resp = await fetch(attr.dictionaryLink!, {
+                    method: 'POST',
+                    headers: attr.dictionaryLinkPost.headers,
+                    body: JSON.stringify(attr.dictionaryLinkPost.body)
+                })
+                const json = await resp.json()
+                const params = json.result?.parameters || []
+                const param = params.find((el: any) => el.id === parseInt(paramId, 10))
+                result = {
+                    values: param?.values || []
+                }
+                this.cache.set('val_' + categoryId + '_' + attributeId, result, 3600)
             }
             return result
         }
