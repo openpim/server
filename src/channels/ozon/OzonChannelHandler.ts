@@ -555,15 +555,6 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }*/
 
-        const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
-        const price = await this.getValueByMapping(channel, priceConfig, item, language)
-        if (!price) {
-            const msg = 'Не введена конфигурация или нет данных для "Цены" для категории: ' + categoryConfig.name
-            context.log += msg
-            this.reportError(channel, item, msg)
-            return
-        }
-
         const depthConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#depth')
         const depth = await this.getValueByMapping(channel, depthConfig, item, language)
         if (!depth) {
@@ -625,7 +616,6 @@ export class OzonChannelHandler extends ChannelHandler {
         }
         product.offer_id = ''+productCode
         if(barcode) product.barcode = ''+barcode
-        product.price = ''+price
         product.weight = weight
         product.weight_unit = 'g'
         product.depth = depth
@@ -634,6 +624,17 @@ export class OzonChannelHandler extends ChannelHandler {
         product.dimension_unit = 'mm'
         product.vat = ''+vat
         product.name = name
+
+        const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
+        const price = await this.getValueByMapping(channel, priceConfig, item, language)
+        if (price) product.price = ''+price
+        /*if (!price) {
+            const msg = 'Не введена конфигурация или нет данных для "Цены" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }*/
+
 
         const priceOldConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#oldprice')
         const priceOld = await this.getValueByMapping(channel, priceOldConfig, item, language)
