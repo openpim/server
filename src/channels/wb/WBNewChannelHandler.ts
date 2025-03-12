@@ -487,16 +487,17 @@ export class WBNewChannelHandler extends ChannelHandler {
         const nmID = item.values[channel.config.nmIDAttr]
         const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
         const price = await this.getValueByMapping(channel, priceConfig, item, language)
-        if (!nmID && !price) { 
+        /*if (!nmID && !price) { 
             // price is necessary only for creation
             const msg = 'Не введена конфигурация для "Цены" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
-        }
+        }*/
 
         // request to WB
-        let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0, weightBrutto: weightBrutto || 0 }, characteristics: [], sizes: [{ wbSize: "", price: price, skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
+        let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0, weightBrutto: weightBrutto || 0 }, characteristics: [], sizes: [{ wbSize: "", skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
+        if (price) request.sizes[0].price = price
 
         if (nmID) {
             const existUrl = 'https://content-api.wildberries.ru/content/v2/get/cards/list'
