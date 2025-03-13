@@ -879,20 +879,22 @@ export class OzonChannelHandler extends ChannelHandler {
 
                 if (!existingPricesJson) return
 
+                if (existingPricesJson.price) product.price = existingPricesJson.price
                 const priceAttr = priceConfig.attrIdent
-                if (priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.price)) {
-                    if (channel.config.savePriceUpdate) changedValues[priceAttr] = parseFloat(existingPricesJson.price)
-                    product.price = existingPricesJson.price
+                if (channel.config.savePriceUpdate && priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.price)) {
+                    changedValues[priceAttr] = parseFloat(existingPricesJson.price)
                 }
+
+                if (existingPricesJson.old_price) product.old_price = existingPricesJson.old_price
                 const priceOldAttr = priceOldConfig?.attrIdent
-                if (priceOldAttr && existingPricesJson.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.old_price)) {
-                    if (channel.config.savePriceUpdate) changedValues[priceOldAttr] = parseFloat(existingPricesJson.old_price)
-                    product.old_price = existingPricesJson.old_price
+                if (channel.config.savePriceUpdate && priceOldAttr && existingPricesJson.old_price && item.values[priceOldAttr] != parseFloat(existingPricesJson.old_price)) {
+                    changedValues[priceOldAttr] = parseFloat(existingPricesJson.old_price)
                 }
+
+                if (existingPricesJson.premium_price) product.premium_price = existingPricesJson.premium_price
                 const pricePremAttr = pricePremConfig?.attrIdent
-                if (pricePremAttr && existingPricesJson.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.premium_price)) {
-                    if (channel.config.savePriceUpdate) changedValues[pricePremAttr] = parseFloat(existingPricesJson.premium_price)
-                    product.premium_price = existingPricesJson.premium_price
+                if (channel.config.savePriceUpdate && pricePremAttr && existingPricesJson.premium_price && item.values[pricePremAttr] != parseFloat(existingPricesJson.premium_price)) {
+                    changedValues[pricePremAttr] = parseFloat(existingPricesJson.premium_price)
                 }
             }
 
