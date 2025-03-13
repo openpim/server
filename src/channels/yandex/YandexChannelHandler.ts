@@ -270,10 +270,18 @@ export class YandexChannelHandler extends ChannelHandler {
         if (attr.dictionary) {
             const yandexValues = await this.getChannelAttributeValues(channel, yandexCategoryId + '', "yandexattr_" + yandexAttrId)
             if (!yandexValues.values || !yandexValues.values.length) return null
-            const tst = yandexValues.values.find((el: any)  => el.value === value)
-            return tst?.id
+            const tst = yandexValues.values.find((el: any)  => el.value === value || el.id == value)
+            if (!tst) {
+                if (!attr.allowCustomValues) return null
+                else {
+                    logger.debug(`Failed to find dictionary value: ${value} for category id: ${yandexCategoryId} for attribute id: ${yandexAttrId}, will provide custom value`)
+                    return { valueId: null, value: value }
+                }
+            } else {
+                return { valueId: tst.id, value: tst.value }
+            }
         } else {
-            return value
+            return { valueId: null, value: value }
         }
      }
 
@@ -393,10 +401,10 @@ export class YandexChannelHandler extends ChannelHandler {
                                 return
                             };
                             if (attr.dictionary) {
-                                data.valueId = yandexValue
-                                data.value = elem + ''
+                                if (yandexValue.valueId) data.valueId = yandexValue.valueId
+                                data.value = yandexValue.value
                             } else {
-                                data.value = yandexValue
+                                data.value = yandexValue.value
                             }
                             // В YM we need to add several parameters in case of multivalue
                             offer.parameterValues!.push(data)
@@ -414,10 +422,10 @@ export class YandexChannelHandler extends ChannelHandler {
                         }
                         const data: ParameterValueDTO = { parameterId: yandexAttrId };
                         if (attr.dictionary) {
-                            data.valueId = yandexValue
-                            data.value = value + ''
+                            if (yandexValue.valueId) data.valueId = yandexValue.valueId
+                            data.value = yandexValue.value
                         } else {
-                            data.value = yandexValue
+                            data.value = yandexValue.value
                         }
                         offer.parameterValues!.push(data)
                     }
@@ -670,6 +678,7 @@ export class YandexChannelHandler extends ChannelHandler {
                     name: param.name + (defaultUnit ? ', ' + defaultUnit.name : '') + (YMDataTypes[dataType] !== YMDataTypes.ENUM ? ' (' + YMDataTypes[dataType] + ')' : ''),
                     category: categoryId,
                     required: param.required,
+                    allowCustomValues: param.allowCustomValues,
                     dictionary: param.type === 'ENUM',
                     dictionaryLinkPost: param.type === 'ENUM' ? {
                         body: {
