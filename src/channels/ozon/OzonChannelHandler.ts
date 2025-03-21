@@ -155,6 +155,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }
 
             const tst = '' + item.values[channel.config.ozonIdAttr]
+            let skip = false
             if (tst.startsWith('task_id=')) {
                 // receive product id first
                 const taskId = tst.substring(8)
@@ -184,6 +185,15 @@ export class OzonChannelHandler extends ChannelHandler {
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                         item.changed('values', true)
+
+                        if (json2.result.items[0].errors && json2.result.items[0].errors.length > 0) {
+                            item.channels[channel.identifier].status = 3
+                            item.channels[channel.identifier].message = JSON.stringify(json2.result.items[0].errors)
+                            item.channels[channel.identifier].syncedAt = new Date().getTime()
+                            item.channels[channel.identifier].ozonError = true
+                            item.changed('channels', true)
+                            skip = true
+                        }
                     }
                 }
             }
@@ -191,38 +201,40 @@ export class OzonChannelHandler extends ChannelHandler {
             const tst2 = '' + item.values[channel.config.ozonIdAttr]
             if (tst2.startsWith('task_id=')) return
 
-            // try to find current status
-            const url = 'https://api-seller.ozon.ru/v3/product/info/list'
-            const request = {
-                "product_id": [item.values[channel.config.ozonIdAttr]]
-            }
-            const log = "Sending request Ozon: " + url + " => " + JSON.stringify(request)
-            logger.info(log)
-            if (channel.config.debug) context.log += log + '\n'
             let sku
-            const res = await fetch(url, {
-                method: 'post',
-                body: JSON.stringify(request),
-                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
-            if (res.status !== 200) {
-                const msg = 'Ошибка запроса на Ozon: ' + res.statusText
-                context.log += msg
-                return
-            } else {
-                const data = await res.json()
-                logger.info('   received data: ' + JSON.stringify(data))
-                if (data.items.length == 0) {
-                    context.log += '  ОШИБКА: НЕ НАЙДЕН товар на Озоне с product id ' + item.values[channel.config.ozonIdAttr] + ' \n'
+            if (!skip) {
+                // try to find current status
+                const url = 'https://api-seller.ozon.ru/v3/product/info/list'
+                const request = {
+                    "product_id": [item.values[channel.config.ozonIdAttr]]
+                }
+                const log = "Sending request Ozon: " + url + " => " + JSON.stringify(request)
+                logger.info(log)
+                if (channel.config.debug) context.log += log + '\n'
+                const res = await fetch(url, {
+                    method: 'post',
+                    body: JSON.stringify(request),
+                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+                })
+                if (res.status !== 200) {
+                    const msg = 'Ошибка запроса на Ozon: ' + res.statusText
+                    context.log += msg
                     return
-                }
-                const result = data.items[0]
-                if (result.sku) {
-                    sku = result.sku
                 } else {
-                    context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил sku (получение рейтинга недоступно) \n'
+                    const data = await res.json()
+                    logger.info('   received data: ' + JSON.stringify(data))
+                    if (data.items.length == 0) {
+                        context.log += '  ОШИБКА: НЕ НАЙДЕН товар на Озоне с product id ' + item.values[channel.config.ozonIdAttr] + ' \n'
+                        return
+                    }
+                    const result = data.items[0]
+                    if (result.sku) {
+                        sku = result.sku
+                    } else {
+                        context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил sku (получение рейтинга недоступно) \n'
+                    }
+                    this.processProductStatus(item, result, channel, context)
                 }
-                this.processProductStatus(item, result, channel, context)
             }
 
             await this.saveItemIfChanged(channel, item)
