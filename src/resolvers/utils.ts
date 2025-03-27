@@ -482,7 +482,9 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
             if (values[prop] && Array.isArray(values[prop])) {
                 relatedItemsIds = relatedItemsIds.concat(values[prop])
             } else if (values[prop]) {
-                relatedItemsIds.push(parseInt(values[prop]))
+                const tst = parseInt(values[prop])
+                if (isNaN(tst)) throw new Error(`Wrong value for item: ${item.identifier} for relation attribute: ${prop} => ${JSON.stringify(values[prop])}`)
+                relatedItemsIds.push(tst)
             }
         }
     }
