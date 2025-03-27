@@ -33,8 +33,6 @@ export default {
               existedActions.splice(actionIndex, 1)
               logger.debug(`Remote reload: action removed ${id}`)
             } else {
-              // there is now applyscope method in actons???
-              // const act = await Action.applyScope(context).findOne({ where: { id } })
               const act = await Action.applyScope(context).findOne({ where: { id } })
               if (act && actionIndex !== -1) {
                 existedActions[actionIndex] = act
@@ -66,7 +64,7 @@ export default {
             } else {
               const attr = await Attribute.applyScope(context).findOne({ where: { id } })
               if (existedAttr && attr) {
-                const attrIndex = existedGroup.getAttributes().findIndex(el => el.id === id)
+                const attrIndex = existedGroup.getAttributes().findIndex(el => el.id === parseInt(id))
                 existedGroup.getAttributes()[attrIndex] = attr
                 if (existedAttr.attr.type === 9) {
                   const idx = relAttributes.findIndex((attr) => { return attr.id === existedAttr.attr.id })
@@ -131,8 +129,6 @@ export default {
               existedDashboards.splice(dashboardIndex, 1)
               logger.debug(`Remote reload: dashboard removed ${id}`)
             } else {
-              // there is now applyscope method in dashboards???
-              // const act = await Action.applyScope(context).findOne({ where: { id } })
               const dashboard = await Dashboard.applyScope(context).findOne({ where: { id } })
               if (dashboard && dashboardIndex !== -1) {
                 existedDashboards[dashboardIndex] = dashboard
