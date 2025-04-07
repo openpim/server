@@ -344,6 +344,13 @@ export function checkValues(mng: ModelManager, values: any) {
     }
 }
 
+export async function convertLanguageDependent(attr: Attribute, lang : string){
+    const sql = `update items set values = values || cast(concat('{"${attr.identifier}":{"${lang}":', to_json(values ->> '${attr.identifier}') ,'}}') as jsonb)  where values ->> '${attr.identifier}' is not null`
+    logger.debug(`convertLanguageDependent: ${attr.identifier} -> ${lang}: ${sql}`)
+    const res = await sequelize.query(sql);
+    logger.info(`convertLanguageDependent result: ${JSON.stringify(res)}`)
+}
+
 export async function updateItemRelationAttributes(context: Context, mng: ModelManager, itemRelation: ItemRelation, del: Boolean, transaction: Transaction, skipActions: Boolean = false) {
     const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chanType => chanType === 2000)
     if (!isLicenceExists) {

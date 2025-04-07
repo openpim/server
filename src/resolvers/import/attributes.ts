@@ -7,7 +7,7 @@ import { Item } from "../../models/items"
 import { LOV } from "../../models/lovs"
 
 import logger from '../../logger'
-import { processAttributeActions } from "../utils"
+import { convertLanguageDependent, processAttributeActions } from "../utils"
 import { EventType } from "../../models/actions"
 
 /*
@@ -211,7 +211,13 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             await processAttributeActions(context, EventType.BeforeUpdate, data, true, changes)
 
             if (attr.name) data.name = attr.name
-            if (attr.languageDependent != null) data.languageDependent = attr.languageDependent
+            if (attr.languageDependent != null) {
+                if (!data.languageDependent && attr.languageDependent && process.env.OPENPIM_DEFAULT_LANGUAGE) {
+                    // attribute set as languageDependent and we have default language, we will convert current data to default language
+                    await convertLanguageDependent(data, process.env.OPENPIM_DEFAULT_LANGUAGE)
+                }
+                data.languageDependent = attr.languageDependent
+            }
             if (attr.order != null) data.order = attr.order
             if (attr.valid) data.valid = valid
             if (attr.visible) data.visible = visible

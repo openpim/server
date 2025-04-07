@@ -3,7 +3,7 @@ import { ModelManager, ModelsManager, AttrGroupWrapper } from '../models/manager
 import { AttrGroup, Attribute, GroupsAttributes } from '../models/attributes'
 import { sequelize } from '../models'
 import { QueryTypes } from 'sequelize'
-import { processAttrGroupActions, processAttributeActions, filterValuesNotAllowed, filterChannels } from './utils'
+import { processAttrGroupActions, processAttributeActions, filterValuesNotAllowed, filterChannels, convertLanguageDependent } from './utils'
 import { EventType } from '../models/actions'
 
 export default {
@@ -275,7 +275,13 @@ export default {
             if (visible) attr.visible = visible.map((elem: string) => parseInt(elem))
             if (relations) attr.relations = relations.map((elem: string) => parseInt(elem))
             if (order != null) attr.order = order
-            if (languageDependent != null) attr.languageDependent = languageDependent
+            if (languageDependent != null) {
+                if (!attr.languageDependent && languageDependent && process.env.OPENPIM_DEFAULT_LANGUAGE) {
+                    // attribute set as languageDependent and we have default language, we will convert current data to default language
+                    await convertLanguageDependent(attr, process.env.OPENPIM_DEFAULT_LANGUAGE)
+                }
+                attr.languageDependent = languageDependent
+            }
             if (type) attr.type = type
             if (pattern != null) attr.pattern = pattern
             if (errorMessage != null) attr.errorMessage = errorMessage

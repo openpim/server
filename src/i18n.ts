@@ -9,7 +9,7 @@ const i18nextInstance = i18next.createInstance();
 i18nextInstance
   .use(Backend)
   .init({
-    lng: process.env.LANGUAGE,
+    lng: process.env.OPENPIM_DEFAULT_LANGUAGE,
     backend: {
       loadPath: `${__dirname}/locales/{{lng}}.json`,
     },
