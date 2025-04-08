@@ -8,7 +8,7 @@ import logger from "../../logger"
 import { sequelize } from '../../models'
 import { ModelsManager } from '../../models/manager'
 import { Type } from '../../models/types'
-import { Op } from 'sequelize'
+import { Op, QueryTypes } from 'sequelize'
 import { ItemRelation } from '../../models/itemRelations'
 import Context from '../../context'
 import { processItemActions } from '../../resolvers/utils'
@@ -1131,7 +1131,7 @@ export class OzonChannelHandler extends ChannelHandler {
             const data:string[] = [] 
             if (type.mainImage && channel.config.imgRelations.includes(type.mainImage)) {
                 const images: Item[] = await sequelize.query(
-                    `SELECT a.*
+                    `SELECT a.*, ir.values->'_itemRelationOrder' as order
                         FROM "items" a, "itemRelations" ir, "types" t where 
                         a."tenantId"=:tenant and 
                         ir."itemId"=:itemId and
@@ -1143,8 +1143,8 @@ export class OzonChannelHandler extends ChannelHandler {
                         a."deletedAt" is null and
                         ir."relationId" = :relation
                         order by ir.values->'_itemRelationOrder', a.id`, {
-                    model: Item,
-                    mapToModel: true,                     
+                    raw: true,
+                    type: QueryTypes.SELECT,                     
                     replacements: { 
                         tenant: channel.tenantId,
                         itemId: item.id,
@@ -1152,6 +1152,11 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 })
                 if (images) {
+                    images.sort((a:any,b:any)=>{
+                        if (a.order && !b.order) return -1
+                        if (!a.order && b.order) return 1
+                        return a.order - b.order
+                    })
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
                         const url = image.values[channel.config.ozonImageAttr]
@@ -1169,7 +1174,7 @@ export class OzonChannelHandler extends ChannelHandler {
             const rels = channel.config.imgRelations.filter((elem:any) => elem !== type.mainImage)
             if (rels.length > 0) {
                 const images: Item[] = await sequelize.query(
-                    `SELECT a.*
+                    `SELECT a.*, ir.values->'_itemRelationOrder' as order
                         FROM "items" a, "itemRelations" ir, "types" t where 
                         a."tenantId"=:tenant and 
                         ir."itemId"=:itemId and
@@ -1181,8 +1186,8 @@ export class OzonChannelHandler extends ChannelHandler {
                         a."deletedAt" is null and
                         ir."relationId" in (:relations)
                         order by ir.values->'_itemRelationOrder', a.id`, {
-                    model: Item,
-                    mapToModel: true,                     
+                    raw: true,
+                    type: QueryTypes.SELECT,                     
                     replacements: { 
                         tenant: channel.tenantId,
                         itemId: item.id,
@@ -1190,6 +1195,11 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                 })
                 if (images) {
+                    images.sort((a:any,b:any)=>{
+                        if (a.order && !b.order) return -1
+                        if (!a.order && b.order) return 1
+                        return a.order - b.order
+                    })
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
                         const url = image.values[channel.config.ozonImageAttr]
