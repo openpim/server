@@ -834,7 +834,8 @@ export async function processBulkUpdateChannelsActions(context: Context, event: 
             ItemRelation
         }
     })
-    return { newChannels: channelsCopy, newWhere: whereCopy, result: ret }
+    const tst = ret.find(elem => elem.newWhere !== undefined && elem.newWhere !== null)
+    return { newChannels: channelsCopy, newWhere: tst?.newWhere || whereCopy, result: ret }
 }
 
 export async function testAction(context: Context, action: Action, item: Item) {
@@ -1024,7 +1025,7 @@ async function processActions(mng: ModelManager, actions: Action[], sandbox: any
 }
 
 async function processActionsWithLog(mng: ModelManager, actions: Action[], sandbox: any, console: any):
-    Promise<{ identifier: string, compileError?: string, message?: string, error?: string, data?: any, result?: any }[]> {
+    Promise<{ identifier: string, compileError?: string, message?: string, error?: string, data?: any, result?: any, newWhere?: any }[]> {
     const retArr = []
     if (actions.length > 0) {
         const vm = new VM({
@@ -1061,7 +1062,7 @@ async function processActionsWithLog(mng: ModelManager, actions: Action[], sandb
                         const ret = await funct()
                         if (ret) {
                             if (typeof ret === 'object') {
-                                retArr.push({ identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data, result: ret.result })
+                                retArr.push({ identifier: action.identifier, message: ret.message, error: ret.error, data: ret.data, result: ret.result, newWhere: ret.newWhere })
                             } else {
                                 retArr.push({ identifier: action.identifier, message: '' + ret })
                             }
