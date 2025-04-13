@@ -35,6 +35,9 @@ export class ModelManager {
     private users: UserWrapper[] = []
     private cache = new NodeCache({ useClones: false })
     private static serverConfig: any = null
+    private static relCustomFilterAssets: any = undefined
+    private static relCustomFilterMain: any = undefined
+    private static relCustomFilter: any = undefined
 
     public constructor(tenantId: string) { this.tenantId = tenantId }
 
@@ -118,6 +121,38 @@ export class ModelManager {
             if (process.env.OPENPIM_TITLE) this.serverConfig.title = process.env.OPENPIM_TITLE
         }
         return this.serverConfig
+    }
+
+    public static async getRelationsCustomFilterAssets() {
+        await ModelManager.loadRelationsCustomFilter()
+        return this.relCustomFilterAssets
+    }
+
+    public static async getRelationsCustomFilterMain() {
+        await ModelManager.loadRelationsCustomFilter()
+        return this.relCustomFilterMain
+    }
+
+    public static async getRelationsCustomFilter() {
+        await ModelManager.loadRelationsCustomFilter()
+        return this.relCustomFilter
+    }
+
+    public static async loadRelationsCustomFilter() {
+        if (this.relCustomFilter === undefined) {
+            const filesRoot = FileManager.getInstance().getFilesRoot()
+            const relCustomFilterPath = filesRoot + '/modules/relCustomFilter.js'
+            if (fs.existsSync(relCustomFilterPath)) {
+                const { filterAssets, filterMain, filterRels } = await import(relCustomFilterPath)
+                this.relCustomFilter = filterRels
+                this.relCustomFilterAssets = filterAssets
+                this.relCustomFilterMain = filterMain
+            } else {
+                this.relCustomFilter = null
+                this.relCustomFilterAssets = null
+                this.relCustomFilterMain = null
+            }
+        }
     }
 
     public async reloadModelRemotely(id: number, parentId: number | null, entity: string, del: boolean, xToken: string | null) {

@@ -202,7 +202,7 @@ export default {
 
                 const skipRelationIds = mng.getRelations().filter(rel => !context.canViewItemRelation(rel.id) || rel.options.some((option: any) => option.name === 'skipInAssets' && option.value === 'true')).map(rel => rel.id)
 
-                const data: any[] = await sequelize.query(
+                let data: any[] = await sequelize.query(
                     `SELECT a."id", a."typeId", a."name", a."identifier", ir."relationId", a."mimeType", a."fileOrigName",
                         r."name" as "relationName", r.id as "relationId"
                         FROM "items" a, "itemRelations" ir, "types" t, "relations" r where 
@@ -225,6 +225,8 @@ export default {
                     },
                     type: QueryTypes.SELECT
                 })
+                const customFilter:any = await ModelManager.getRelationsCustomFilterAssets()
+                if (customFilter) data = await customFilter(data, context)
                 const res = data.map(elem => {
                     return {
                         id: elem.id,
@@ -287,6 +289,9 @@ export default {
                     type: QueryTypes.SELECT
                 })
             }
+            const customFilter:any = await ModelManager.getRelationsCustomFilterMain()
+            if (customFilter) data = await customFilter(data, context)
+
             return data
         },
         getItemsForRelationAttributeImport: async (parent: any, { attrIdentifier, searchArr, langIdentifier, limit, offset, order }: any, context: Context) => {

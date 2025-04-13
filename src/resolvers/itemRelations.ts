@@ -2,7 +2,7 @@ import Context from '../context'
 import { sequelize } from '../models'
 import { Item } from '../models/items'
 import { ItemRelation, IItemRelation } from '../models/itemRelations'
-import { ModelsManager } from '../models/manager'
+import { ModelManager, ModelsManager } from '../models/manager'
 import { QueryTypes, literal } from 'sequelize'
 import { filterValues, mergeValues, checkValues, processItemRelationActions, updateItemRelationAttributes, diff, isObjectEmpty } from './utils'
 import { EventType } from '../models/actions'
@@ -21,7 +21,7 @@ export default {
                 relationId: relId,
                 ...where
             } 
-            const res = await ItemRelation.applyScope(context).findAndCountAll({
+            let res = await ItemRelation.applyScope(context).findAndCountAll({
                 where: whereClause,
                 order: [literal("values->'_itemRelationOrder'"), ['id', 'ASC']],
                 offset: offset,
@@ -29,6 +29,9 @@ export default {
             })
 
             if (res.count > 0) {
+                const customFilter:any = await ModelManager.getRelationsCustomFilter()
+                if (customFilter) res = await customFilter(res, context)
+
                 const itemsArr = res.rows.map(elem => elem.itemId)
                 const targetArr = res.rows.map(elem => elem.targetId)
                 const items = await Item.applyScope(context).findAll({ where: { id: itemsArr} })
@@ -57,7 +60,7 @@ export default {
                 relationId: relId,
                 ...where
             } 
-            const res = await ItemRelation.applyScope(context).findAndCountAll({
+            let res = await ItemRelation.applyScope(context).findAndCountAll({
                 where: whereClause,
                 order: [literal("values->'_itemRelationOrder'"),['id', 'ASC']],
                 offset: offset,
@@ -65,6 +68,9 @@ export default {
             })
 
             if (res.count > 0) {
+                const customFilter:any = await ModelManager.getRelationsCustomFilter()
+                if (customFilter) res = await customFilter(res, context)
+
                 const itemsArr = res.rows.map(elem => elem.itemId)
                 const targetArr = res.rows.map(elem => elem.targetId)
                 const items = await Item.applyScope(context).findAll({ where: { id: itemsArr} })
