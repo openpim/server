@@ -512,7 +512,14 @@ export class YandexChannelHandler extends ChannelHandler {
             const log = "Response from yandex: " + JSON.stringify(json)
             logger.info(log)
             const chan = item.channels[channel.identifier]
-            chan.status = json.status == 'ERROR' ? 3 : 4
+            if (json.status == 'ERROR') {
+                chan.status =  3
+                chan.yandexError = true
+            } else {
+                chan.status =  4
+                delete chan.yandexError
+            }
+
             chan.message = JSON.stringify(json)
             item.changed('channels', true)
             // changedValues[channel.config.offerIdAttr] = offerid
