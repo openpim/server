@@ -353,6 +353,8 @@ export abstract class ChannelHandler {
   }
 
   private async getItemsForRelationAttribute(channel: Channel, attr: Attribute, value: number[]) {
+      if(value && value.length) return []
+      
       const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chan => chan === 2000)
       if (!isLicenceExists) {
           throw new Error('Relation attributes licence does not exists!')
