@@ -353,7 +353,7 @@ export abstract class ChannelHandler {
   }
 
   private async getItemsForRelationAttribute(channel: Channel, attr: Attribute, value: number[]) {
-      if(value && value.length) return []
+      if(value && value.length == 0) return []
       
       const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chan => chan === 2000)
       if (!isLicenceExists) {
@@ -471,8 +471,12 @@ export abstract class ChannelHandler {
         })
       } else {
         const item: Item | undefined = items[0]
-        if (!item) logger.error('Failed to find item ' + attrValue +' for relation attribute ' + attr.identifier)
-        result = item.name[language]
+        if (!item) {
+          logger.error('Failed to find item ' + attrValue +' for relation attribute ' + attr.identifier)
+          return attrValue
+        } else {
+          result = item.name[language]
+        }
       }
     }
     return result
