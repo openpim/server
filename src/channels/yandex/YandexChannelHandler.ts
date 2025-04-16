@@ -512,7 +512,7 @@ export class YandexChannelHandler extends ChannelHandler {
             const log = "Response from yandex: " + JSON.stringify(json)
             logger.info(log)
             const chan = item.channels[channel.identifier]
-            chan.status = 4
+            chan.status = json.status == 'ERROR' ? 3 : 4
             chan.message = JSON.stringify(json)
             item.changed('channels', true)
             // changedValues[channel.config.offerIdAttr] = offerid
@@ -552,7 +552,7 @@ export class YandexChannelHandler extends ChannelHandler {
             return
         }
 
-        const chunkSize = 1000
+        const chunkSize = 200
         for (let i = 0; i < productIds.length; i += chunkSize) {
 
             const chunk = productIds.slice(i, i + chunkSize)
