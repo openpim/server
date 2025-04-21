@@ -30,7 +30,7 @@ export default {
 
             if (res.count > 0) {
                 const customFilter:any = await ModelManager.getRelationsCustomFilter()
-                if (customFilter) res = await customFilter(res, context)
+                if (customFilter) res = await customFilter(relationId, res, context)
 
                 const itemsArr = res.rows.map(elem => elem.itemId)
                 const targetArr = res.rows.map(elem => elem.targetId)
@@ -69,7 +69,7 @@ export default {
 
             if (res.count > 0) {
                 const customFilter:any = await ModelManager.getRelationsCustomFilter()
-                if (customFilter) res = await customFilter(res, context)
+                if (customFilter) res = await customFilter(relationId, res, context)
 
                 const itemsArr = res.rows.map(elem => elem.itemId)
                 const targetArr = res.rows.map(elem => elem.targetId)
