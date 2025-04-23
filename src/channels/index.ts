@@ -30,6 +30,11 @@ export class ChannelsManager {
     }
 
     public async triggerChannel(channel: Channel, language: string, data: any, context?: Context) {
+        if (!channel.active) {
+            logger.error("Failed to trigger channel " + channel.identifier + " because it is not active, tenant: " + this.tenantId)
+            return
+        }
+
         logger.info("Channel " + channel.identifier + " was triggered, tenant: " + this.tenantId)
 
         if (!language) {
