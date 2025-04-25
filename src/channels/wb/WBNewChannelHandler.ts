@@ -189,14 +189,15 @@ export class WBNewChannelHandler extends ChannelHandler {
                         return
                     } else {
                         const json = await res.json()
-                        if (json.cards.length === 0) {
+                        const tst = json.cards.find((card:any) => card.vendorCode == ''+article)
+                        if (!tst) {
                             const msg = 'По данному запросу ничего не найдено'
                             logger.info(msg)
                             context.log += msg
                             return
                         }
 
-                        await this.processItemSync(channel, items, context, language, json, processedItems)
+                        await this.processItemSync(channel, items, context, language, {cards:[tst]}, processedItems)
                     }
                 }
             } else {
