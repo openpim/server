@@ -116,6 +116,8 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (fbs || result.sku) {
                     item.values[channel.config.ozonFBSIdAttr] = '' + (fbs?.sku || result.sku)
                     item.changed('values', true)
+                    item.channels[channel.identifier].url = `https://www.ozon.ru/product/${item.values[channel.config.ozonFBSIdAttr]}`
+                    item.changed('channels', true)
                 }
             }
             if (channel.config.ozonFBOIdAttr) {
@@ -123,6 +125,8 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (fbo || result.sku) {
                     item.values[channel.config.ozonFBOIdAttr] = '' + (fbo?.sku || result.sku)
                     item.changed('values', true)
+                    item.channels[channel.identifier].url = `https://www.ozon.ru/product/${item.values[channel.config.ozonFBOIdAttr]}`
+                    item.changed('channels', true)
                 }
             }
         } else if (status.is_failed || status.moderate_status === 'declined' || status.errors?.length > 0) {
@@ -467,10 +471,11 @@ export class OzonChannelHandler extends ChannelHandler {
         const newChannels:any = {}
         newChannels[channel.identifier] = JSON.parse(JSON.stringify(reloadedItem!.channels[channel.identifier]))
         const tmp = newChannels[channel.identifier]
-        if (tmp.status !== data.status || tmp.message !== data.message) {
+        if (tmp.status !== data.status || tmp.message !== data.message || tmp.url !== data.url) {
             changed = true
             tmp.status = data.status
             tmp.message = data.message
+            tmp.url = data.url
             if (data.syncedAt) tmp.syncedAt = data.syncedAt
         }
         if (reloadedItem!.values[channel.config.ozonIdAttr] !== item.values[channel.config.ozonIdAttr]) {

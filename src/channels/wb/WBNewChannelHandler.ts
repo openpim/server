@@ -311,6 +311,8 @@ export class WBNewChannelHandler extends ChannelHandler {
                     if (channel.config.nmIDAttr && !item.values[channel.config.nmIDAttr]) {
                         item.values[channel.config.nmIDAttr] = card.nmID
                         changed = true
+                        item.channels[channel.identifier].url = `https://www.wildberries.ru/catalog/${item.values[channel.config.nmIDAttr]}/detail.aspx`
+                        item.changed('channels', true)
                     }
                     if (channel.config.wbBarcodeAttr) {
                         const categoryConfig = await this.getCategoryConfig(channel, item)
