@@ -305,11 +305,11 @@ export class WBNewChannelHandler extends ChannelHandler {
                     }
                     
                     let changed = false
-                    if (channel.config.imtIDAttr && !item.values[channel.config.imtIDAttr]) {
+                    if (channel.config.imtIDAttr && (!item.values[channel.config.imtIDAttr] || item.values[channel.config.imtIDAttr] != card.imtID)) {
                         item.values[channel.config.imtIDAttr] = card.imtID
                         changed = true
                     }
-                    if (channel.config.nmIDAttr && !item.values[channel.config.nmIDAttr]) {
+                    if (channel.config.nmIDAttr && (!item.values[channel.config.nmIDAttr] || item.values[channel.config.nmIDAttr] != card.nmID || !item.channels[channel.identifier].url)) {
                         item.values[channel.config.nmIDAttr] = card.nmID
                         changed = true
                         item.channels[channel.identifier].url = `https://www.wildberries.ru/catalog/${item.values[channel.config.nmIDAttr]}/detail.aspx`
