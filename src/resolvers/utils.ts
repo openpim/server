@@ -1691,21 +1691,22 @@ class llmUtils {
         const attrsArray: Attribute[] = []
         let attrs: any = []
         const attrGroups = this.#mng.getAttrGroups()
-        for (let i = 0; i < attrGroups.length; i++) {
-            const group = attrGroups[i]
-            const attributes = group.getAttributes()
-            for (let j = 0; j < attributes.length; j++) {
-                const attr = attributes[j]
-                if (attrIdents.includes(attr.identifier)) {
-                    attrsArray.push(attr)
+        for (const attrIdent of attrIdents) {
+            loop1:
+            for (const group of attrGroups) {
+                const attributes = group.getAttributes()
+                for (const attr of attributes) {
+                    if (attrIdent === attr.identifier) {
+                        attrsArray.push(attr)
+                        break loop1
+                    }
                 }
             }
         }
-        attrs = [...new Map(attrsArray.map((attr) => [attr.identifier, attr])).values()]
 
         const notAllowedAttributes = this.#context.getNotViewItemAttributes(item) || []
 
-        attrs = attrs.filter((elem:any) => !notAllowedAttributes.includes(elem.identifier))
+        attrs = attrsArray.filter((elem:any) => !notAllowedAttributes.includes(elem.identifier))
 
         let description = name +'\n\n'
 
