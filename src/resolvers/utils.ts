@@ -45,6 +45,168 @@ import { ImportConfig } from '../models/importConfigs'
 import { CollectionItems } from "../models/collectionItems"
 import { Channel, ChannelExecution } from "../models/channels"
 import { ChannelsManagerFactory } from "../channels"
+import NodeCache = require("node-cache")
+
+export async function checkRelationAttrDisplayValue(tenantId: string, attr: Attribute, attrValue: any, language: string, channel: Channel | null, lovCache: NodeCache) {
+    if (!attrValue) return attrValue
+
+    let result
+    const isMultivalue = attr.options.some((elem: any) => elem.name == 'multivalue' && elem.value == 'true')
+    const items = await getItemsForRelationAttribute(tenantId, attr, Array.isArray(attrValue) ? attrValue : [attrValue])
+    const displayValueOption = attr.options.find((el: any) => el.name === 'displayValue')
+    if (displayValueOption?.value?.startsWith('#')) {
+        const fieldName = displayValueOption.value.substr(1)
+        const item: any = items[0]
+        if (!item) logger.error('Failed to find item ' + attrValue + ' for relation attribute ' + attr.identifier)
+        result = item?.[fieldName]
+    } else if (displayValueOption?.value) {
+        const mng = ModelsManager.getInstance().getModelManager(tenantId)
+        const displayAttr = mng.getAttributeByIdentifier(displayValueOption.value, true)
+        const langDependent = displayAttr?.attr?.languageDependent
+        const lovId = displayAttr?.attr.type === 7 && displayAttr?.attr.lov ? displayAttr.attr.lov : null
+        if (isMultivalue && Array.isArray(attrValue)) {
+            if (langDependent) {
+                result = attrValue.map(val => {
+                    const item: Item | undefined = items.find((el:any) => el.id === val)
+                    if (!item) {
+                        logger.error('Failed to find item ' + attrValue + ' for relation attribute ' + attr.identifier)
+                        return val
+                    }
+                    return item.values[displayValueOption.value]?.[language] || val
+                })
+            } else if (displayAttr && lovId) {
+                const lovIds = attrValue.map(val => {
+                    const item: Item | undefined = items.find((el:any) => el.id === val)
+                    if (!item) {
+                        logger.error('Failed to find item ' + attrValue + ' for relation attribute ' + attr.identifier)
+                        return val
+                    }
+                    return item.values[displayValueOption.value] || val
+                })
+                result = await checkLOV(channel, displayAttr.attr, lovIds, language, lovCache)
+            } else {
+                result = attrValue.map(val => {
+                    const item: Item | undefined = items.find((el:any) => el.id === val)
+                    if (!item) {
+                        logger.error('Failed to find item ' + attrValue + ' for relation attribute ' + attr.identifier)
+                        return val
+                    }
+                    return item.values[displayValueOption.value] || val
+                })
+            }
+        } else {
+            const item: Item | undefined = items[0]
+            if (!item) {
+                logger.error('Failed to find item ' + attrValue + ' for relation attribute ' + attr.identifier)
+                return attrValue
+            }
+            if (langDependent) {
+                result = item?.values[displayValueOption.value]?.[language] || attrValue
+            } else if (displayAttr && lovId) {
+                result = await checkLOV(channel, displayAttr.attr, item.values[displayValueOption.value], language, lovCache)
+            } else {
+                result = item?.values[displayValueOption.value] || attrValue
+            }
+        }
+    } else {
+        if (isMultivalue && Array.isArray(attrValue)) {
+            result = attrValue.map(val => {
+                const item: Item | undefined = items.find((el:any) => el.id === val)
+                if (!item) {
+                    logger.error('Failed to find item ' + attrValue + ' for relation attribute ' + attr.identifier)
+                    return val
+                }
+                return item.name[language]
+            })
+        } else {
+            const item: Item | undefined = items[0]
+            if (!item) {
+                logger.error('Failed to find item ' + attrValue + ' for relation attribute ' + attr.identifier)
+                return attrValue
+            } else {
+                result = item.name[language]
+            }
+        }
+    }
+    return result
+}
+
+async function getItemsForRelationAttribute(tenantId: string, attr: Attribute, value: number[]) {
+    if (value && value.length == 0) return []
+
+    const isLicenceExists = ModelsManager.getInstance().getChannelTypes().find(chan => chan === 2000)
+    if (!isLicenceExists) {
+        throw new Error('Relation attributes licence does not exists!')
+    }
+    const mng = ModelsManager.getInstance().getModelManager(tenantId)
+
+    let itemTypes: number[] = []
+    if (attr && attr.valid && attr.valid.length) {
+        const relations = attr.relations ? attr.relations.map((relId: number) => mng.getRelationById(relId)) : []
+        attr.valid.forEach((typeId: number) => {
+            for (let relIndx = 0; relIndx < relations.length; relIndx++) {
+                const relation = relations[relIndx]
+                const isTarget = relation.targets.find((el: number) => el === typeId)
+                const isSource = relation.sources.find((el: number) => el === typeId)
+                if (isTarget) {
+                    itemTypes = itemTypes.concat(relation.sources)
+                } else if (isSource) {
+                    itemTypes = itemTypes.concat(relation.targets)
+                }
+            }
+        })
+        itemTypes = [...new Set(itemTypes)]
+        let query = `select * from items where id in (:value) and "typeId" in (:itemTypes) and "deletedAt" is null`
+        const activeAttributeName = attr.options.find((el: any) => el.name === 'activeAttribute')
+        if (activeAttributeName && activeAttributeName.value && activeAttributeName.value.length) {
+            query += ` and "values" ->> '${activeAttributeName.value}' = 'true'`
+        }
+
+        const data = await sequelize.query(
+            query, {
+            replacements: {
+                tenant: tenantId,
+                itemTypes,
+                value
+            },
+            type: QueryTypes.SELECT
+        })
+
+        return data as Item[]
+    }
+    return []
+}
+
+export async function checkLOV(channel: Channel | null, attr: Attribute, attrValue: any, language: string, lovCache: NodeCache) {
+    if (!attrValue) return attrValue
+    let lov: LOV | undefined | null = lovCache.get(attr.lov)
+    if (!lov) {
+        lov = await LOV.findByPk(attr.lov)
+        lovCache.set(attr.lov, lov, 180)
+    }
+    if (lov) {
+        if (Array.isArray(attrValue)) {
+            if (attrValue.length === 0) return null
+            return attrValue.map(val => {
+                const value = lov!.values.find((elem: any) => elem.id === val)
+                if (!value) {
+                    logger.error('Failed to find id ' + val + ' in lov ' + attr.lov + ' during evaluation of attribute ' + attr.identifier)
+                    return val
+                }
+                return channel && value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
+            })
+        } else {
+            const value = lov.values.find((elem: any) => elem.id === attrValue)
+            if (!value) {
+                logger.error('Failed to find id ' + attrValue + ' in lov ' + attr.lov + ' during evaluation of attribute ' + attr.identifier)
+                return value
+            }
+            return channel && value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
+        }
+    }
+
+    return attrValue
+}
 
 export function replaceOperations(obj: any, context: Context | null) {
     let include = []
@@ -762,6 +924,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
+        llmUtils: new llmUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
         buttonText: buttonText,
         item: item ? makeItemProxy(item, 'Button:' + buttonText) : null, values: valuesCopy, channels: channelsCopy, name: nameCopy,
@@ -1515,6 +1678,64 @@ function makeChannelProxy(item: any) {
     })
 }
 
+class llmUtils {
+    #context: Context // hard private field to avoid access to it from action (to avoid ability to change tennantId)
+    #mng: ModelManager
+
+    public constructor(context: Context) {
+        this.#context = context
+        this.#mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+    }
+
+    public async generateItemTextData(item: Item, name: string, attrIdents:[string]) {
+        const attrsArray: Attribute[] = []
+        let attrs: any = []
+        const attrGroups = this.#mng.getAttrGroups()
+        for (let i = 0; i < attrGroups.length; i++) {
+            const group = attrGroups[i]
+            const attributes = group.getAttributes()
+            for (let j = 0; j < attributes.length; j++) {
+                const attr = attributes[j]
+                if (attrIdents.includes(attr.identifier)) {
+                    attrsArray.push(attr)
+                }
+            }
+        }
+        attrs = [...new Map(attrsArray.map((attr) => [attr.identifier, attr])).values()]
+
+        const notAllowedAttributes = this.#context.getNotViewItemAttributes(item) || []
+
+        attrs = attrs.filter((elem:any) => !notAllowedAttributes.includes(elem.identifier))
+
+        let description = name +'\n\n'
+
+        for (const attr of attrs) {
+            const val = item.values[attr.identifier]
+            if (!val) continue
+            if (attr.type == 7 && attr.lov) {
+                let lov: any = this.#mng.getCache().get('LOV_' + attr.lov)
+                if (!lov) {
+                    lov = await LOV.applyScope(this.#context).findByPk(attr.lov)
+                    this.#mng.getCache().set('LOV_' + attr.lov, lov, 60 * 60)
+                }
+
+                if (Array.isArray(val)) {
+                    const text = val.map(v => lov.values.find((vv:any) => vv.id == v)?.value.ru).join(', ')
+                    description += `${attr.name.ru}: ${text}\n`
+                } else {
+                    description += `${attr.name.ru}: ${lov.values.find((v:any) => v.id == val)?.value.ru}\n`
+                }
+            } else if (attr.type == 9) {
+                const result = await checkRelationAttrDisplayValue(this.#context.getCurrentUser()!.tenantId, attr, val, 'ru', null, this.#mng.getCache())
+                description += `${attr.name.ru}: ${result}\n`
+            } else {
+                description += `${attr.name.ru}: ${val}\n`
+            }
+        }
+        return description
+    }
+}
+
 class ActionUtils {
     #context: Context // hard private field to avoid access to it from action (to avoid ability to change tennantId)
     #mng: ModelManager
@@ -1712,6 +1933,7 @@ class ActionUtils {
             user: context.getCurrentUser()?.login,
             roles: context.getUser()?.getRoles(),
             utils: new ActionUtils(context),
+            llmUtils: new llmUtils(context),
             system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
             isImport: isImport,
             item: makeItemProxy(item, event, transaction), 
