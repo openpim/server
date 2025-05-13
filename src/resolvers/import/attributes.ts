@@ -147,13 +147,11 @@ export async function importAttribute(context: Context, config: IImportConfig, a
 
             await processAttributeActions(context, EventType.BeforeCreate, data, true)
 
-            await sequelize.transaction(async (t) => {
-                await data.save({transaction: t})
-                for (let i = 0; i < groups.length; i++) {
-                    await groups[i].getGroup().addAttribute(data, {transaction: t})
-                    groups[i].getAttributes().push(data)
-                }
-            })
+            await data.save()
+            for (let i = 0; i < groups.length; i++) {
+                await groups[i].getGroup().addAttribute(data)
+                groups[i].getAttributes().push(data)
+            }
 
             result.id = ""+data.id
             await processAttributeActions(context, EventType.AfterCreate, data, true)
@@ -233,30 +231,28 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             if (attr.options != null) data.options = attr.options
 
             data.updatedBy = context.getCurrentUser()!.login
-            await sequelize.transaction(async (t) => {
-                await data.save({transaction: t})
+            await data.save()
 
-                if (attr.groups) {
-                    for (let i=0; i < mng.getAttrGroups().length; i++) {
-                        const grp = mng.getAttrGroups()[i]
-                        const idx = grp.getAttributes().findIndex(attr => attr.id === data.id )
-                        if (idx !== -1) {
-                            const idxGroups = groups.findIndex(group => group.getGroup().id === grp.getGroup().id)
-                            if (idxGroups === -1) {
-                                grp.getGroup().removeAttribute(data, {transaction: t})
-                                grp.getAttributes().splice(idx, 1)
-                            } else {
-                                groups.splice(idxGroups, 1)
-                            }
+            if (attr.groups) {
+                for (let i = 0; i < mng.getAttrGroups().length; i++) {
+                    const grp = mng.getAttrGroups()[i]
+                    const idx = grp.getAttributes().findIndex(attr => attr.id === data.id)
+                    if (idx !== -1) {
+                        const idxGroups = groups.findIndex(group => group.getGroup().id === grp.getGroup().id)
+                        if (idxGroups === -1) {
+                            grp.getGroup().removeAttribute(data)
+                            grp.getAttributes().splice(idx, 1)
+                        } else {
+                            groups.splice(idxGroups, 1)
                         }
                     }
-
-                    for (let i = 0; i < groups.length; i++) {
-                        await groups[i].getGroup().addAttribute(data, {transaction: t})
-                        groups[i].getAttributes().push(data)
-                    }
                 }
-            })
+
+                for (let i = 0; i < groups.length; i++) {
+                    await groups[i].getGroup().addAttribute(data)
+                    groups[i].getAttributes().push(data)
+                }
+            }
 
             result.id = ""+data.id
             await processAttributeActions(context, EventType.AfterUpdate, data, true)
