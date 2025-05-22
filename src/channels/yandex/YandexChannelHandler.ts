@@ -685,6 +685,7 @@ export class YandexChannelHandler extends ChannelHandler {
                     name: param.name + (defaultUnit ? ', ' + defaultUnit.name : '') + (YMDataTypes[dataType] !== YMDataTypes.ENUM ? ' (' + YMDataTypes[dataType] + ')' : ''),
                     category: categoryId,
                     required: param.required,
+                    filtering: param.filtering,
                     allowCustomValues: param.allowCustomValues,
                     dictionary: param.type === 'ENUM',
                     dictionaryLinkPost: param.type === 'ENUM' ? {

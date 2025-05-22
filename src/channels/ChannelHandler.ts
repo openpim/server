@@ -386,6 +386,7 @@ export interface ChannelAttribute {
   isNumber: boolean
   name: string
   required: boolean
+  filtering: boolean
   dictionary: boolean
   category: string
   dictionaryLink?: string
