@@ -81,8 +81,8 @@ type ChannelAttribute {
   name: String!
   category: String!
   required: Boolean!
-  filtering: Boolean!
-  allowCustomValues: Boolean,
+  filtering: Boolean
+  allowCustomValues: Boolean
   dictionary: Boolean!
   description: String
   dictionaryLink: String
