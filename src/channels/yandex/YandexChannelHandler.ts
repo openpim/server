@@ -642,6 +642,9 @@ export class YandexChannelHandler extends ChannelHandler {
             item.channels[channel.identifier].syncedAt = new Date().getTime()
             item.channels[channel.identifier].yandexError = false
         }
+        if (result.mapping?.marketSku && !item.channels[channel.identifier].url) {
+            item.channels[channel.identifier].url = `https://market.yandex.ru/pr/${result.mapping?.marketSku}`
+        }
         item.changed('channels', true)
     }
 
