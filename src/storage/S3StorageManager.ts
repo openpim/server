@@ -24,7 +24,8 @@ class S3StorageManager extends StorageManager {
             },
             requestHandler: {
                 httpsAgent: { maxSockets: Infinity }
-            }
+            },
+            forcePathStyle: serverConfig.storage.forcePathStyle || false
     })
         this.bucketName = serverConfig.storage.access.AWS_BUCKET_NAME!
     }
