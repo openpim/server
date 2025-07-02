@@ -4,6 +4,8 @@ type Query {
   getSearches(onlyMy: Boolean!): [SavedSearch]!
   getColumns(onlyMy: Boolean!): [SavedColumns]!
   getColumnsByIdentifier(identifier: String!): SavedColumns
+  searchGroup(requests: [SearchGroupRequest]!): [SearchGroupsResponse]
+  searchByGroup(requests: [SearchGroupRequest]!): [SearchItemsGroupResponse]
 }
 
 type Mutation {
@@ -64,7 +66,6 @@ type ItemsSearchResponse {
   count: Int
   rows: [Item]
 }
-
 
 type TypesResponse {
   count: Int
@@ -175,4 +176,32 @@ type SearchAction {
 type SearchActionResponse {
   count: Int
   rows: [SearchAction]
+}
+
+input SearchGroupRequest {
+  where: JSONObject
+  order: JSON
+  offset: Int
+  limit: Int
+  relationIdentifier: String!
+  categories: [String]
+}
+
+type SearchGroupsResponse {
+  groups: [GroupData]
+}
+
+type GroupData {
+  count: Int
+  parent: Item
+}
+
+type SearchItemsGroupResponse {
+  count: Int
+  rows: [SearchItem]
+}
+
+type SearchItem {
+  parent: String!
+  item: Item!
 }
