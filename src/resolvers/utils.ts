@@ -187,21 +187,24 @@ export async function checkLOV(channel: Channel | null, attr: Attribute, attrVal
     if (lov) {
         if (Array.isArray(attrValue)) {
             if (attrValue.length === 0) return null
-            return attrValue.map(val => {
+            const retArr = attrValue.map(val => {
                 const value = lov!.values.find((elem: any) => elem.id === val)
                 if (!value) {
                     logger.error('Failed to find id ' + val + ' in lov ' + attr.lov + ' during evaluation of attribute ' + attr.identifier)
                     return val
                 }
-                return channel && value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
-            })
+                const tst = channel && value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
+                return tst === 'null' ? null : tst
+            }).filter(elem => elem !== null)
+            return retArr.length > 0 ? retArr : null
         } else {
             const value = lov.values.find((elem: any) => elem.id === attrValue)
             if (!value) {
                 logger.error('Failed to find id ' + attrValue + ' in lov ' + attr.lov + ' during evaluation of attribute ' + attr.identifier)
                 return value
             }
-            return channel && value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
+            const tst = channel && value[channel.identifier] ? value[channel.identifier][language] || value.value[language] : value.value[language]
+            return tst === 'null' ? null : tst
         }
     }
 
