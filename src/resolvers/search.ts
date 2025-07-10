@@ -11,7 +11,7 @@ import { User, Role } from '../models/users'
 import { LOV } from '../models/lovs'
 import { SavedColumns, SavedSearch } from '../models/search'
 import { sequelize } from '../models'
-import { Op, literal } from 'sequelize'
+import { Op, literal, fn, col, QueryTypes } from 'sequelize'
 import moment = require('moment')
 import e = require('cors')
 import { Action, EventType, TriggerType } from '../models/actions'
@@ -310,6 +310,163 @@ export default {
                 where[Op.or] = [{user: context.getCurrentUser()!.login},{public: true}]
             }
             const arr = await SavedColumns.applyScope(context).findAll({ where: where, order: [['user', 'DESC']] })
+            return arr
+        },
+        searchGroup: async (parent: any, { requests }: any, context: Context) => {
+            context.checkAuth()
+            const arr = []
+
+            for (const request of requests) {
+                const { relationIdentifier, categories } = request
+                const params: any = {}
+
+                if (request.where) {
+                    const include = replaceOperations(request.where, context)
+                    params.where = request.where
+                    if (include && include.length > 0) params.include = include
+                }
+
+                if (request.order) params.order = request.order
+
+                let groups: any = []
+
+                if (relationIdentifier && relationIdentifier !== '') {
+                    const groupResults = await Item.applyScope(context).findAll({
+                        attributes: [
+                            [col('targetRelation.itemIdentifier'), 'itemIdentifier'],
+                            [fn('COUNT', col('Item.id')), 'count']
+                        ],
+                        include: [{
+                            model: ItemRelation,
+                            as: 'targetRelation',
+                            where: {
+                                relationIdentifier,
+                                ...(categories && categories.length > 0 ? { itemIdentifier: { [Op.in]: categories } } : {})
+                            },
+                            attributes: [],
+                            required: true
+                        }],
+                        where: params.where,
+                        group: ['targetRelation.itemIdentifier'],
+                        raw: true,
+                        order: [[fn('MIN', col('Item.id')), 'ASC']],
+                        subQuery: false
+                    })
+
+                    const parentIdentifiers = groupResults.map(g => (g as any).itemIdentifier).filter(Boolean)
+                    const parents = parentIdentifiers.length
+                        ? await Item.findAll({ where: { identifier: parentIdentifiers } })
+                        : []
+                    const parentMap = Object.fromEntries(parents.map(p => [p.identifier, p]))
+
+                    groups = groupResults.map(g => ({
+                        count: Number((g as any).count),
+                        parent: parentMap[(g as any).itemIdentifier] || null
+                    }))
+                } else if (relationIdentifier === '') {
+                    const groupResults = await Item.findAll({
+                        attributes: [
+                            'parentIdentifier',
+                            [fn('count', col('id')), 'count']
+                        ],
+                        where: {
+                            ...params.where,
+                            ...(categories && categories.length > 0 ? { parentIdentifier: { [Op.in]: categories } } : {})
+                        },
+                        group: ['parentIdentifier'],
+                        raw: true,
+                        order: [[fn('MIN', col('Item.id')), 'ASC']],
+                        subQuery: false
+                    })
+
+                    const parentIdentifiers = groupResults.map(g => g.parentIdentifier).filter(Boolean)
+                    const parents = parentIdentifiers.length
+                        ? await Item.findAll({ where: { identifier: parentIdentifiers }})
+                        : []
+                    const parentMap = Object.fromEntries(parents.map(p => [p.identifier, p]))
+
+                    groups = groupResults.map(g => ({
+                        count: Number((g as any).count),
+                        parent: g.parentIdentifier ? parentMap[g.parentIdentifier] : null
+                    }))
+                }
+
+                arr.push({
+                    type: 'ItemsSearchGroupResponse',
+                    groups
+                })
+            }
+
+            return arr
+        },
+        searchByGroup: async (parent: any, { requests }: any, context: Context) => {
+            context.checkAuth()
+            const arr = []
+
+            for (const request of requests) {
+                const { relationIdentifier, categories } = request
+                const params: FindAndCountOptions = {
+                    offset: request.offset,
+                    limit: request.limit
+                }
+                if (request.limit == -1) delete params.limit
+                if (request.offset == -1) delete params.offset
+                if (request.where) {
+                    const include = replaceOperations(request.where, context)
+                    params.where = request.where
+                    if (include && include.length > 0) params.include = include
+                }
+                if (request.order) params.order = request.order
+
+                if (relationIdentifier && relationIdentifier !== '') {
+                    const res = await Item.findAndCountAll({
+                        include: [{
+                            model: ItemRelation,
+                            as: 'targetRelation',
+                            where: {
+                                relationIdentifier,
+                                ...(categories && categories.length > 0 ? { itemIdentifier: { [Op.in]: categories } } : {})
+                            },
+                            attributes: [
+                                'itemIdentifier'
+                            ],
+                            required: true
+                        }],
+                        where: params.where,
+                        order: params.order,
+                        offset: params.offset,
+                        limit: params.limit,
+                        subQuery: false
+                    })
+
+                    arr.push({
+                        count: res.count,
+                        rows: res.rows.map(row => ({
+                            parent: (row as any).targetRelation[0]?.itemIdentifier,
+                            item: row
+                        }))
+                    })
+                } else if (relationIdentifier === '') {
+                    const res = await Item.findAndCountAll({
+                        where: {
+                            ...params.where,
+                            ...(categories && categories.length > 0 ? { parentIdentifier: { [Op.in]: categories } } : {})
+                        },
+                        order: params.order,
+                        offset: params.offset,
+                        limit: params.limit
+                    })
+
+                    arr.push({
+                        count: res.count,
+                        rows: res.rows.map(row => ({
+                            parent: row?.parentIdentifier,
+                            item: row
+                        }))
+                    })
+                }
+            }
+
             return arr
         },
     },
