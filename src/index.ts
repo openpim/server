@@ -5,6 +5,7 @@ import { Buffer } from 'buffer';
 import cors from 'cors';
 import * as crypto from "crypto";
 import * as dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import { graphqlHTTP } from 'express-graphql';
 import { GraphQLError, print } from 'graphql';
@@ -62,7 +63,6 @@ if (process.env.OPENPIM_DATABASE_PASSWORD) process.env.DATABASE_PASSWORD = proce
 if (process.env.OPENPIM_AUDIT_URL) process.env.AUDIT_URL = process.env.OPENPIM_AUDIT_URL
 if (process.env.OPENPIM_ENABLE_METRICS) isMetrics = process.env.OPENPIM_ENABLE_METRICS === 'true' ? true : false
 
-dotenv.config();
 const app = express();
 app.use(compression())
 app.use(bodyParser.json({limit: '500mb'}));

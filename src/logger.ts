@@ -1,7 +1,7 @@
 import * as winston from 'winston'
 
 const logger = winston.createLogger({
-  level: 'info',
+  level: process.env.OPENPIM_LOG_LEVEL || 'info',
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY/MM/DD HH:mm:ss.SSS' }),
     winston.format.errors({ stack: true }),
