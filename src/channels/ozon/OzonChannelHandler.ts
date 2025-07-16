@@ -642,9 +642,11 @@ export class OzonChannelHandler extends ChannelHandler {
         product.vat = ''+vat
         product.name = name
 
+        const newProduct = !item.values[channel.config.ozonIdAttr] || (''+item.values[channel.config.ozonIdAttr]).startsWith('task_id=')
+
         const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
         const price = await this.getValueByMapping(channel, priceConfig, item, language)
-        if (price) product.price = ''+price
+        if (price && (newProduct || channel.config.sendPriceUpdate)) product.price = ''+price
         /*if (!price) {
             const msg = 'Не введена конфигурация или нет данных для "Цены" для категории: ' + categoryConfig.name
             context.log += msg
@@ -652,14 +654,13 @@ export class OzonChannelHandler extends ChannelHandler {
             return
         }*/
 
-
         const priceOldConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#oldprice')
         const priceOld = await this.getValueByMapping(channel, priceOldConfig, item, language)
-        if (priceOld) product.old_price = ''+priceOld
+        if (priceOld && (newProduct || channel.config.sendPriceUpdate)) product.old_price = ''+priceOld
 
         const pricePremConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#premprice')
         const pricePrem = await this.getValueByMapping(channel, pricePremConfig, item, language)
-        if (pricePrem) product.premium_price = ''+pricePrem
+        if (pricePrem && (newProduct || channel.config.sendPriceUpdate)) product.premium_price = ''+pricePrem
 
         const colorImageConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#color_image')
         const colorImage = await this.getValueByMapping(channel, colorImageConfig, item, language)
