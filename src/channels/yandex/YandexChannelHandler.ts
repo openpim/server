@@ -339,7 +339,7 @@ export class YandexChannelHandler extends ChannelHandler {
         const picturesConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'pictures')
         const pictures = await this.getValueByMapping(channel, picturesConfig, item, language)
         if (!pictures) {
-            const msg = 'Не введена конфигурация или нет данных для "Название бренда или производителя" для категории: ' + categoryConfig.name
+            const msg = 'Не введена конфигурация или нет данных для "Ссылки на изображения товара" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
@@ -348,7 +348,7 @@ export class YandexChannelHandler extends ChannelHandler {
         const descriptionConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'description')
         const description = await this.getValueByMapping(channel, descriptionConfig, item, language)
         if (!description) {
-            const msg = 'Не введена конфигурация или нет данных для "Описание предложения" для категории: ' + categoryConfig.name
+            const msg = 'Не введена конфигурация или нет данных для "Подробное описание товара" для категории: ' + categoryConfig.name
             context.log += msg
             this.reportError(channel, item, msg)
             return
