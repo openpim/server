@@ -1738,6 +1738,83 @@ class llmUtils {
         }
         return description
     }
+
+    public async generateItemAttributesData(item: Item, attrIdents: [string], language: string = 'ru') {
+        console.log(language)
+        const attrsArray: Attribute[] = []
+        let attrs: any = []
+        const attrGroups = this.#mng.getAttrGroups()
+        for (const attrIdent of attrIdents) {
+            loop1:
+            for (const group of attrGroups) {
+                const attributes = group.getAttributes()
+                for (const attr of attributes) {
+                    if (attrIdent === attr.identifier) {
+                        attrsArray.push(attr)
+                        break loop1
+                    }
+                }
+            }
+        }
+
+        const notAllowedAttributes = this.#context.getNotViewItemAttributes(item) || []
+
+        attrs = attrsArray.filter((elem: any) => !notAllowedAttributes.includes(elem.identifier))
+
+        const attributes = []
+        for (const attr of attrs) {
+            const value: any = {}
+
+            value.id = attr.identifier
+            value.name = attr.name[language]
+
+            switch (attr.type) {
+                case 2:
+                    value.type = 'Boolean'
+                    break
+                case 3:
+                    value.type = 'Integer'
+                    break
+                case 4:
+                    value.type = 'Decimal'
+                    break
+                default:
+                    value.type = 'String'
+                    break
+            }
+
+            const description = (attr.options.find((elem: any) => elem.name === 'description'))?.value
+            value.description = description ? description : ''
+
+            if (attr.type === 7 && attr.lov) {
+                const dictionary = []
+                let lov: any = this.#mng.getCache().get('LOV_' + attr.lov)
+                if (!lov) {
+                    lov = await LOV.applyScope(this.#context).findByPk(attr.lov)
+                    this.#mng.getCache().set('LOV_' + attr.lov, lov, 60 * 60)
+                }
+
+                for (const lovValue of lov.values) {
+                    if (lovValue.id && lovValue.value[language]) {
+                        dictionary.push({
+                            id: String(lovValue.id),
+                            value: lovValue.value[language]
+                        })
+                    }
+
+                    if (dictionary.length > 0) {
+                        value.dictionary = dictionary
+
+                        const multivalue = attr.options.some((elem: any) => elem.name === 'multivalue' && elem.value === 'true')
+                        value.multivalue = multivalue
+                    }
+                }
+            }
+
+            if (value.id && value.name) attributes.push(value)
+        }
+        return attributes
+    }
 }
 
 class ActionUtils {
