@@ -745,7 +745,9 @@ export class WBNewChannelHandler extends ChannelHandler {
 
             let offset = 0
             let length = 0
+            const serverConfig = ModelManager.getServerConfig()
             do {
+                if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
                 const url2 = 'https://content-api.wildberries.ru/content/v2/object/all?limit=1000&offset='+offset
                 logger.info("Sending GET request to WB: " + url2)
                 const res2 = await fetch(url2, {
@@ -770,7 +772,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             } while (length > 0)
 
             tree  = {id: '', name: 'root', children: data.filter(elem => elem.children!.length > 0)}
-            this.cache.set('categories', tree, 3600)
+            this.cache.set('categories', tree, 12*60*60)
         }
         return { list: null, tree: tree }
     }
@@ -780,6 +782,9 @@ export class WBNewChannelHandler extends ChannelHandler {
         if (!data) {
             const idx = categoryId.indexOf('-')
             const objId = categoryId.substring(idx+1)
+
+            const serverConfig = ModelManager.getServerConfig()
+            if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
 
             const res = await fetch('https://content-api.wildberries.ru/content/v2/object/charcs/' + objId, {
                 method: 'get',
