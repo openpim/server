@@ -52,7 +52,8 @@ import version from './version';
 
 import userResolver from './resolvers/users'
 import { FileManager } from './media/FileManager';
-
+import { v2 as webdav } from 'webdav-server'
+import fs from 'fs'
 
 let isMetrics
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
@@ -64,6 +65,12 @@ if (process.env.OPENPIM_AUDIT_URL) process.env.AUDIT_URL = process.env.OPENPIM_A
 if (process.env.OPENPIM_ENABLE_METRICS) isMetrics = process.env.OPENPIM_ENABLE_METRICS === 'true' ? true : false
 
 const app = express();
+
+export let isWebDAVEnabled = true
+export function setWebDAVEnabled(v: boolean) {
+  isWebDAVEnabled = v
+}
+
 app.use(compression())
 app.use(bodyParser.json({limit: '500mb'}));
 app.use(i18nextMiddleware.handle(i18next));
@@ -363,6 +370,78 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       const context = await Context.create(req)
       await generateTemplateForItems(context, req, res)
     } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  const fsRoot = process.env.FILES_ROOT
+
+  const webDavServer = new webdav.WebDAVServer()
+  if (fsRoot) {
+    webDavServer.setFileSystem('/', new webdav.PhysicalFileSystem(fsRoot), () => { })
+  }
+
+  webDavServer.httpAuthentication = {
+    askForAuthentication() {
+      return { 'WWW-Authenticate': 'Basic realm="WebDAV"' }
+    },
+    getUser(ctx, cb) {
+      const user = { uid: 'test', username: 'test' }
+      if (typeof cb === 'function') cb(null as unknown as Error, user)
+      return user
+    }
+  }
+
+  app.use('/webdav', async (req, res) => {
+    try {
+      if (!req.headers.authorization) {
+        logger.error('[WebDAV] Нет заголовка авторизации')
+        res.set('WWW-Authenticate', 'Basic realm="WebDAV"')
+        res.status(401).send('Authentication required.')
+        return
+      }
+
+      const b64auth = req.headers.authorization.split(' ')[1]
+      const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+
+      const { user } = await userResolver.Mutation.signIn(null, { login, password }, await Context.create(req))
+      if (!user || !user.roles.includes(1)) {
+        logger.warn('[WebDAV] Неверные логин/пароль или нет прав')
+        res.set('WWW-Authenticate', 'Basic realm="WebDAV"')
+        res.status(401).send('Authorization required')
+        return
+      }
+
+      if (!isWebDAVEnabled) {
+        res.status(503).send('WebDAV временно отключён')
+        return
+      }
+
+      if (!fsRoot) {
+        logger.error('[WebDAV] Не задан FILES_ROOT')
+        res.status(500).send('WebDAV не сконфигурирован (FILES_ROOT не задан)')
+        return
+      }
+
+      logger.info(`[WebDAV] ${req.method} ${req.url}`)
+
+      try {
+        fs.accessSync(fsRoot, fs.constants.R_OK | fs.constants.W_OK)
+        logger.info('[WebDAV] Доступ к папке ok')
+      } catch (err) {
+        logger.warn('[WebDAV] Нет прав на папку', err)
+        res.status(500).end('Нет прав на доступ к папке WebDAV')
+        return
+      }
+
+      try {
+        webDavServer.executeRequest(req, res)
+      } catch (err) {
+        logger.error('[WebDAV] Ошибка executeRequest', err)
+        res.status(500).end('WebDAV internal error')
+      }
+    } catch (error: any) {
+      logger.error('[WebDAV] Ошибка:', error)
       res.status(400).send(error.message)
     }
   })

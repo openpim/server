@@ -65,6 +65,7 @@
     "temp": "^0.9.4",
     "uuid": "^8.3.2",
     "vm2": "^3.9.2",
+    "webdav-server": "^2.6.2",
     "webp-converter": "^2.3.3",
     "webpinfo": "^2.0.0",
     "winston": "^3.6.0",

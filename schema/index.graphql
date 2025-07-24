@@ -29,9 +29,11 @@ type Query {
   ping: String
   serverConfig: JSONObject
   nextId(seqName:String): String
+  isWebDAVEnabled: Boolean!
 }
 
 type Mutation {
   logLevel(level: String!) : Boolean!
   query(query: String!) : JSON!
+  setWebDAVEnabled(enabled: Boolean!): Boolean!
 }

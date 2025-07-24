@@ -25,6 +25,7 @@ import { GraphQLDateTime } from 'graphql-iso-date'
 import Context from '../context'
 import { QueryTypes } from 'sequelize'
 import { sequelize } from '../models'
+import { isWebDAVEnabled, setWebDAVEnabled } from '../index'
 
 import logger from '../logger'
 import { ModelManager } from '../models/manager'
@@ -46,6 +47,13 @@ const resolver = {
             const id = (results[0]).nextval
             return id
         },
+        isWebDAVEnabled: async (parent: any, {enabled}: any, context: Context) => {
+            context.checkAuth()
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to execute queries, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            return isWebDAVEnabled
+        }
     }, 
     Mutation: {
         logLevel: async (parent: any, {level}: any, context: Context) => {
@@ -78,6 +86,14 @@ const resolver = {
             }
             logger.debug(`data: ${JSON.stringify(data)}`)
             return data
+        },
+        setWebDAVEnabled: (parent: any, {enabled}: any, context: Context) => {
+            context.checkAuth()
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to execute queries, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            setWebDAVEnabled(!!enabled)
+            return isWebDAVEnabled
         }
     }
 }
