@@ -66,7 +66,7 @@ if (process.env.OPENPIM_ENABLE_METRICS) isMetrics = process.env.OPENPIM_ENABLE_M
 
 const app = express();
 
-export let isWebDAVEnabled = true
+export let isWebDAVEnabled = false
 export function setWebDAVEnabled(v: boolean) {
   isWebDAVEnabled = v
 }
