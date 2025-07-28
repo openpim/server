@@ -280,11 +280,15 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     if (item.parentIdentifier === data.identifier) {
                         result.addError(ReturnMessage.WrongParent)
                         result.result = ImportResult.REJECTED
+                        if (transaction) await transaction.rollback()
                         return result
                     }
                     
                     let parent = await checkParent(item, result, mng, context)
-                    if (result.result) return result
+                    if (result.result) {
+                        if (transaction) await transaction.rollback()
+                        return result
+                    }
 
                     if (audit.auditEnabled()) {
                         itemDiff.changed!.parentIdentifier = item.parentIdentifier
