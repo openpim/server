@@ -29,6 +29,8 @@ import { isWebDAVEnabled, setWebDAVEnabled } from '../index'
 
 import logger from '../logger'
 import { ModelManager } from '../models/manager'
+import { exec } from 'child_process'
+import path from 'path'
 
 const resolver = {
     Query: {
@@ -53,6 +55,123 @@ const resolver = {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to execute queries, tenant: ' + context.getCurrentUser()!.tenantId)
             }
             return isWebDAVEnabled
+        },
+        ls: async (parent: any, { path: rel }: any, context: Context) => {
+            context.checkAuth()
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('Недостаточно прав')
+            }
+            const root = process.env.FILES_ROOT
+            if (!root) {
+                throw new Error('FILES_ROOT environment variable is not set')
+            }
+            const absRoot = path.resolve(root)
+            const absTarget = path.resolve(root, rel || '')
+            if (!absTarget.startsWith(absRoot)) {
+                throw new Error('Path is outside of allowed directory')
+            }
+            return new Promise(resolve => {
+                exec(`ls -lh "${absTarget}"`, (error, stdout, stderr) => {
+                    if (error) {
+                        resolve(stderr || error.message)
+                        return
+                    }
+                    resolve(stdout)
+                })
+            })
+        },
+        lsDirs: async (parent: any, { path: rel }: any, context: Context) => {
+            context.checkAuth()
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('Недостаточно прав')
+            }
+            const root = process.env.FILES_ROOT
+            if (!root) {
+                throw new Error('FILES_ROOT environment variable is not set')
+            }
+            const absRoot = path.resolve(root)
+            const absTarget = path.resolve(root, rel || '')
+            if (!absTarget.startsWith(absRoot)) {
+                throw new Error('Path is outside of allowed directory')
+            }
+            return new Promise(resolve => {
+                exec(`ls -d ${absTarget}*/`, (error, stdout, stderr) => {
+                    if (error) {
+                        resolve(stderr || error.message)
+                        return
+                    }
+                    resolve(stdout)
+                })
+            })
+        },
+        lsFiles: async (parent: any, { path: rel }: any, context: Context) => {
+            context.checkAuth()
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('Недостаточно прав')
+            }
+            const root = process.env.FILES_ROOT
+            if (!root) {
+                throw new Error('FILES_ROOT environment variable is not set')
+            }
+            const absRoot = path.resolve(root)
+            const absTarget = path.resolve(root, rel || '')
+            if (!absTarget.startsWith(absRoot)) {
+                throw new Error('Path is outside of allowed directory')
+            }
+            return new Promise(resolve => {
+                exec(`ls -p "${absTarget}" | grep -v /`, (error, stdout, stderr) => {
+                    if (error) {
+                        resolve(stderr || error.message)
+                        return
+                    }
+                    resolve(stdout)
+                })
+            })
+        },
+        stat: async (parent: any, { path: rel }: any, context: Context) => {
+            context.checkAuth()
+            const root = process.env.FILES_ROOT
+            if (!root) {
+                throw new Error('FILES_ROOT environment variable is not set')
+            }
+            const absRoot = path.resolve(root)
+            const absTarget = path.resolve(root, rel)
+            if (!absTarget.startsWith(absRoot)) {
+                throw new Error('Path is outside of allowed directory')
+            }
+            return new Promise(resolve => {
+                exec(`stat "${absTarget}"`, (error, stdout, stderr) => {
+                    if (error) {
+                        resolve(stderr || error.message)
+                        return
+                    }
+                    resolve(stdout)
+                })
+            })
+        },
+        readFile: async (parent: any, { path: rel }: any, context: Context) => {
+            context.checkAuth()
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('Недостаточно прав')
+            }
+            const root = process.env.FILES_ROOT
+            if (!root) {
+                throw new Error('FILES_ROOT environment variable is not set')
+            }
+            const absRoot = path.resolve(root)
+            const absTarget = path.resolve(root, rel)
+            if (!absTarget.startsWith(absRoot)) {
+                throw new Error('Path is outside of allowed directory')
+            }
+            return new Promise(resolve => {
+                exec(`cat "${absTarget}"`, (error, stdout, stderr) => {
+                    if (error) {
+                        resolve(stderr || error.message)
+                        return
+                    }
+                    resolve(stdout)
+                })
+            })
         }
     }, 
     Mutation: {
