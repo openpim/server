@@ -29,8 +29,41 @@ import { isWebDAVEnabled, setWebDAVEnabled } from '../index'
 
 import logger from '../logger'
 import { ModelManager } from '../models/manager'
-import { exec } from 'child_process'
+import fs from 'fs/promises'
 import path from 'path'
+
+const getAbsTarget = (root: any, rel: any = '') => {
+    const absRoot = path.resolve(root) + path.sep
+    const absTarget = path.resolve(root, rel || '')
+    if (!absTarget.startsWith(absRoot)) {
+        throw new Error('Path is outside of allowed directory')
+    }
+    return { absRoot, absTarget }
+}
+
+const listFiles = async (absTarget: any, type: any = null) => {
+    const files = await fs.readdir(absTarget, { withFileTypes: true })
+    if (type === 'dir') {
+        return files.filter(f => f.isDirectory()).map(f => f.name)
+    }
+    if (type === 'file') {
+        return files.filter(f => f.isFile()).map(f => f.name)
+    }
+    return files.map(f => ({
+        name: f.name,
+        type: f.isDirectory() ? 'dir' : 'file'
+    }))
+}
+
+const statFile = async (absTarget: any) => {
+    const stat = await fs.stat(absTarget)
+    return {
+        name: path.basename(absTarget),
+        size: stat.size,
+        mtime: stat.mtime,
+        isDirectory: stat.isDirectory()
+    }
+}
 
 const resolver = {
     Query: {
@@ -65,20 +98,8 @@ const resolver = {
             if (!root) {
                 throw new Error('FILES_ROOT environment variable is not set')
             }
-            const absRoot = path.resolve(root)
-            const absTarget = path.resolve(root, rel || '')
-            if (!absTarget.startsWith(absRoot)) {
-                throw new Error('Path is outside of allowed directory')
-            }
-            return new Promise(resolve => {
-                exec(`ls -lh "${absTarget}"`, (error, stdout, stderr) => {
-                    if (error) {
-                        resolve(stderr || error.message)
-                        return
-                    }
-                    resolve(stdout)
-                })
-            })
+            const { absTarget } = getAbsTarget(root, rel)
+            return await listFiles(absTarget)
         },
         lsDirs: async (parent: any, { path: rel }: any, context: Context) => {
             context.checkAuth()
@@ -89,20 +110,8 @@ const resolver = {
             if (!root) {
                 throw new Error('FILES_ROOT environment variable is not set')
             }
-            const absRoot = path.resolve(root)
-            const absTarget = path.resolve(root, rel || '')
-            if (!absTarget.startsWith(absRoot)) {
-                throw new Error('Path is outside of allowed directory')
-            }
-            return new Promise(resolve => {
-                exec(`ls -d ${absTarget}*/`, (error, stdout, stderr) => {
-                    if (error) {
-                        resolve(stderr || error.message)
-                        return
-                    }
-                    resolve(stdout)
-                })
-            })
+            const { absTarget } = getAbsTarget(root, rel)
+            return await listFiles(absTarget, 'dir')
         },
         lsFiles: async (parent: any, { path: rel }: any, context: Context) => {
             context.checkAuth()
@@ -113,41 +122,20 @@ const resolver = {
             if (!root) {
                 throw new Error('FILES_ROOT environment variable is not set')
             }
-            const absRoot = path.resolve(root)
-            const absTarget = path.resolve(root, rel || '')
-            if (!absTarget.startsWith(absRoot)) {
-                throw new Error('Path is outside of allowed directory')
-            }
-            return new Promise(resolve => {
-                exec(`ls -p "${absTarget}" | grep -v /`, (error, stdout, stderr) => {
-                    if (error) {
-                        resolve(stderr || error.message)
-                        return
-                    }
-                    resolve(stdout)
-                })
-            })
+            const { absTarget } = getAbsTarget(root, rel)
+            return await listFiles(absTarget, 'file')
         },
         stat: async (parent: any, { path: rel }: any, context: Context) => {
             context.checkAuth()
+            if (context.getCurrentUser()!.tenantId != '0' && !context.isAdmin()) {
+                throw new Error('Недостаточно прав')
+            }
             const root = process.env.FILES_ROOT
             if (!root) {
                 throw new Error('FILES_ROOT environment variable is not set')
             }
-            const absRoot = path.resolve(root)
-            const absTarget = path.resolve(root, rel)
-            if (!absTarget.startsWith(absRoot)) {
-                throw new Error('Path is outside of allowed directory')
-            }
-            return new Promise(resolve => {
-                exec(`stat "${absTarget}"`, (error, stdout, stderr) => {
-                    if (error) {
-                        resolve(stderr || error.message)
-                        return
-                    }
-                    resolve(stdout)
-                })
-            })
+            const { absTarget } = getAbsTarget(root, rel)
+            return await statFile(absTarget)
         },
         readFile: async (parent: any, { path: rel }: any, context: Context) => {
             context.checkAuth()
@@ -158,20 +146,8 @@ const resolver = {
             if (!root) {
                 throw new Error('FILES_ROOT environment variable is not set')
             }
-            const absRoot = path.resolve(root)
-            const absTarget = path.resolve(root, rel)
-            if (!absTarget.startsWith(absRoot)) {
-                throw new Error('Path is outside of allowed directory')
-            }
-            return new Promise(resolve => {
-                exec(`cat "${absTarget}"`, (error, stdout, stderr) => {
-                    if (error) {
-                        resolve(stderr || error.message)
-                        return
-                    }
-                    resolve(stdout)
-                })
-            })
+            const { absTarget } = getAbsTarget(root, rel)
+            return await fs.readFile(absTarget, 'utf-8')
         }
     }, 
     Mutation: {

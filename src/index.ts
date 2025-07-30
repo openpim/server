@@ -12,6 +12,7 @@ import { GraphQLError, print } from 'graphql';
 import { importSchema } from 'graphql-import';
 import { IncomingMessage } from 'http';
 import { ChannelsManagerFactory } from './channels';
+import { ChannelExecution } from './models/channels'
 import Context from './context';
 import logger from './logger';
 import i18next from './i18n';
@@ -370,6 +371,34 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       const context = await Context.create(req)
       await generateTemplateForItems(context, req, res)
     } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+    app.get('/execution_log/:id', async (req, res) => {
+    try {
+      const context = await Context.create(req)
+      context.checkAuth()
+      const { id } = req.params
+      const execution = await ChannelExecution.findOne({
+        where: { id }
+      })
+      if (!execution || !execution.log) {
+        res.status(404).send('Log not found')
+        return
+      }
+
+      const logText = execution.log
+
+      res.setHeader('Content-Disposition', `attachment; filename=log_${id}.txt`)
+      res.setHeader('Content-Type', 'text/plain')
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+      res.setHeader('Pragma', 'no-cache')
+      res.setHeader('Expires', '0')
+      res.setHeader('Surrogate-Control', 'no-store')
+      res.status(200).send(logText)
+    } catch (error: any) {
+      console.error(error)
       res.status(400).send(error.message)
     }
   })

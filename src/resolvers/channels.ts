@@ -125,7 +125,21 @@ export default {
                 },
                 order: order,
                 offset: offset,
-                limit: limit === -1 ? null : limit
+                limit: limit === -1 ? null : limit,
+                attributes: [
+                    'id',
+                    'channelId',
+                    'status',
+                    'startTime',
+                    'finishTime',
+                    'storagePath',
+                    'log',
+                    [literal('substring(trim(both \'"\' from "log"::text) from 1 for 50)'), 'shortLog'],
+                    [literal('pg_column_size("log")'), 'logSizeBytes'],
+                    'createdAt',
+                    'updatedAt'
+                ],
+                raw: true
             })
 
             return res
@@ -421,4 +435,8 @@ export default {
             return true
         }
     }
+}
+
+function col(arg0: string): unknown {
+    throw new Error('Function not implemented.')
 }

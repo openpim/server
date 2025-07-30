@@ -62,6 +62,8 @@ type Execution {
   finishTime: UTCDateTime
   storagePath: String
   log: String
+  shortLog: String
+  logSizeBytes: Int
   createdAt: UTCDateTime!
   updatedAt: UTCDateTime!
 }

@@ -30,11 +30,23 @@ type Query {
   serverConfig: JSONObject
   nextId(seqName:String): String
   isWebDAVEnabled: Boolean!
-  ls(path: String): String
-  lsDirs(path: String): String
-  lsFiles(path: String): String
-  stat(path: String!): String
-  readFile(path: String!): String
+  ls(path: String): [FileEntry]
+  lsDirs(path: String): [String]
+  lsFiles(path: String): [String]
+  stat(path: String): StatEntry
+  readFile(path: String): String
+}
+
+type StatEntry {
+    name: String
+    size: Int
+    mtime: String
+    isDirectory: Boolean
+}
+
+type FileEntry {
+    name: String
+    type: String
 }
 
 type Mutation {
