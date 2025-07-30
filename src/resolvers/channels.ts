@@ -436,7 +436,3 @@ export default {
         }
     }
 }
-
-function col(arg0: string): unknown {
-    throw new Error('Function not implemented.')
-}
