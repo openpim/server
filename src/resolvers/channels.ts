@@ -135,14 +135,21 @@ export default {
                     'storagePath',
                     'log',
                     [literal('substring(trim(both \'"\' from "log"::text) from 1 for 50)'), 'shortLog'],
-                    [literal('pg_column_size("log")'), 'logSizeBytes'],
                     'createdAt',
                     'updatedAt'
                 ],
                 raw: true
             })
 
-            return res
+            const resultRows = res.rows.map(row => {
+                let logSizeBytes = Buffer.byteLength(row.log, 'utf-8')
+                return {
+                    ...row,
+                    logSizeBytes
+                }
+            })
+
+            return { ...res, rows: resultRows }
         },
         getExecutionById: async (parent: any, { id }: any, context: Context) => {
             context.checkAuth()
