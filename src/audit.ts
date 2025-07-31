@@ -30,7 +30,7 @@ class Audit {
         logger.debug('Sending item to the audit: ' + JSON.stringify(body))
         try {
             await this.getClient().index({
-                index: "items",
+                index: process.env.AUDIT_IT_INDEX || "items",
                 body: body
             })
         } catch (err:any) {
@@ -52,7 +52,7 @@ class Audit {
             logger.debug('Sending item relation to the audit: ' + JSON.stringify(body))
             try {
             await this.getClient().index({
-                index: "item_relations",
+                index: process.env.AUDIT_IR_INDEX || "item_relations",
                 body: body
             })
         } catch (err:any) {
@@ -66,7 +66,7 @@ class Audit {
         try {
             const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
             const response:any = await this.getClient().search({
-                index: "items",
+                index: process.env.AUDIT_IT_INDEX || "items",
                 from: offset,
                 size: limit,
                 body: {
@@ -95,7 +95,7 @@ class Audit {
             try {
                 const sort = order ? order.map((elem:any) => { const data:any = {}; data[elem[0]] = elem[1]; return data; } ) : null
                 const response:any = await this.getClient().search({
-                    index: "item_relations",
+                    index: process.env.AUDIT_IR_INDEX || "item_relations",
                     from: offset,
                     size: limit,
                     body: {
