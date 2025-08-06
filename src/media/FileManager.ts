@@ -177,6 +177,7 @@ export class FileManager {
             values.file_size=size
             values.image_rgba=metadata.space
 
+            /*
             let w
             let h
             if (values.image_width > values.image_height) {
@@ -189,9 +190,12 @@ export class FileManager {
             if (values.image_width == values.image_height) {
                 w = 300
                 h = 300
-            }
+            }*/
 
-            await image.resize({ width: w, height: h }).flatten({ background: '#fff' }).jpeg({ quality: 70 }).toFile(fullPath + '_thumb.jpg')
+            await image.resize(300, 300, {
+                fit: sharp.fit.contain,
+                background: { r: 255, g: 255, b: 255, alpha: 1 }
+            }).flatten({ background: '#fff' }).jpeg({ quality: 70 }).toFile(fullPath + '_thumb.jpg')
             sharp.cache(false)
         } else {
             values.file_name=originalFilename||''
