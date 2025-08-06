@@ -1,19 +1,15 @@
 import * as fs from 'fs'
 import FS from 'fs/promises'
 import { Item } from '../models/items'
-import * as JPEG from 'jpeg-js'
-import * as Jimp from 'jimp'
 import { mergeValues } from '../resolvers/utils'
 import {File} from 'formidable'
 import logger from '../logger'
 import { Channel, ChannelExecution } from '../models/channels'
 import { Process } from '../models/processes'
 import * as hasha from 'hasha'
+import sharp from "sharp"
 
-import { WebPInfo } from 'webpinfo'
 import { StorageFactory } from '../storage/StorageFactory'
-const webp=require('webp-converter')
-webp.grant_permission()
 
 export class FileManager {
     private static instance: FileManager
@@ -21,9 +17,6 @@ export class FileManager {
 
     private constructor() {
         this.filesRoot = process.env.FILES_ROOT!
-        const maxMemoryUsageInMB = process.env.OPENPIM_THUMBNAIL_MAX_MEMORY_MB ? parseInt(process.env.OPENPIM_THUMBNAIL_MAX_MEMORY_MB) : 1024
-        const maxResolutionInMP = process.env.OPENPIM_THUMBNAIL_MAX_RESOLUTION_MP ? parseInt(process.env.OPENPIM_THUMBNAIL_MAX_RESOLUTION_MP) : 100
-        Jimp.decoders['image/jpeg'] = (data: Buffer) => JPEG.decode(data, { maxMemoryUsageInMB, maxResolutionInMP })
     }
 
     public static getInstance(): FileManager {
@@ -174,33 +167,32 @@ export class FileManager {
         item.storagePath = relativePath
 
         if (this.isImage(mimetype||'')) {
-            if (mimetype !== 'image/webp') {
-                const image = await Jimp.read(filepath)
-                values.image_width=image.bitmap.width
-                values.image_height=image.bitmap.height
-                values.image_type=image.getExtension()
-                values.file_type=image.getMIME()
-                values.file_name=originalFilename||''
-                values.file_size=size
-                values.image_rgba=image._rgba
+            const image = sharp(filepath)
+            const metadata = await image.metadata()
+            values.image_width= metadata.width
+            values.image_height= metadata.height
+            values.image_type=metadata.format
+            values.file_type=mimetype
+            values.file_name=originalFilename||''
+            values.file_size=size
+            values.image_rgba=metadata.space
 
-                const w = image.bitmap.width > image.bitmap.height ? 300 : Jimp.AUTO
-                const h = image.bitmap.width > image.bitmap.height ? Jimp.AUTO: 300
-                image.resize(w, h).quality(70).background(0xffffffff)
-                image.write(fullPath + '_thumb.jpg')    
+            let w
+            let h
+            if (values.image_width > values.image_height) {
+                w = 300
+                h = Math.round(parseInt(values.image_height) * 300 / parseInt(values.image_width))
             } else {
-                const info = await WebPInfo.from(filepath);                
-                values.image_width=info.summary.width
-                values.image_height=info.summary.height
-                values.image_type='webp'
-                values.file_type='image/webp'
-                values.file_name=originalFilename||''
-                values.file_size=size
-
-                const w = values.image_width > values.image_height ? 300 : Math.round(parseInt(values.image_height) * 300 / parseInt(values.image_width))
-                const h = values.image_width > values.image_height ? Math.round(parseInt(values.image_height) * 300 / parseInt(values.image_width)): 300
-                const result = await webp.cwebp(fullPath,fullPath + '_thumb.jpg',`-q 70 -resize ${w} ${h}`);
+                w = Math.round(parseInt(values.image_width) * 300 / parseInt(values.image_height))
+                h = 300
             }
+            if (values.image_width == values.image_height) {
+                w = 300
+                h = 300
+            }
+
+            await image.resize({ width: w, height: h }).flatten({ background: '#fff' }).jpeg({ quality: 70 }).toFile(fullPath + '_thumb.jpg')
+            sharp.cache(false)
         } else {
             values.file_name=originalFilename||''
             values.file_type=mimetype||''
