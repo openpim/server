@@ -1,7 +1,7 @@
 {
 	"auth": [
 		{
-			"id": "google",
+			"id": "default",
 			"name": " Google",
 			"IssuerURL": "https://accounts.google.com",
 			"CLIENT_ID": "CLIENT_ID",
