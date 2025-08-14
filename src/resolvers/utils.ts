@@ -22,6 +22,7 @@ import * as http from 'http'
 import * as https from 'https'
 import * as FS from 'node:fs'
 import * as fs from 'fs/promises'
+import * as os from 'os'
 import moment from 'moment'
 import KafkaJS from "kafkajs"
 const archiver = require('archiver')
@@ -46,6 +47,7 @@ import { CollectionItems } from "../models/collectionItems"
 import { Channel, ChannelExecution } from "../models/channels"
 import { ChannelsManagerFactory } from "../channels"
 import NodeCache = require("node-cache")
+import { StorageFactory } from "../storage/StorageFactory"
 
 export async function checkRelationAttrDisplayValue(tenantId: string, attr: Attribute, attrValue: any, language: string, channel: Channel | null, lovCache: NodeCache) {
     if (!attrValue) return attrValue
@@ -1972,8 +1974,18 @@ class ActionUtils {
         item.mimeType = mimetype || ''
     }
 
-    public getStoragePath(item: Item) {
-        return !item.storagePath ? null : FileManager.getInstance().getFilesRoot() + item.storagePath
+    public async getStoragePath(item: Item) {
+        const storage = StorageFactory.getStorageInstance()
+        if (!storage.isStorageExternal()) {
+            return !item.storagePath ? null : FileManager.getInstance().getFilesRoot() + item.storagePath
+        } else {
+            const tmpFile = os.tmpdir() + '/' + Date.now()
+            const input = await storage.getReadStream(item)
+            if (!input) throw new Error(`Failed to receive read streem for item with id: ${item.id}`)
+            const out = FS.createWriteStream(tmpFile)
+            input.pipe(out)
+            return tmpFile
+        }
     }
 
     public async runLibraryAction(context: any, actionIdentifier: string, ...args: any[]) {

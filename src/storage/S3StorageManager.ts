@@ -78,6 +78,10 @@ class S3StorageManager extends StorageManager {
             return null
         }
     }
+
+    public isStorageExternal(): boolean {
+        return true
+    }
 }
 
 export { S3StorageManager }

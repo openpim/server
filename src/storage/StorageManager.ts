@@ -7,4 +7,6 @@ export abstract class StorageManager {
     abstract saveFile(item: Item, filepath: string, mimetype: string, clean: boolean): Promise<void>
 
     abstract getReadStream(item: Item): Promise<Readable | null>
+
+    abstract isStorageExternal(): boolean
 }

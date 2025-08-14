@@ -54,4 +54,7 @@ export class FilesystemStorageManager extends StorageManager {
         return null
     }
 
+    public isStorageExternal(): boolean {
+        return false
+    }
 }
