@@ -247,7 +247,7 @@ export class YandexChannelHandler extends ChannelHandler {
         if (changed) {
             const ctx = Context.createAs("admin", channel.tenantId)
             try {
-                await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, changedValues, newChannels, false, false)
+                await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, changedValues, newChannels, false, false, false, null, {updateFromYM: channel.identifier})
                 if (valuesChanged) {
                     reloadedItem!.values = {...reloadedItem!.values, ...changedValues}
                     reloadedItem!.changed('values', true)
@@ -262,7 +262,7 @@ export class YandexChannelHandler extends ChannelHandler {
             await sequelize.transaction(async (t) => {
                 await reloadedItem!.save({transaction: t})
             })
-            await processItemActions(ctx, EventType.AfterUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, reloadedItem!.values, reloadedItem!.channels, false, false)
+            await processItemActions(ctx, EventType.AfterUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, reloadedItem!.values, reloadedItem!.channels, false, false, false, null, {updateFromYM: channel.identifier})
         }
      }
 
