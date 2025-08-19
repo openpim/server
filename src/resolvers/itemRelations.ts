@@ -267,11 +267,11 @@ export default {
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
                 await transaction.commit()
-                await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, false, null)
             } catch(err: any) {
                 if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
+            await processItemRelationActions(context, EventType.AfterCreate, itemRelation, null, values, false, false, null)
 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
@@ -376,11 +376,11 @@ export default {
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
                 await transaction.commit()
-                await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, false, null)
             } catch(err: any) {
                 if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
+            await processItemRelationActions(context, EventType.AfterUpdate, itemRelation, null, values, false, false, null)
             
             if (audit.auditEnabled()) {
                 if (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted)) audit.auditItemRelation(ChangeType.UPDATE, itemRelation.id, itemRelation.identifier, relDiff, context.getCurrentUser()!.login, itemRelation.updatedAt)
@@ -420,11 +420,11 @@ export default {
                 await itemRelation.save({ transaction })
                 await itemRelation.destroy({ transaction })
                 await transaction.commit()
-                await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, false, null)
             } catch(err: any) {
                 if (transaction) await transaction.rollback()
                 throw new Error(err.message)
             }
+            await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, false, null)
 
             if (audit.auditEnabled()) {
                 const itemRelationChanges: ItemRelationChanges = {
