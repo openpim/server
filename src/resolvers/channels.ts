@@ -134,7 +134,6 @@ export default {
                     'finishTime',
                     'storagePath',
                     'log',
-                    [literal('substring(trim(both \'"\' from "log"::text) from 1 for 50)'), 'shortLog'],
                     'createdAt',
                     'updatedAt'
                 ],
@@ -145,6 +144,7 @@ export default {
                 let logSizeBytes = Buffer.byteLength(row.log, 'utf-8')
                 return {
                     ...row,
+                    shortLog: row.log.substring(0, 50),
                     logSizeBytes
                 }
             })
