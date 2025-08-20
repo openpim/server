@@ -144,7 +144,7 @@ export default {
                 let logSizeBytes = Buffer.byteLength(row.log, 'utf-8')
                 return {
                     ...row,
-                    shortLog: row.log.substring(0, 50),
+                    shortLog: row.log ? new String(row.log).substring(0, 50) : '',
                     logSizeBytes
                 }
             })
