@@ -71,7 +71,9 @@ const resolver = {
             return 'pong'
         },
         serverConfig: () =>  {
-            return ModelManager.getServerConfig()
+            const config = ModelManager.getServerConfig()
+            delete config.storage
+            return config
         },
         nextId: async (parent: any, {seqName}: any, context: Context) => {
             context.checkAuth()
