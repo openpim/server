@@ -2,11 +2,9 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, GetO
 import { StorageManager } from "./StorageManager"
 import { Item } from "../models/items"
 import { ModelManager } from '../models/manager'
-import { ReadStream, createReadStream } from "fs"
-import dotenv from 'dotenv'
+import { createReadStream } from "fs"
 import { Readable } from "stream"
-dotenv.config()
-
+import logger from '../logger'
 
 class S3StorageManager extends StorageManager {
     private s3Client: S3Client
@@ -61,6 +59,7 @@ class S3StorageManager extends StorageManager {
     }
 
     public async getReadStream(item: Item): Promise<Readable | null> {
+        logger.debug(`getReadStream for item with id: ${item.id}`)
         const params = {
             Bucket: this.bucketName,
             Key: item.id.toString()
@@ -72,6 +71,7 @@ class S3StorageManager extends StorageManager {
                 throw new Error('Failed to retrieve file body from S3')
             }
 
+            logger.debug(`getReadStream body: ${Body}`)
             return Body
         } catch (err) {
             console.error(`Error getting file from S3: ${err}`)

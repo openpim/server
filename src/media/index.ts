@@ -178,6 +178,7 @@ export async function processDownloadById(context: Context, id: number, res: Res
         }
         data.pipe(res)
     } else {
+        logger.error(`Failed to receive read stream for id: ${id} - ${data}`)
         res.status(404).send('Not found')
     }
 }
