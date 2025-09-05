@@ -55,6 +55,7 @@ import userResolver from './resolvers/users'
 import { FileManager } from './media/FileManager';
 import { v2 as webdav } from 'webdav-server'
 import fs from 'fs'
+import { StorageFactory } from './storage/StorageFactory';
 
 let isMetrics
 if (process.env.OPENPIM_DATABASE_ADDRESS) process.env.DATABASE_URL = process.env.OPENPIM_DATABASE_ADDRESS
@@ -80,6 +81,7 @@ app.use(i18nextMiddleware.handle(i18next));
   await initModels();
   logger.info(`${i18next.t('Serverversion')}: ${  version.buildMajor  }.${  version.buildMinor  }.${  version.buildRevision}`)
   logger.info(`${i18next.t('Arguments')}: ${  process.argv}`)
+  StorageFactory.getStorageInstance()
   
   // Construct a schema, using GraphQL schema language
   const typeDefs = await importSchema('./schema/index.graphql'); 
