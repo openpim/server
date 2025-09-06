@@ -24,7 +24,8 @@ export enum TriggerType {
   Attribute,
   TableButton,
   ImportConfig,
-  LOV
+  LOV,
+  CollectionElement
 }
 
 export class Action extends Base {

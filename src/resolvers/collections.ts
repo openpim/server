@@ -3,7 +3,8 @@ import { sequelize } from '../models'
 import { Op, literal, FindAndCountOptions } from 'sequelize'
 import { Collection } from '../models/collections'
 import { CollectionItems } from '../models/collectionItems'
-import { integer } from '@elastic/elasticsearch/lib/api/types'
+import { EventType } from '../models/actions'
+import { processCollectionElemActions } from './utils'
 
 export default {
     Query: {
@@ -119,6 +120,8 @@ export default {
 
             sequelize.query('DELETE FROM "collectionItems" a USING "collectionItems" b WHERE a.id > b.id AND a."itemId" = b."itemId" AND a."collectionId" = b."collectionId";')
 
+            await processCollectionElemActions(context, EventType.AfterCreate, collectionId, items, false)
+
             return true
         },
         removeFromCollection: async (parent: any, { collectionId, items }: any, context: Context) => {
@@ -146,6 +149,9 @@ export default {
                     collectionId
                 }    
             })
+
+            await processCollectionElemActions(context, EventType.AfterDelete, collectionId, items, false)
+
             return data
         }
     }

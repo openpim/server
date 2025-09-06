@@ -1183,6 +1183,41 @@ export async function processImportActions(context: Context, event: EventType, p
     })
 }
 
+export async function processCollectionElemActions(context: Context, event: EventType, collectionId: number, itemIds: [number], isImport: boolean) {
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const actions = mng.getActions().filter(action => {
+        for (let i = 0; i < action.triggers.length; i++) {
+            const trigger = action.triggers[i]
+
+            const result = parseInt(trigger.type) === TriggerType.CollectionElement && parseInt(trigger.event) === event
+            if (result) return true
+        }
+        return false
+    })
+    return await processActions(mng, actions, {
+        Op: Op,
+        event: EventType[event],
+        user: context.getCurrentUser()?.login,
+        roles: context.getUser()?.getRoles(),
+        utils: new ActionUtils(context),
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        isImport: isImport,
+        collectionId: collectionId,
+        itemIds: itemIds,
+        models: {
+            item: makeModelProxy(Item.applyScope(context), makeItemProxy),
+            itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
+            lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
+            template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
+            channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            literal: sequelize.literal,
+            process: Process.applyScope(context),
+            Item,
+            ItemRelation
+        }
+    })
+}
+
 
 async function processActions(mng: ModelManager, actions: Action[], sandbox: any) {
     const cons = {

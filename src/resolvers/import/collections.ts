@@ -7,6 +7,9 @@ import { Collection } from "../../models/collections"
 import { CollectionItems } from "../../models/collectionItems"
 
 import logger from '../../logger'
+import { EventType } from "../../models/actions"
+import items from "../items"
+import { processCollectionElemActions } from "../utils"
 
 
 export async function importCollection(context: Context, config: IImportConfig, collection: ICollectionImportRequest): Promise<ImportResponse> {
@@ -136,6 +139,7 @@ export async function importCollectionItems(context: Context, config: IImportCon
             })
             result.result = ImportResult.DELETED
             sequelize.query('DELETE FROM "collectionItems" a USING "collectionItems" b WHERE a.id > b.id AND a."itemId" = b."itemId" AND a."collectionId" = b."collectionId";')
+            await processCollectionElemActions(context, EventType.AfterDelete, collectionId.id, ids, false)
             return result
         } 
         const values: any = []
@@ -159,5 +163,6 @@ export async function importCollectionItems(context: Context, config: IImportCon
         logger.error(error)
     }
     sequelize.query('DELETE FROM "collectionItems" a USING "collectionItems" b WHERE a.id > b.id AND a."itemId" = b."itemId" AND a."collectionId" = b."collectionId";')
+    await processCollectionElemActions(context, EventType.AfterCreate, collectionId.id, ids, false)
     return result
 }
