@@ -94,13 +94,13 @@ export default {
         addToCollection: async (parent: any, { collectionId, items }: any, context: Context) => {
             context.checkAuth()
 
-            const permissions: any = await Collection.applyScope(context).findOne({
+            const collection: any = await Collection.applyScope(context).findOne({
                 where: {
                     id: collectionId
                 }
             })
 
-            if (!(context.getCurrentUser()?.login === permissions.user || permissions.public)) {
+            if (!(context.getCurrentUser()?.login === collection.user || collection.public)) {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to add items from collection, tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
@@ -120,20 +120,20 @@ export default {
 
             sequelize.query('DELETE FROM "collectionItems" a USING "collectionItems" b WHERE a.id > b.id AND a."itemId" = b."itemId" AND a."collectionId" = b."collectionId";')
 
-            await processCollectionElemActions(context, EventType.AfterCreate, collectionId, items, false)
+            await processCollectionElemActions(context, EventType.AfterCreate, collection, items, false)
 
             return true
         },
         removeFromCollection: async (parent: any, { collectionId, items }: any, context: Context) => {
             context.checkAuth()
 
-            const permissions: any = await Collection.applyScope(context).findOne({
+            const collection: any = await Collection.applyScope(context).findOne({
                 where: {
                     id: collectionId
                 }
             })
             
-            if (!(context.getCurrentUser()?.login === permissions.user || permissions.public)) {
+            if (!(context.getCurrentUser()?.login === collection.user || collection.public)) {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to remove items from collection, tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
@@ -150,7 +150,7 @@ export default {
                 }    
             })
 
-            await processCollectionElemActions(context, EventType.AfterDelete, collectionId, items, false)
+            await processCollectionElemActions(context, EventType.AfterDelete, collection, items, false)
 
             return data
         }

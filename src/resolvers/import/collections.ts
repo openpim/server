@@ -104,7 +104,7 @@ export async function importCollectionItems(context: Context, config: IImportCon
     }
 
     const collectionIdentifier: any = collectionItems.collectionIdentifier
-    const collectionId: any = await Collection.applyScope(context).findOne({
+    const collection: any = await Collection.applyScope(context).findOne({
         where: {
             identifier: collectionIdentifier
         }
@@ -112,7 +112,7 @@ export async function importCollectionItems(context: Context, config: IImportCon
 
     const permissions: any = await Collection.applyScope(context).findOne({
         where: {
-            id: collectionId.id
+            id: collection.id
         }
     })
     
@@ -139,14 +139,14 @@ export async function importCollectionItems(context: Context, config: IImportCon
             })
             result.result = ImportResult.DELETED
             sequelize.query('DELETE FROM "collectionItems" a USING "collectionItems" b WHERE a.id > b.id AND a."itemId" = b."itemId" AND a."collectionId" = b."collectionId";')
-            await processCollectionElemActions(context, EventType.AfterDelete, collectionId.id, ids, false)
+            await processCollectionElemActions(context, EventType.AfterDelete, collection, ids, false)
             return result
         } 
         const values: any = []
         ids.map((id: any) => {
             values.push({
                 itemId: id,
-                collectionId: collectionId.id,
+                collectionId: collection.id,
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,
                 updatedBy: context.getCurrentUser()!.login,
@@ -163,6 +163,6 @@ export async function importCollectionItems(context: Context, config: IImportCon
         logger.error(error)
     }
     sequelize.query('DELETE FROM "collectionItems" a USING "collectionItems" b WHERE a.id > b.id AND a."itemId" = b."itemId" AND a."collectionId" = b."collectionId";')
-    await processCollectionElemActions(context, EventType.AfterCreate, collectionId.id, ids, false)
+    await processCollectionElemActions(context, EventType.AfterCreate, collection, ids, false)
     return result
 }

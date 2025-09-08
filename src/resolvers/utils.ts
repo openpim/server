@@ -48,6 +48,7 @@ import { Channel, ChannelExecution } from "../models/channels"
 import { ChannelsManagerFactory } from "../channels"
 import NodeCache = require("node-cache")
 import { StorageFactory } from "../storage/StorageFactory"
+import { Collection } from "../models/collections"
 
 export async function checkRelationAttrDisplayValue(tenantId: string, attr: Attribute, attrValue: any, language: string, channel: Channel | null, lovCache: NodeCache) {
     if (!attrValue) return attrValue
@@ -1183,7 +1184,7 @@ export async function processImportActions(context: Context, event: EventType, p
     })
 }
 
-export async function processCollectionElemActions(context: Context, event: EventType, collectionId: number, itemIds: [number], isImport: boolean) {
+export async function processCollectionElemActions(context: Context, event: EventType, collection: Collection, itemIds: [number], isImport: boolean) {
     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
     const actions = mng.getActions().filter(action => {
         for (let i = 0; i < action.triggers.length; i++) {
@@ -1202,7 +1203,7 @@ export async function processCollectionElemActions(context: Context, event: Even
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
         isImport: isImport,
-        collectionId: collectionId,
+        collection: collection,
         itemIds: itemIds,
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
