@@ -2019,7 +2019,7 @@ class ActionUtils {
             const input = await storage.getReadStream(item)
             if (!input) throw new Error(`Failed to receive read streem for item with id: ${item.id}`)
             const out = FS.createWriteStream(tmpFile)
-            input.pipe(out)
+            await pipe(input, out)
             return tmpFile
         }
     }
