@@ -545,10 +545,31 @@ export default {
     ItemsSearchResponse: {
         count: async ({context, params}: any) => {
             params.subQuery = false // to avoid generation unnecessary subqueries on join
+            params.distinct = true
             return await Item.applyScope(context).count(params)
         },
         rows: async ({context, params}: any) => {
             params.subQuery = false // to avoid generation unnecessary subqueries on join
+            params.attributes=[
+                [sequelize.fn('DISTINCT', sequelize.col('Item.identifier')), 'identifier'],
+	            "path",
+	            "name",
+	            "typeId",
+	            "typeIdentifier",
+	            "parentIdentifier",
+	            "values",
+	            "channels",
+	            "fileOrigName",
+	            "storagePath",
+	            "mimeType",
+	            "id",
+	            "tenantId",
+	            "createdBy",
+	            "updatedBy",
+	            "createdAt",
+	            "updatedAt",
+	            "deletedAt"
+            ]
 
             let rows = await Item.applyScope(context).findAll(params)
 

@@ -279,6 +279,7 @@ export function replaceOperations(obj: any, context: Context | null) {
 }
 function fillInclude(include: any[], context: Context | null) {
     include.forEach(elem => {
+        elem.attributes = []
         if (elem.as && elem.as.endsWith('Item')) elem.model = Item
         if (elem.as && elem.as.endsWith('Relation')) elem.model = ItemRelation
         if (elem.as && elem.as.endsWith('collectionItems')) elem.model = CollectionItems
