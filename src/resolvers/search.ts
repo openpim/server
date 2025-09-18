@@ -11,7 +11,7 @@ import { User, Role } from '../models/users'
 import { LOV } from '../models/lovs'
 import { SavedColumns, SavedSearch } from '../models/search'
 import { sequelize } from '../models'
-import { Op, literal, fn, col, QueryTypes } from 'sequelize'
+import { Op, literal, fn, col } from 'sequelize'
 import moment = require('moment')
 import e = require('cors')
 import { Action, EventType, TriggerType } from '../models/actions'
@@ -550,26 +550,43 @@ export default {
         },
         rows: async ({context, params}: any) => {
             params.subQuery = false // to avoid generation unnecessary subqueries on join
-            params.attributes=[
-                [sequelize.fn('DISTINCT', sequelize.col('Item.identifier')), 'identifier'],
-	            "path",
-	            "name",
-	            "typeId",
-	            "typeIdentifier",
-	            "parentIdentifier",
-	            "values",
-	            "channels",
-	            "fileOrigName",
-	            "storagePath",
-	            "mimeType",
-	            "id",
-	            "tenantId",
-	            "createdBy",
-	            "updatedBy",
-	            "createdAt",
-	            "updatedAt",
-	            "deletedAt"
-            ]
+
+            if (params.include) {
+                // we have to use DISTINCT here because we can have complex query with joins with the help of "include" and it can output duplicates
+                // but we must be also sure that we will output columns from params.order because of distinct
+                const jsonOrderColumns = params.order.map((order:any) => {
+                    if (order[0].includes('.')) {
+                        const path = order[0].split('.')
+                        const jsonPath = [...path]
+                        jsonPath.shift()
+                        const literal = `"Item".${path[0]}#>>'{${jsonPath.join(',')}}'`
+                        return [sequelize.literal(literal), order[0].replaceAll('.','_')]
+                    } else {
+                        return null
+                    }
+                }).filter((elem:any) => elem != null)
+                params.attributes=[
+                    [sequelize.fn('DISTINCT', sequelize.col('Item.identifier')), 'identifier'],
+                    "path",
+                    "name",
+                    "typeId",
+                    "typeIdentifier",
+                    "parentIdentifier",
+                    "values",
+                    "channels",
+                    "fileOrigName",
+                    "storagePath",
+                    "mimeType",
+                    "id",
+                    "tenantId",
+                    "createdBy",
+                    "updatedBy",
+                    "createdAt",
+                    "updatedAt",
+                    "deletedAt",
+                    ...jsonOrderColumns
+                ]
+            }
 
             let rows = await Item.applyScope(context).findAll(params)
 
