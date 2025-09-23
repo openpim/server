@@ -554,7 +554,7 @@ export default {
             if (params.include) {
                 // we have to use DISTINCT here because we can have complex query with joins with the help of "include" and it can output duplicates
                 // but we must be also sure that we will output columns from params.order because of distinct
-                const jsonOrderColumns = params.order.map((order:any) => {
+                const jsonOrderColumns = params.order ? params.order.map((order:any) => {
                     if (order[0].includes('.')) {
                         const path = order[0].split('.')
                         const jsonPath = [...path]
@@ -564,7 +564,7 @@ export default {
                     } else {
                         return null
                     }
-                }).filter((elem:any) => elem != null)
+                }).filter((elem:any) => elem != null) : []
                 params.attributes=[
                     [sequelize.fn('DISTINCT', sequelize.col('Item.identifier')), 'identifier'],
                     "path",
