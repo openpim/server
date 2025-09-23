@@ -850,6 +850,7 @@ export async function processItemActions(context: Context, event: EventType, ite
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -882,6 +883,7 @@ export async function processItemActions(context: Context, event: EventType, ite
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             process: Process.applyScope(context),
             Item,
             ItemRelation
@@ -941,6 +943,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -998,6 +1001,7 @@ export async function processBulkUpdateChannelsActions(context: Context, event: 
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -1028,6 +1032,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -1068,6 +1073,7 @@ export async function processAttrGroupActions(context: Context, event: EventType
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -1103,6 +1109,7 @@ export async function processAttributeActions(context: Context, event: EventType
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),            
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -1138,6 +1145,7 @@ export async function processLOVActions(context: Context, event: EventType, lov:
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -1177,6 +1185,7 @@ export async function processImportActions(context: Context, event: EventType, p
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -1212,6 +1221,7 @@ export async function processCollectionElemActions(context: Context, event: Even
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -1444,6 +1454,7 @@ export async function processItemRelationActions(context: Context, event: EventT
             lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
             template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
             channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+            collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
             literal: sequelize.literal,
             process: Process.applyScope(context),
             Item,
@@ -1710,6 +1721,47 @@ function makeChannelProxy(item: any) {
                 prop === 'config' ||
                 prop === 'mappings' ||
                 prop === 'updatedBy'
+            ) {
+                target[prop] = value
+                return true
+            } else {
+                return false
+            }
+        }
+    })
+}
+
+function makeCollectionItemsProxy(item: any) {
+    return new Proxy(item, {
+        get: function (target, property, receiver) {
+            if ((<string>property) == 'save') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
+                }
+            } else if ((<string>property) == 'destroy') {
+                return async (...args: any) => {
+                    target.set('identifier', target.identifier + "_d" + Date.now())
+                    target.save()
+                    return await target[property].apply(target, args)
+                }
+            } else if ((<string>property) == 'set') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
+                }
+            } else if ((<string>property) == 'changed') {
+                return async (...args: any) => {
+                    return await target[property].apply(target, args)
+                }
+            } else if ((<string>property) == 'itemId') {
+                return target[property]
+            } else if ((<string>property) == 'collectionId') {
+                return target[property]
+            } 
+        },
+        set: function (target, prop, value, receiver) {
+            if (
+                prop === 'itemId' ||
+                prop === 'collectionId'
             ) {
                 target[prop] = value
                 return true
@@ -2077,6 +2129,7 @@ class ActionUtils {
                 lov: makeModelProxy(LOV.applyScope(context), makeLOVProxy),
                 template: makeModelProxy(Template.applyScope(context), makeTemplateProxy),
                 channel: makeModelProxy(Channel.applyScope(context), makeChannelProxy),
+                collectionItems: makeModelProxy(CollectionItems.applyScope(context), makeCollectionItemsProxy),
                 literal: sequelize.literal,
                 process: Process.applyScope(context),
                 Item,
