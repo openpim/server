@@ -4,10 +4,19 @@ import { Process } from '../models/processes'
 import { FindAndCountOptions, fn, literal, Op } from 'sequelize'
 import { replaceOperations } from './utils'
 
+const processCache:any = {}
+
 export default {
     Query: {
         getProcesses: async (parent: any, request : any, context: Context) => {
             context.checkAuth()
+            const key = JSON.stringify(request) + context.getCurrentUser()!.login
+            const proc = processCache[key]
+
+            const deleteTime = Date.now() - 1000 * 50
+            if (proc && proc.date < deleteTime) delete processCache[key]
+
+            if (proc && proc.res) return proc.res
             
             const params: FindAndCountOptions = {
                 offset: request.offset,
@@ -24,7 +33,8 @@ export default {
 
             if (request.order) params.order = request.order
 
-            const res = await Process.applyScope(context).findAndCountAll(params)            
+            const res = await Process.applyScope(context).findAndCountAll(params)      
+            processCache[key] = {res: res, date: Date.now()}
             return res
         }
     },
