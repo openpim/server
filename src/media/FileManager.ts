@@ -8,6 +8,7 @@ import { Channel, ChannelExecution } from '../models/channels'
 import { Process } from '../models/processes'
 import * as hasha from 'hasha'
 import sharp from "sharp"
+import * as bmp from "sharp-bmp"
 
 import { StorageFactory } from '../storage/StorageFactory'
 
@@ -167,7 +168,21 @@ export class FileManager {
         item.storagePath = relativePath
 
         if (this.isImage(mimetype||'')) {
-            const image = sharp(filepath)
+            let image
+            if (mimetype === 'image/bmp') {
+                const buffer = fs.readFileSync(filepath);
+                const bitmap = bmp.decode(buffer);
+
+                image = sharp(bitmap.data, {
+                    raw: {
+                        width: bitmap.width,
+                        height: bitmap.height,
+                        channels: 4,
+                    },
+                })
+            } else {
+                image = sharp(filepath)
+            }
             const metadata = await image.metadata()
             values.image_width= metadata.width
             values.image_height= metadata.height
