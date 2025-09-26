@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
 import { StorageManager } from "./StorageManager"
 import { Item } from "../models/items"
@@ -53,6 +54,10 @@ class S3StorageManager extends StorageManager {
 
         try {
             await this.s3Client.send(new PutObjectCommand(params))
+
+            if (clean) {
+                fs.unlinkSync(filepath)
+            }
         } catch (err) {
             console.error(`Error uploading file to S3: ${err}`)
         }
