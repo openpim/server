@@ -1,4 +1,6 @@
 type Query {
+  getAllSourceRelations(itemId: ID!, limit: Int!): [ItemRelationWithCount]
+  getAllTargetRelations(itemId: ID!, limit: Int!): [ItemRelationWithCount]
   getSourceRelations(itemId: ID!, relationId: ID!, offset: Int!, limit: Int!, where: JSONObject): ItemRelationsResponse
   getTargetRelations(itemId: ID!, relationId: ID!, offset: Int!, limit: Int!, where: JSONObject): ItemRelationsResponse
   getItemRelation(id: ID!): ItemRelation
@@ -25,6 +27,20 @@ type ItemRelation {
   updatedAt: UTCDateTime!
 }
 
+type ItemRelationWithCount {
+  id: ID!
+  identifier: String!
+  relationId: ID!
+  item: ItemInfo!
+  target: ItemInfo!
+  values: JSONObject
+  createdBy: String!
+  createdAt: UTCDateTime!
+  updatedBy: String!
+  updatedAt: UTCDateTime!
+  count: Int
+}
+
 type ItemRelationsChildrenResponse {
   count: Int
   rows: [Item]
@@ -33,6 +49,10 @@ type ItemRelationsChildrenResponse {
 type ItemRelationsResponse {
   count: Int
   rows: [ItemRelation]
+}
+
+extend type ItemRelation {
+  count: Int
 }
 
 type ItemInfo {

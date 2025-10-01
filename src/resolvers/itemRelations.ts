@@ -10,6 +10,82 @@ import audit, { AuditItemRelation, ChangeType, ItemRelationChanges } from '../au
 
 export default {
     Query: {
+        getAllSourceRelations: async (parent: any, { itemId, limit }: any, context: Context) => {
+            context.checkAuth()
+
+            let rows = await await sequelize.query(
+                `WITH RankedRels AS (
+                    SELECT
+                    *,
+                        ROW_NUMBER() OVER (PARTITION BY "relationIdentifier" ORDER BY values->'_itemRelationOrder', id ASC) as rn,
+                        count(*) OVER (PARTITION BY "relationIdentifier") as count
+                    FROM
+                        "itemRelations"
+                    where "itemId" = $1 and "deletedAt" is null
+                )
+                select * FROM RankedRels where rn <= $2`, {
+                bind: [itemId, limit],
+                type: QueryTypes.SELECT
+            })
+
+            if (rows.length > 0) {
+                const customFilter:any = await ModelManager.getRelationsCustomFilter()
+                if (customFilter) rows = await customFilter(0, rows, context)
+
+                const itemsArr = rows.map((elem:any) => elem.itemId)
+                const targetArr = rows.map((elem:any) => elem.targetId)
+                const items = await Item.applyScope(context).findAll({ where: { id: itemsArr} })
+                const targets = await Item.applyScope(context).findAll({ where: { id: targetArr} })
+
+                rows.forEach((row:any) => {
+                    const allowedAttributes = context.getViewItemRelationAttributes(row.relationId)
+                    const data:IItemRelation = <any>row
+                    data.item = items.find(item => item.id === row.itemId)!
+                    data.target = targets.find(item => item.id === row.targetId)!
+                    filterValues(allowedAttributes, data.values)
+                })
+            }
+
+            return rows
+        },
+        getAllTargetRelations: async (parent: any, { itemId, limit }: any, context: Context) => {
+            context.checkAuth()
+
+            let rows = await await sequelize.query(
+                `WITH RankedRels AS (
+                    SELECT
+                    *,
+                        ROW_NUMBER() OVER (PARTITION BY "relationIdentifier" ORDER BY values->'_itemRelationOrder', id ASC) as rn,
+                        count(*) OVER (PARTITION BY "relationIdentifier") as count
+                    FROM
+                        "itemRelations"
+                    where "targetId" = $1 and "deletedAt" is null
+                )
+                select * FROM RankedRels where rn <= $2`, {
+                bind: [itemId, limit],
+                type: QueryTypes.SELECT
+            })
+
+            if (rows.length > 0) {
+                const customFilter:any = await ModelManager.getRelationsCustomFilter()
+                if (customFilter) rows = await customFilter(0, rows, context)
+
+                const itemsArr = rows.map((elem:any) => elem.itemId)
+                const targetArr = rows.map((elem:any) => elem.targetId)
+                const items = await Item.applyScope(context).findAll({ where: { id: itemsArr} })
+                const targets = await Item.applyScope(context).findAll({ where: { id: targetArr} })
+
+                rows.forEach((row:any) => {
+                    const allowedAttributes = context.getViewItemRelationAttributes(row.relationId)
+                    const data:IItemRelation = <any>row
+                    data.item = items.find(item => item.id === row.itemId)!
+                    data.target = targets.find(item => item.id === row.targetId)!
+                    filterValues(allowedAttributes, data.values)
+                })
+            }
+
+            return rows
+        },
         getSourceRelations: async (parent: any, { itemId, relationId, offset, limit, where }: any, context: Context) => {
             context.checkAuth()
 
