@@ -33,15 +33,14 @@ export default {
                 if (customFilter) rows = await customFilter(0, rows, context)
 
                 const itemsArr = rows.map((elem:any) => elem.itemId)
-                const targetArr = rows.map((elem:any) => elem.targetId)
-                const items = await Item.applyScope(context).findAll({ where: { id: itemsArr} })
-                const targets = await Item.applyScope(context).findAll({ where: { id: targetArr} })
+                itemsArr.push(... rows.map((elem:any) => elem.targetId))
+                const items = await Item.applyScope(context).findAll({ where: { id: [...new Set(itemsArr)]} })
 
                 rows.forEach((row:any) => {
                     const allowedAttributes = context.getViewItemRelationAttributes(row.relationId)
                     const data:IItemRelation = <any>row
                     data.item = items.find(item => item.id === row.itemId)!
-                    data.target = targets.find(item => item.id === row.targetId)!
+                    data.target = items.find(item => item.id === row.targetId)!
                     filterValues(allowedAttributes, data.values)
                 })
             }
@@ -71,15 +70,14 @@ export default {
                 if (customFilter) rows = await customFilter(0, rows, context)
 
                 const itemsArr = rows.map((elem:any) => elem.itemId)
-                const targetArr = rows.map((elem:any) => elem.targetId)
-                const items = await Item.applyScope(context).findAll({ where: { id: itemsArr} })
-                const targets = await Item.applyScope(context).findAll({ where: { id: targetArr} })
+                itemsArr.push(... rows.map((elem:any) => elem.targetId))
+                const items = await Item.applyScope(context).findAll({ where: { id: [...new Set(itemsArr)]} })
 
                 rows.forEach((row:any) => {
                     const allowedAttributes = context.getViewItemRelationAttributes(row.relationId)
                     const data:IItemRelation = <any>row
                     data.item = items.find(item => item.id === row.itemId)!
-                    data.target = targets.find(item => item.id === row.targetId)!
+                    data.target = items.find(item => item.id === row.targetId)!
                     filterValues(allowedAttributes, data.values)
                 })
             }
@@ -109,16 +107,15 @@ export default {
                 if (customFilter) res = await customFilter(relationId, res, context)
 
                 const itemsArr = res.rows.map(elem => elem.itemId)
-                const targetArr = res.rows.map(elem => elem.targetId)
-                const items = await Item.applyScope(context).findAll({ where: { id: itemsArr} })
-                const targets = await Item.applyScope(context).findAll({ where: { id: targetArr} })
+                itemsArr.push(... res.rows.map((elem:any) => elem.targetId))
+                const items = await Item.applyScope(context).findAll({ where: { id: [...new Set(itemsArr)]} })
 
                 const allowedAttributes = context.getViewItemRelationAttributes(relId)
 
                 res.rows.forEach(row => {
                     const data:IItemRelation = <any>row
                     data.item = items.find(item => item.id === row.itemId)!
-                    data.target = targets.find(item => item.id === row.targetId)!
+                    data.target = items.find(item => item.id === row.targetId)!
                     filterValues(allowedAttributes, data.values)
                 })
             }
@@ -148,16 +145,15 @@ export default {
                 if (customFilter) res = await customFilter(relationId, res, context)
 
                 const itemsArr = res.rows.map(elem => elem.itemId)
-                const targetArr = res.rows.map(elem => elem.targetId)
-                const items = await Item.applyScope(context).findAll({ where: { id: itemsArr} })
-                const targets = await Item.applyScope(context).findAll({ where: { id: targetArr} })
+                itemsArr.push(... res.rows.map((elem:any) => elem.targetId))
+                const items = await Item.applyScope(context).findAll({ where: { id: [...new Set(itemsArr)]} })
 
                 const allowedAttributes = context.getViewItemRelationAttributes(relId)
 
                 res.rows.forEach(row => {
                     const data:IItemRelation = <any>row
                     data.item = items.find(item => item.id === row.itemId)!
-                    data.target = targets.find(item => item.id === row.targetId)!
+                    data.target = items.find(item => item.id === row.targetId)!
                     filterValues(allowedAttributes, data.values)
                 })
             }
