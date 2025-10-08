@@ -86,44 +86,62 @@ export class WBNewChannelHandler extends ChannelHandler {
         let singleItem = null
         if (data.item) singleItem = await Item.findByPk(data.item)
 
-        const errorsResp = await fetch('https://content-api.wildberries.ru/content/v2/cards/error/list', {
-            headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
-        })
-        const errorsJson = await errorsResp.json()
-        let msg = "Найдено "+errorsJson.data.length+" ошибок"
-        logger.info(msg)
-        if (channel.config.debug) context.log += msg+'\n'
-        const processedItems = []
-        for (let i = 0; i < errorsJson.data.length; i++) {
-            const error = errorsJson.data[i];
-
-            if (singleItem && singleItem.values[channel.config.wbCodeAttr] != error.vendorCode) continue
-            
-            const query:any = {}
-            query[wbCodeAttr] = error.vendorCode
-            let item = await Item.findOne({ 
-                where: { tenantId: channel.tenantId, values: query, [Op.or] : channel.visible.map((parentId:any) => {return {path: {[Op.regexp]: '*.'+parentId+'.*'}}})} 
-            })
-            if (!item) {
-                let msg = "Ошибка, не найден товар по артикулу для синхронизации: " + error.vendorCode
-                logger.info(msg)
-                context.log += msg+'\n'
-            } else {
-                if (item.channels[channel.identifier]) {
-                    processedItems.push(item.identifier)
-
-                    item.channels[channel.identifier].status = 3
-                    item.channels[channel.identifier].wbError = true
-                    item.channels[channel.identifier].message = error.errors.join(', ')
-                    data.syncedAt = Date.now()
-                    item.changed('channels', true)
-                    item.save()
-                    let msg = "Ошибка, для товара: " + error.vendorCode + ", " + item.channels[channel.identifier].message
-                    logger.info(msg)
-                    context.log += msg+'\n'
-                }
+        let nextErrors = true
+        const erroReq:any = {
+            "cursor": {
+                "limit": 20
+            },
+            "order": {
+                "ascending": true
             }
         }
+        const processedItems = []
+        do {
+            const errorsResp = await fetch('https://content-api.wildberries.ru/content/v2/cards/error/list', {
+                method: 'post',
+                body:    JSON.stringify(erroReq),
+                headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
+            })
+            const errorsJson = await errorsResp.json()
+            nextErrors = errorsJson.data.cursor.next
+            erroReq.cursor.updatedAt = errorsJson.data.cursor.updatedAt
+            erroReq.cursor.batchUUID = errorsJson.data.cursor.batchUUID
+
+            let msg = "Загружено "+errorsJson.data.items.length+" ошибок"
+            logger.info(msg)
+            if (channel.config.debug) context.log += msg+'\n'
+            for (let i = 0; i < errorsJson.data.items.length; i++) {
+                const error = errorsJson.data.items[i];
+
+                const errorVendorCode = error.vendorCodes[0]
+                if (singleItem && singleItem.values[channel.config.wbCodeAttr] != errorVendorCode) continue
+                
+                const query:any = {}
+                query[wbCodeAttr] = errorVendorCode
+                let item = await Item.findOne({ 
+                    where: { tenantId: channel.tenantId, values: query, [Op.or] : channel.visible.map((parentId:any) => {return {path: {[Op.regexp]: '*.'+parentId+'.*'}}})} 
+                })
+                if (!item) {
+                    let msg = "Ошибка, не найден товар по артикулу для синхронизации: " + errorVendorCode
+                    logger.info(msg)
+                    context.log += msg+'\n'
+                } else {
+                    if (item.channels[channel.identifier]) {
+                        processedItems.push(item.identifier)
+
+                        item.channels[channel.identifier].status = 3
+                        item.channels[channel.identifier].wbError = true
+                        item.channels[channel.identifier].message = JSON.stringify(error.errors)
+                        data.syncedAt = Date.now()
+                        item.changed('channels', true)
+                        await item.save()
+                        let msg = "Ошибка, для товара: " + errorVendorCode + ", " + item.channels[channel.identifier].message
+                        logger.info(msg)
+                        context.log += msg+'\n'
+                    }
+                }
+            }
+        } while (nextErrors)
 
 
         if (data.item) {
