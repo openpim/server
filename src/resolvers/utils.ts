@@ -737,7 +737,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
                 // remove relations not existed in incoming array
                 const existedItemRelationsForAttribute2Delete = existedItemRelationsForAttribute.filter(value => !valsArray.includes(isSource ? value.targetId : value.itemId))
                 for (let i = 0; i < existedItemRelationsForAttribute2Delete.length; i++) {
-                    await utils.removeItemRelation(existedItemRelationsForAttribute2Delete[i].id.toString(), transaction, false)
+                    await utils.removeItemRelation(existedItemRelationsForAttribute2Delete[i].id.toString(), transaction, true)
                     changed = true
                     const idx = existedItemRelations.findIndex(el => el.id === existedItemRelationsForAttribute2Delete[i].id)
                     if (idx !== -1) {
@@ -789,7 +789,7 @@ export async function checkRelationAttributes(context: Context, mng: ModelManage
 export async function createRelationsForItemRelAttributes(context: Context, arr: any, transaction: Transaction | null) {
     const utils = new ActionUtils(context)
     for (let i = 0; i < arr.length; i++) {
-        await utils.createItemRelation(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, transaction, false)
+        await utils.createItemRelation(arr[i].relationIdentifier, arr[i].identifier, arr[i].itemIdentifier, arr[i].targetIdentifier, arr[i].values, arr[i].skipActions, transaction, true)
     }
 }
 
