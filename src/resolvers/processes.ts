@@ -4,7 +4,7 @@ import { Process } from '../models/processes'
 import { FindAndCountOptions, fn, literal, Op } from 'sequelize'
 import { replaceOperations } from './utils'
 
-const processCache:any = {}
+let processCache:any = {}
 
 export default {
     Query: {
@@ -74,6 +74,7 @@ export default {
                 return proc
             })
 
+            processCache = {}
             return proc
         },
         updateProcess: async (parent: any, { id, title, active, status, log, runtime }: any, context: Context) => {
@@ -98,6 +99,7 @@ export default {
                 await proc!.save({transaction: t})
             })
 
+            processCache = {}
             return proc
         },
         removeProcess: async (parent: any, { id }: any, context: Context) => {
@@ -117,6 +119,7 @@ export default {
                 await proc!.destroy({transaction: t})
             })
 
+            processCache = {}
             return true
         }
     }
