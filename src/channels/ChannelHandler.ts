@@ -297,7 +297,7 @@ export abstract class ChannelHandler {
           if (attrValue && mapping.options) {
             const tst = mapping.options.find((elem:any) => elem.name == attrValue)
             if (tst) {
-              if (tst.includes(';')) attrValue = tst.value.split(';')
+              if (tst.value && tst.value.includes(';')) attrValue = tst.value.split(';')
                 else attrValue = tst.value
             }
           }
@@ -324,7 +324,7 @@ export abstract class ChannelHandler {
           if (attrValue && mapping.options) {
             const tst = mapping.options.find((elem:any) => elem.name == attrValue)
             if (tst) {
-              if (tst.includes(';')) attrValue = tst.value.split(';')
+              if (tst.value && tst.value.includes(';')) attrValue = tst.value.split(';')
                 else attrValue = tst.value
             }
           }
