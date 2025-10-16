@@ -445,7 +445,7 @@ export class YandexChannelHandler extends ChannelHandler {
         }
 
         const businessId = channel.config.businessId
-        const url = `https://api.partner.market.yandex.ru/businesses/${businessId}/offer-mappings/update`
+        const url = `https://api.partner.market.yandex.ru/v2/businesses/${businessId}/offer-mappings/update`
 
         const serverConfig = ModelManager.getServerConfig()
 
@@ -550,7 +550,7 @@ export class YandexChannelHandler extends ChannelHandler {
         context.log += 'Обрабатываются товары c идентификаторами: [' + items.map(item => item.identifier).join(', ') + ']\n'
 
         const businessId = channel.config.businessId
-        const url = `https://api.partner.market.yandex.ru/businesses/${businessId}/offer-cards`
+        const url = `https://api.partner.market.yandex.ru/v2/businesses/${businessId}/offer-cards`
 
         const productIds = items.filter(item => item.values[channel.config.offerIdAttr]).map(item => item.values[channel.config.offerIdAttr].toString())
 
@@ -651,7 +651,7 @@ export class YandexChannelHandler extends ChannelHandler {
     public async getCategories(channel: Channel): Promise<{ list: ChannelCategory[] | null, tree: ChannelCategory | null }> {
         let tree: ChannelCategory | undefined = this.cache.get('categories')
         if (!tree) {
-            const url = 'https://api.partner.market.yandex.ru/categories/tree'
+            const url = 'https://api.partner.market.yandex.ru/v2/categories/tree'
             logger.info("Sending POST request to Yandex: " + url)
             const res = await fetch(url, {
                 method: 'POST',
@@ -667,7 +667,7 @@ export class YandexChannelHandler extends ChannelHandler {
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_' + categoryId)
         if (!data) {
-            const res = await fetch(`https://api.partner.market.yandex.ru/category/${categoryId}/parameters`, {
+            const res = await fetch(`https://api.partner.market.yandex.ru/v2/category/${categoryId}/parameters`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Api-Key': channel.config.apiToken }
             })
@@ -704,7 +704,7 @@ export class YandexChannelHandler extends ChannelHandler {
                             'Api-Key': channel.config.apiToken
                         }
                     } : null,
-                    dictionaryLink: param.type === 'ENUM' ? `https://api.partner.market.yandex.ru/category/${categoryId}/parameters` : null
+                    dictionaryLink: param.type === 'ENUM' ? `https://api.partner.market.yandex.ru/v2/category/${categoryId}/parameters` : null
                 }
             })
             this.cache.set('attr_' + categoryId, data, 3600)

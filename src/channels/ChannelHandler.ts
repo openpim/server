@@ -296,7 +296,10 @@ export abstract class ChannelHandler {
           let attrValue = item.values[mapping.attrIdent]
           if (attrValue && mapping.options) {
             const tst = mapping.options.find((elem:any) => elem.name == attrValue)
-            if (tst) attrValue = tst.value
+            if (tst) {
+              if (tst.includes(';')) attrValue = tst.value.split(';')
+                else attrValue = tst.value
+            }
           }
           const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
           const attrNode = mng.getAttributeByIdentifier(mapping.attrIdent, true)
@@ -320,7 +323,10 @@ export abstract class ChannelHandler {
           let attrValue = item.values[attr] ? item.values[attr][lang] : null
           if (attrValue && mapping.options) {
             const tst = mapping.options.find((elem:any) => elem.name == attrValue)
-            if (tst) attrValue = tst.value
+            if (tst) {
+              if (tst.includes(';')) attrValue = tst.value.split(';')
+                else attrValue = tst.value
+            }
           }
           const mng = ModelsManager.getInstance().getModelManager(channel.tenantId)
           const attrNode = mng.getAttributeByIdentifier(mapping.attrIdent, true)
