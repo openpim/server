@@ -183,7 +183,18 @@ export class OzonChannelHandler extends ChannelHandler {
                     const log3 = "Response 2 from Ozon: " + JSON.stringify(json2)
                     logger.info(log3)
                     if (channel.config.debug) context.log += log3 + '\n'
-                    if (json2.result.items.length === 0 || json2.result.items[0].product_id == 0) {
+                    if (json2.result.items.length > 0 && json2.result.items[0].status == 'skipped') {
+                        context.log += '  Получили статус skipped для товара c идентификатором ' + item.identifier + ', будет обновлен его статус \n'
+                        // restore product_id
+                        const str = item.values[channel.config.ozonIdAttr]
+                        const idx = str.indexOf('product_id=')
+                        if (idx != -1) {
+                            item.values[channel.config.ozonIdAttr] = str.substring(idx+11)
+                            item.changed('values', true)
+                        } else {
+                            context.log += `  ОШИБКА не найден product_id: [${str}] \n`
+                        }
+                    } else if (json2.result.items.length === 0 || json2.result.items[0].product_id == 0) {
                         context.log += '  товар c идентификатором ' + item.identifier + ' пока не получил product_id \n'
                         return
                     } else {
@@ -1060,11 +1071,17 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.syncedAt = Date.now()
                     item.changed('channels', true)
                     if (json2.result.items[0].product_id == 0) {
-                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId
+                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId+(ozonProductId? `,product_id=${ozonProductId}`: ``)
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                     }
                     item.changed('values', true)
+                } else if (status === 'skipped') {
+                    context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана успешно. статус skipped\n'
+                    data.status = 4
+                    data.message = 'Получили статус skipped, значит карточка товаров не требует изменений. Ждем обновления статуса.'
+                    data.syncedAt = Date.now()
+                    item.changed('channels', true)
                 } else if (status === 'failed') {
                     context.log += 'Запись с идентификатором: ' + item.identifier + ' обработана с ошибкой.\n'
                     data.status = 3
@@ -1077,7 +1094,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.message = ''
                     item.changed('channels', true)            
                     if (status === null || json2.result.items[0].product_id == 0) {
-                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId
+                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId+(ozonProductId? `,product_id=${ozonProductId}`: ``)
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                     }
