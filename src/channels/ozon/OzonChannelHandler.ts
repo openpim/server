@@ -1071,7 +1071,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.syncedAt = Date.now()
                     item.changed('channels', true)
                     if (json2.result.items[0].product_id == 0) {
-                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId+(ozonProductId? `,product_id=${ozonProductId}`: ``)
+                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId+(ozonProductId && !ozonProductId.startsWith('task_id=')? `,product_id=${ozonProductId}`: ``)
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                     }
@@ -1094,7 +1094,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     data.message = ''
                     item.changed('channels', true)            
                     if (status === null || json2.result.items[0].product_id == 0) {
-                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId+(ozonProductId? `,product_id=${ozonProductId}`: ``)
+                        item.values[channel.config.ozonIdAttr] = 'task_id='+taskId+(ozonProductId&& !ozonProductId.startsWith('task_id=')? `,product_id=${ozonProductId}`: ``)
                     } else {
                         item.values[channel.config.ozonIdAttr] = json2.result.items[0].product_id
                     }
