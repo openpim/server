@@ -1934,6 +1934,9 @@ class ActionUtils {
         return userWrapper ? userWrapper.getUser() : null
     }
 
+    public getUsers() {
+        return this.#mng.getUsers()
+    }
 
     public getTypeByIdentifier(typeIdent: string) {
         const typeNode = this.#mng.getTypeByIdentifier(typeIdent)
