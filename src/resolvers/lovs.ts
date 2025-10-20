@@ -20,6 +20,22 @@ export default {
             context.checkAuth()
            
             return LOV.applyScope(context).findByPk(parseInt(id))
+        },
+        getLOVsData: async (parent: any, { ids }: any, context: Context) => {
+            context.checkAuth()
+            const uniqIds = Array.from(
+                new Set(
+                    ids.map((x: any) => parseInt(String(x), 10)).filter(Number.isFinite)
+                )
+            )
+
+            if (uniqIds.length === 0) return []
+
+            const rows = await LOV
+                .applyScope(context)
+                .findAll({ where: { id: uniqIds as any } })
+            const byId = new Map(rows.map(r => [r.id, r]))
+            return uniqIds.map((id: any) => byId.get(id)).filter(Boolean)
         }
     },
     Mutation: {

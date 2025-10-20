@@ -1,6 +1,7 @@
 type Query {
   getLOVs: [LOV]
   getLOV(id: ID!): LOV
+  getLOVsData(ids: [ID!]!): [LOV]
 }
 
 type Mutation {
