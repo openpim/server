@@ -153,7 +153,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
         if (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]) {
             const chanData = item.channels[channel.identifier]
-            if (chanData.status === 3 && !chanData.ozonError) {
+            if (chanData.status == 3 && !chanData.ozonError) {
                 context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                 return
             }
@@ -341,7 +341,7 @@ export class OzonChannelHandler extends ChannelHandler {
             logger.info('Received data: ' + JSON.stringify(data))
 
             for (const item of filteredItems) {
-                const result = data.items.find((elem: any) => elem.id === item.values[channel.config.ozonIdAttr])
+                const result = data.items.find((elem: any) => elem.id == item.values[channel.config.ozonIdAttr])
                 
                 if (!result) {
                     context.log += 'Товар c идентификатором ' + item.identifier + ' не найден в ответе Ozon\n'
@@ -350,7 +350,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
                 context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
 
-                if (item.channels[channel.identifier]?.status === 3 && !item.channels[channel.identifier]?.ozonError) {
+                if (item.channels[channel.identifier]?.status == 3 && !item.channels[channel.identifier]?.ozonError) {
                     context.log += 'Статус товара ' + item.identifier + ' ошибка, синхронизация не будет проводиться \n'
                     continue
                 }
@@ -752,7 +752,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 && attrConfig.id != '#videoUrls' && attrConfig.id != '#videoNames' && attrConfig.id != '#images360Urls' && attrConfig.id != 'attr_4194' // image attribute is filled automatically
                 && attrConfig.id != '#new_category' && attrConfig.id != '#category' && attrConfig.id != '#images' && attrConfig.id != '#color_image' && attrConfig.id != '#image_links_other'
             ) {
-                const attr = attrs.find(elem => elem.id === attrConfig.id)
+                const attr = attrs.find(elem => elem.id == attrConfig.id)
                 if (!attr) {
                     logger.warn('Failed to find attribute in channel for attribute with id: ' + attrConfig.id)
                     continue
@@ -820,7 +820,7 @@ export class OzonChannelHandler extends ChannelHandler {
             let maxLength = 0
             for (const attr of attrsToProcess) {
                 const currentValArr:any[] = []
-                const attrConfig = categoryConfig.attributes.find((elem:any) => elem.id === attr.id)
+                const attrConfig = categoryConfig.attributes.find((elem:any) => elem.id == attr.id)
                 let value = await this.getValueByMapping(channel, attrConfig, item, language)
                 const ozonAttrId = parseInt(attr.id.substring(5))
                 if (value) {
@@ -962,13 +962,13 @@ export class OzonChannelHandler extends ChannelHandler {
                     let videoElem2
                     let videoCover
                     if (existingDataJson.result[0].complex_attributes) {
-                            const data1 = existingDataJson.result[0].complex_attributes.find((elem1:any) => elem1.id === 21837)
+                            const data1 = existingDataJson.result[0].complex_attributes.find((elem1:any) => elem1.id == 21837)
                             if (data1) videoElem1 = data1
 
-                            const data2 = existingDataJson.result[0].complex_attributes.find((elem2:any) => elem2.id === 21841)
+                            const data2 = existingDataJson.result[0].complex_attributes.find((elem2:any) => elem2.id == 21841)
                             if (data2) videoElem2 = data2
 
-                            const data3 = existingDataJson.result[0].complex_attributes.find((elem3:any) => elem3.id === 21845)
+                            const data3 = existingDataJson.result[0].complex_attributes.find((elem3:any) => elem3.id == 21845)
                             if (data3) videoCover = data3
                     }
                     if ((videoElem1 && videoElem2) || videoCover)  {
@@ -1615,7 +1615,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
     public async getChannelAttributeValues(channel: Channel, categoryId: string, attributeId: string): Promise<any> {
         const attrs = await this.getAttributes(channel, categoryId)
-        const attr = attrs.find(elem => elem.id === attributeId)
+        const attr = attrs.find(elem => elem.id == attributeId)
         if (attr && attr.dictionaryLinkPost) {
             const resp =await fetch(attr.dictionaryLink!, {
                 method: 'POST',
