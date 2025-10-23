@@ -89,7 +89,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         let nextErrors = true
         const erroReq:any = {
             "cursor": {
-                "limit": 20
+                "limit": 100
             },
             "order": {
                 "ascending": true
@@ -103,6 +103,8 @@ export class WBNewChannelHandler extends ChannelHandler {
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
             const errorsJson = await errorsResp.json()
+            const serverConfig = ModelManager.getServerConfig()
+            if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay*5)
             nextErrors = errorsJson.data.cursor.next
             erroReq.cursor.updatedAt = errorsJson.data.cursor.updatedAt
             erroReq.cursor.batchUUID = errorsJson.data.cursor.batchUUID
