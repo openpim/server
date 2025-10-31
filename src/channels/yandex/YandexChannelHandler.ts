@@ -226,7 +226,10 @@ export class YandexChannelHandler extends ChannelHandler {
         const newChannels:any = {}
         newChannels[channel.identifier] = JSON.parse(JSON.stringify(reloadedItem!.channels[channel.identifier]))
         const tmp = newChannels[channel.identifier]
-        if (marketSku) tmp.url = `https://market.yandex.ru/pr/${marketSku}`
+        if (marketSku && !tmp.url) {
+            changed = true
+            tmp.url = `https://market.yandex.ru/pr/${marketSku}`
+        }
         if (tmp.status !== data.status || tmp.message !== data.message) {
             changed = true
             tmp.status = data.status
