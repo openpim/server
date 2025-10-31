@@ -134,25 +134,34 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
   
-  app.use('/graphql', graphqlHTTP(async (request: IncomingMessage ) => { 
-    const ctx = await Context.create(request)
-    return {
-    schema,
-    graphiql: false,
-    context: ctx,
-    customFormatErrorFn: (error: GraphQLError) => {
-      const params = {
-        message: error.message
-      };
-      logger.error('ERROR -', error, error.source);
-      logger.error(`   request - ${ JSON.stringify((<any>request).body)}`);
-      return (params);
-    },
-    extensions: ({ document, result }) => {
-      if (logger.transports[0].level === 'debug') logger.debug('Request ('+ctx.getCurrentUser()?.login+'):\n'+print(document)+'Response:\n'+JSON.stringify(result)+'\n\n')
-      return undefined
+  app.use('/graphql', async (request, response) => {
+    let ctx = null
+    try {
+      ctx = await Context.create(request)
+    } catch (e) {
+      response.status(401).json({errors:[{message:"Token is invalid"}]})
+      return
     }
-  }}));
+    const process = graphqlHTTP(async (request: IncomingMessage ) => { 
+      return {
+      schema,
+      graphiql: false,
+      context: ctx,
+      customFormatErrorFn: (error: GraphQLError) => {
+        const params = {
+          message: error.message
+        };
+        logger.error('ERROR -', error, error.source);
+        logger.error(`   request - ${ JSON.stringify((<any>request).body)}`);
+        return (params);
+      },
+      extensions: ({ document, result }) => {
+        if (logger.transports[0].level === 'debug') logger.debug('Request ('+ctx?.getCurrentUser()?.login+'):\n'+print(document)+'Response:\n'+JSON.stringify(result)+'\n\n')
+        return undefined
+      }
+    }})
+    process(request, response)
+  });
 
   app.get('/healthcheck', async (req, res) => {
     res.json({result: "OK"})
