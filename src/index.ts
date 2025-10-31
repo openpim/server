@@ -135,7 +135,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   app.use(cors());
   
   app.use('/graphql', async (request, response) => {
-    let ctx = null
+    let ctx: Context | null = null
     try {
       ctx = await Context.create(request)
     } catch (e) {
