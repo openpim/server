@@ -218,7 +218,7 @@ export class YandexChannelHandler extends ChannelHandler {
         await this.saveItemIfChanged(channel, item)
     }
 
-    async saveItemIfChanged(channel: Channel, item: Item, changedValues: any = {}) {
+    async saveItemIfChanged(channel: Channel, item: Item, changedValues: any = {}, marketSku: string = '') {
         const reloadedItem = await Item.findByPk(item.id) // refresh item from DB (other channels can already change it)
         let changed = false
         let valuesChanged = false
@@ -226,6 +226,7 @@ export class YandexChannelHandler extends ChannelHandler {
         const newChannels:any = {}
         newChannels[channel.identifier] = JSON.parse(JSON.stringify(reloadedItem!.channels[channel.identifier]))
         const tmp = newChannels[channel.identifier]
+        if (marketSku) tmp.url = `https://market.yandex.ru/pr/${marketSku}`
         if (tmp.status !== data.status || tmp.message !== data.message) {
             changed = true
             tmp.status = data.status
@@ -602,10 +603,12 @@ export class YandexChannelHandler extends ChannelHandler {
                     }
                     this.processProductStatus(item, offerCard, channel, context)
                     const changedValues: any = {}
+                    let marketSku = ''
                     if (offerCard.mapping?.marketSku) {
-                        changedValues[channel.config.marketSkuAttr] = offerCard.mapping.marketSku
+                        changedValues[channel.config.marketSkuAttr] = ''+offerCard.mapping.marketSku
+                        marketSku = ''+offerCard.mapping.marketSku
                     }
-                    await this.saveItemIfChanged(channel, item, changedValues)
+                    await this.saveItemIfChanged(channel, item, changedValues, marketSku)
                     context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
                 }
             }
