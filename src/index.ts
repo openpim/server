@@ -133,13 +133,23 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
-  
-  app.use('/graphql', async (request, response) => {
+
+  const responsePostProcessor:any  =  async (request:any, response:any, next:any) => {
+    const originalJson = response.json; // Store the original res.json
+    // Override res.json
+    response.json = function (body:any) {
+      if (body.errors && body.errors[0]?.message === 'Wrong login or password') response.status(401)
+        originalJson.call(this, body); // Call the original res.json
+    };
+
+    next()
+  } 
+  app.use('/graphql', [responsePostProcessor], async (request:any, response:any) => {
     let ctx: Context | null = null
     try {
       ctx = await Context.create(request)
     } catch (e) {
-      response.status(401).json({errors:[{message:"Token is invalid"}]})
+      response.status(401).json({errors:[{message:"Your session expired. Sign in again."}]})
       return
     }
     const process = graphqlHTTP(async (request: IncomingMessage ) => { 
