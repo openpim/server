@@ -115,31 +115,37 @@ export class WBNewChannelHandler extends ChannelHandler {
             for (let i = 0; i < errorsJson.data.items.length; i++) {
                 const error = errorsJson.data.items[i];
 
-                const errorVendorCode = error.vendorCodes[0]
-                if (singleItem && singleItem.values[channel.config.wbCodeAttr] != errorVendorCode) continue
-                
-                const query:any = {}
-                query[wbCodeAttr] = errorVendorCode
-                let item = await Item.findOne({ 
-                    where: { tenantId: channel.tenantId, values: query, [Op.or] : channel.visible.map((parentId:any) => {return {path: {[Op.regexp]: '*.'+parentId+'.*'}}})} 
-                })
-                if (!item) {
-                    let msg = "Ошибка, не найден товар по артикулу для синхронизации: " + errorVendorCode
+                for (const key in error.errors) {
+                    const errorVendorCode = key
+                    let msg = `Обрабатывается ошибка для товара "${key}" -> ${JSON.stringify(error.errors[key])}`
                     logger.info(msg)
-                    context.log += msg+'\n'
-                } else {
-                    if (item.channels[channel.identifier]) {
-                        processedItems.push(item.identifier)
+                    if (channel.config.debug) context.log += msg+'\n'
 
-                        item.channels[channel.identifier].status = 3
-                        item.channels[channel.identifier].wbError = true
-                        item.channels[channel.identifier].message = JSON.stringify(error.errors)
-                        data.syncedAt = Date.now()
-                        item.changed('channels', true)
-                        await item.save()
-                        let msg = "Ошибка, для товара: " + errorVendorCode + ", " + item.channels[channel.identifier].message
+                    if (singleItem && singleItem.values[channel.config.wbCodeAttr] != errorVendorCode) continue
+                    
+                    const query:any = {}
+                    query[wbCodeAttr] = errorVendorCode
+                    let item = await Item.findOne({ 
+                        where: { tenantId: channel.tenantId, values: query, [Op.or] : channel.visible.map((parentId:any) => {return {path: {[Op.regexp]: '*.'+parentId+'.*'}}})} 
+                    })
+                    if (!item) {
+                        let msg = "Ошибка, не найден товар по артикулу для синхронизации: " + errorVendorCode
                         logger.info(msg)
                         context.log += msg+'\n'
+                    } else {
+                        if (item.channels[channel.identifier]) {
+                            processedItems.push(item.identifier)
+
+                            item.channels[channel.identifier].status = 3
+                            item.channels[channel.identifier].wbError = true
+                            item.channels[channel.identifier].message = JSON.stringify(error.errors[key])
+                            data.syncedAt = Date.now()
+                            item.changed('channels', true)
+                            await item.save()
+                            let msg = "Ошибка, для товара: " + errorVendorCode + ", " + item.channels[channel.identifier].message
+                            logger.info(msg)
+                            context.log += msg+'\n'
+                        }
                     }
                 }
             }
