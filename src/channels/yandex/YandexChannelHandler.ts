@@ -604,6 +604,10 @@ export class YandexChannelHandler extends ChannelHandler {
                         context.log += 'Статус товара ' + item.identifier + ' ошибка, синхронизация не будет проводиться \n'
                         continue
                     }
+                    if (item.channels[channel.identifier]?.status === 1) {
+                        context.log += 'Статус товара ' + item.identifier + ' в отправке, синхронизация не будет проводиться \n'
+                        continue
+                    }
                     this.processProductStatus(item, offerCard, channel, context)
                     const changedValues: any = {}
                     let marketSku = ''

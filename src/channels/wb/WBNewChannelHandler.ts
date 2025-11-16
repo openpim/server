@@ -133,7 +133,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                         logger.info(msg)
                         context.log += msg+'\n'
                     } else {
-                        if (item.channels[channel.identifier]) {
+                        if (item.channels[channel.identifier] && item.channels[channel.identifier].status != 1) {
                             processedItems.push(item.identifier)
 
                             item.channels[channel.identifier].status = 3
@@ -178,6 +178,10 @@ export class WBNewChannelHandler extends ChannelHandler {
                 if (chanData && chanData.status === 3 && !item.channels[channel.identifier]?.wbError) {
                     // если прочитать статус когда ошибка то он затрет ошибку
                     context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
+                    return
+                }
+                if (chanData && chanData.status == 1) {
+                    context.log += 'Статус товара - в отправке, синхронизация не будет проводиться \n'
                     return
                 }
     
@@ -301,6 +305,13 @@ export class WBNewChannelHandler extends ChannelHandler {
 
                     if (!item.channels[channel.identifier]) {
                         msg = 'у товара: ' + item.identifier + ' нет выгрузки в канал, синхронизация не будет проводиться \n'
+                        if (channel.config.debug) context.log += msg
+                        logger.info(msg)
+                        continue
+                    }
+
+                    if (item.channels[channel.identifier] && item.channels[channel.identifier].status == 1) {
+                        msg = 'товар: ' + item.identifier + ' в статусе отправки, синхронизация не будет проводиться \n'
                         if (channel.config.debug) context.log += msg
                         logger.info(msg)
                         continue

@@ -157,6 +157,10 @@ export class OzonChannelHandler extends ChannelHandler {
                 context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                 return
             }
+            if (chanData.status == 1) {
+                context.log += 'Статус товара - в отпраке, синхронизация не будет проводиться \n'
+                return
+            }
 
             const tst = '' + item.values[channel.config.ozonIdAttr]
             let skip = false
@@ -297,12 +301,16 @@ export class OzonChannelHandler extends ChannelHandler {
         context.log += 'Обрабатываются товары c идентификаторами: [' + items.map(item => item.identifier).join(', ') + ']\n'
 
         let filteredItems = items.filter(item => !(item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]))
-
         for (const item of filteredItems) {
             context.log += '  товар c идентификатором ' + item.identifier + ' не требует синхронизации \n'
         }
 
-        filteredItems = items.filter(item => (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]))
+        const filteredItems2 = items.filter(item => item.channels[channel.identifier] && item.channels[channel.identifier].status == 1)
+        for (const item of filteredItems2) {
+            context.log += '  товар c идентификатором ' + item.identifier + ' в отправке, синхронизация не будет производиться \n'
+        }
+
+        filteredItems = items.filter(item => item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier] && item.channels[channel.identifier].status != 1)
 
         const productIds = filteredItems.map(item => item.values[channel.config.ozonIdAttr].toString()).filter(id => !!id)
 
