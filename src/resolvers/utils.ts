@@ -246,6 +246,10 @@ export function replaceOperations(obj: any, context: Context | null) {
             value = context.getCurrentUser()?.login
         }
 
+        if (typeof value === 'string' && value.startsWith('#USER_ID#') && context) {
+            value = context.getCurrentUser()?.id
+        }
+
         if (typeof value === 'string' && value.startsWith('#USER_OPTION#') && context) {
             const tst = value.substring(13)
             if (tst && tst.length) {
