@@ -223,6 +223,7 @@ export class ImportManager {
                 process.log += '\n' + `${i18next.t('ImportManagerRowSkipped', { lng: language })} ${JSON.stringify(data)}`
             }
             const item = await this.mapLineXML(importConfig, entity, data, context)
+            if (item === null) return
 
             process.log += '\n' + `${i18next.t('ImportManagerItem', { lng: language })} ` + JSON.stringify(item)
             if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
@@ -243,6 +244,7 @@ export class ImportManager {
             values: {}
         }
         const entityMappings = entity === 'category' ? importConfig.mappings.categories : importConfig.mappings.offers
+        let wasMapping = false
         try {
             for (let i = 0; i < entityMappings.length; i++) {
                 const mapping = entityMappings[i]
@@ -264,18 +266,21 @@ export class ImportManager {
                     const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, found, mapping.expression, context) : found
                     if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
                         result.values[mapping.attribute] = mappedData
+                        wasMapping = true
                     } else if (mapping.attribute.startsWith('$name#')) {
                         const langIdentifier = mapping.attribute.substring(6)
                         result.name[langIdentifier] = mappedData
+                        wasMapping = true
                     } else {
                         result[mapping.attribute] = mappedData
+                        wasMapping = true
                     }
                 }
             }
         } catch (e: any) {
             throw new Error(e)
         }
-        return result
+        return wasMapping ? result : null
     }
 
     private async mapLine(headers: Array<any>, importConfig: ImportConfig, data: Array<any>, context: Context) {
@@ -329,6 +334,20 @@ export class ImportManager {
                     })
                     logger.debug(`findItem result: ${item?.identifier}`)
                     return item
+                },
+                findItems: async (condition: any) => {
+                    logger.debug(`Executing evaluateExpression findItems, condition: ${JSON.stringify(condition)}`)
+                    replaceOperations(condition, context)
+                    const arr = await Item.findAll({
+                        where: {
+                            [Op.and]: [
+                                condition,
+                                { tenantId: context.getCurrentUser()?.tenantId }
+                            ]
+                        }
+                    })
+                    logger.debug(`findsItem result: ${arr.length}`)
+                    return arr
                 },
                 findLOV: async (lovIdentifier: string, value: string, lang = 'en', caseInsensitive = false, createIfNotExists = false) => {
                     //console.log(JSON.stringify(value))
