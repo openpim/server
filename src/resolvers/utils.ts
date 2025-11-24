@@ -1343,7 +1343,7 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
     })
 }
 
-function makeItemProxy(item: any, event: string, transaction: Transaction | null = null) {
+function makeItemProxy(item: any, event: string, transaction: Transaction | null = null): Item {
     return new Proxy(item, {
         get: function (target, property, receiver) {
             if ((<string>property) == 'save') {
@@ -1913,7 +1913,7 @@ class llmUtils {
     }
 }
 
-class ActionUtils {
+export class ActionUtils {
     #context: Context // hard private field to avoid access to it from action (to avoid ability to change tennantId)
     #mng: ModelManager
 

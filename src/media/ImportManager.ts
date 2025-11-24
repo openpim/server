@@ -16,6 +16,11 @@ import i18next from '../i18n'
 import { Item } from '../models/items'
 import { ModelsManager } from '../models/manager'
 import { LOV } from '../models/lovs'
+import { ActionUtils } from '../resolvers/utils'
+import * as http from 'http'
+import * as https from 'https'
+import * as os from 'os'
+import { ItemRelation } from '../models/itemRelations'
 
 export class ImportManager {
     private static instance: ImportManager
@@ -82,6 +87,7 @@ export class ImportManager {
                             process.log += '\n' + `${i18next.t('ImportManagerItem', { lng: language })} ` + JSON.stringify(item)
                             if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
                                 const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
+                                if (config.afterEachRow && config.afterEachRow.length) await this.evaluateExpression(rowData, importRes, config.afterEachRow, context)
                                 process.log += '\n' + `${i18next.t('ImportManagerImportResult', { lng: language })} ${JSON.stringify(importRes)}`
                             } else {
                                 process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty', { lng: language })}`
@@ -228,6 +234,7 @@ export class ImportManager {
             process.log += '\n' + `${i18next.t('ImportManagerItem', { lng: language })} ` + JSON.stringify(item)
             if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
                 const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
+                if (config.afterEachRow && config.afterEachRow.length) await this.evaluateExpression(data, {entity: entity, itemResponse: importRes}, config.afterEachRow, context)
                 process.log += '\n' + `${i18next.t('ImportManagerImportResult', { lng: language })} ${JSON.stringify(importRes)}`
             } else {
                 process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty', { lng: language })}`
@@ -254,26 +261,35 @@ export class ImportManager {
                 if (entity === 'offer') {
                     if (mapping.source === 'attribute') {
                         found = data.attributes[mapping.column.toLowerCase()]
+                        if (found && found.text) found = found.text
                     } else {
-                        found = !(mapping.source === 'parameter') ? data.childs.find((el: any) => el.name === mapping.column) : data.childs.find((el: any) => el.name === 'param' && el.attributes['name'] === mapping.column)
+                        found = !(mapping.source === 'parameter') ? data.childs.filter((el: any) => el.name === mapping.column) : data.childs.filter((el: any) => el.name === 'param' && el.attributes['name'] === mapping.column)
+                        if (found.length == 0) {
+                            found = null
+                        } else if (found.length == 1) {
+                            if (found[0].text) found = found[0].text
+                        } else {
+                            found = found.map((elem :any)=> elem.text)
+                        }
                     }
-                    if (found && found.text) found = found.text
                 } else if (entity === 'category') {
                     found = mapping.column === 'name' ? data.text : data.attributes[mapping.column]
                 }
 
-                if ((found || (!found && mapping.expression)) && mapping.attribute && mapping.attribute.length) {
+                if (found || (!found && mapping.expression)) {
                     const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, found, mapping.expression, context) : found
-                    if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
-                        result.values[mapping.attribute] = mappedData
-                        wasMapping = true
-                    } else if (mapping.attribute.startsWith('$name#')) {
-                        const langIdentifier = mapping.attribute.substring(6)
-                        result.name[langIdentifier] = mappedData
-                        wasMapping = true
-                    } else {
-                        result[mapping.attribute] = mappedData
-                        wasMapping = true
+                    if (mapping.attribute && mapping.attribute.length) {
+                        if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
+                            result.values[mapping.attribute] = mappedData
+                            wasMapping = true
+                        } else if (mapping.attribute.startsWith('$name#')) {
+                            const langIdentifier = mapping.attribute.substring(6)
+                            result.name[langIdentifier] = mappedData
+                            wasMapping = true
+                        } else {
+                            result[mapping.attribute] = mappedData
+                            wasMapping = true
+                        }
                     }
                 }
             }
@@ -300,15 +316,17 @@ export class ImportManager {
                     idx = headers.indexOf(mapping.column)
                 }
 
-                if ((idx !== -1 || (idx === -1 && mapping.expression)) && mapping.attribute && mapping.attribute.length) {
+                if (idx !== -1 || (idx === -1 && mapping.expression)) {
                     const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, data[idx], mapping.expression, context) : data[idx]
-                    if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
-                        result.values[mapping.attribute] = mappedData
-                    } else if (mapping.attribute.startsWith('$name#')) {
-                        const langIdentifier = mapping.attribute.substring(6)
-                        result.name[langIdentifier] = mappedData
-                    } else {
-                        result[mapping.attribute] = mappedData
+                    if (mapping.attribute && mapping.attribute.length) {
+                        if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
+                            result.values[mapping.attribute] = mappedData
+                        } else if (mapping.attribute.startsWith('$name#')) {
+                            const langIdentifier = mapping.attribute.substring(6)
+                            result.name[langIdentifier] = mappedData
+                        } else {
+                            result[mapping.attribute] = mappedData
+                        }
                     }
                 }
             }
@@ -320,6 +338,7 @@ export class ImportManager {
 
     private async evaluateExpression(row: Array<any>, data: any, expression: string, context: Context): Promise<any> {
         try {
+            const actionUtils = new ActionUtils(context)
             const utils = {
                 findItem: async (condition: any) => {
                     logger.debug(`Executing evaluateExpression findItem, condition: ${JSON.stringify(condition)}`)
@@ -383,10 +402,42 @@ export class ImportManager {
                 getCache: () => {
                     const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
                     return mng.getCache()
+                },
+                downloadFile: async (url: string, targetPath: string): Promise<string | null> => {
+                    return new Promise((resolve, reject) => {
+                        const file = fs.createWriteStream(targetPath)
+                        const get = url.startsWith('https:') ? https.get : http.get
+                        get(url, response => {
+                            const mimeType = response.headers['content-type']
+                            response.pipe(file)
+                            file.on('finish', (): void => {
+                                file.close(() => resolve(mimeType || null))
+                            })
+                            file.on('error', err => {
+                                fs.unlink(targetPath, () => reject(err))
+                            })
+                        }).on('error', err => {
+                            fs.unlink(targetPath, (): void => reject(err))
+                        })
+                    })
+                },
+                downloadAndAssignFile: async (url: string, itemIdentifier: string, fileIdentifier: string, fileType: string, fileParent: string, fileName: any, fileValues: any, relationType: string, relationIdentifier: string, relationValues: any, skipActions:boolean = false) => {
+                    if (!url) return
+                    const tmpFile = os.tmpdir() + '/' + Date.now()
+                    const mimeType = await utils.downloadFile(url, tmpFile)
+                    let file = await Item.applyScope(context).findOne({ where: { identifier: fileIdentifier } })
+                    if (!file) {
+                        file = await actionUtils.createItem(fileParent, fileType, fileIdentifier, {ru: fileName}, fileValues, skipActions)
+                        await file.save()
+                    }
+                    await actionUtils.saveFile(file, tmpFile, mimeType, fileName, true)
+                    await file.save()
+                    let rel = await ItemRelation.applyScope(context).findOne({ where: { identifier: relationIdentifier } })
+                    if (!rel) await actionUtils.createItemRelation(relationType, relationIdentifier, itemIdentifier, file.identifier, relationValues, skipActions)
                 }
             }
-            const func = new Function('row', 'data', 'utils', 'logger', '"use strict"; return (async () => { return (' + expression + ')})()')
-            return await func(row, data, utils, logger)
+            const func = new Function('row', 'data', 'utils', 'actionUtils', 'logger', '"use strict"; return (async () => { return (' + expression + ')})()')
+            return await func(row, data, utils, actionUtils, logger)
         } catch (err: any) {
             logger.error('Failed to execute expression :[' + expression + '] for data: ' + data + ' with error: ' + err.message)
             throw err
