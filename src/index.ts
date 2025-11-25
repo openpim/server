@@ -139,6 +139,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     // Override res.json
     response.json = function (body:any) {
       if (body.errors && body.errors[0]?.message === 'Wrong login or password') response.status(401)
+      if (body.errors && body.errors[0]?.message === 'User is not authenticated') response.status(401)
         originalJson.call(this, body); // Call the original res.json
     };
 
