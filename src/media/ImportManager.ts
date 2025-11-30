@@ -223,10 +223,14 @@ export class ImportManager {
         try {
             const res = (config.beforeEachRow && config.beforeEachRow.length) ? await this.evaluateExpression(data, null, config.beforeEachRow, context) : null
             if (res && typeof res == 'boolean') {
-                process.log += '\n' + `${i18next.t('ImportManagerValueSkipped', { lng: language })} ${JSON.stringify(data)}`
+                delete data.childs
+                process.log += '\n' + `${i18next.t('ImportManagerValueSkipped', { lng: language })} ${JSON.stringify(res)} -> ${JSON.stringify(data)}`
+                return
             }
             if (res) {
-                process.log += '\n' + `${i18next.t('ImportManagerRowSkipped', { lng: language })} ${JSON.stringify(data)}`
+                delete data.childs
+                process.log += '\n' + `${i18next.t('ImportManagerRowSkipped', { lng: language })} ${JSON.stringify(res)} -> ${JSON.stringify(data)}`
+                return
             }
             const item = await this.mapLineXML(importConfig, entity, data, context)
             if (item === null) return

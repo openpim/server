@@ -21,6 +21,7 @@ import { ImportConfig } from '../models/importConfigs'
 import { ImportManager } from './ImportManager'
 import i18next from '../i18n'
 import { StorageFactory } from '../storage/StorageFactory'
+import { clearProcessCache } from '../resolvers/processes'
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -706,6 +707,7 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
                 fileName: ''
             })
             await proc.save()
+            clearProcessCache()
 
             const fm = FileManager.getInstance()
             const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, file.filepath, file.mimetype || '', file.originalFilename || '', true)
@@ -756,6 +758,7 @@ export async function testImportConfig(context: Context, req: Request, res: Resp
                 fileName: ''
             })
             await proc.save()
+            clearProcessCache()
 
             const fm = FileManager.getInstance()
             const path = await fm.saveProcessFile(context.getCurrentUser()!.tenantId, proc, process.env.FILES_ROOT! + storagePath, mimeType || '', fileName || '', false)

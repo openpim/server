@@ -6,6 +6,10 @@ import { replaceOperations } from './utils'
 
 let processCache:any = {}
 
+export function clearProcessCache() {
+    processCache = {}
+}
+
 export default {
     Query: {
         getProcesses: async (parent: any, request : any, context: Context) => {
