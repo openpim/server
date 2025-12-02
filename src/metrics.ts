@@ -150,7 +150,7 @@ export async function renderSQLMetrics(request: any, response: any) {
         }
         const b64auth = request.headers.authorization.split(' ')[1]
         const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
-        const { user } = await userResolver.Mutation.signIn(null, { login: login, password: password }, await Context.create(request))
+        const { user } = await userResolver.Mutation.signIn(null, { login: login, password: password }, await Context.create(request, response))
         if (user && user.roles.includes(1)) { // 1 is admin role
             response.setHeader('Content-Type', 'text/plain');
             response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
