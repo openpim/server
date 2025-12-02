@@ -1,4 +1,4 @@
-import { IncomingMessage } from 'http';
+import { IncomingMessage, OutgoingMessage } from 'http';
 import * as jwt from 'jsonwebtoken';
 import { LoggedUser, User } from './models/users'
 import { ModelsManager, UserWrapper } from './models/manager';
@@ -64,7 +64,7 @@ export default class Context {
         }                        
     }
 
-    public static create = async (req: IncomingMessage)  => {
+    public static create = async (req: IncomingMessage, res: OutgoingMessage)  => {
         const ctx = new Context()
         let token = req.headers['x-token']?.toString();
         if (!token) {
@@ -73,12 +73,13 @@ export default class Context {
         }
         if (token) {
             try {
-                const res = await jwt.verify(token, <string>process.env.SECRET);
-                ctx.currentUser = <LoggedUser>res
+                const resJWT = await jwt.verify(token, <string>process.env.SECRET);
+                ctx.currentUser = <LoggedUser>resJWT
                 ctx.token = token
                 if (ctx.currentUser.tenantId !== '0') {
                     const mng = ModelsManager.getInstance().getModelManager(ctx.currentUser.tenantId)
                     ctx.user = mng?.getUsers().find(user => user.getUser().id === ctx.currentUser!.id)
+                    res.setHeader('Openpim-Login', ctx.user?.getUserLogin() || '')
                 }
             } catch (e) {
                 logger.error('Failed to validate token: '+ token + ', error:' + (e as Error).toString())

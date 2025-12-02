@@ -148,7 +148,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   app.use('/graphql', [responsePostProcessor], async (request:any, response:any) => {
     let ctx: Context | null = null
     try {
-      ctx = await Context.create(request)
+      ctx = await Context.create(request, response)
     } catch (e) {
       response.status(401).json({errors:[{message:"Your session expired. Sign in again."}]})
       return
@@ -158,6 +158,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       schema,
       graphiql: false,
       context: ctx,
+      response: response,
       customFormatErrorFn: (error: GraphQLError) => {
         const params = {
           message: error.message
@@ -180,7 +181,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.post('/asset-upload', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
 
       await processUpload(context, req, res)
@@ -191,7 +192,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.post('/xlsx-template-upload', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
 	  
       await processUploadXlsxTemplate(context, req, res)
@@ -202,7 +203,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/xlsx-template/:id', async (req, res) => { 
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await downloadXlsxTemplateFile(context, req, res, false)
     } catch (error: any) {
@@ -212,7 +213,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.post('/asset-create-upload', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
 
       await processCreateUpload(context, req, res)
@@ -223,7 +224,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/mi/:identifier', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       await processDownloadMain(context, req, res, false)
     } catch (error: any) {
       res.status(400).send(error.message)
@@ -232,7 +233,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/asset/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       await processDownload(context, req, res, false)
     } catch (error: any) {
       res.status(400).send(error.message)
@@ -241,7 +242,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/asset/inline/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       await processDownloadInline(context, req, res, false)
     } catch (error: any) {
       res.status(400).send(error.message)
@@ -250,7 +251,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   
   app.get('/asset/:id/thumb', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await processDownload(context, req, res, true)
     } catch (error: any) {
@@ -260,7 +261,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/asset-channel/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await processChannelDownload(context, req, res, false)
     } catch (error: any) {
@@ -270,7 +271,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.post('/process-upload', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
 
       await uploadProcessFile(context, req, res)
@@ -281,7 +282,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.post('/import-upload', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await uploadImportFile(context, req, res)
     } catch (error: any) {
@@ -291,7 +292,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.post('/import-config-test/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await testImportConfig(context, req, res)
     } catch (error: any) {
@@ -301,7 +302,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.post('/import-config-template-upload', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await uploadImportConfigTemplateFile(context, req, res)
     } catch (error: any) {
@@ -311,7 +312,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/import-config-template/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await downloadImportConfigTemplateFile(context, req, res, false)
     } catch (error: any) {
@@ -321,7 +322,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/import-config-data/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await getImportConfigFileData(context, req, res, false)
     } catch (error: any) {
@@ -331,7 +332,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/asset-process/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       await downloadProcessFile(context, req, res, false)
     } catch (error: any) {
@@ -349,7 +350,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       }
       const b64auth = request.headers.authorization.split(' ')[1]
       const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
-      const { user } = await userResolver.Mutation.signIn(null, {login: login, password:password }, await Context.create(request))
+      const { user } = await userResolver.Mutation.signIn(null, {login: login, password:password }, await Context.create(request, response))
       if (user && user.roles.includes(1)) { // 1 is admin role
         let bufSize = 10240
         if (request.query.size) {
@@ -381,7 +382,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.get('/template/:template_id/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       await generateTemplate(context, req, res)
     } catch (error: any) {
       res.status(400).send(error.message)
@@ -390,7 +391,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
   app.post('/templateforitems', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       await generateTemplateForItems(context, req, res)
     } catch (error: any) {
       res.status(400).send(error.message)
@@ -399,7 +400,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
     app.get('/execution_log/:id', async (req, res) => {
     try {
-      const context = await Context.create(req)
+      const context = await Context.create(req, res)
       context.checkAuth()
       const { id } = req.params
       const execution = await ChannelExecution.findOne({
@@ -455,7 +456,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       const b64auth = req.headers.authorization.split(' ')[1]
       const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
 
-      const { user } = await userResolver.Mutation.signIn(null, { login, password }, await Context.create(req))
+      const { user } = await userResolver.Mutation.signIn(null, { login, password }, await Context.create(req, res))
       if (!user || !user.roles.includes(1)) {
         logger.warn('[WebDAV] Неверные логин/пароль или нет прав')
         res.set('WWW-Authenticate', 'Basic realm="WebDAV"')
