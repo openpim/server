@@ -832,6 +832,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         return false
     })
     return await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         event: EventType[event],
         fileUpload: isFileUpload,
@@ -929,6 +930,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
     const channelsCopy = item ? { ...item.channels } : {}
     const nameCopy = item ? { ...item.name } : {}
     const ret = await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         event: 'Button:' + buttonText,
         data: data,
@@ -992,6 +994,7 @@ export async function processBulkUpdateChannelsActions(context: Context, event: 
     const channelsCopy = channels ? channels : []
     const whereCopy = where ? where : {}
     const ret = await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         where: where,
         channels: channels,
@@ -1024,6 +1027,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
     let log = ''
     const nameCopy = { ...item.name }
     const ret = await processActionsWithLog(mng, [action], {
+        setTimeout: setTimeout,
         Op: Op,
         event: 'Test',
         user: context.getCurrentUser()?.login,
@@ -1064,6 +1068,7 @@ export async function processAttrGroupActions(context: Context, event: EventType
         return false
     })
     return await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
@@ -1099,6 +1104,7 @@ export async function processAttributeActions(context: Context, event: EventType
         return false
     })
     return await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
@@ -1135,6 +1141,7 @@ export async function processLOVActions(context: Context, event: EventType, lov:
         return false
     })
     return await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
@@ -1175,6 +1182,7 @@ export async function processImportActions(context: Context, event: EventType, p
     }
 
     return await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
@@ -1211,6 +1219,7 @@ export async function processCollectionElemActions(context: Context, event: Even
         return false
     })
     return await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
@@ -1443,6 +1452,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         return false
     })
     return await processActions(mng, actions, {
+        setTimeout: setTimeout,
         Op: Op,
         event: EventType[event],
         user: context.getCurrentUser()?.login,
@@ -2118,6 +2128,7 @@ export class ActionUtils {
 
         const context = this.#context
         return await processActions(mng, [action], {
+            setTimeout: setTimeout,
             Op: Op,
             event: event,
             user: context.getCurrentUser()?.login,
