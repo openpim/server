@@ -438,7 +438,12 @@ export class ImportManager {
                     await actionUtils.saveFile(file, tmpFile, mimeType, fileName, true)
                     await file.save()
                     let rel = await ItemRelation.applyScope(context).findOne({ where: { identifier: relationIdentifier } })
-                    if (!rel) await actionUtils.createItemRelation(relationType, relationIdentifier, itemIdentifier, file.identifier, relationValues, skipActions)
+                    if (!rel) {
+                        await actionUtils.createItemRelation(relationType, relationIdentifier, itemIdentifier, file.identifier, relationValues, skipActions)
+                    } else {
+                        rel.values = fileValues
+                        await rel.save()
+                    }
                 }
             }
             const func = new Function('row', 'data', 'utils', 'actionUtils', 'moment', 'logger', '"use strict"; return (async () => { return (' + expression + ')})()')

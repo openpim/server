@@ -1334,6 +1334,11 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
                     if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
                 }
+            } else if ((<string>property) == 'destroy') {
+                return async (...args: any) => {
+                    if (transaction) args.push({ transaction })
+                    return await target[property].apply(target, args)
+                }
             } else if ((<string>property) == 'count') {
                 return async (...args: any) => {
                     if (transaction) args[0].transaction =  transaction
