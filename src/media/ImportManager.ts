@@ -20,7 +20,8 @@ import { ActionUtils } from '../resolvers/utils'
 import * as http from 'http'
 import * as https from 'https'
 import * as os from 'os'
-import { ItemRelation } from '../models/itemRelations'
+import * as dateFns from 'date-fns'
+import { ItemRelation } from '../models/itemRelations';
 
 export class ImportManager {
     private static instance: ImportManager
@@ -440,8 +441,8 @@ export class ImportManager {
                     if (!rel) await actionUtils.createItemRelation(relationType, relationIdentifier, itemIdentifier, file.identifier, relationValues, skipActions)
                 }
             }
-            const func = new Function('row', 'data', 'utils', 'actionUtils', 'logger', '"use strict"; return (async () => { return (' + expression + ')})()')
-            return await func(row, data, utils, actionUtils, logger)
+            const func = new Function('row', 'data', 'utils', 'actionUtils', 'dateFns', 'logger', '"use strict"; return (async () => { return (' + expression + ')})()')
+            return await func(row, data, utils, actionUtils, dateFns, logger)
         } catch (err: any) {
             logger.error('Failed to execute expression :[' + expression + '] for data: ' + data + ' with error: ' + err.message)
             throw err
