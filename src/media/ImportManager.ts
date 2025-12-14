@@ -21,7 +21,9 @@ import * as http from 'http'
 import * as https from 'https'
 import * as os from 'os'
 import moment from 'moment'
-import { ItemRelation } from '../models/itemRelations';
+import { ItemRelation } from '../models/itemRelations'
+import { clearProcessCache } from '../resolvers/processes'
+
 
 export class ImportManager {
     private static instance: ImportManager
@@ -114,6 +116,7 @@ export class ImportManager {
             process.status = i18next.t('Finished', { lng: language })
             process.finishTime = Date.now()
             await process.save()
+            clearProcessCache()
         } catch (e) {
             logger.error('Failed to import', e)
             process.log += '\n' + `${i18next.t('ImportManagerError', { lng: language })} ${e}`
@@ -121,6 +124,7 @@ export class ImportManager {
             process.status = i18next.t('Finished', { lng: language })
             process.finishTime = Date.now()
             await process.save()
+            clearProcessCache()
         }
     }
 
@@ -194,6 +198,7 @@ export class ImportManager {
                 process.status = i18next.t('Finished', { lng: language })
                 process.finishTime = Date.now()
                 await process.save()
+                clearProcessCache()
             })
 
             saxStream.on('error', async function (e:any) {
@@ -203,6 +208,7 @@ export class ImportManager {
                 process.status = i18next.t('Finished', { lng: language })
                 process.finishTime = Date.now()
                 await process.save()
+                clearProcessCache()
             })
 
         } catch (e) {
@@ -212,6 +218,7 @@ export class ImportManager {
             process.status = i18next.t('Finished', { lng: language })
             process.finishTime = Date.now()
             await process.save()
+            clearProcessCache()
         }
     }
 
@@ -436,12 +443,13 @@ export class ImportManager {
                         await file.save()
                     }
                     await actionUtils.saveFile(file, tmpFile, mimeType, fileName, true)
+                    file.values = fileValues
                     await file.save()
                     let rel = await ItemRelation.applyScope(context).findOne({ where: { identifier: relationIdentifier } })
                     if (!rel) {
                         await actionUtils.createItemRelation(relationType, relationIdentifier, itemIdentifier, file.identifier, relationValues, skipActions)
                     } else {
-                        rel.values = fileValues
+                        rel.values = relationValues
                         await rel.save()
                     }
                 }
