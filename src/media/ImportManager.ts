@@ -10,7 +10,7 @@ import Context from '../context'
 import XLSX from 'xlsx'
 import { File } from 'formidable'
 import logger from "../logger"
-import { processImportActions, replaceOperations } from '../resolvers/utils'
+import { mergeValues, processImportActions, replaceOperations } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 import i18next from '../i18n'
 import { Item } from '../models/items'
@@ -443,13 +443,15 @@ export class ImportManager {
                         await file.save()
                     }
                     await actionUtils.saveFile(file, tmpFile, mimeType, fileName, true)
-                    file.values = fileValues
+                    file.values = mergeValues(fileValues, file.values)
+                    file.changed("values", true)
                     await file.save()
                     let rel = await ItemRelation.applyScope(context).findOne({ where: { identifier: relationIdentifier } })
                     if (!rel) {
                         await actionUtils.createItemRelation(relationType, relationIdentifier, itemIdentifier, file.identifier, relationValues, skipActions)
                     } else {
-                        rel.values = relationValues
+                        rel.values = mergeValues(relationValues, rel.values)
+                        rel.changed("values", true)
                         await rel.save()
                     }
                 }
