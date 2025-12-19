@@ -506,7 +506,10 @@ export class ImportManager {
                 for (let i = 0; i < wb.SheetNames.length; i++) {
                     const ws = wb.Sheets[wb.SheetNames[i]]
                     if (!ws || !ws['!ref']) continue
-                    const options = { header: 1 }
+                    const range = XLSX.utils.decode_range(ws['!ref'])
+                    range.s.c = 0
+                    range.s.r = 0
+                    const options = { header: 1, blankrows: true, skipHidden: false, defval: '', range: range }
                     sheetData[wb.SheetNames[i]] = XLSX.utils.sheet_to_json(ws, options)
                 }
                 resolve(sheetData)
