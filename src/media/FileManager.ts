@@ -210,7 +210,7 @@ export class FileManager {
             await image.resize(300, 300, {
                 fit: sharp.fit.contain,
                 background: { r: 255, g: 255, b: 255, alpha: 1 }
-            }).flatten({ background: '#fff' }).jpeg({ quality: 70 }).toFile(fullPath + '_thumb.jpg')
+            }).withMetadata().flatten({ background: '#fff' }).jpeg({ quality: 70 }).toFile(fullPath + '_thumb.jpg')
             sharp.cache(false)
         } else {
             values.file_name=originalFilename||''
