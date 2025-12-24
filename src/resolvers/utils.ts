@@ -904,7 +904,7 @@ export async function processItemButtonActions(context: Context, buttonText: str
         for (let i = 0; i < action.triggers.length; i++) {
             const trigger = action.triggers[i]
 
-            const result = parseInt(trigger.type) === TriggerType.Button &&
+            const result = (parseInt(trigger.type) === TriggerType.Button || parseInt(trigger.type) === TriggerType.CatalogButton) &&
                 trigger.itemButton === buttonText &&
                 item.typeId === parseInt(trigger.itemType) &&
                 pathArr.includes(parseInt(trigger.itemFrom))
@@ -967,7 +967,7 @@ export async function processTableButtonActions(context: Context, buttonText: st
         for (let i = 0; i < action.triggers.length; i++) {
             const trigger = action.triggers[i]
 
-            const result = parseInt(trigger.type) === TriggerType.TableButton &&
+            const result = (parseInt(trigger.type) === TriggerType.TableButton || parseInt(trigger.type) === TriggerType.CatalogTableButton) &&
                 trigger.itemButton === buttonText &&
                 ((!trigger.itemType && !trigger.itemFrom) ||
                     (item && item.typeId === parseInt(trigger.itemType) && pathArr!.includes(parseInt(trigger.itemFrom))))
