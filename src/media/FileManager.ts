@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import FS from 'fs/promises'
+import * as path from 'path'
 import { Item } from '../models/items'
 import { mergeValues } from '../resolvers/utils'
 import {File} from 'formidable'
@@ -222,7 +223,7 @@ export class FileManager {
         await StorageFactory.getStorageInstance().saveFile(item, filepath, mimetype || 'application/octet-stream', clean)
     }
 
-    private isImage(mimeType: string) : boolean {
+    public isImage(mimeType: string) : boolean {
         return (mimeType === 'image/jpeg') 
             || (mimeType === 'image/png') 
             || (mimeType === 'image/bmp') 
@@ -231,6 +232,39 @@ export class FileManager {
             || (mimeType === 'image/webp')
     }
 
+
+    public async saveStaticImage(tenantId: string, filepath: string, filename: string, mimetype: string | null): Promise<string> {
+        if (!this.isImage(mimetype || '')) {
+            throw new Error('File is not an image')
+        }
+
+        const imagesDir = path.join(this.filesRoot, '/static/images')
+        
+        if (!fs.existsSync(imagesDir)) {
+            fs.mkdirSync(imagesDir, { recursive: true })
+        }
+
+        let finalFilename = filename
+        let counter = 1
+        const ext = path.extname(filename)
+        const baseName = path.basename(filename, ext)
+        
+        while (fs.existsSync(path.join(imagesDir, finalFilename))) {
+            finalFilename = `${baseName}_${counter}${ext}`
+            counter++
+        }
+
+        const targetPath = path.join(imagesDir, finalFilename)
+        
+        try {
+            fs.renameSync(filepath, targetPath)
+        } catch (e) {
+            fs.copyFileSync(filepath, targetPath)
+            fs.unlinkSync(filepath)
+        }
+
+        return finalFilename
+    }
 
     public static async getLastXBytesBuffer(path: string, bytesToRead: number) : Promise<Buffer> {
         const handle = await FS.open(path, 'r');

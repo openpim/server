@@ -32,7 +32,8 @@ import {
   testImportConfig,
   processUploadXlsxTemplate, 
   downloadXlsxTemplateFile,
-  processDownloadInline, 
+  processDownloadInline,
+  uploadStaticImage,
 } from './media';
 import { initModels } from './models';
 import { 
@@ -305,6 +306,16 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       const context = await Context.create(req, res)
       context.checkAuth()
       await uploadImportConfigTemplateFile(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.post('/image-upload', async (req, res) => {
+    try {
+      const context = await Context.create(req, res)
+      context.checkAuth()
+      await uploadStaticImage(context, req, res)
     } catch (error: any) {
       res.status(400).send(error.message)
     }

@@ -773,3 +773,42 @@ export async function testImportConfig(context: Context, req: Request, res: Resp
         }
     })
 }
+
+export async function uploadStaticImage(context: Context, req: Request, res: Response) {
+    const form = new IncomingForm({maxFileSize: 50*1024*1024, keepExtensions: true})
+ 
+    form.parse(req, async (err, fields, files) => {
+        try {
+            if (err) {
+                logger.error(err)
+                res.status(400).send(err)
+                return
+            }
+            context.checkAuth()
+
+            const file = <File>files['file']
+            if (!file) throw new Error('Failed to find "file" parameter')
+
+            const fm = FileManager.getInstance()
+            if (!fm.isImage(file.mimetype || '')) {
+                throw new Error('File is not an image. Supported formats: JPEG, PNG, BMP, TIFF, GIF, WebP')
+            }
+
+            const filename = file.originalFilename || `image_${Date.now()}.jpg`
+            const savedFilename = await fm.saveStaticImage(
+                context.getCurrentUser()!.tenantId,
+                file.filepath,
+                filename,
+                file.mimetype
+            )
+
+            res.status(200).send(JSON.stringify({
+                name: savedFilename,
+                url: `/static/images/${savedFilename}`
+            }))
+        } catch(error: any) {
+            logger.error(error)
+            res.status(400).send(error.message)
+        }
+    })
+}
