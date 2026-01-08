@@ -580,20 +580,20 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
         if (!skipActions) {
             const actionResponse = await processItemActions(context, EventType.BeforeUpdate, item, item.parentIdentifier, item.name, newValues, item.channels, false, false, true, transaction)
             if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
-                if (audit.auditEnabled()) itemDiff = diff({ values: item.values }, { values: newValues || item.values })
+                if (!del && audit.auditEnabled()) itemDiff = diff({ values: item.values }, { values: newValues || item.values })
                 item.values = mergeValues(newValues, item.values)
                 item.changed('values', true)
                 await item.save({ transaction })
                 await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, false, true, transaction)
             }
         } else {
-            if (audit.auditEnabled()) itemDiff = diff({ values: item.values }, { values: newValues || item.values })
+            if (!del && audit.auditEnabled()) itemDiff = diff({ values: item.values }, { values: newValues || item.values })
             item.values = mergeValues(newValues, item.values)
             item.changed('values', true)
             await item.save({ transaction })
         }
 
-        if (audit.auditEnabled() && itemDiff) {
+        if (!del && audit.auditEnabled() && itemDiff) {
             if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
         }
     }
@@ -636,19 +636,19 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
             if (!skipActions) {
                 const actionResponse = await processItemActions(context, EventType.BeforeUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, newTargetValues, targetItem.channels, false, false, true, transaction)
                 if (!actionResponse.some((resp) => resp.result === 'cancelSave')) {
-                    if (audit.auditEnabled()) itemDiff = diff({ values: targetItem.values }, { values: newTargetValues || targetItem.values })
+                    if (!del && audit.auditEnabled()) itemDiff = diff({ values: targetItem.values }, { values: newTargetValues || targetItem.values })
                     targetItem.values = mergeValues(newTargetValues, targetItem.values)
                     targetItem.changed('values', true)
                     await targetItem.save({ transaction })
                     await processItemActions(context, EventType.AfterUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, targetItem.values, targetItem.channels, false, false, true, transaction)
                 }
             } else {
-                if (audit.auditEnabled()) itemDiff = diff({ values: targetItem.values }, { values: newTargetValues || targetItem.values })
+                if (!del && audit.auditEnabled()) itemDiff = diff({ values: targetItem.values }, { values: newTargetValues || targetItem.values })
                 targetItem.values = mergeValues(newTargetValues, targetItem.values)
                 targetItem.changed('values', true)
                 await targetItem.save({ transaction })
             }
-            if (audit.auditEnabled() && itemDiff) {
+            if (!del && audit.auditEnabled() && itemDiff) {
                 if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, targetItem.id, targetItem.identifier, itemDiff!, context.getCurrentUser()!.login, targetItem.updatedAt)
             }
         }
