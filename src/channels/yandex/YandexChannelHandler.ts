@@ -389,7 +389,7 @@ export class YandexChannelHandler extends ChannelHandler {
             }
             try {
                 let value = await this.getValueByMapping(channel, attrConfig, item, language)
-                if (value) {
+                if (value !== null && value !== undefined) {
                     if (typeof value === 'string' || value instanceof String) value = value.trim()
                     const yandexAttrId = parseInt(attrConfig.id.substring(11))
                     if (Array.isArray(value)) {
