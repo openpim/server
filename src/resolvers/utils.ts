@@ -50,6 +50,7 @@ import { ChannelsManagerFactory } from "../channels"
 import NodeCache = require("node-cache")
 import { StorageFactory } from "../storage/StorageFactory"
 import { Collection } from "../models/collections"
+import * as uuid from "uuid"
 
 export async function checkRelationAttrDisplayValue(tenantId: string, attr: Attribute, attrValue: any, language: string, channel: Channel | null, lovCache: NodeCache) {
     if (!attrValue) return attrValue
@@ -853,7 +854,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         isImport: isImport,
         item: makeItemProxy(item, EventType[event], transaction), 
         values:
@@ -895,7 +896,7 @@ export async function processItemActions(context: Context, event: EventType, ite
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         importConfig,
         rowData,
         models: { 
@@ -954,7 +955,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         llmUtils: new llmUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         buttonText: buttonText,
         item: item ? makeItemProxy(item, 'Button:' + buttonText) : null, values: valuesCopy, channels: channelsCopy, name: nameCopy,
         models: {
@@ -1015,7 +1016,7 @@ export async function processBulkUpdateChannelsActions(context: Context, event: 
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
@@ -1046,7 +1047,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, XLSX, FS, pipe, stream, archiver, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, XLSX, FS, pipe, stream, archiver, extractzip, HtmlValidate, uuid },
         item: makeItemProxy(item, 'Test'), values: values, channels: channels, name: nameCopy,
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
@@ -1087,7 +1088,7 @@ export async function processAttrGroupActions(context: Context, event: EventType
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         isImport: isImport,
         group: grp,
         models: {
@@ -1123,7 +1124,7 @@ export async function processAttributeActions(context: Context, event: EventType
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         isImport: isImport,
         attribute: attr,
         changes: changes,
@@ -1160,7 +1161,7 @@ export async function processLOVActions(context: Context, event: EventType, lov:
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         isImport: isImport,
         lov: lov,
         changes: changes,
@@ -1201,7 +1202,7 @@ export async function processImportActions(context: Context, event: EventType, p
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         process: process,
         importConfig: importConfig,
         filepath: filepath,
@@ -1238,7 +1239,7 @@ export async function processCollectionElemActions(context: Context, event: Even
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         isImport: isImport,
         collection: collection,
         itemIds: itemIds,
@@ -1476,7 +1477,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         user: context.getCurrentUser()?.login,
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
-        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+        system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         isImport: isImport,
         transaction,
         fromRelationAttribute: fromRelationAttribute,
@@ -2153,7 +2154,7 @@ export class ActionUtils {
             roles: context.getUser()?.getRoles(),
             utils: new ActionUtils(context),
             llmUtils: new llmUtils(context),
-            system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate },
+            system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
             isImport: isImport,
             item: makeItemProxy(item, event, transaction), 
             values: newValues, 
