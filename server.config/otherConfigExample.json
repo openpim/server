@@ -3,5 +3,6 @@
     "trimSearch": true,
     "caseInsensitiveLogin": true,
     "wbRequestDelay": 700,
-    "trimSearchString": true
+    "trimSearchString": true,
+    "searchSavedColumns": "expression here how to calculate save columns config identifier what to show in data on search"
 }
