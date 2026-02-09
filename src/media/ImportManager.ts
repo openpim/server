@@ -54,60 +54,81 @@ export class ImportManager {
             const config = importConfig.config
             const data: any = await this.getImportConfigFileData(result?.[0]?.data?.filepath || filepath)
 
-            let { selectedTab, headerLineNumber, dataLineNumber, limit } = config
-
-            // data for selected tab only
-            const selectedData = data[selectedTab]
-            if (selectedData) {
-                headerLineNumber = parseInt(headerLineNumber) - 1
-                dataLineNumber = parseInt(dataLineNumber) - 1
-                limit = parseInt(limit)
-
-                const headers = selectedData[headerLineNumber]
-
-                const startRowNumber = dataLineNumber
-                const endRowNumber = limit ? dataLineNumber + limit : selectedData.length
-
-                const importConfigOptions: IImportConfig = {
-                    mode: ImportMode.CREATE_UPDATE,
-                    errors: ErrorProcessing.PROCESS_WARN
-                }
-
-                for (let i = startRowNumber; i < endRowNumber; i++) {
-                    const rowData = selectedData[i] || null
-                    if (rowData) {
-                        try {
-                            const res = (config.beforeEachRow && config.beforeEachRow.length) ? await this.evaluateExpression(rowData, null, config.beforeEachRow, context) : null
-                            if (res && typeof res == 'boolean') {
-                                process.log += '\n' + `${i18next.t('ImportManagerValueSkipped', { lng: language })} ${JSON.stringify(rowData)}`
-                                continue
-                            }
-                            if (res) {
-                                process.log += '\n' + `${i18next.t('ImportManagerRowSkipped', { lng: language })} ${JSON.stringify(rowData)}`
-                                continue
-                            }
-                            const item = await this.mapLine(headers, importConfig, rowData, context)
-                            process.log += '\n' + `${i18next.t('ImportManagerItem', { lng: language })} ` + JSON.stringify(item)
-                            if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
-                                const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
-                                if (config.afterEachRow && config.afterEachRow.length) await this.evaluateExpression(rowData, importRes, config.afterEachRow, context)
-                                process.log += '\n' + `${i18next.t('ImportManagerImportResult', { lng: language })} ${JSON.stringify(importRes)}`
-                            } else {
-                                process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty', { lng: language })}`
-                            }
-                        } catch (e) {
-                            process.log += '\n' + `${i18next.t('ImportManagerErrorUpdatingItem', { lng: language })} ${e}`
-                        }
-                        await process.save()
-                    } else {
-                        process.log += '\n' + `${i18next.t('ImportManagerThereIsNoDataForLine', { lng: language })} ${i}}`
-                        await process.save()
-                    }
-                }
-
-                process.log += '\n' + `${i18next.t('ImportManagerFileProcessingFinished', { lng: language })}`
+            let sheets = []
+            if (config.sheets && Array.isArray(config.sheets) && config.sheets.length > 0) {
+                sheets = config.sheets
             } else {
-                process.log += '\n' + `${i18next.t('ImportManagerUploadedFileHasInvalidFormat', { lng: language })}`
+                sheets.push({
+                    selectedTab: config.selectedTab,
+                    headerLineNumber: config.headerLineNumber,
+                    dataLineNumber: config.dataLineNumber,
+                    limit: config.limit,
+                    noHeadersChecked: config.noHeadersChecked,
+                    mappings: importConfig.mappings
+                })
+            }
+
+            for (const sheetConfig of sheets) {
+                let { selectedTab, headerLineNumber, dataLineNumber, limit, noHeadersChecked, mappings } = sheetConfig
+
+                // data for selected tab only
+                const selectedData = data[selectedTab]
+
+                if (sheets.length > 1) {
+                    process.log += '\n' + (language === 'ru' ? 'Обработка листа: ' : 'Processing sheet: ') + selectedTab
+                }
+
+                if (selectedData) {
+                    headerLineNumber = parseInt(headerLineNumber) - 1
+                    dataLineNumber = parseInt(dataLineNumber) - 1
+                    limit = parseInt(limit)
+
+                    const headers = selectedData[headerLineNumber]
+
+                    const startRowNumber = dataLineNumber
+                    const endRowNumber = limit ? dataLineNumber + limit : selectedData.length
+
+                    const importConfigOptions: IImportConfig = {
+                        mode: ImportMode.CREATE_UPDATE,
+                        errors: ErrorProcessing.PROCESS_WARN
+                    }
+
+                    for (let i = startRowNumber; i < endRowNumber; i++) {
+                        const rowData = selectedData[i] || null
+                        if (rowData) {
+                            try {
+                                const res = (config.beforeEachRow && config.beforeEachRow.length) ? await this.evaluateExpression(rowData, null, config.beforeEachRow, context) : null
+                                if (res && typeof res == 'boolean') {
+                                    process.log += '\n' + `${i18next.t('ImportManagerValueSkipped', { lng: language })} ${JSON.stringify(rowData)}`
+                                    continue
+                                }
+                                if (res) {
+                                    process.log += '\n' + `${i18next.t('ImportManagerRowSkipped', { lng: language })} ${JSON.stringify(rowData)}`
+                                    continue
+                                }
+                                const item = await this.mapLine(headers, mappings, noHeadersChecked, rowData, context)
+                                process.log += '\n' + `${i18next.t('ImportManagerItem', { lng: language })} ` + JSON.stringify(item)
+                                if (item.identifier && typeof item.identifier !== 'undefined' && (item.identifier + '').length) {
+                                    const importRes = await importItem(context, <IImportConfig>importConfigOptions, <IItemImportRequest>item)
+                                    if (config.afterEachRow && config.afterEachRow.length) await this.evaluateExpression(rowData, importRes, config.afterEachRow, context)
+                                    process.log += '\n' + `${i18next.t('ImportManagerImportResult', { lng: language })} ${JSON.stringify(importRes)}`
+                                } else {
+                                    process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty', { lng: language })}`
+                                }
+                            } catch (e) {
+                                process.log += '\n' + `${i18next.t('ImportManagerErrorUpdatingItem', { lng: language })} ${e}`
+                            }
+                            await process.save()
+                        } else {
+                            process.log += '\n' + `${i18next.t('ImportManagerThereIsNoDataForLine', { lng: language })} ${i}}`
+                            await process.save()
+                        }
+                    }
+
+                    process.log += '\n' + `${i18next.t('ImportManagerFileProcessingFinished', { lng: language })}`
+                } else {
+                    process.log += '\n' + `${i18next.t('ImportManagerUploadedFileHasInvalidFormat', { lng: language })}`
+                }
             }
 
             processImportActions(context, EventType.ImportAfterEnd, process, importConfig, filepath)
@@ -311,17 +332,17 @@ export class ImportManager {
         return wasMapping ? result : null
     }
 
-    private async mapLine(headers: Array<any>, importConfig: ImportConfig, data: Array<any>, context: Context) {
+    private async mapLine(headers: Array<any>, mappings: any[], noHeadersChecked: boolean, data: Array<any>, context: Context) {
         const result: any = {
             name: {},
             values: {}
         }
         try {
-            for (let i = 0; i < importConfig.mappings.length; i++) {
-                const mapping = importConfig.mappings[i]
+            for (let i = 0; i < mappings.length; i++) {
+                const mapping = mappings[i]
 
                 let idx = -1
-                if (importConfig.config.noHeadersChecked && mapping.column) {
+                if (noHeadersChecked && mapping.column) {
                     // calculates an index from string like 'Column 10'
                     idx = parseInt(mapping.column.substring(7)) - 1
                 } else if (mapping.column) {
