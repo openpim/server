@@ -63,7 +63,13 @@ export class YMChannelHandler extends ChannelHandler {
                     await this.processItems(channel, yml, language, context)
                     
                     logger.info('start YML file creation.')
-                    const builder = new xml2js.Builder()
+                    const builder = new xml2js.Builder({
+                        xmldec: {
+                            'version': '1.0',
+                            'encoding': 'UTF-8',
+                            'standalone': undefined // Removes the standalone attribute from the header
+                        }
+                    })
                     const str = builder.buildObject(yml)
                     logger.info('YML file created.')
                     logger.debug('YML file: \n ' + str)
