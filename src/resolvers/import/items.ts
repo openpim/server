@@ -76,6 +76,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     result.result = ImportResult.REJECTED
                     return result
                 }
+               
                 // check children
                 const cnt:any = await sequelize.query('SELECT count(*) FROM items where "deletedAt" IS NULL and "tenantId"=:tenant and path~:lquery', {
                     replacements: { 
@@ -92,16 +93,23 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     result.result = ImportResult.REJECTED
                     return result
                 }
-                // check relations
-                const num = await ItemRelation.applyScope(context).count({
-                    where: {
-                        [Op.or]: [{itemId: data.id}, {targetId: data.id}]
-                    },
-                })
-                if (num > 0) {
-                    result.addError(ReturnMessage.ItemDeleteFailedRelations)
-                    result.result = ImportResult.REJECTED
-                    return result
+
+                let checkRelationsOnDelete = true
+                const type = mng.getTypeByIdentifier(item.typeIdentifier)
+                if (type && type.getValue().options && type.getValue().options.some((opt:any) => opt.name === 'checkRelationsOnDelete' && opt.value == 'false' )) checkRelationsOnDelete = false
+
+                if (checkRelationsOnDelete) {
+                    // check relations
+                    const num = await ItemRelation.applyScope(context).count({
+                        where: {
+                            [Op.or]: [{itemId: data.id}, {targetId: data.id}]
+                        },
+                    })
+                    if (num > 0) {
+                        result.addError(ReturnMessage.ItemDeleteFailedRelations)
+                        result.result = ImportResult.REJECTED
+                        return result
+                    }
                 }
 
                 data.updatedBy = context.getCurrentUser()!.login
