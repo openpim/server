@@ -277,12 +277,48 @@ export function replaceOperations(obj: any, context: Context | null) {
             fillInclude(include, context)
         }
 
+        if (prop === 'channels' && value === Object(value)) {
+            convertChannelTimestamps(value)
+        }
+
         if (prop !== 'include' && value === Object(value)) {
             replaceOperations(value, context)
         }
     }
     return include
 }
+
+function convertChannelTimestamps(obj: any) {
+    for (const prop in obj) {
+        const value = obj[prop]
+        if ((prop === 'submittedAt' || prop === 'syncedAt') && value === Object(value)) {
+            for (const key in value) {
+                if (typeof value[key] === 'string') {
+                    let resolved: number | null = null
+                    if (value[key].startsWith('#DAY#')) {
+                        const days = parseInt(value[key].substring(5))
+                        if (!Number.isNaN(days)) resolved = moment().startOf('day').add(days, 'days').utc().valueOf()
+                    } else if (value[key].startsWith('#HOUR#')) {
+                        const hours = parseInt(value[key].substring(6))
+                        if (!Number.isNaN(hours)) resolved = moment().add(hours, 'hours').utc().valueOf()
+                    } else if (value[key].startsWith('#MIN#')) {
+                        const min = parseInt(value[key].substring(5))
+                        if (!Number.isNaN(min)) resolved = moment().add(min, 'minutes').utc().valueOf()
+                    } else {
+                        const ts = new Date(value[key]).getTime()
+                        if (!isNaN(ts)) resolved = ts
+                    }
+                    if (resolved !== null) {
+                        value[key] = resolved
+                    }
+                }
+            }
+        } else if (value === Object(value)) {
+            convertChannelTimestamps(value)
+        }
+    }
+}
+
 function fillInclude(include: any[], context: Context | null) {
     include.forEach(elem => {
         elem.attributes = []
