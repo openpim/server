@@ -213,6 +213,12 @@ export class ImportManager {
                 if (currentTag) currentTag.text = t
             })
 
+            saxStream.on('cdata', function (cdata: any) {
+            if (currentTag) {
+                if (currentTag) currentTag.text = cdata
+            }
+            })            
+
             saxStream.on('end', async function () {
                 processImportActions(context, EventType.ImportAfterEnd, process, importConfig, filepath)
                 process.active = false
