@@ -95,7 +95,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 }
 
                 let checkRelationsOnDelete = true
-                const type = mng.getTypeByIdentifier(item.typeIdentifier)
+                const type = mng.getTypeByIdentifier(data.typeIdentifier)
                 if (type && type.getValue().options && type.getValue().options.some((opt:any) => opt.name === 'checkRelationsOnDelete' && opt.value == 'false' )) checkRelationsOnDelete = false
 
                 if (checkRelationsOnDelete) {
