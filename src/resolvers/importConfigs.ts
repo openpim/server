@@ -5,12 +5,24 @@ import { ImportConfig } from '../models/importConfigs'
 import logger from '../logger'
 import { EventType } from '../models/actions'
 
+function hasBulkUploadLicense(): boolean {
+    return ModelsManager.getInstance().getChannelTypes().includes(1002)
+}
+
+function ensureBulkUploadLicense(type: number) {
+    if (type === 4 && !hasBulkUploadLicense()) {
+        throw new Error('Bulk upload licence does not exists!')
+    }
+}
+
 export default {
     Query: {
         getImportConfigs: async (parent: any, args: any, context: Context) => {
             context.checkAuth()
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-            return mng.getImportConfigs()
+            const configs = mng.getImportConfigs()
+            if (hasBulkUploadLicense()) return configs
+            return configs.filter(elem => elem.type !== 4)
         }
     },
     Mutation: {
@@ -23,6 +35,8 @@ export default {
             if (!/^[A-Za-z0-9_]*$/.test(identifier)) 
                 throw new Error('Identifier must not has spaces and must be in English only: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
 
+            ensureBulkUploadLicense(type)
+
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
             const tst = mng.getImportConfigs().find(el => el.identifier === identifier)
@@ -31,7 +45,7 @@ export default {
             }
 
             const importConfig = await sequelize.transaction(async (t) => {
-                const importConfig = await ImportConfig.create ({
+                const created = await ImportConfig.create({
                     identifier: identifier,
                     tenantId: context.getCurrentUser()!.tenantId,
                     createdBy: context.getCurrentUser()!.login,
@@ -41,8 +55,8 @@ export default {
                     mappings: mappings ? mappings : {},
                     filedata: filedata ? filedata : {},
                     config: config ? config : {}
-                }, {transaction: t})
-                return importConfig
+                }, { transaction: t })
+                return created
             })
 
             mng.getImportConfigs().push(importConfig)
@@ -55,13 +69,15 @@ export default {
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update import config, tenant: ' + context.getCurrentUser()!.tenantId)
 
             const nId = parseInt(id)
-
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
-            let importConfig  = mng.getImportConfigs().find((el) => el.id === nId)
+            const importConfig = mng.getImportConfigs().find((el) => el.id === nId)
             if (!importConfig) {
                 throw new Error('Failed to find import config by id: ' + id + ', tenant: ' + mng.getTenantId())
             }
+
+            const targetType = type != null ? type : importConfig.type
+            ensureBulkUploadLicense(targetType)
 
             if (name) importConfig.name = name
             if (type != null) importConfig.type = type

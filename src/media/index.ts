@@ -19,9 +19,22 @@ import { EventType } from '../models/actions'
 import { Process } from '../models/processes'
 import { ImportConfig } from '../models/importConfigs'
 import { ImportManager } from './ImportManager'
+import { BulkUploadManager } from './BulkUploadManager'
 import i18next from '../i18n'
 import { StorageFactory } from '../storage/StorageFactory'
 import { clearProcessCache } from '../resolvers/processes'
+
+function ensureBulkUploadLicense() {
+    const hasBulkUploadLicense = ModelsManager.getInstance().getChannelTypes().includes(1002)
+    if (!hasBulkUploadLicense) {
+        throw new Error('Bulk upload licence does not exists!')
+    }
+}
+
+function getFieldValue(field: string | string[] | undefined): string | undefined {
+    if (Array.isArray(field)) return field[0]
+    return field
+}
 
 export async function processChannelDownload(context: Context, req: Request, res: Response, thumbnail: boolean) {
     const idStr = req.params.id
@@ -721,7 +734,89 @@ export async function uploadImportFile(context: Context, req: Request, res: Resp
         }
     })
 }
+export async function handleBulkUpload(context: Context, req: Request, res: Response) {
+    const form = new IncomingForm({
+        maxFileSize: 6 * 1024 * 1024 * 1024,
+        keepExtensions: true,
+        multiples: true
+    })
 
+    form.parse(req, async (err, fields, files) => {
+        try {
+            if (err) {
+                logger.error(err)
+                res.status(400).send(err.message)
+                return
+            }
+
+            context.checkAuth()
+            ensureBulkUploadLicense()
+
+            const mappingIdRaw = getFieldValue(fields['mappingId'])
+            if (!mappingIdRaw) throw new Error('Missing "mappingId" parameter')
+            const mappingId = parseInt(mappingIdRaw)
+            if (isNaN(mappingId)) throw new Error('Wrong "mappingId" parameter')
+
+            const importConfig = await ImportConfig.applyScope(context).findByPk(mappingId)
+            if (!importConfig) throw new Error('ImportConfig not found: ' + mappingId)
+            if (importConfig.type !== 4) throw new Error('ImportConfig is not bulk type')
+
+            const processIdRaw = getFieldValue(fields['processId'])
+            const processId = processIdRaw ? parseInt(processIdRaw) : null
+            if (processIdRaw && (processId === null || isNaN(processId))) {
+                throw new Error('Wrong "processId" parameter')
+            }
+
+            const fileField = files['file']
+            const fileList = Array.isArray(fileField) ? fileField : (fileField ? [fileField] : [])
+            if (!fileList.length) throw new Error('Missing "file" parameter')
+
+            const bulkManager = BulkUploadManager.getInstance()
+            const proc = await bulkManager.handleUpload(context, processId, fileList as File[], importConfig)
+
+            res.status(200).json({
+                processId: proc.id,
+                uploaded: fileList.length,
+                total: proc.runtime?.files?.length || 0
+            })
+        } catch (error: any) {
+            logger.error(error)
+            res.status(400).send(error.message)
+        }
+    })
+}
+
+export async function handleBulkStart(context: Context, req: Request, res: Response) {
+    try {
+        context.checkAuth()
+        ensureBulkUploadLicense()
+
+        const processId = parseInt(req.params.processId)
+        if (isNaN(processId)) throw new Error('Wrong "processId" parameter')
+
+        const proc = await Process.applyScope(context).findByPk(processId)
+        if (!proc) throw new Error('Process not found: ' + processId)
+        if (proc.runtime?.type !== 'bulk-upload') throw new Error('Process is not bulk-upload type')
+        if (proc.active) throw new Error('Process is already running')
+
+        const mappingId = proc.runtime?.mappingId
+        if (!mappingId) throw new Error('Bulk process has no mappingId in runtime')
+
+        const importConfig = await ImportConfig.applyScope(context).findByPk(mappingId)
+        if (!importConfig) throw new Error('ImportConfig not found: ' + mappingId)
+        if (importConfig.type !== 4) throw new Error('ImportConfig is not bulk type')
+
+        const language = (req.query.language as string) || 'en'
+
+        const bulkManager = BulkUploadManager.getInstance()
+        await bulkManager.startProcessing(context, proc, importConfig, language)
+
+        res.status(200).json({ result: 'OK' })
+    } catch (error: any) {
+        logger.error(error)
+        res.status(400).send(error.message)
+    }
+}
 export async function testImportConfig(context: Context, req: Request, res: Response) {
     const form = new IncomingForm({ maxFileSize: 6 * 1024 * 1024 * 1024, keepExtensions: true })
     form.parse(req, async (err, fields, files) => {

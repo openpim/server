@@ -149,6 +149,86 @@ export class FileManager {
         return fullPath
     }
 
+    public async saveBulkTempFile(tenantId: string, processId: number, fileIdx: number, file: string, clean = true) {
+        const tst = '/' + tenantId
+        if (!fs.existsSync(this.filesRoot + tst)) fs.mkdirSync(this.filesRoot + tst)
+
+        const filesPath = '/' + tenantId + '/processes/'
+        if (!fs.existsSync(this.filesRoot + filesPath)) fs.mkdirSync(this.filesRoot + filesPath, {recursive: true})
+
+        const relativePath = filesPath + processId + '_' + fileIdx
+        const fullPath = this.filesRoot + relativePath
+        if (clean) {
+            try {
+                fs.renameSync(file, fullPath)
+            } catch (e) {
+                fs.copyFileSync(file, fullPath)
+                fs.unlinkSync(file)
+            }
+        } else {
+            fs.copyFileSync(file, fullPath)
+        }
+
+        return relativePath
+    }
+    public async saveBulkFile(tenantId: string, item: Item, filepath: string, mimetype: string | null, originalFilename: string | null, size: number, clean = true ) {
+        const folder = ~~(item.id/1000)
+
+        const tst = '/' + tenantId
+        if (!fs.existsSync(this.filesRoot + tst)) fs.mkdirSync(this.filesRoot + tst)
+
+        const filesPath = '/' + tenantId + '/' + folder
+        if (!fs.existsSync(this.filesRoot + filesPath)) fs.mkdirSync(this.filesRoot + filesPath)
+
+        const relativePath = filesPath + '/' + item.id
+        const fullPath = this.filesRoot + relativePath
+
+        let values:any = {}
+        if (process.env.OPENPIM_FILE_HASH) {
+            values.file_hash = await hasha.fromFile(filepath, {algorithm: process.env.OPENPIM_FILE_HASH})
+        }
+
+        item.storagePath = relativePath
+
+        if (this.isImage(mimetype||'')) {
+            let image
+            if (mimetype === 'image/bmp') {
+                const buffer = fs.readFileSync(filepath);
+                const bitmap = bmp.decode(buffer);
+
+                image = sharp(bitmap.data, {
+                    raw: {
+                        width: bitmap.width,
+                        height: bitmap.height,
+                        channels: 4,
+                    },
+                })
+            } else {
+                image = sharp(filepath)
+            }
+            const metadata = await image.metadata()
+            values.image_width= metadata.width
+            values.image_height= metadata.height
+            values.image_type=metadata.format
+            values.file_type=mimetype
+            values.file_name=originalFilename||''
+            values.file_size=size
+            values.image_rgba=metadata.space
+
+            await image.resize(300, 300, {
+                fit: sharp.fit.contain,
+                background: { r: 255, g: 255, b: 255, alpha: 1 }
+            }).withMetadata().flatten({ background: '#fff' }).jpeg({ quality: 70 }).toFile(fullPath + '_thumb.jpg')
+            sharp.cache(false)
+        } else {
+            values.file_name=originalFilename||''
+            values.file_type=mimetype||''
+            values.file_size=size
+        }
+        item.values = mergeValues(values, item.values)
+
+        await StorageFactory.getStorageInstance().saveFile(item, filepath, mimetype || 'application/octet-stream', clean)
+    }
     public async saveFile(tenantId: string, item: Item, filepath: string, mimetype: string | null, originalFilename: string | null, size: number, clean = true ) {
         const folder = ~~(item.id/1000)
 

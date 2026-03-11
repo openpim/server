@@ -34,6 +34,8 @@ import {
   downloadXlsxTemplateFile,
   processDownloadInline,
   uploadStaticImage,
+  handleBulkUpload,
+  handleBulkStart,
 } from './media';
 import { initModels } from './models';
 import { 
@@ -291,6 +293,27 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     }
   })
 
+
+  app.post('/bulk-upload', async (req, res) => {
+    try {
+      const context = await Context.create(req, res)
+      context.checkAuth()
+      await handleBulkUpload(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+
+  app.post('/bulk-upload/start/:processId', async (req, res) => {
+    try {
+      const context = await Context.create(req, res)
+      context.checkAuth()
+      await handleBulkStart(context, req, res)
+    } catch (error: any) {
+      res.status(400).send(error.message)
+    }
+  })
+  
   app.post('/import-config-test/:id', async (req, res) => {
     try {
       const context = await Context.create(req, res)
