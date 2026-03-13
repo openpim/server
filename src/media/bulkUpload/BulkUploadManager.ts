@@ -1,69 +1,42 @@
 import * as fs from 'fs'
 import { File } from 'formidable'
-import i18next from '../i18n'
-import logger from '../logger'
-import Context from '../context'
-import { Process } from '../models/processes'
-import { ImportConfig } from '../models/importConfigs'
-import { Item } from '../models/items'
-import { ErrorProcessing, IImportConfig, IItemImportRequest, ImportMode, ImportResult } from '../models/import'
-import { importItem } from '../resolvers/import/items'
-import { ActionUtils, processImportActions } from '../resolvers/utils'
-import { EventType } from '../models/actions'
-import { clearProcessCache } from '../resolvers/processes'
-import { FileManager } from './FileManager'
-import { evaluateExpression } from './evaluateExpression'
-
-type BulkFileStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'skipped'
-
-interface BulkRuntimeFileInfo {
-    idx: number
-    originalName: string
-    mimeType: string
-    size: number
-    tmpPath: string
-    status: BulkFileStatus
-    error: string | null
-    resultItemId: number | null
-    resultIdentifier: string | null
-}
-
-interface BulkRuntimeStats {
-    total: number
-    completed: number
-    failed: number
-    skipped: number
-    processing: number
-    pending: number
-}
-
-interface BulkRuntime {
-    type: 'bulk-upload'
-    mappingId: number
-    files: BulkRuntimeFileInfo[]
-    stats: BulkRuntimeStats
-}
-
-interface BulkRelationConfig {
-    column?: string
-    relationIdentifier?: string
-    relationIdentifierExpression?: string
-    identifierExpression?: string
-    sourceField?: string
-    sourceExpression?: string
-    targetField?: string
-    targetIdentifierExpression?: string
-    targetSource?: string
-    targetExpression?: string
-    valuesExpression?: any
-    values?: any
-}
+import i18next from '../../i18n'
+import logger from '../../logger'
+import Context from '../../context'
+import { Process } from '../../models/processes'
+import { ImportConfig } from '../../models/importConfigs'
+import { Item } from '../../models/items'
+import { ErrorProcessing, IImportConfig, ImportMode, ImportResult } from '../../models/import'
+import { importItem } from '../../resolvers/import/items'
+import { processImportActions } from '../../resolvers/utils'
+import { EventType } from '../../models/actions'
+import { clearProcessCache } from '../../resolvers/processes'
+import { FileManager } from '../FileManager'
+import { evaluateExpression } from '../evaluateExpression'
+import {
+    buildBulkFileRow,
+    mapBulkFile
+} from './expressions'
+import {
+    buildBulkFileStatus,
+    buildBulkFileStepLog,
+    buildBulkRequestLogEntry,
+    buildBulkUploadStatus
+} from './logging'
+import {
+    BulkRuntime,
+    BulkRuntimeFileInfo,
+    calculateBulkRuntimeStats,
+    normalizeBulkRuntime
+} from './runtime'
+import {
+    getBulkRelationConfigs,
+    resolveBulkRelationRequest,
+    upsertBulkRelationForImport
+} from './itemRelations'
 
 const DEFAULT_MAX_FILES = 100
-const BULK_FILE_PROCESS_STEPS = 8
-const DEFAULT_LOG_MODE = 'info'
-const PROCESS_JSON_LOG_MAX_LENGTH = 12000
-const PROCESS_JSON_INFO_MAX_LENGTH = 2500
+
 export class BulkUploadManager {
     private static instance: BulkUploadManager
     private readonly fileManager: FileManager
@@ -241,7 +214,6 @@ export class BulkUploadManager {
                 'Process step: ImportBeforeStart actions completed.'
             )
 
-            const actionUtils = new ActionUtils(context)
             for (let i = 0; i < runtime.files.length; i++) {
                 const fileInfo = runtime.files[i]
                 if (fileInfo.status !== 'pending') continue
@@ -418,7 +390,6 @@ export class BulkUploadManager {
                     )
                     const relationCount = await this.createRelationIfNeeded(
                         context,
-                        actionUtils,
                         importConfig.config,
                         row,
                         importedItem.identifier,
@@ -530,37 +501,8 @@ export class BulkUploadManager {
             )
         }
     }
-    private getLogMode(config: any): string {
-        return config?.logMode === 'debug' ? 'debug' : DEFAULT_LOG_MODE
-    }
-
-    private isDebugLogMode(config: any): boolean {
-        return this.getLogMode(config) === 'debug'
-    }
-
     private buildRequestLogEntry(title: string, payload: any, config: any): string {
-        if (this.isDebugLogMode(config)) {
-            return this.buildJsonLogEntry(title, payload, PROCESS_JSON_LOG_MAX_LENGTH, true)
-        }
-        return this.buildJsonLogEntry(`${title} (compact)`, payload, PROCESS_JSON_INFO_MAX_LENGTH, false)
-    }
-
-    private buildJsonLogEntry(title: string, payload: any, maxLength: number = PROCESS_JSON_LOG_MAX_LENGTH, pretty: boolean = true): string {
-        let json = 'null'
-        try {
-            json = JSON.stringify(payload ?? null, null, pretty ? 2 : 0) || 'null'
-        } catch (error: any) {
-            json = JSON.stringify({ error: 'Failed to stringify payload', message: error?.message || '' + error }, null, pretty ? 2 : 0)
-        }
-
-        if (json.length > maxLength) {
-            const remainder = json.length - maxLength
-            json = json.substring(0, maxLength) + `
-... [truncated ${remainder} chars]`
-        }
-
-        return `${title}:
-${json}`
+        return buildBulkRequestLogEntry(title, payload, config)
     }
 
     private async saveRuntimeProcess(
@@ -584,66 +526,26 @@ ${json}`
     }
 
     private buildUploadStatus(totalFiles: number): string {
-        return `Uploading: ${totalFiles} file(s) queued`
+        return buildBulkUploadStatus(totalFiles)
     }
 
     private buildFileStatus(fileIndex: number, totalFiles: number, stage: string, fileName: string): string {
-        return `Processing ${fileIndex + 1}/${totalFiles}: ${stage} ${fileName}`
+        return buildBulkFileStatus(fileIndex, totalFiles, stage, fileName)
     }
 
     private buildFileStepLog(fileIndex: number, totalFiles: number, fileName: string, stepNumber: number, stepName: string): string {
-        return `[${fileIndex + 1}/${totalFiles}] ${fileName} - step ${stepNumber}/${BULK_FILE_PROCESS_STEPS}: ${stepName}`
+        return buildBulkFileStepLog(fileIndex, totalFiles, fileName, stepNumber, stepName)
     }
-    private async mapFile(mappings: any[], row: Record<string, any>, context: Context): Promise<IItemImportRequest> {
-        const result: any = {
-            identifier: '',
-            delete: false,
-            skipActions: false,
-            typeIdentifier: '',
-            parentIdentifier: '',
-            name: {},
-            values: {},
-            channels: {}
-        }
-
-        for (let i = 0; i < mappings.length; i++) {
-            const mapping = mappings[i]
-            if (!mapping || !mapping.attribute) continue
-
-            const data = mapping.column ? this.getExpressionData(mapping.column, row) : null
-            if (!mapping.column && !mapping.expression) continue
-
-            const mappedData = (mapping.expression && mapping.expression.length)
-                ? await evaluateExpression(null, data, mapping.expression, context)
-                : data
-
-            if (mapping.attribute === 'identifier' || mapping.attribute === 'typeIdentifier' || mapping.attribute === 'parentIdentifier') {
-                result[mapping.attribute] = mappedData == null ? '' : '' + mappedData
-            } else if (mapping.attribute.startsWith('$name#')) {
-                const langIdentifier = mapping.attribute.substring(6)
-                result.name[langIdentifier] = mappedData
-            } else {
-                result.values[mapping.attribute] = mappedData
-            }
-        }
-
-        return result
+    private async mapFile(mappings: any[], row: Record<string, any>, context: Context) {
+        return await mapBulkFile(mappings, row, context)
     }
 
     private buildFileRow(fileInfo: BulkRuntimeFileInfo): Record<string, any> {
-        return {
-            $fileName: this.removeExtension(fileInfo.originalName),
-            $fileNameFull: fileInfo.originalName,
-            $fileExt: this.getExtension(fileInfo.originalName),
-            $fileMimeType: fileInfo.mimeType,
-            $fileSize: fileInfo.size,
-            $fileIndex: fileInfo.idx
-        }
+        return buildBulkFileRow(fileInfo)
     }
 
     private async createRelationIfNeeded(
         context: Context,
-        actionUtils: ActionUtils,
         config: any,
         row: Record<string, any>,
         fileItemIdentifier: string,
@@ -654,14 +556,12 @@ ${json}`
         fileIndex: number,
         totalFiles: number
     ): Promise<number> {
-        const relationConfigs = this.getRelationConfigs(config)
+        const relationConfigs = getBulkRelationConfigs(config)
         if (!relationConfigs.length) return 0
 
         let createdCount = 0
         for (let i = 0; i < relationConfigs.length; i++) {
             const relationConfig = relationConfigs[i]
-            const relationData = this.getExpressionData(relationConfig.column, row)
-
             await this.saveRuntimeProcess(
                 proc,
                 runtime,
@@ -670,98 +570,23 @@ ${json}`
                 this.buildFileStepLog(fileIndex, totalFiles, fileInfo.originalName, 7, `resolve relation ${i + 1}/${relationConfigs.length}`)
             )
 
-            const sourceField = relationConfig.sourceField || relationConfig.targetSource
-            const sourceExpression = relationConfig.sourceExpression || relationConfig.targetExpression
-            const sourceData = sourceField
-                ? this.getExpressionData(sourceField, row)
-                : relationData
-            const sourceIdentifierRaw = sourceExpression
-                ? await evaluateExpression(null, sourceData, sourceExpression, context)
-                : sourceData
+            const resolvedRelation = await resolveBulkRelationRequest(
+                relationConfig,
+                row,
+                fileItemIdentifier,
+                context,
+                this.buildRelationIdentifier.bind(this)
+            )
 
-            if (!sourceIdentifierRaw) {
+            if ('skipReason' in resolvedRelation) {
                 await this.saveRuntimeProcess(
                     proc,
                     runtime,
                     login,
                     undefined,
-                    `Relation skipped for ${fileInfo.originalName}: source identifier is empty.`
+                    `Relation skipped for ${fileInfo.originalName}: ${resolvedRelation.skipReason}`
                 )
                 continue
-            }
-
-            const sourceIdentifier = '' + sourceIdentifierRaw
-
-            const targetField = relationConfig.targetField
-            const targetExpression = relationConfig.targetIdentifierExpression
-            const targetData = targetField
-                ? this.getExpressionData(targetField, row)
-                : relationData
-            const targetIdentifierRaw = targetExpression
-                ? await evaluateExpression(null, targetData, targetExpression, context)
-                : targetData
-            const targetIdentifier = targetIdentifierRaw ? '' + targetIdentifierRaw : fileItemIdentifier
-
-            if (!targetIdentifier) {
-                await this.saveRuntimeProcess(
-                    proc,
-                    runtime,
-                    login,
-                    undefined,
-                    `Relation skipped for ${fileInfo.originalName}: target identifier is empty.`
-                )
-                continue
-            }
-
-            const relationIdentifierExpression = relationConfig.relationIdentifierExpression && ('' + relationConfig.relationIdentifierExpression).trim().length
-                ? '' + relationConfig.relationIdentifierExpression
-                : ''
-            const relationIdentifierRaw = relationIdentifierExpression
-                ? await evaluateExpression(null, relationData, relationIdentifierExpression, context)
-                : relationConfig.relationIdentifier
-
-            if (!relationIdentifierRaw) {
-                await this.saveRuntimeProcess(
-                    proc,
-                    runtime,
-                    login,
-                    undefined,
-                    `Relation skipped for ${fileInfo.originalName}: relation type is empty.`
-                )
-                continue
-            }
-
-            const relationIdentifier = '' + relationIdentifierRaw
-
-            const identifierExpression = relationConfig.identifierExpression && ('' + relationConfig.identifierExpression).trim().length
-                ? '' + relationConfig.identifierExpression
-                : ''
-            const relationItemIdentifierRaw = identifierExpression
-                ? await evaluateExpression(null, relationData, identifierExpression, context)
-                : this.buildRelationIdentifier(relationIdentifier, sourceIdentifier, targetIdentifier)
-
-            if (!relationItemIdentifierRaw) {
-                await this.saveRuntimeProcess(
-                    proc,
-                    runtime,
-                    login,
-                    undefined,
-                    `Relation skipped for ${fileInfo.originalName}: relation identifier is empty.`
-                )
-                continue
-            }
-
-            const relIdentifier = '' + relationItemIdentifierRaw
-            const relationValues = relationConfig.valuesExpression && ('' + relationConfig.valuesExpression).trim().length
-                ? this.normalizeRelationValues(await evaluateExpression(null, relationData, '' + relationConfig.valuesExpression, context))
-                : this.normalizeRelationValues(relationConfig.values)
-            const relationRequest = {
-                relationIdentifier,
-                identifier: relIdentifier,
-                itemIdentifier: sourceIdentifier,
-                targetIdentifier,
-                values: relationValues,
-                skipActions: false
             }
 
             await this.saveRuntimeProcess(
@@ -769,17 +594,10 @@ ${json}`
                 runtime,
                 login,
                 undefined,
-                this.buildRequestLogEntry(`ItemRelation request JSON for ${fileInfo.originalName}`, relationRequest, config)
+                this.buildRequestLogEntry(`ItemRelation request JSON for ${fileInfo.originalName}`, resolvedRelation.relationRequest, config)
             )
 
-            await actionUtils.createItemRelation(
-                relationRequest.relationIdentifier,
-                relationRequest.identifier,
-                relationRequest.itemIdentifier,
-                relationRequest.targetIdentifier,
-                relationRequest.values,
-                relationRequest.skipActions
-            )
+            const relationUpsert = await upsertBulkRelationForImport(context, resolvedRelation.relationRequest)
             createdCount++
 
             await this.saveRuntimeProcess(
@@ -787,55 +605,11 @@ ${json}`
                 runtime,
                 login,
                 undefined,
-                `Relation created (${relationIdentifier}) for ${fileInfo.originalName}: ${sourceIdentifier} -> ${targetIdentifier}, identifier=${relIdentifier}.`
+                `Relation ${relationUpsert.importResponse.result || 'processed'} (${resolvedRelation.relationIdentifier}) for ${fileInfo.originalName}: ${resolvedRelation.sourceIdentifier} -> ${resolvedRelation.targetIdentifier}, identifier=${relationUpsert.requestForImport.identifier}.`
             )
         }
 
         return createdCount
-    }
-
-    private getExpressionData(column: string | undefined, row: Record<string, any>): any {
-        if (!column) return null
-        return typeof row[column] === 'undefined' ? null : row[column]
-    }
-    private getRelationConfigs(config: any): BulkRelationConfig[] {
-        if (!config || typeof config !== 'object') return []
-
-        const rawRelations = Array.isArray(config.relations)
-            ? config.relations
-            : (config.relation ? [config.relation] : [])
-
-        return rawRelations.filter((relation: any) => {
-            return relation && typeof relation === 'object' && (relation.relationIdentifier || relation.relationIdentifierExpression)
-        })
-    }
-
-    private normalizeRelationValues(values: any): Record<string, any> {
-        if (values == null || values === '') return {}
-
-        if (typeof values === 'string') {
-            const trimmed = values.trim()
-            if (!trimmed) return {}
-
-            let parsed: any
-            try {
-                parsed = JSON.parse(trimmed)
-            } catch (error) {
-                throw new Error('Relation values must be a valid JSON object')
-            }
-
-            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                throw new Error('Relation values must be a JSON object')
-            }
-
-            return parsed
-        }
-
-        if (typeof values === 'object' && !Array.isArray(values)) {
-            return values
-        }
-
-        throw new Error('Relation values must be a JSON object')
     }
 
     private async findImportedItem(context: Context, id: string, identifier: string): Promise<Item | null> {
@@ -850,56 +624,11 @@ ${json}`
     }
 
     private normalizeRuntime(rawRuntime: any, mappingId: number): BulkRuntime {
-        const runtime = (rawRuntime && typeof rawRuntime === 'object') ? rawRuntime : {}
-        const files: BulkRuntimeFileInfo[] = Array.isArray(runtime.files)
-            ? runtime.files.map((file: any, idx: number) => ({
-                idx: typeof file?.idx === 'number' ? file.idx : idx,
-                originalName: file?.originalName || '',
-                mimeType: file?.mimeType || '',
-                size: file?.size || 0,
-                tmpPath: file?.tmpPath || '',
-                status: this.normalizeStatus(file?.status),
-                error: file?.error || null,
-                resultItemId: file?.resultItemId || null,
-                resultIdentifier: file?.resultIdentifier || null
-            }))
-            : []
-
-        return {
-            type: 'bulk-upload',
-            mappingId: runtime.mappingId || mappingId,
-            files,
-            stats: this.calculateStats(files)
-        }
+        return normalizeBulkRuntime(rawRuntime, mappingId)
     }
 
-    private normalizeStatus(status: string): BulkFileStatus {
-        if (status === 'processing' || status === 'completed' || status === 'failed' || status === 'skipped') {
-            return status
-        }
-        return 'pending'
-    }
-
-    private calculateStats(files: BulkRuntimeFileInfo[]): BulkRuntimeStats {
-        const stats: BulkRuntimeStats = {
-            total: files.length,
-            completed: 0,
-            failed: 0,
-            skipped: 0,
-            processing: 0,
-            pending: 0
-        }
-
-        for (let i = 0; i < files.length; i++) {
-            const status = files[i].status
-            if (status === 'completed') stats.completed++
-            if (status === 'failed') stats.failed++
-            if (status === 'skipped') stats.skipped++
-            if (status === 'processing') stats.processing++
-            if (status === 'pending') stats.pending++
-        }
-
-        return stats
+    private calculateStats(files: BulkRuntimeFileInfo[]) {
+        return calculateBulkRuntimeStats(files)
     }
 
     private detectLanguage(importConfig: ImportConfig): string {
@@ -930,16 +659,3 @@ ${json}`
         return `${relationIdentifier}_${source}_${target}_${Date.now()}`
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

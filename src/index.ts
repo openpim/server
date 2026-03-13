@@ -130,7 +130,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
     app.use(metricsMiddleware)
   }
 
-  ModelsManager.getInstance().init(channelTypes)
+  await ModelsManager.getInstance().init(channelTypes)
   ChannelsManagerFactory.getInstance().init()
 
   app.use(express.json());
