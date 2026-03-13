@@ -200,13 +200,11 @@ export class ImportManager {
             })
 
             saxStream.on('text', function (t: any) {
-                if (currentTag) currentTag.text = t
+                if (t && currentTag) currentTag.text = currentTag.text ? currentTag.text + t : t
             })
 
             saxStream.on('cdata', function (cdata: any) {
-            if (currentTag) {
-                if (currentTag) currentTag.text = cdata
-            }
+                if (cdata && currentTag) currentTag.text = currentTag.text ? currentTag.text + cdata : cdata
             })            
 
             saxStream.on('end', async function () {
