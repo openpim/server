@@ -615,6 +615,11 @@ export class YandexChannelHandler extends ChannelHandler {
                         changedValues[channel.config.marketSkuAttr] = ''+offerCard.mapping.marketSku
                         marketSku = ''+offerCard.mapping.marketSku
                     }
+
+                    if (channel.config.contentRating && channel.config.attrContentRating) {
+                        changedValues[channel.config.attrContentRating] = offerCard.contentRating
+                    }
+                    
                     await this.saveItemIfChanged(channel, item, changedValues, marketSku)
                     context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
                 }
