@@ -917,7 +917,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 if (!existingPricesJson) return
 
                 if (existingPricesJson.price) product.price = existingPricesJson.price
-                const priceAttr = priceConfig.attrIdent
+                const priceAttr = priceConfig?.attrIdent
                 if (channel.config.savePriceUpdate && priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.price)) {
                     changedValues[priceAttr] = parseFloat(existingPricesJson.price)
                 }
