@@ -1,3 +1,7 @@
+import * as fs from 'fs'
+import * as http from 'http'
+import * as https from 'https'
+import * as os from 'os'
 import moment from 'moment'
 import Context from '../context'
 import logger from '../logger'
@@ -5,7 +9,7 @@ import { Item } from '../models/items'
 import { ItemRelation } from '../models/itemRelations'
 import { LOV } from '../models/lovs'
 import { ModelsManager } from '../models/manager'
-import { ActionUtils, replaceOperations } from '../resolvers/utils'
+import { ActionUtils, mergeValues, replaceOperations } from '../resolvers/utils'
 
 export type ItemReference = number | string | { id?: number, identifier?: string, itemId?: number, itemIdentifier?: string }
 export type ItemReferenceWhere = { itemId?: number, itemIdentifier?: string }
@@ -41,6 +45,7 @@ type QueryModel<T> = {
 }
 
 type EvaluationDeps = {
+    actionUtils?: Pick<ActionUtils, 'createItem' | 'createItemRelation' | 'saveFile'>
     itemModel?: QueryModel<Item>
     itemRelationModel?: QueryModel<ItemRelation>
     lovModel?: Pick<QueryModel<LOV>, 'findOne'>
@@ -188,6 +193,10 @@ function ensureItemRelationModel(context: Context, model?: QueryModel<ItemRelati
 
 function ensureLovModel(context: Context, model?: Pick<QueryModel<LOV>, 'findOne'>): Pick<QueryModel<LOV>, 'findOne'> {
     return model || (LOV.applyScope(context) as Pick<QueryModel<LOV>, 'findOne'>)
+}
+
+function ensureActionUtils(context: Context, actionUtils?: Pick<ActionUtils, 'createItem' | 'createItemRelation' | 'saveFile'>): Pick<ActionUtils, 'createItem' | 'createItemRelation' | 'saveFile'> {
+    return actionUtils || new ActionUtils(context)
 }
 
 function orderItemsByIds<T extends { id?: number }>(items: T[], ids: number[]): T[] {
@@ -418,21 +427,112 @@ export function createCacheUtils(store: CacheStore) {
 
 export function createEvaluationUtils(context: Context, deps: EvaluationDeps = {}) {
     const store = ensureStore(context, deps.store)
+    const items = createItemsUtils(context, deps)
+    const lovs = createLovsUtils(context, { ...deps, store })
+    const itemRelations = createItemRelationsUtils(context, deps)
+    const itemModel = ensureItemModel(context, deps.itemModel)
+    const relationModel = ensureItemRelationModel(context, deps.itemRelationModel)
+    const actionUtils = ensureActionUtils(context, deps.actionUtils)
+
+    const legacyUtils: {
+        downloadAndAssignFile: (url: string, itemIdentifier: string, fileIdentifier: string, fileType: string, fileParent: string, fileName: any, fileValues: any, relationType: string, relationIdentifier: string, relationValues: any, skipActions?: boolean) => Promise<void>
+        downloadFile: (url: string, targetPath: string) => Promise<string | null>
+    } = {
+        async downloadFile(url: string, targetPath: string): Promise<string | null> {
+            return await new Promise((resolve, reject) => {
+                const file = fs.createWriteStream(targetPath)
+                const get = url.startsWith('https:') ? https.get : http.get
+
+                get(url, response => {
+                    const mimeType = response.headers['content-type']
+                    response.pipe(file)
+
+                    file.on('finish', () => {
+                        file.close(() => resolve(typeof mimeType === 'string' ? mimeType : null))
+                    })
+
+                    file.on('error', err => {
+                        fs.unlink(targetPath, () => reject(err))
+                    })
+                }).on('error', err => {
+                    fs.unlink(targetPath, () => reject(err))
+                })
+            })
+        },
+        async downloadAndAssignFile(url: string, itemIdentifier: string, fileIdentifier: string, fileType: string, fileParent: string, fileName: any, fileValues: any, relationType: string, relationIdentifier: string, relationValues: any, skipActions = false): Promise<void> {
+            if (!url) return
+
+            const tmpFile = `${os.tmpdir()}/${Date.now()}`
+            const mimeType = await legacyUtils.downloadFile(url, tmpFile)
+            let file = await itemModel.findOne({ where: { identifier: fileIdentifier } })
+
+            if (!file) {
+                file = await actionUtils.createItem(fileParent, fileType, fileIdentifier, { ru: fileName }, fileValues, skipActions)
+                await file.save()
+            }
+
+            await actionUtils.saveFile(file, tmpFile, mimeType, fileName, true)
+            file.values = mergeValues(fileValues, file.values)
+            file.changed('values', true)
+            await file.save()
+
+            const relation = await relationModel.findOne({ where: { identifier: relationIdentifier } })
+            if (!relation) {
+                await actionUtils.createItemRelation(relationType, relationIdentifier, itemIdentifier, file.identifier, relationValues, skipActions)
+                return
+            }
+
+            relation.values = mergeValues(relationValues, relation.values)
+            relation.changed('values', true)
+            await relation.save()
+        }
+    }
 
     return {
         cache: createCacheUtils(store),
-        items: createItemsUtils(context, deps),
-        lovs: createLovsUtils(context, { ...deps, store }),
-        itemRelations: createItemRelationsUtils(context, deps)
+        downloadAndAssignFile: legacyUtils.downloadAndAssignFile,
+        downloadFile: legacyUtils.downloadFile,
+        findItem(where: any, options?: QueryOptions) {
+            return items.findOne(where, options)
+        },
+        findItems(where: any, options?: QueryOptions) {
+            return items.findMany(where, options)
+        },
+        async findLOV(identifier: string, value: string, lang = 'en', caseInsensitive = false, createIfNotExists = false): Promise<number | null> {
+            const existingId = await lovs.findValueId(identifier, value, { lang, caseInsensitive })
+            if (existingId || !createIfNotExists) {
+                return existingId
+            }
+
+            const lov = await lovs.get(identifier)
+            const values = Array.isArray(lov.values) ? lov.values : []
+            const nextId = values.reduce((max, current) => Math.max(max, current?.id || 0), 0) + 1
+            const newValue = { id: nextId, value: { [lang]: value }, filter: null }
+
+            values.push(newValue)
+            lov.values = values
+            lov.changed('values', true)
+            await lov.save()
+
+            return newValue.id
+        },
+        getCache() {
+            return store
+        },
+        itemRelations,
+        items,
+        lovs,
+        relations: itemRelations
     }
 }
 
 function createEvaluationRuntime(context: Context) {
+    const actionUtils = new ActionUtils(context)
     return {
-        actionUtils: new ActionUtils(context),
+        actionUtils,
         logger,
         moment,
-        utils: createEvaluationUtils(context)
+        utils: createEvaluationUtils(context, { actionUtils })
     }
 }
 
@@ -445,15 +545,8 @@ export function serializeExpressionDataForLog(data: any): string {
     }
 }
 
-function assertSupportedExpressionApi(expression: string) {
-    if (expression.includes('utils.relations')) {
-        throw new Error('utils.relations was removed, use utils.itemRelations')
-    }
-}
-
 export async function evaluateExpression(row: any, data: any, expression: string, context: Context): Promise<any> {
     try {
-        assertSupportedExpressionApi(expression)
         const runtime = createEvaluationRuntime(context)
         const func = new Function(
             'row',
