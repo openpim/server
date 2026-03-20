@@ -1,6 +1,5 @@
 import * as fs from 'fs'
-import * as http from 'http'
-import * as https from 'https'
+import { http, https } from 'follow-redirects'
 import * as os from 'os'
 import moment from 'moment'
 import Context from '../context'
