@@ -106,6 +106,7 @@ export class ImportManager {
                                     process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty', { lng: language })}`
                                 }
                             } catch (e) {
+                                logger.error(`processImportFileXLSX`, e)
                                 process.log += '\n' + `${i18next.t('ImportManagerErrorUpdatingItem', { lng: language })} ${e}`
                             }
                             await process.save()
@@ -267,6 +268,7 @@ export class ImportManager {
                 process.log += '\n' + `${i18next.t('ImportManagerItemIdentifierIsEmpty', { lng: language })}`
             }
         } catch (e) {
+            logger.error(`updateItemByImportConfig`, e)
             process.log += '\n' + `${i18next.t('ImportManagerErrorUpdatingItem', { lng: language })} ${e}`
         }
         await process.save()
