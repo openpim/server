@@ -15,9 +15,41 @@ import { processItemActions } from '../../resolvers/utils'
 import { EventType } from '../../models/actions'
 
 const NEW_VER_DELIMETER = '-'
+const OZON_VIDEO_ATTRIBUTE_IDS = new Set([21837, 21841, 21845])
 
 interface JobContext {
     log: string
+}
+
+function cloneOzonValues(values: any[] | undefined) {
+    return JSON.parse(JSON.stringify(values || []))
+}
+
+function cloneOzonAttribute(attribute: any) {
+    const id = attribute?.attribute_id ?? attribute?.id
+    if (id === null || id === undefined) return null
+
+    return {
+        id,
+        complex_id: attribute?.complex_id ?? 0,
+        values: cloneOzonValues(attribute?.values)
+    }
+}
+
+function normalizeOzonComplexGroups(complexAttributes: any[] | undefined) {
+    if (!complexAttributes) return []
+
+    const groups: any[] = []
+    for (const entry of complexAttributes) {
+        const sourceAttributes = Array.isArray(entry?.attributes) ? entry.attributes : [entry]
+        const attributes = sourceAttributes
+            .map((attribute: any) => cloneOzonAttribute(attribute))
+            .filter(Boolean)
+
+        if (attributes.length > 0) groups.push({ attributes })
+    }
+
+    return groups
 }
 
 export class OzonChannelHandler extends ChannelHandler {
@@ -662,6 +694,11 @@ export class OzonChannelHandler extends ChannelHandler {
         product.name = name
 
         const newProduct = !item.values[channel.config.ozonIdAttr] || (''+item.values[channel.config.ozonIdAttr]).startsWith('task_id=')
+        const ozonProductId = newProduct ? null : '' + item.values[channel.config.ozonIdAttr]
+        const hasOzonUpdateFlags = !!ozonProductId && categoryConfig.attributes.some((attr: any) => attr.useOzonOnUpdate)
+        let existingOzonAttributesData: any = null
+        const existingOzonAttributesById = new Map<number, any>()
+        let existingOzonComplexGroups: any[] = []
 
         const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
         const price = await this.getValueByMapping(channel, priceConfig, item, language)
@@ -690,6 +727,19 @@ export class OzonChannelHandler extends ChannelHandler {
         if (categoryId) {
             logger.info(`Overriding description_category_id from ${product.description_category_id} to ${categoryId}`)
             product.description_category_id = categoryId
+        }
+
+        if (hasOzonUpdateFlags) {
+            existingOzonAttributesData = await this.getProductAttributesInfo(channel, context, item, ozonProductId!)
+            if (!existingOzonAttributesData) return
+
+            ;(existingOzonAttributesData.attributes || []).forEach((attribute: any) => {
+                const normalized = cloneOzonAttribute(attribute)
+                if (normalized) existingOzonAttributesById.set(normalized.id, normalized)
+            })
+
+            existingOzonComplexGroups = normalizeOzonComplexGroups(existingOzonAttributesData.complex_attributes)
+                .filter(group => !group.attributes.some((attribute: any) => OZON_VIDEO_ATTRIBUTE_IDS.has(attribute.id)))
         }
 
         // video processing
@@ -771,8 +821,23 @@ export class OzonChannelHandler extends ChannelHandler {
                     continue
                 }
                 try {
-                    let value = await this.getValueByMapping(channel, attrConfig, item, language)
                     const ozonAttrId = parseInt(attrConfig.id.substring(5))
+                    if (hasOzonUpdateFlags && attrConfig.useOzonOnUpdate) {
+                        const existingAttribute = existingOzonAttributesById.get(ozonAttrId)
+                        if (existingAttribute) {
+                            const tst = product.attributes.find((elem:any) => elem.id == ozonAttrId)
+                            if (!tst) product.attributes.push(cloneOzonAttribute(existingAttribute))
+                            else logger.error(`Атрибут ${ozonAttrId} уже был добавлен ${JSON.stringify(tst)}`)
+                        } else if (attr.required && ozonAttrId != 8229) {
+                            const msg = 'Не найдено значение в Ozon для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                            context.log += msg
+                            this.reportError(channel, item, msg)
+                            return
+                        }
+                        continue
+                    }
+
+                    let value = await this.getValueByMapping(channel, attrConfig, item, language)
                     if (value) {
                         if (typeof value === 'string' || value instanceof String) value = value.trim()
                         const data = {complex_id:0, id: ozonAttrId, values: <any[]>[]}
@@ -824,6 +889,34 @@ export class OzonChannelHandler extends ChannelHandler {
         //complex attributes processing
         for (const complexAttrId of complexAttributesToProcess) {
             const attrsToProcess = attrs.filter(elem => elem.attributeComplexId == complexAttrId)
+            const useOzonComplexAttributesOnUpdate = hasOzonUpdateFlags && attrsToProcess.some(attr => {
+                const attrConfig = categoryConfig.attributes.find((elem:any) => elem.id == attr.id)
+                return attrConfig?.useOzonOnUpdate
+            })
+            if (useOzonComplexAttributesOnUpdate) {
+                const existingGroups = existingOzonComplexGroups
+                    .filter(group => group.attributes.some((attribute: any) => attribute.complex_id == complexAttrId))
+                    .map(group => ({
+                        attributes: group.attributes
+                            .filter((attribute: any) => attribute.complex_id == complexAttrId)
+                            .map((attribute: any) => cloneOzonAttribute(attribute))
+                    }))
+                    .filter(group => group.attributes.length > 0)
+
+                if (existingGroups.length === 0 && attrsToProcess.some(attr => attr.required)) {
+                    const msg = 'Не найдены значения в Ozon для комплексного атрибута категории: ' + categoryConfig.name + ' (' + complexAttrId + ')'
+                    context.log += msg
+                    this.reportError(channel, item, msg)
+                    return
+                }
+
+                if (existingGroups.length > 0) {
+                    if (!product.complex_attributes) product.complex_attributes = []
+                    product.complex_attributes.push(...existingGroups)
+                }
+                continue
+            }
+
             const valsArr:any[] = []
             let maxLength = 0
             for (const attr of attrsToProcess) {
@@ -888,7 +981,6 @@ export class OzonChannelHandler extends ChannelHandler {
             product.images360 = images360UrlsValue
         }
 
-        const ozonProductId = item.values[channel.config.ozonIdAttr] ? ''+item.values[channel.config.ozonIdAttr]: null
         if (ozonProductId && !ozonProductId.startsWith('task_id=')) {
             let existingProductInfoJson = null
             const newCategoryConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#new_category')
@@ -937,69 +1029,42 @@ export class OzonChannelHandler extends ChannelHandler {
 
             if (channel.config.saveVideos) {
                 // check if we have loaded videos that we should leave unchanged
-                const existingDataReq = {
-                    "filter": {
-                        "product_id": [ozonProductId],
-                        "visibility": "ALL"
-                    },
-                    "limit": 1000
+                const existingDataJson = existingOzonAttributesData || await this.getProductAttributesInfo(channel, context, item, ozonProductId)
+                if (!existingDataJson) return
+
+                let videoElem1
+                let videoElem2
+                let videoCover
+                if (existingDataJson.complex_attributes) {
+                        const data1 = existingDataJson.complex_attributes.find((elem1:any) => elem1.id == 21837)
+                        if (data1) videoElem1 = data1
+
+                        const data2 = existingDataJson.complex_attributes.find((elem2:any) => elem2.id == 21841)
+                        if (data2) videoElem2 = data2
+
+                        const data3 = existingDataJson.complex_attributes.find((elem3:any) => elem3.id == 21845)
+                        if (data3) videoCover = data3
                 }
-                const existingDataUrl = 'https://api-seller.ozon.ru/v4/product/info/attributes'
-                const log = "Sending request to Ozon: " + existingDataUrl + " => " + JSON.stringify(existingDataReq)
-                logger.info(log)
-                if (channel.config.debug) context.log += log+'\n'
-                const existingDataRes = await fetch(existingDataUrl, {
-                    method: 'post',
-                    body:    JSON.stringify(existingDataReq),
-                    headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-                })
-                logger.info("Response status from Ozon: " + existingDataRes.status)
-                if (existingDataRes.status !== 200) {
-                    const text = await existingDataRes.text()
-                    const msg = 'Ошибка запроса на Ozon: ' + existingDataRes.statusText + "   " + text
-                    context.log += msg                      
-                    this.reportError(channel, item, msg)
-                    logger.error(msg)
-                    return
+                if ((videoElem1 && videoElem2) || videoCover)  {
+                    const log = "Найдены загруженные видео: \n" + JSON.stringify(videoElem1) + "\n" + JSON.stringify(videoElem2) + "\n" + JSON.stringify(videoCover)
+                    logger.info(log)
+                    if (channel.config.debug) context.log += log+'\n'
+                    if (!product.complex_attributes) product.complex_attributes = []
+                    if (videoElem1 && videoElem2) {
+                        const data:any = {attributes:[]}
+                        data.attributes.push(videoElem1)
+                        data.attributes.push(videoElem2)
+                        product.complex_attributes.push(data)
+                    }
+                    if (videoCover) {
+                        const data:any = {attributes:[]}
+                        data.attributes.push(videoCover)
+                        product.complex_attributes.push(data)
+                    }
                 } else {
-                    const existingDataJson = await existingDataRes.json()
-                    // const log = "Response from Ozon: " + JSON.stringify(existingDataJson)
-                    // logger.info(log)
-                    // if (channel.config.debug) context.log += log+'\n'
-                    let videoElem1
-                    let videoElem2
-                    let videoCover
-                    if (existingDataJson.result[0].complex_attributes) {
-                            const data1 = existingDataJson.result[0].complex_attributes.find((elem1:any) => elem1.id == 21837)
-                            if (data1) videoElem1 = data1
-
-                            const data2 = existingDataJson.result[0].complex_attributes.find((elem2:any) => elem2.id == 21841)
-                            if (data2) videoElem2 = data2
-
-                            const data3 = existingDataJson.result[0].complex_attributes.find((elem3:any) => elem3.id == 21845)
-                            if (data3) videoCover = data3
-                    }
-                    if ((videoElem1 && videoElem2) || videoCover)  {
-                        const log = "Найдены загруженные видео: \n" + JSON.stringify(videoElem1) + "\n" + JSON.stringify(videoElem2) + "\n" + JSON.stringify(videoCover)
-                        logger.info(log)
-                        if (channel.config.debug) context.log += log+'\n'
-                        if (!product.complex_attributes) product.complex_attributes = []
-                        if (videoElem1 && videoElem2) {
-                            const data:any = {attributes:[]}
-                            data.attributes.push(videoElem1)
-                            data.attributes.push(videoElem2)
-                            product.complex_attributes.push(data)
-                        }
-                        if (videoCover) {
-                            const data:any = {attributes:[]}
-                            data.attributes.push(videoCover)
-                            product.complex_attributes.push(data)
-                        }
-                    } else {
-                        const log = "Загруженные видео не найдены"
-                        logger.info(log)
-                        if (channel.config.debug) context.log += log+'\n'
-                    }
+                    const log = "Загруженные видео не найдены"
+                    logger.info(log)
+                    if (channel.config.debug) context.log += log+'\n'
                 }
             }
         }
@@ -1136,6 +1201,38 @@ export class OzonChannelHandler extends ChannelHandler {
         }
         const json = await existingProductInfoRes.json()
         return json.items.length > 0 ? json.items[0] : null
+    }
+
+    async getProductAttributesInfo(channel: Channel, context: JobContext, item: Item, ozonProductId: string) {
+        const existingDataReq = {
+            filter: {
+                product_id: [ozonProductId],
+                visibility: 'ALL'
+            },
+            limit: 1000
+        }
+        const existingDataUrl = 'https://api-seller.ozon.ru/v4/product/info/attributes'
+        const log = "Sending request to Ozon: " + existingDataUrl + " => " + JSON.stringify(existingDataReq)
+        logger.info(log)
+        if (channel.config.debug) context.log += log + '\n'
+
+        const existingDataRes = await fetch(existingDataUrl, {
+            method: 'post',
+            body: JSON.stringify(existingDataReq),
+            headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+        })
+        logger.info("Response status from Ozon: " + existingDataRes.status)
+        if (existingDataRes.status !== 200) {
+            const text = await existingDataRes.text()
+            const msg = 'Ошибка запроса на Ozon: ' + existingDataRes.statusText + "   " + text
+            context.log += msg
+            this.reportError(channel, item, msg)
+            logger.error(msg)
+            return null
+        }
+
+        const json = await existingDataRes.json()
+        return json?.result?.[0] || null
     }
 
     async processItemImages(channel: Channel, item: Item, context: JobContext, product: any, attrs: ChannelAttribute[], categoryConfig: any, language: string) {
