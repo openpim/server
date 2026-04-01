@@ -254,6 +254,7 @@ export class OzonChannelHandler extends ChannelHandler {
             if (tst2.startsWith('task_id=')) return
 
             let sku
+            if (!skip) {
                 // try to find current status
                 const url = 'https://api-seller.ozon.ru/v3/product/info/list'
                 const request = {
@@ -286,7 +287,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
                     this.processProductStatus(item, result, channel, context)
                 }
-
+            }
             await this.saveItemIfChanged(channel, item)
             context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован \n'
             if (channel.config.ozonAttrContentRating && channel.config.ozonGetContentRating && sku) {
