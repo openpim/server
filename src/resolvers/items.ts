@@ -573,6 +573,7 @@ export default {
             const item = Item.build({
                 id: id,
                 path: path,
+                relations: {},
                 identifier: identifier,
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,

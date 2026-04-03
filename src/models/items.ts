@@ -7,6 +7,7 @@ import { ItemRelation } from './itemRelations';
 export class Item extends Base {
     public identifier!: string
     public path!: string
+    public relations: any
     public typeId!: number
     public typeIdentifier!: string
     public parentIdentifier!: string
@@ -32,6 +33,10 @@ export function init(sequelize: Sequelize):void {
           type: 'LTREE',
           allowNull: false,
           unique: true
+        },
+        relations: {
+          type: DataTypes.JSONB,
+          allowNull: true,
         },
         name: {
           type: DataTypes.JSONB,

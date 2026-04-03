@@ -198,6 +198,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
             const data = Item.build ({
                 id: id,
                 path: path,
+                relations: {},
                 identifier: item.identifier,
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,

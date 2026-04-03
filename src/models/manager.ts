@@ -19,11 +19,14 @@ import i18next from '../i18n';
 import fetch from 'node-fetch'
 import { v4 as uuidv4 } from 'uuid';
 
+const RELATION_ATTRIBUTE_TYPE = 9
+
 export class ModelManager {
     private typeRoot: TreeNode<void> = new TreeNode<void>()
     private tenantId: string
     private attrGroups: AttrGroupWrapper[] = []
     private relAttributes: Attribute[] = []
+    private relationVisibilityAttrsByRelationId: Map<number, Attribute[]> = new Map<number, Attribute[]>()
     private relations: Relation[] = []
     private languages: Language[] = []
     private channels: Channel[] = []
@@ -84,6 +87,73 @@ export class ModelManager {
 
     public getRelationAttributes(): Attribute[] {
         return this.relAttributes
+    }
+
+    private isRelationVisibilityAttribute(attr: Attribute) {
+        return attr.type !== RELATION_ATTRIBUTE_TYPE && Array.isArray(attr.relations) && attr.relations.length > 0
+    }
+
+    public removeAttributeFromIndexes(attrId: number) {
+        this.relAttributes = this.relAttributes.filter(attr => attr.id !== attrId)
+
+        for (const [relationId, attrs] of this.relationVisibilityAttrsByRelationId.entries()) {
+            const filtered = attrs.filter(attr => attr.id !== attrId)
+            if (filtered.length > 0) {
+                this.relationVisibilityAttrsByRelationId.set(relationId, filtered)
+            } else {
+                this.relationVisibilityAttrsByRelationId.delete(relationId)
+            }
+        }
+    }
+
+    public upsertAttributeIndexes(attr: Attribute) {
+        this.removeAttributeFromIndexes(attr.id)
+
+        if (attr.type === RELATION_ATTRIBUTE_TYPE) {
+            this.relAttributes.push(attr)
+        }
+
+        if (!this.isRelationVisibilityAttribute(attr)) return
+
+        attr.relations.forEach((relationId: number) => {
+            if (!Number.isInteger(relationId)) return
+
+            const attrs = this.relationVisibilityAttrsByRelationId.get(relationId) || []
+            attrs.push(attr)
+            this.relationVisibilityAttrsByRelationId.set(relationId, attrs)
+        })
+    }
+
+    public rebuildAttributeIndexes() {
+        const relAttributes: Attribute[] = []
+        const relationVisibilityAttrsByRelationId = new Map<number, Attribute[]>()
+        const addedAttributeIds = new Set<number>()
+
+        this.attrGroups.forEach(group => {
+            group.getAttributes().forEach(attr => {
+                if (addedAttributeIds.has(attr.id)) return
+                addedAttributeIds.add(attr.id)
+
+                if (attr.type === RELATION_ATTRIBUTE_TYPE) relAttributes.push(attr)
+
+                if (!this.isRelationVisibilityAttribute(attr)) return
+
+                attr.relations.forEach((relationId: number) => {
+                    if (!Number.isInteger(relationId)) return
+
+                    const attrs = relationVisibilityAttrsByRelationId.get(relationId) || []
+                    attrs.push(attr)
+                    relationVisibilityAttrsByRelationId.set(relationId, attrs)
+                })
+            })
+        })
+
+        this.relAttributes = relAttributes
+        this.relationVisibilityAttrsByRelationId = relationVisibilityAttrsByRelationId
+    }
+
+    public getRelationVisibilityAttrsByRelationId() {
+        return this.relationVisibilityAttrsByRelationId
     }
 
     public dumpRelations() {
@@ -475,19 +545,7 @@ export class ModelsManager {
             mng.getAttrGroups().push(new AttrGroupWrapper(grp, await grp.getAttributes()))
         }
 
-        for (var i = 0; i < groups.length; i++) {
-            const grp = groups[i];
-            if (!mng || mng.getTenantId() !== grp.tenantId) {
-                mng = this.tenantMap[grp.tenantId]
-            }
-            const attrs = await grp.getAttributes()
-            for (let k = 0; k < attrs.length; k++) {
-                const attr = attrs[k]
-                if (attr.type === 9) {
-                    mng.getRelationAttributes().push(attrs[k])
-                }
-            }
-        }
+        Object.values(this.tenantMap).forEach(mng => mng.rebuildAttributeIndexes())
     }
 
     public async initRelations(where: WhereOptions | undefined) {

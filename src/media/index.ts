@@ -14,7 +14,7 @@ import { ItemRelation } from '../models/itemRelations'
 import audit, { AuditItem, ChangeType, ItemRelationChanges } from '../audit'
 import { Channel, ChannelExecution } from '../models/channels'
 import contentDisposition = require('content-disposition')
-import { checkValues, filterValues, mergeValues, processItemActions, processItemRelationActions, updateItemRelationAttributes } from '../resolvers/utils'
+import { checkValues, filterValues, mergeValues, processItemActions, processItemRelationActions, refreshItemRelationVisibilityPaths, updateItemRelationAttributes } from '../resolvers/utils'
 import { EventType } from '../models/actions'
 import { Process } from '../models/processes'
 import { ImportConfig } from '../models/importConfigs'
@@ -389,6 +389,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
             const item:Item = Item.build ({
                 id: id,
                 path: path,
+                relations: {},
                 identifier: fileItemIdent,
                 tenantId: context.getCurrentUser()!.tenantId,
                 createdBy: context.getCurrentUser()!.login,
@@ -472,6 +473,7 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, false, transaction)
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
+                await refreshItemRelationVisibilityPaths(context, mng, [itemRelation.targetId], [itemRelation.relationId], transaction)
                 if (irValues) {
                     filterValues(context.getEditItemRelationAttributes(itemRelation.relationId), irValues)
                     checkValues(mng, irValues)

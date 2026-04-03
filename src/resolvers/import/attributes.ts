@@ -75,12 +75,7 @@ export async function importAttribute(context: Context, config: IImportConfig, a
                     }
                 }
                         
-                if (data.type === 9) {
-                    const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === data.id})
-                    if (idx !== -1) {
-                        mng.getRelationAttributes().splice(idx, 1)
-                    }
-                }
+                mng.removeAttributeFromIndexes(data.id)
 
                 await processAttributeActions(context, EventType.AfterDelete, data, true)
                 
@@ -156,9 +151,7 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             result.id = ""+data.id
             await processAttributeActions(context, EventType.AfterCreate, data, true)
             
-            if (data.type === 9) {
-                mng.getRelationAttributes().push(data)
-            }
+            mng.upsertAttributeIndexes(data)
 
             for (let i=0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]
@@ -257,12 +250,7 @@ export async function importAttribute(context: Context, config: IImportConfig, a
             result.id = ""+data.id
             await processAttributeActions(context, EventType.AfterUpdate, data, true)
             
-            if (data.type === 9) {
-                const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === data.id })
-                if (idx !== -1) {
-                    mng.getRelationAttributes()[idx] = data
-                }
-            }
+            mng.upsertAttributeIndexes(data)
 
             for (let i=0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]

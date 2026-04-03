@@ -229,9 +229,7 @@ export default {
             })
 
             group.getAttributes().push(attr)
-            if (attr.type === 9) {
-                mng.getRelationAttributes().push(attr)
-            }
+            mng.upsertAttributeIndexes(attr)
 
             await processAttributeActions(context, EventType.AfterCreate, attr, false)
             await mng.reloadModelRemotely(attr.id, group.getGroup().id, 'ATTRIBUTE', false, context.getUserToken())
@@ -294,13 +292,6 @@ export default {
                 await attr.save({ transaction: t })
             })
 
-            if (attr.type === 9) {
-                const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === nId })
-                if (idx !== -1) {
-                    mng.getRelationAttributes()[idx] = attr
-                }
-            }
-
             // replace all such attributes in all groups to be the same (they are loaded as independent objects during init)
             for (let i = 0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]
@@ -310,6 +301,7 @@ export default {
                     await mng.reloadModelRemotely(attr.id, grp.getGroup().id, 'ATTRIBUTE', false, context.getUserToken())
                 }
             }
+            mng.upsertAttributeIndexes(attr)
 
             await processAttributeActions(context, EventType.AfterUpdate, attr, false)
             return attr.id
@@ -413,13 +405,6 @@ export default {
                 await attr.destroy({ transaction: t })
             })
 
-            if (attr.type === 9) {
-                const idx = mng.getRelationAttributes().findIndex((attr) => { return attr.id === nId})
-                if (idx !== -1) {
-                    mng.getRelationAttributes().splice(idx, 1)
-                }
-            }
-
             for (let i = 0; i < mng.getAttrGroups().length; i++) {
                 const grp = mng.getAttrGroups()[i]
                 const idx = grp.getAttributes().findIndex((attr) => { return attr.id === nId })
@@ -428,6 +413,7 @@ export default {
                     await mng.reloadModelRemotely(id, grp.getGroup().id, 'ATTRIBUTE', true, context.getUserToken())
                 }
             }
+            mng.removeAttributeFromIndexes(nId)
 
             await processAttributeActions(context, EventType.AfterDelete, attr, false)
             return true

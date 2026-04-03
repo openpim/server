@@ -4,7 +4,7 @@ import { Item } from '../models/items'
 import { ItemRelation, IItemRelation } from '../models/itemRelations'
 import { ModelManager, ModelsManager } from '../models/manager'
 import { QueryTypes, literal } from 'sequelize'
-import { filterValues, mergeValues, checkValues, processItemRelationActions, updateItemRelationAttributes, diff, isObjectEmpty } from './utils'
+import { filterValues, mergeValues, checkValues, processItemRelationActions, updateItemRelationAttributes, refreshItemRelationVisibilityPaths, diff, isObjectEmpty } from './utils'
 import { EventType } from '../models/actions'
 import audit, { AuditItemRelation, ChangeType, ItemRelationChanges } from '../audit'
 
@@ -338,6 +338,7 @@ export default {
                 itemRelation.values = values
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
+                await refreshItemRelationVisibilityPaths(context, mng, [itemRelation.targetId], [itemRelation.relationId], transaction)
                 await transaction.commit()
             } catch(err: any) {
                 if (transaction) await transaction.rollback()
@@ -374,6 +375,7 @@ export default {
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             const rel = mng.getRelationById(itemRelation.relationId)
+            const previousTargetId = itemRelation.targetId
 
             const changes:any = {}
             if (itemId) {
@@ -447,6 +449,15 @@ export default {
                 itemRelation.updatedBy = context.getCurrentUser()!.login
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
                 await itemRelation.save({ transaction })
+                if (changes.itemId || changes.targetId) {
+                    await refreshItemRelationVisibilityPaths(
+                        context,
+                        mng,
+                        [...new Set([previousTargetId, itemRelation.targetId])],
+                        [itemRelation.relationId],
+                        transaction
+                    )
+                }
                 await transaction.commit()
             } catch(err: any) {
                 if (transaction) await transaction.rollback()
@@ -491,6 +502,7 @@ export default {
                 await updateItemRelationAttributes(context, mng, itemRelation, true, transaction)
                 await itemRelation.save({ transaction })
                 await itemRelation.destroy({ transaction })
+                await refreshItemRelationVisibilityPaths(context, mng, [itemRelation.targetId], [itemRelation.relationId], transaction)
                 await transaction.commit()
             } catch(err: any) {
                 if (transaction) await transaction.rollback()

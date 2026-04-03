@@ -50,15 +50,14 @@ export default {
             const existedAttr = mng.getAttribute(parseInt(id))
             const grpIndex = mng.getAttrGroups().findIndex(el => el.getGroup().id === parseInt(parentId))
             const existedGroup = mng.getAttrGroups()[grpIndex]
-            const relAttributes = mng.getRelationAttributes()
             if (existedAttr && del) {
-              const attrIndex = existedGroup.getAttributes().findIndex(el => el.id === id)
+              const attrIndex = existedGroup.getAttributes().findIndex(el => el.id === parseInt(id))
               existedGroup.getAttributes().splice(attrIndex, 1)
-              if (existedAttr.attr.type === 9) {
-                const idx = relAttributes.findIndex((attr) => { return attr.id === existedAttr.attr.id })
-                if (idx !== -1) {
-                    relAttributes.splice(idx, 1)
-                }
+              const currentAttr = mng.getAttribute(parseInt(id))
+              if (currentAttr) {
+                mng.upsertAttributeIndexes(currentAttr.attr)
+              } else {
+                mng.removeAttributeFromIndexes(parseInt(id))
               }
               logger.debug(`Remote reload: attribute removed ${id}`)
             } else {
@@ -66,17 +65,12 @@ export default {
               if (existedAttr && attr) {
                 const attrIndex = existedGroup.getAttributes().findIndex(el => el.id === parseInt(id))
                 existedGroup.getAttributes()[attrIndex] = attr
-                if (existedAttr.attr.type === 9) {
-                  const idx = relAttributes.findIndex((attr) => { return attr.id === existedAttr.attr.id })
-                  if (idx !== -1) {
-                      relAttributes[idx] = attr
-                  }
-                }
+                mng.upsertAttributeIndexes(attr)
                 logger.debug('Remote reload: attribute updated')
                 logger.debug(JSON.stringify(existedGroup.getAttributes()[attrIndex]))
               } else if (!existedAttr && attr) {
                 existedGroup.getAttributes().push(attr)
-                relAttributes.push(attr)
+                mng.upsertAttributeIndexes(attr)
                 logger.debug('Remote reload: attribute added')
                 logger.debug(JSON.stringify(attr))
               }

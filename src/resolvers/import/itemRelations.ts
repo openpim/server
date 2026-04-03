@@ -5,7 +5,7 @@ import { sequelize } from "../../models"
 import { ModelsManager } from "../../models/manager"
 import { Item } from "../../models/items"
 import { Relation } from "../../models/relations"
-import { mergeValues, filterValues, checkValues, processItemRelationActions, diff, isObjectEmpty, updateItemRelationAttributes } from "../utils"
+import { mergeValues, filterValues, checkValues, processItemRelationActions, diff, isObjectEmpty, updateItemRelationAttributes, refreshItemRelationVisibilityPaths } from "../utils"
 import { EventType } from "../../models/actions"
 
 import logger from '../../logger'
@@ -72,6 +72,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     await updateItemRelationAttributes(context, mng, data, true, transaction, itemRelation.skipActions)
                     await data.save({ transaction })
                     await data.destroy({ transaction })
+                    await refreshItemRelationVisibilityPaths(context, mng, [data.targetId], [data.relationId], transaction)
                     await transaction.commit()
                     if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterDelete, data, null, null, true, false, null)
                 } catch(err: any) {
@@ -187,6 +188,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 await updateItemRelationAttributes(context, mng, data, false, transaction, itemRelation.skipActions)
                 await data.save({ transaction })
+                await refreshItemRelationVisibilityPaths(context, mng, [data.targetId], [data.relationId], transaction)
                 await transaction.commit()
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true, false, null)
             } catch(err: any) {
@@ -223,6 +225,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             }
 
             let relDiff: AuditItemRelation = {added:{}, changed: {}, old: {}, deleted: {}}
+            const previousTargetId = data.targetId
 
             const changes:any = {}
             if (itemRelation.itemIdentifier && data.itemIdentifier !== itemRelation.itemIdentifier) {
@@ -305,6 +308,15 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 await updateItemRelationAttributes(context, mng, data, false, transaction, itemRelation.skipActions)
                 await data!.save({transaction})
+                if (changes.itemId || changes.targetId) {
+                    await refreshItemRelationVisibilityPaths(
+                        context,
+                        mng,
+                        [...new Set([previousTargetId, data.targetId])],
+                        [data.relationId],
+                        transaction
+                    )
+                }
                 await transaction.commit()
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterUpdate, data, null, itemRelation.values, true, false, null)
             } catch(err: any) {

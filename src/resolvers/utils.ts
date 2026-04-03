@@ -216,6 +216,147 @@ export async function checkLOV(channel: Channel | null, attr: Attribute, attrVal
     return attrValue
 }
 
+const RELATION_ATTRIBUTE_TYPE = 9
+
+function parseItemPath(path: string): number[] {
+    if (!path) return []
+
+    return path
+        .split('.')
+        .map(elem => parseInt(elem, 10))
+        .filter(elem => !Number.isNaN(elem))
+}
+
+function normalizeStoredItemRelations(relations: any): Record<string, string[]> {
+    if (!relations || typeof relations !== 'object' || Array.isArray(relations)) return {}
+    return { ...relations }
+}
+
+function areStringArraysEqual(left: string[], right: string[]) {
+    if (left.length !== right.length) return false
+    return left.every((value, index) => value === right[index])
+}
+
+function getStoredRelationSourcePaths(item: Item, relationId: number): number[][] {
+    const relations = normalizeStoredItemRelations(item.relations)
+    const rawPaths = relations[String(relationId)]
+    if (!Array.isArray(rawPaths) || rawPaths.length === 0) return []
+
+    return rawPaths
+        .filter((path): path is string => typeof path === 'string')
+        .map(parseItemPath)
+        .filter(pathArr => pathArr.length > 0)
+}
+
+function getVisibilityCandidatePaths(attr: Attribute, item: Item): number[][] {
+    if (attr.type !== RELATION_ATTRIBUTE_TYPE && Array.isArray(attr.relations) && attr.relations.length > 0) {
+        const relationPaths: number[][] = []
+        attr.relations.forEach(relationId => {
+            if (typeof relationId !== 'number') return
+            const paths = getStoredRelationSourcePaths(item, relationId)
+            if (paths.length) relationPaths.push(...paths)
+        })
+        return relationPaths
+    }
+
+    return [parseItemPath(item.path)]
+}
+
+function isItemAttributeVisible(attr: Attribute, item: Item) {
+    if (!Array.isArray(attr.valid) || !attr.valid.includes(item.typeId)) return false
+    if (!Array.isArray(attr.visible) || attr.visible.length === 0) return false
+
+    const candidatePaths = getVisibilityCandidatePaths(attr, item)
+    if (!candidatePaths.length) return false
+
+    return candidatePaths.some(pathArr => attr.visible.some((visibleId: number) => pathArr.includes(visibleId)))
+}
+
+export async function refreshItemRelationVisibilityPaths(context: Context, mng: ModelManager, targetIds: number[], relationIds: number[], transaction: Transaction | null = null) {
+    const relevantRelationIds = [...new Set(relationIds.filter((relationId): relationId is number => (
+        Number.isInteger(relationId) && mng.getRelationVisibilityAttrsByRelationId().has(relationId)
+    )))]
+    if (!targetIds.length || !relevantRelationIds.length) return
+
+    const uniqueTargetIds = [...new Set(targetIds.filter((targetId): targetId is number => Number.isInteger(targetId)))]
+    if (!uniqueTargetIds.length) return
+
+    const uniqueRelationIds = [...new Set(relevantRelationIds)]
+    const txOptions = transaction ? { transaction } : undefined
+
+    const targetItems = await Item.applyScope(context).findAll({
+        where: { id: uniqueTargetIds },
+        ...txOptions,
+    })
+    if (!targetItems.length) return
+
+    const itemRelations = await ItemRelation.applyScope(context).findAll({
+        where: {
+            targetId: uniqueTargetIds,
+            relationId: uniqueRelationIds,
+        },
+        ...txOptions,
+    })
+
+    const sourceItemIds = [...new Set(itemRelations.map(relation => relation.itemId).filter((itemId): itemId is number => Number.isInteger(itemId)))]
+    const sourceItems = sourceItemIds.length
+        ? await Item.applyScope(context).findAll({
+            where: { id: sourceItemIds },
+            ...txOptions,
+        })
+        : []
+
+    const sourcePathsByItemId = new Map<number, string>()
+    sourceItems.forEach(sourceItem => {
+        if (sourceItem.path) sourcePathsByItemId.set(sourceItem.id, sourceItem.path)
+    })
+
+    const relationPathsByTargetId = new Map<number, Map<number, string[]>>()
+    itemRelations.forEach(relation => {
+        const sourcePath = sourcePathsByItemId.get(relation.itemId)
+        if (!sourcePath) return
+
+        const targetEntry = relationPathsByTargetId.get(relation.targetId) || new Map<number, string[]>()
+        const relationPaths = targetEntry.get(relation.relationId) || []
+        if (!relationPaths.includes(sourcePath)) relationPaths.push(sourcePath)
+        targetEntry.set(relation.relationId, relationPaths)
+        relationPathsByTargetId.set(relation.targetId, targetEntry)
+    })
+
+    const relationIdsByTargetId = new Map<number, number[]>()
+    uniqueTargetIds.forEach(targetId => relationIdsByTargetId.set(targetId, uniqueRelationIds))
+
+    for (const targetItem of targetItems) {
+        const nextRelations = normalizeStoredItemRelations(targetItem.relations)
+        const targetRelationIds = relationIdsByTargetId.get(targetItem.id) || []
+        let changed = targetItem.relations === null || targetItem.relations === undefined
+
+        targetRelationIds.forEach(relationId => {
+            const nextPaths = [...(relationPathsByTargetId.get(targetItem.id)?.get(relationId) || [])].sort()
+            const key = String(relationId)
+            const prevPaths = Array.isArray(nextRelations[key])
+                ? nextRelations[key].filter((path): path is string => typeof path === 'string').slice().sort()
+                : []
+
+            if (nextPaths.length > 0) {
+                if (!areStringArraysEqual(prevPaths, nextPaths)) {
+                    nextRelations[key] = nextPaths
+                    changed = true
+                }
+            } else if (Object.prototype.hasOwnProperty.call(nextRelations, key)) {
+                delete nextRelations[key]
+                changed = true
+            }
+        })
+
+        if (changed) {
+            targetItem.relations = nextRelations
+            targetItem.changed('relations', true)
+            await targetItem.save(txOptions)
+        }
+    }
+}
+
 export function replaceOperations(obj: any, context: Context | null) {
     let include = []
     for (const prop in obj) {
@@ -2037,58 +2178,40 @@ export class ActionUtils {
 
     public getItemAttributesObjectForGroups(item: Item, groupIdentifiers?: string[]) {
         const attrArr: Attribute[] = []
-        const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
-
         const unique: any = {}
+
         this.#mng.getAttrGroups().forEach(group => {
             if (group.getGroup().visible && (!groupIdentifiers || groupIdentifiers.includes(group.getGroup().identifier))) {
                 group.getAttributes().forEach(attr => {
-                    if (attr.valid.includes(item.typeId)) {
-                        for (let i = 0; i < attr.visible.length; i++) {
-                            const visible: number = attr.visible[i]
-                            if (pathArr.includes(visible)) {
-                                if (!unique[attr.identifier]) {
-                                    unique[attr.identifier] = true
-                                    attrArr.push(attr)
-                                }
-                                break
-                            }
-                        }
-                    }
+                    if (!isItemAttributeVisible(attr, item) || unique[attr.identifier]) return
+                    unique[attr.identifier] = true
+                    attrArr.push(attr)
                 })
             }
         })
+
         return attrArr
     }
 
     public getItemAttributesGroupsObject(item: Item, groupIdentifiers?: string[]) {
         let attrArr: Attribute[] = []
         const groupArr: Record<string, any> = {}
-        const pathArr: number[] = item.path.split('.').map(elem => parseInt(elem))
-
         const unique: any = {}
+
         this.#mng.getAttrGroups().forEach(group => {
             if (group.getGroup().visible && (!groupIdentifiers || groupIdentifiers.includes(group.getGroup().identifier))) {
                 const group_: string = group.getGroup().identifier
                 group.getAttributes().forEach(attr => {
-                    if (attr.valid.includes(item.typeId)) {
-                        for (let i = 0; i < attr.visible.length; i++) {
-                            const visible: number = attr.visible[i]
-                            if (pathArr.includes(visible)) {
-                                if (!unique[attr.identifier]) {
-                                    unique[attr.identifier] = true
-                                    attrArr = typeof groupArr[`${group_}`] !== 'undefined' ? groupArr[`${group_}`] : []
-                                    attrArr.push(attr)
-                                    groupArr[`${group_}`] = attrArr
-                                    attrArr = []
-                                }
-                                break
-                            }
-                        }
-                    }
+                    if (!isItemAttributeVisible(attr, item) || unique[attr.identifier]) return
+                    unique[attr.identifier] = true
+                    attrArr = typeof groupArr[`${group_}`] !== 'undefined' ? groupArr[`${group_}`] : []
+                    attrArr.push(attr)
+                    groupArr[`${group_}`] = attrArr
+                    attrArr = []
                 })
             }
         })
+
         return groupArr
     }
 
@@ -2279,6 +2402,7 @@ export class ActionUtils {
         const item = Item.build({
             id: id,
             path: path,
+            relations: {},
             identifier: identifier,
             tenantId: this.#context.getCurrentUser()!.tenantId,
             createdBy: this.#context.getCurrentUser()!.login,
@@ -2428,6 +2552,7 @@ export class ActionUtils {
             itemRelation.values = values
             if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, transaction, skipActions)
             await itemRelation.save({ transaction })
+            await refreshItemRelationVisibilityPaths(this.#context, mng, [itemRelation.targetId], [itemRelation.relationId], transaction)
             if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true, transaction)
         } else {
             const localTransaction = await sequelize.transaction()
@@ -2438,6 +2563,7 @@ export class ActionUtils {
                 itemRelation.values = values
                 if(processRelationAttributes) await updateItemRelationAttributes(this.#context, mng, itemRelation, false, localTransaction, skipActions)
                 await itemRelation.save({ transaction: localTransaction })
+                await refreshItemRelationVisibilityPaths(this.#context, mng, [itemRelation.targetId], [itemRelation.relationId], localTransaction)
                 await localTransaction.commit()
                 if (!skipActions) await processItemRelationActions(this.#context, EventType.AfterCreate, itemRelation, null, values, false, true, null)
             } catch(err: any) {
@@ -2509,6 +2635,7 @@ export class ActionUtils {
     
             await itemRelation.save({ transaction })
             await itemRelation.destroy({ transaction })
+            await refreshItemRelationVisibilityPaths(context, mng, [itemRelation.targetId], [itemRelation.relationId], transaction)
     
             await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, true, transaction)
         } else {
@@ -2525,6 +2652,7 @@ export class ActionUtils {
                 itemRelation.identifier = itemRelation.identifier + '_d_' + Date.now()
                 await itemRelation.save({ transaction: localTransaction })
                 await itemRelation.destroy({ transaction: localTransaction })
+                await refreshItemRelationVisibilityPaths(context, mng, [itemRelation.targetId], [itemRelation.relationId], localTransaction)
                 await localTransaction.commit()
                 await processItemRelationActions(context, EventType.AfterDelete, itemRelation, null, null, false, true, null)
             } catch(err: any) {

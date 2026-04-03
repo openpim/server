@@ -51,6 +51,7 @@ type Item {
   typeId: ID!
   typeIdentifier: String!
   values: JSONObject
+  relations: JSONObject
   channels: JSONObject
   mimeType: String
   fileOrigName: String
