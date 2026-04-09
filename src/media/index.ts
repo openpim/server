@@ -542,7 +542,7 @@ export async function uploadProcessFile(context: Context, req: Request, res: Res
             const proc = await Process.applyScope(context).findByPk(id)
             if (!proc) throw new Error('Failed to find process by id: ' + id + ', user: ' + context.getCurrentUser()!.login + ", tenant: " + context.getCurrentUser()!.tenantId)
 
-            if (proc.createdBy !== context.getCurrentUser()?.login) 
+            if (proc.createdBy !== context.getCurrentUser()?.login && !context.isAdmin()) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to upload file to process: '+proc.id+', tenant: ' + context.getCurrentUser()!.tenantId)
         
             const fm = FileManager.getInstance()
