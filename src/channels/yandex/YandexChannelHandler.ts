@@ -501,7 +501,7 @@ export class YandexChannelHandler extends ChannelHandler {
         const res = await fetch(url, {
             method: 'post',
             body: JSON.stringify(request),
-            headers: { 'Api-Key': channel.config.apiToken }
+            headers: { 'Api-Key': channel.config.apiToken, "Content-Type": "application/json"  }
         })
         logger.info("Response status from Yandex market: " + res.status)
         if (res.status !== 200) {
