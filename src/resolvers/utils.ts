@@ -1596,6 +1596,8 @@ function makeItemProxy(item: any, event: string, transaction: Transaction | null
                 return target[property]
             } else if ((<string>property) == 'channels') {
                 return target[property]
+            } else if ((<string>property) == 'relations') {
+                return target[property]
             } else if ((<string>property) == 'fileOrigName') {
                 return target[property]
             } else if ((<string>property) == 'storagePath') {
@@ -1621,6 +1623,7 @@ function makeItemProxy(item: any, event: string, transaction: Transaction | null
                 prop === 'name' ||
                 prop === 'values' ||
                 prop === 'channels' ||
+                prop === 'relations' ||
                 prop === 'storagePath' ||
                 prop === 'fileOrigName' ||
                 prop === 'mimeType' ||
