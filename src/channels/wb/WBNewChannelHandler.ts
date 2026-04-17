@@ -644,9 +644,21 @@ export class WBNewChannelHandler extends ChannelHandler {
                 if (!imageConfig) return
                 const images = await this.getValueByMapping(channel, imageConfig, item, language)
                 if (images && images.length > 0) {
+                    const existingVideoUrl = request.video ? request.video : null
+                    const mediaData = [...images]
+                    if (channel.config.saveVideos && existingVideoUrl && !mediaData.includes(existingVideoUrl)) {
+                        mediaData.push(existingVideoUrl)
+                    }
+                    if (channel.config.saveVideos) {
+                        const msg = existingVideoUrl
+                            ? 'К фото из PIM добавлено текущее видео из кабинета WB'
+                            : 'Флаг сохранения видео из кабинета WB включен, но видео в карточке не найдено'
+                        logger.info(msg)
+                        if (channel.config.debug) context.log += msg + '\n'
+                    }
                     const imgRequest = {
                         "nmId": parseInt(nmID),
-                        "data": images
+                        "data": mediaData
                         }
                     if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
                     const imgUrl = 'https://content-api.wildberries.ru/content/v3/media/save'
