@@ -573,6 +573,7 @@ export default {
                     "typeIdentifier",
                     "parentIdentifier",
                     "values",
+                    "relations",
                     "channels",
                     "fileOrigName",
                     "storagePath",
