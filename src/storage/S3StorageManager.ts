@@ -36,7 +36,7 @@ class S3StorageManager extends StorageManager {
         }
 
         const serverConfig = ModelManager.getServerConfig()
-        if (serverConfig.storage.nullOnDelete) params.VersionId = 'null'
+        if (serverConfig.storage?.nullOnDelete) params.VersionId = 'null'
 
         try {
             await this.s3Client.send(new DeleteObjectCommand(params))
