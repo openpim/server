@@ -30,10 +30,13 @@ class S3StorageManager extends StorageManager {
     }
 
     public async removeFile(item: Item): Promise<boolean> {
-        const params = {
+        const params:any = {
             Bucket: this.bucketName,
             Key: item.id.toString()
         }
+
+        const serverConfig = ModelManager.getServerConfig()
+        if (serverConfig.storage.nullOnDelete) params.VersionId = 'null'
 
         try {
             await this.s3Client.send(new DeleteObjectCommand(params))
