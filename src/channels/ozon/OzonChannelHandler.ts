@@ -564,6 +564,11 @@ export class OzonChannelHandler extends ChannelHandler {
             valuesChanged = true
             changedValues[channel.config.ozonCategoryAttr] = item.values[channel.config.ozonCategoryAttr]
         }
+        if (channel.config.savePriceUpdate && channel.config.savePriceUpdateAttr && reloadedItem!.values[channel.config.savePriceUpdateAttr] !== item.values[channel.config.savePriceUpdateAttr]) {
+            changed = true
+            valuesChanged = true
+            changedValues[channel.config.savePriceUpdateAttr] = item.values[channel.config.savePriceUpdateAttr]
+        }
         if (changedValues && Object.keys(changedValues).length > 0) {
             changed = true
             valuesChanged = true
