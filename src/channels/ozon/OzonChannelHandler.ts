@@ -178,6 +178,11 @@ export class OzonChannelHandler extends ChannelHandler {
             item.values[channel.config.ozonCategoryAttr] = result.description_category_id
             item.changed('values', true)
         }
+
+        if (channel.config.savePriceUpdate && channel.config.savePriceUpdateAttr && result.price && item.values[channel.config.savePriceUpdateAttr] != parseFloat(result.price)) {
+            item.values[channel.config.savePriceUpdateAttr] = parseFloat(result.price)
+            item.changed('values', true)
+        }        
     }
 
     async syncItem(channel: Channel, item: Item, context: JobContext, singleSync: boolean) {
@@ -1017,6 +1022,9 @@ export class OzonChannelHandler extends ChannelHandler {
                 const priceAttr = priceConfig?.attrIdent
                 if (channel.config.savePriceUpdate && priceAttr && item.values[priceAttr] != parseFloat(existingPricesJson.price)) {
                     changedValues[priceAttr] = parseFloat(existingPricesJson.price)
+                }
+                if (channel.config.savePriceUpdate && channel.config.savePriceUpdateAttr && item.values[channel.config.savePriceUpdateAttr] != parseFloat(existingPricesJson.price)) {
+                    changedValues[channel.config.savePriceUpdateAttr] = parseFloat(existingPricesJson.price)
                 }
 
                 if (existingPricesJson.old_price) product.old_price = existingPricesJson.old_price
