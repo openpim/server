@@ -90,7 +90,7 @@ export class ModelManager {
     }
 
     private isRelationVisibilityAttribute(attr: Attribute) {
-        return attr.type !== RELATION_ATTRIBUTE_TYPE && Array.isArray(attr.relations) && attr.relations.length > 0
+        return attr.type !== RELATION_ATTRIBUTE_TYPE && Array.isArray(attr.valid) && attr.valid.length > 0 && Array.isArray(attr.relations) && attr.relations.length > 0
     }
 
     public removeAttributeFromIndexes(attrId: number) {
