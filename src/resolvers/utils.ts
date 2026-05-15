@@ -2723,4 +2723,122 @@ export class ActionUtils {
         const relAttributesData: any = await checkRelationAttributes(this.#context, mng, item, values, transaction, skipActions)
         await createRelationsForItemRelAttributes(this.#context, relAttributesData, transaction)
     }
+
+    public async createAttribute(identifier: string,
+        name: any,
+        valid: string[],
+        visible: string[],
+        relations: string[],
+        groups: string[],
+        type: number = 1,
+        lov: string = '',
+        order: number = 1,
+        options: any = [],
+        multiLine: boolean = false,
+        richText: boolean = false,
+        languageDependent: boolean = false,
+        skipActions = false ) {
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+
+        const validIds = []
+        for (const typeIdent of valid) {
+            const type = mng.getTypeByIdentifier(typeIdent)
+            if (!type) throw new Error(`Failed to find type by identifier: ${typeIdent}`)
+            validIds.push(type.getValue().id)
+        }
+
+        const items = await Item.applyScope(this.#context).findAll({ where: { identifier: visible } })
+        const visibleIds = items.map((item: any) => item.id)
+
+        const relationIds = []
+        for (const relIdent of relations) {
+            const rel = mng.getRelationByIdentifier(relIdent)
+            if (!rel) throw new Error(`Failed to find relation by identifier: ${relIdent}`)
+            relationIds.push(rel.id)
+        }
+
+        if (groups.length === 0) throw new Error(`Groups are empty`)
+        const groupIds = []
+        const groupArr = []
+        for (const groupIdent of groups) {
+            const group = mng.getAttrGroups().find(grp => grp.getGroup().identifier === groupIdent)
+            if (!group) throw new Error(`Failed to find group by identifier: ${groupIdent}`)
+            groupIds.push(group.getGroup().id)
+            groupArr.push(group)
+        }
+
+        const lovId = lov ? (await LOV.applyScope(this.#context).findOne({ where: { identifier: lov } }))?.id : 0
+
+        const data = await Attribute.build({
+            identifier: identifier,
+            tenantId: this.#context.getCurrentUser()!.tenantId,
+            createdBy: this.#context.getCurrentUser()!.login,
+            updatedBy: this.#context.getCurrentUser()!.login,
+            name: name || {},
+            order: order != null ? order : 0,
+            valid: validIds,
+            visible: visibleIds,
+            relations: relationIds,
+            languageDependent: languageDependent || false,
+            type: type || 1,
+            pattern: '',
+            errorMessage: { ru: "" },
+            lov: lovId,
+            richText: richText != null ? richText : false,
+            multiLine: multiLine != null ? multiLine : false,
+            options: options ? options : []
+        })
+
+        if (!skipActions) await processAttributeActions(this.#context, EventType.BeforeCreate, data, true)
+
+        await data.save()
+
+        for (let i = 0; i < groupArr.length; i++) {
+            await groupArr[i].getGroup().addAttribute(data)
+            groupArr[i].getAttributes().push(data)
+        }
+
+        if (!skipActions) await processAttributeActions(this.#context, EventType.AfterCreate, data, true)
+
+        mng.upsertAttributeIndexes(data)
+
+        for (let i = 0; i < mng.getAttrGroups().length; i++) {
+            const grp = mng.getAttrGroups()[i]
+            const idx = grp.getAttributes().findIndex((attr) => { return attr.id === data.id })
+            if (idx !== -1) {
+                await mng.reloadModelRemotely(data.id, grp.getGroup().id, 'ATTRIBUTE', false, this.#context.getUserToken())
+            }
+        }
+
+        return data
+    }
+
+    public async removeAttribute(identifier: string, skipActions = false) {
+        const mng = ModelsManager.getInstance().getModelManager(this.#context.getCurrentUser()!.tenantId)
+        const attribute = mng.getAttributeByIdentifier(identifier, true)?.attr
+
+        if (!attribute) throw new Error(`Failed to fins attribute by identifier: ${identifier}`)
+
+        if (!skipActions) await processAttributeActions(this.#context, EventType.BeforeDelete, attribute, true)
+
+        attribute.updatedBy = this.#context.getCurrentUser()!.login
+        attribute.identifier = identifier + '_d_' + Date.now()
+        await sequelize.transaction(async (t) => {
+            await attribute!.save({ transaction: t })
+            await attribute!.destroy({ transaction: t })
+        })
+
+        for (let i = 0; i < mng.getAttrGroups().length; i++) {
+            const grp = mng.getAttrGroups()[i]
+            const idx = grp.getAttributes().findIndex((attr) => { return attr.id === attribute.id })
+            if (idx !== -1) {
+                grp.getAttributes().splice(idx, 1)
+                await mng.reloadModelRemotely(attribute.id, grp.getGroup().id, 'ATTRIBUTE', true, this.#context.getUserToken())
+            }
+        }
+
+        mng.removeAttributeFromIndexes(attribute.id)
+
+        if (!skipActions) await processAttributeActions(this.#context, EventType.AfterDelete, attribute, true)
+    }
 }
