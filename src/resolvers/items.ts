@@ -675,7 +675,7 @@ export default {
                     item.changed("values", true)
                 }
     
-                if (name) item.name = name
+                if (name) item.name = {...item.name, ...name}
                 await item.save({ transaction })
                 await createRelationsForItemRelAttributes(context, relAttributesData, transaction)
                 await transaction.commit()
