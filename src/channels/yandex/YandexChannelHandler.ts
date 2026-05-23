@@ -303,7 +303,7 @@ export class YandexChannelHandler extends ChannelHandler {
         const changedValues: any = {}
 
         const data = item.channels[channel.identifier]
-        data.category = categoryConfig.id
+        data.category = (typeof categoryConfig.id === 'number' && !isNaN(categoryConfig.id)) ? categoryConfig.id : parseInt(categoryConfig.id.substring(6))
 
         /* const offerIdConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'offerid')
         const offerid = await this.getValueByMapping(channel, offerIdConfig, item, language)
@@ -673,10 +673,21 @@ export class YandexChannelHandler extends ChannelHandler {
                 headers: { 'Content-Type': 'application/json', 'Api-Key': channel.config.apiToken }
             })
             const json = await res.json()
-            tree = { id: '', name: 'root', children: json.result.children }
+            tree = { id: '', name: 'root', children: this.replaceIdsInTree(json.result.children) }
             this.cache.set('categories', tree, 3600)
         }
         return { list: null, tree }
+    }
+
+    replaceIdsInTree(nodes: any) {
+        for (const node of nodes) {
+            if (node.id) node.id = `ymcat_${node.id}`
+
+            if (node.children && Array.isArray(node.children)) {
+                this.replaceIdsInTree(node.children);
+            }
+        }
+        return nodes
     }
 
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
