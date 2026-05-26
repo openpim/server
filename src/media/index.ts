@@ -472,13 +472,13 @@ export async function processCreateUpload(context: Context, req: Request, res: R
                 const irValues = {}
                 await processItemRelationActions(context, EventType.BeforeCreate, itemRelation, null, irValues, false, false, transaction)
                 await updateItemRelationAttributes(context, mng, itemRelation, false, transaction)
-                await itemRelation.save({ transaction })
-                await refreshItemRelationVisibilityPaths(context, mng, [itemRelation.targetId], [itemRelation.relationId], transaction)
                 if (irValues) {
                     filterValues(context.getEditItemRelationAttributes(itemRelation.relationId), irValues)
                     checkValues(mng, irValues)
                     itemRelation.values = irValues
                 }
+                await itemRelation.save({ transaction })
+                await refreshItemRelationVisibilityPaths(context, mng, [itemRelation.targetId], [itemRelation.relationId], transaction)
                 await transaction.commit()
                 if (audit.auditEnabled()) {
                     const itemChanges: AuditItem = {
