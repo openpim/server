@@ -24,6 +24,7 @@ interface ParameterValueDTO {
 }
 
 interface UpdateOfferDTO {
+    [key: string]: any,
     offerId: string,
     additionalExpenses?: any,
     adult?: boolean,
@@ -55,6 +56,12 @@ interface UpdateOfferDTO {
     vendorCode?: string,
     videos?: string[],
     weightDimensions?: any
+}
+
+interface NormalizedYandexOfferCard {
+    offerCard: any,
+    standardFields: Record<string, any>,
+    parameterValuesById: Map<number, ParameterValueDTO[]>
 }
 
 enum YMDataTypes {
@@ -251,8 +258,8 @@ export class YandexChannelHandler extends ChannelHandler {
         if (changed) {
             const ctx = Context.createAs("admin", channel.tenantId)
             try {
-                await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, changedValues, newChannels, false, false, false, null, {updateFromYM: channel.identifier})
                 if (valuesChanged) {
+                    await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, changedValues, newChannels, false, false, false, null, {updateFromYM: channel.identifier})
                     reloadedItem!.values = {...reloadedItem!.values, ...changedValues}
                     reloadedItem!.changed('values', true)
                 }
@@ -266,7 +273,9 @@ export class YandexChannelHandler extends ChannelHandler {
             await sequelize.transaction(async (t) => {
                 await reloadedItem!.save({transaction: t})
             })
-            await processItemActions(ctx, EventType.AfterUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, reloadedItem!.values, reloadedItem!.channels, false, false, false, null, {updateFromYM: channel.identifier})
+            if (valuesChanged) {
+                await processItemActions(ctx, EventType.AfterUpdate, reloadedItem!, reloadedItem!.parentIdentifier, reloadedItem!.name, reloadedItem!.values, reloadedItem!.channels, false, false, false, null, {updateFromYM: channel.identifier})
+            }
         }
      }
 
@@ -297,6 +306,96 @@ export class YandexChannelHandler extends ChannelHandler {
         }
     }
 
+    private cloneYandexValue<T>(value: T): T {
+        if (value === null || typeof value === 'undefined') return value
+        return JSON.parse(JSON.stringify(value))
+    }
+
+    private hasFilledYandexValue(value: any): boolean {
+        if (value === null || typeof value === 'undefined') return false
+        if (typeof value === 'string' || value instanceof String) return value.trim().length > 0
+        if (Array.isArray(value)) return value.length > 0
+        return true
+    }
+
+    private normalizeYandexOfferCard(offerCard: any): NormalizedYandexOfferCard {
+        const standardFields: Record<string, any> = {}
+        for (const attrId of standardAttributes) {
+            if (typeof offerCard[attrId] !== 'undefined') {
+                standardFields[attrId] = this.cloneYandexValue(offerCard[attrId])
+            }
+        }
+
+        const parameterValuesById = new Map<number, ParameterValueDTO[]>()
+        const parameterValues = Array.isArray(offerCard.parameterValues) ? offerCard.parameterValues : []
+        for (const parameterValue of parameterValues) {
+            const parameterId = Number(parameterValue.parameterId)
+            if (Number.isNaN(parameterId)) continue
+
+            const clonedValue: ParameterValueDTO = {
+                parameterId,
+                value: typeof parameterValue.value === 'undefined' ? undefined : this.cloneYandexValue(parameterValue.value)
+            }
+            if (typeof parameterValue.unitId !== 'undefined') clonedValue.unitId = parameterValue.unitId
+            if (typeof parameterValue.valueId !== 'undefined') clonedValue.valueId = parameterValue.valueId
+
+            const existingValues = parameterValuesById.get(parameterId) || []
+            existingValues.push(clonedValue)
+            parameterValuesById.set(parameterId, existingValues)
+        }
+
+        return {
+            offerCard,
+            standardFields,
+            parameterValuesById
+        }
+    }
+
+    private async getYandexOfferCard(channel: Channel, context: JobContext, item: Item, offerId: string): Promise<any | null | undefined> {
+        const businessId = channel.config.businessId
+        const url = `https://api.partner.market.yandex.ru/v2/businesses/${businessId}/offer-cards`
+        const request = { offerIds: [offerId] }
+        const log = "Sending request to yandex: " + url + " => " + JSON.stringify(request)
+        logger.info(log)
+        if (channel.config.debug) context.log += log + '\n'
+
+        const res = await fetch(url, {
+            method: 'post',
+            body: JSON.stringify(request),
+            headers: { 'Content-Type': 'application/json', 'Api-Key': channel.config.apiToken }
+        })
+        logger.info("Response status from Yandex market: " + res.status)
+
+        const json = await res.json()
+        if (res.status !== 200 || json.status !== 'OK') {
+            const msg = 'Ошибка запроса на Yandex Market: ' + (json?.statusText || res.statusText || JSON.stringify(json))
+            context.log += msg
+            this.reportError(channel, item, msg)
+            logger.error(msg)
+            return undefined
+        }
+
+        const offerCards = json.result?.offerCards || []
+        return offerCards.find((elem: any) => elem.offerId === offerId) || null
+    }
+
+    private async getStandardAttributeValue(
+        attrId: string,
+        attrConfig: any,
+        channel: Channel,
+        item: Item,
+        language: string,
+        existingYandexOfferCard: NormalizedYandexOfferCard | null,
+        required: boolean
+    ) {
+        if (attrConfig?.useYandexOnUpdate && existingYandexOfferCard) {
+            const yandexValue = existingYandexOfferCard.standardFields[attrId]
+            if (this.hasFilledYandexValue(yandexValue)) return this.cloneYandexValue(yandexValue)
+            if (required) return yandexValue
+        }
+        return await this.getValueByMapping(channel, attrConfig, item, language)
+    }
+
     async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext) {
         context.log += 'Найдена категория "' + categoryConfig.name + '" для записи с идентификатором: ' + item.identifier + '\n'
 
@@ -322,8 +421,17 @@ export class YandexChannelHandler extends ChannelHandler {
             return
         }
 
+        const hasMappedYandexUpdateFlags = categoryConfig.attributes.some((attr: any) => attr.useYandexOnUpdate)
+        let existingYandexOfferCard: NormalizedYandexOfferCard | null = null
+        if (hasMappedYandexUpdateFlags) {
+            const offerCard = await this.getYandexOfferCard(channel, context, item, '' + offerId)
+            if (typeof offerCard === 'undefined') return
+            if (offerCard) existingYandexOfferCard = this.normalizeYandexOfferCard(offerCard)
+        }
+        const hasYandexUpdateFlags = !!existingYandexOfferCard && hasMappedYandexUpdateFlags
+
         const nameConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'name')
-        const name = await this.getValueByMapping(channel, nameConfig, item, language)
+        const name = await this.getStandardAttributeValue('name', nameConfig, channel, item, language, existingYandexOfferCard, true)
         if (!name) {
             const msg = 'Не введена конфигурация или нет данных для "Названия товара" для категории: ' + categoryConfig.name
             context.log += msg
@@ -332,7 +440,7 @@ export class YandexChannelHandler extends ChannelHandler {
         }
 
         const vendorConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'vendor')
-        const vendor = await this.getValueByMapping(channel, vendorConfig, item, language)
+        const vendor = await this.getStandardAttributeValue('vendor', vendorConfig, channel, item, language, existingYandexOfferCard, true)
         if (!vendor) {
             const msg = 'Не введена конфигурация или нет данных для "Название бренда или производителя" для категории: ' + categoryConfig.name
             context.log += msg
@@ -341,7 +449,7 @@ export class YandexChannelHandler extends ChannelHandler {
         }
 
         const picturesConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'pictures')
-        const pictures = await this.getValueByMapping(channel, picturesConfig, item, language)
+        const pictures = await this.getStandardAttributeValue('pictures', picturesConfig, channel, item, language, existingYandexOfferCard, true)
         if (!pictures) {
             const msg = 'Не введена конфигурация или нет данных для "Ссылки на изображения товара" для категории: ' + categoryConfig.name
             context.log += msg
@@ -350,7 +458,7 @@ export class YandexChannelHandler extends ChannelHandler {
         }
 
         const descriptionConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'description')
-        const description = await this.getValueByMapping(channel, descriptionConfig, item, language)
+        const description = await this.getStandardAttributeValue('description', descriptionConfig, channel, item, language, existingYandexOfferCard, true)
         if (!description) {
             const msg = 'Не введена конфигурация или нет данных для "Подробное описание товара" для категории: ' + categoryConfig.name
             context.log += msg
@@ -371,7 +479,13 @@ export class YandexChannelHandler extends ChannelHandler {
         }
 
         for (let i=0; i<standardAttributes.length; i++) {
-            await this.addStandardParam(offer, categoryConfig.attributes, standardAttributes[i], channel, item, language)
+            const standardAttrId = standardAttributes[i]
+            if (standardAttrId === 'name' || standardAttrId === 'vendor' || standardAttrId === 'pictures' || standardAttrId === 'description') continue
+            const attrConfig = categoryConfig.attributes.find((elem:any) => elem.id === standardAttrId)
+            const value = await this.getStandardAttributeValue(standardAttrId, attrConfig, channel, item, language, existingYandexOfferCard, false)
+            if (value !== null && typeof value !== 'undefined') {
+                offer[standardAttrId] = value
+            }
         }
 
         const request: any = { offerMappings: [{ offer }] }
@@ -388,10 +502,26 @@ export class YandexChannelHandler extends ChannelHandler {
                 continue
             }
             try {
+                const yandexAttrId = parseInt(attrConfig.id.substring(11))
+                if (hasYandexUpdateFlags && attrConfig.useYandexOnUpdate) {
+                    const existingValues = existingYandexOfferCard!.parameterValuesById.get(yandexAttrId) || []
+                    if (existingValues.length > 0) {
+                        for (const existingValue of existingValues) {
+                            offer.parameterValues!.push(this.cloneYandexValue(existingValue))
+                        }
+                        continue
+                    }
+                    if (attr.required) {
+                        const msg = 'Не найдено значение в Yandex для обязательного атрибута "' + attr.name + '" для категории: ' + categoryConfig.name
+                        context.log += msg
+                        this.reportError(channel, item, msg)
+                        return
+                    }
+                }
+
                 let value = await this.getValueByMapping(channel, attrConfig, item, language)
                 if (value !== null && value !== undefined) {
                     if (typeof value === 'string' || value instanceof String) value = value.trim()
-                    const yandexAttrId = parseInt(attrConfig.id.substring(11))
                     if (Array.isArray(value)) {
                         for (let j = 0; j < value.length; j++) {
                             const data: ParameterValueDTO = { parameterId: yandexAttrId }
@@ -453,7 +583,7 @@ export class YandexChannelHandler extends ChannelHandler {
 
         const serverConfig = ModelManager.getServerConfig()
 
-        const sku = item.values[channel.config.marketSkuAttr]
+        const sku = item.values[channel.config.marketSkuAttr] || existingYandexOfferCard?.offerCard?.mapping?.marketSku
         if(sku) {
             const deleteParamsOffer: UpdateOfferDTO = { 
                 offerId,
