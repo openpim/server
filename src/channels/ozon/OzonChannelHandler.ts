@@ -853,7 +853,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     }
 
                     let value = await this.getValueByMapping(channel, attrConfig, item, language)
-                    if (value) {
+                    if (value !== null && value !== undefined && value !== "" && value !== 0) {
                         if (typeof value === 'string' || value instanceof String) value = value.trim()
                         const data = {complex_id:0, id: ozonAttrId, values: <any[]>[]}
                         if (Array.isArray(value)) {

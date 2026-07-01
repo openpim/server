@@ -605,7 +605,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                         if (!request.characteristics) request.characteristics = []
                         this.clearPreviousValue(request.characteristics, attr.type)
                     }
-                    if (value) {
+                    if (value !== null && value !== undefined && value !== "" && value !== 0) {
                         const data:any = {}
                         data.id = attr.type
                         if (Array.isArray(value) && value.length > 0) {
