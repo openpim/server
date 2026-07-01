@@ -2,9 +2,42 @@ import Context from '../context'
 import { sequelize } from '../models'
 import { Process } from '../models/processes'
 import { FindAndCountOptions, fn, literal, Op } from 'sequelize'
+import { GraphQLResolveInfo } from 'graphql'
 import { replaceOperations } from './utils'
 
 let processCache:any = {}
+
+const PROCESS_FIELDS = new Set([
+    'id',
+    'identifier',
+    'title',
+    'active',
+    'status',
+    'finishTime',
+    'storagePath',
+    'mimeType',
+    'fileName',
+    'log',
+    'runtime',
+    'createdBy',
+    'createdAt',
+    'updatedBy',
+    'updatedAt'
+])
+
+function getRequestedProcessAttributes(info: GraphQLResolveInfo): string[] {
+    const rowsField = info.fieldNodes[0]?.selectionSet?.selections.find(selection =>
+        selection.kind === 'Field' && selection.name.value === 'rows' && selection.selectionSet
+    )
+    if (!rowsField || rowsField.kind !== 'Field' || !rowsField.selectionSet) return ['id']
+
+    const attrs = rowsField.selectionSet.selections
+        .filter((selection): selection is typeof rowsField.selectionSet.selections[number] & { kind: 'Field' } => selection.kind === 'Field')
+        .filter(selection => PROCESS_FIELDS.has(selection.name.value))
+        .map(selection => selection.name.value)
+
+    return attrs.length > 0 ? attrs : ['id']
+}
 
 export function clearProcessCache() {
     processCache = {}
@@ -12,7 +45,7 @@ export function clearProcessCache() {
 
 export default {
     Query: {
-        getProcesses: async (parent: any, request : any, context: Context) => {
+        getProcesses: async (parent: any, request : any, context: Context, info: GraphQLResolveInfo) => {
             context.checkAuth()
 
             const deleteTime = Date.now() - 1000 * 50
@@ -21,11 +54,13 @@ export default {
                 if (tst.date < deleteTime) delete processCache[prop]
             }
 
-            const key = JSON.stringify(request) + context.getCurrentUser()!.login
+            const attributes = getRequestedProcessAttributes(info)
+            const key = JSON.stringify({ request, attributes }) + context.getCurrentUser()!.login
             const proc = processCache[key]
             if (proc && proc.res) return proc.res
             
             const params: FindAndCountOptions = {
+                attributes,
                 offset: request.offset,
                 limit: request.limit
             }
