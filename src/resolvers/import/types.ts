@@ -238,7 +238,7 @@ export async function importType(context: Context, config: IImportConfig, type: 
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {
-        result.addError(new ReturnMessage(0, ""+error))
+        result.addError(ReturnMessage.fromError(error))
         result.result = ImportResult.REJECTED
         logger.error(error)
     }

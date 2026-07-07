@@ -1,5 +1,5 @@
 import Context from "../../context"
-import { IImportConfig, IItemRelationImportRequest, ImportResponse, ReturnMessage, ImportResult, ImportMode, ErrorProcessing } from "../../models/import"
+import { IImportConfig, IItemRelationImportRequest, ImportResponse, ReturnMessage, ImportResult, ImportMode, ErrorProcessing, ImportError } from "../../models/import"
 import { ItemRelation } from "../../models/itemRelations"
 import { sequelize } from "../../models"
 import { ModelsManager } from "../../models/manager"
@@ -77,7 +77,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                     if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterDelete, data, null, null, true, false, null)
                 } catch(err: any) {
                     if (transaction) await transaction.rollback()
-                    throw new Error(err.message)
+                    throw new ImportError(err.message)
                 }
 
                 if (audit.auditEnabled()) {
@@ -171,14 +171,14 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeCreate, data, null, itemRelation.values, true, false, transaction)
             } catch (err: any) {
                 if (transaction) await transaction.rollback()
-                throw new Error(err.message)
+                throw new ImportError(err.message)
             }
             
             filterValues(context.getEditItemRelationAttributes(relation.id), itemRelation.values)
             try {
                 checkValues(mng, itemRelation.values)
             } catch (err:any) {
-                result.addError(new ReturnMessage(0, err.message))
+                result.addError(ReturnMessage.fromError(err))
                 result.result = ImportResult.REJECTED
                 return result
             }
@@ -193,7 +193,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterCreate, data, null, itemRelation.values, true, false, null)
             } catch(err: any) {
                 if (transaction) await transaction.rollback()
-                throw new Error(err.message)
+                throw new ImportError(err.message)
             }
 
             if (audit.auditEnabled()) {
@@ -273,7 +273,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.BeforeUpdate, data, changes, itemRelation.values, true, false, transaction)
             } catch(err: any) {
                 if (transaction) await transaction.rollback()
-                throw new Error(err.message)
+                throw new ImportError(err.message)
             }
 
             if (changes.itemId) {
@@ -290,7 +290,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             try {
                 checkValues(mng, itemRelation.values)
             } catch (err:any) {
-                result.addError(new ReturnMessage(0, err.message))
+                result.addError(ReturnMessage.fromError(err))
                 result.result = ImportResult.REJECTED
                 return result
             }
@@ -321,7 +321,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
                 if (!itemRelation.skipActions) await processItemRelationActions(context, EventType.AfterUpdate, data, null, itemRelation.values, true, false, null)
             } catch(err: any) {
                 if (transaction) await transaction.rollback()
-                throw new Error(err.message)
+                throw new ImportError(err.message)
             }
             
             if (audit.auditEnabled()) {
@@ -331,7 +331,7 @@ export async function importItemRelation(context: Context, config: IImportConfig
             result.result = ImportResult.UPDATED
         }
     } catch (error) {
-        result.addError(new ReturnMessage(0, ""+error))
+        result.addError(ReturnMessage.fromError(error))
         result.result = ImportResult.REJECTED
         logger.error(error)
     }

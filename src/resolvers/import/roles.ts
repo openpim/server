@@ -194,7 +194,7 @@ export async function importRole(context: Context, config: IImportConfig, role: 
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {
-        result.addError(new ReturnMessage(0, ""+error))
+        result.addError(ReturnMessage.fromError(error))
         result.result = ImportResult.REJECTED
         logger.error(error)
     }

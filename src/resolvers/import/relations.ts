@@ -150,7 +150,7 @@ export async function importRelation(context: Context, config: IImportConfig, re
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {
-        result.addError(new ReturnMessage(0, ""+error))
+        result.addError(ReturnMessage.fromError(error))
         result.result = ImportResult.REJECTED
         logger.error(error)
     }

@@ -70,6 +70,7 @@ input ItemImportRequest {
   delete: Boolean
   skipActions: Boolean
   identifier: String!
+  newIdentifier: String
   typeIdentifier: String
   parentIdentifier: String
   name: LanguageDependentString

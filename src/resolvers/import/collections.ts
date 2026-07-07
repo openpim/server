@@ -83,7 +83,7 @@ export async function importCollection(context: Context, config: IImportConfig, 
             result.result = ImportResult.UPDATED
         } 
     } catch (error) {
-        result.addError(new ReturnMessage(0, ""+error))
+        result.addError(ReturnMessage.fromError(error))
         result.result = ImportResult.REJECTED
         logger.error(error)
     }
@@ -158,7 +158,7 @@ export async function importCollectionItems(context: Context, config: IImportCon
         result.id = ""+data.id
         result.result = ImportResult.CREATED
     } catch (error) {
-        result.addError(new ReturnMessage(0, ""+error))
+        result.addError(ReturnMessage.fromError(error))
         result.result = ImportResult.REJECTED
         logger.error(error)
     }

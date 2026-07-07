@@ -163,9 +163,12 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       context: ctx,
       response: response,
       customFormatErrorFn: (error: GraphQLError) => {
-        const params = {
+        const params: any = {
           message: error.message
         };
+        if (error.extensions && error.extensions.code !== undefined) {
+          params.code = error.extensions.code;
+        }
         logger.error('ERROR -', error, error.source);
         logger.error(`   request - ${ JSON.stringify((<any>request).body)}`);
         return (params);

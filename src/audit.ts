@@ -135,6 +135,7 @@ export interface AuditItem {
 }
 
 export interface ItemChanges {
+    identifier?: string
     typeIdentifier?: string
     parentIdentifier?: string
     name?: any

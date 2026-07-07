@@ -1,8 +1,8 @@
 import Context from '../../context'
-import { IItemImportRequest, ImportResponse, IImportConfig, ImportMode, ReturnMessage, ImportResult} from '../../models/import'
+import { IItemImportRequest, ImportResponse, IImportConfig, ImportMode, ReturnMessage, ImportResult, ImportError} from '../../models/import'
 import { Item } from '../../models/items'
 import { sequelize } from '../../models'
-import { QueryTypes, literal } from 'sequelize'
+import { QueryTypes, Transaction, literal } from 'sequelize'
 import { ModelsManager, ModelManager, TreeNode } from '../../models/manager'
 import { filterValues, mergeValues, checkValues, processItemActions, diff, isObjectEmpty, filterChannels, filterEditChannels, checkSubmit, processDeletedChannels, checkRelationAttributes, createRelationsForItemRelAttributes, filterValuesNotAllowed } from '../utils'
 import { Attribute } from '../../models/attributes'
@@ -14,6 +14,139 @@ import logger from '../../logger'
 import audit from '../../audit'
 import { ChangeType, ItemChanges, AuditItem } from '../../audit'
 import { FileManager } from '../../media/FileManager'
+
+type ItemIdentifierChangeDeps = {
+    findItemByIdentifier?: (context: Context, identifier: string, transaction: Transaction | null) => Promise<any>
+    updateItemRelationSourceIdentifiers?: (context: Context, oldIdentifier: string, newIdentifier: string, transaction: Transaction | null) => Promise<any>
+    updateItemRelationTargetIdentifiers?: (context: Context, oldIdentifier: string, newIdentifier: string, transaction: Transaction | null) => Promise<any>
+    updateChildParentIdentifiers?: (context: Context, oldIdentifier: string, newIdentifier: string, transaction: Transaction | null) => Promise<any>
+}
+
+type ItemIdentifierChangeRequest = {
+    context: Context
+    item: any
+    typeNode: TreeNode<any> | null | undefined
+    newIdentifier: any
+    transaction?: Transaction | null
+    deps?: ItemIdentifierChangeDeps
+}
+
+type ItemIdentifierChangeResult = {
+    changed: boolean
+    oldIdentifier?: string
+    newIdentifier?: string
+}
+
+const ITEM_IDENTIFIER_PATTERN = /^[A-Za-z0-9_-]*$/
+
+function normalizeNewIdentifier(newIdentifier: any): string {
+    return newIdentifier === null || typeof newIdentifier === 'undefined' ? '' : ('' + newIdentifier).trim()
+}
+
+function getTransactionOptions(transaction: Transaction | null) {
+    return transaction ? { transaction } : {}
+}
+
+export function typeAllowsIdentifierChange(typeNode: TreeNode<any> | null | undefined): boolean {
+    const options = typeNode?.getValue()?.options
+    if (!Array.isArray(options)) return false
+
+    return options.some((option: any) => {
+        if (!option || option.name !== 'allow_identifier_change') return false
+        if (option.value === true) return true
+        return typeof option.value === 'string' && option.value.toLowerCase() === 'true'
+    })
+}
+
+export function assertItemIdentifierChangeAllowed(context: Context, item: any, typeNode: TreeNode<any> | null | undefined, newIdentifier: any): string {
+    const normalizedNewIdentifier = normalizeNewIdentifier(newIdentifier)
+    if (!normalizedNewIdentifier || normalizedNewIdentifier === item.identifier) return ''
+
+    if (!ITEM_IDENTIFIER_PATTERN.test(normalizedNewIdentifier)) {
+        throw new ImportError(ReturnMessage.WrongIdentifier.code, ReturnMessage.WrongIdentifier.message + ': ' + normalizedNewIdentifier + ', tenant: ' + context.getCurrentUser?.()?.tenantId)
+    }
+
+    if (item.parentIdentifier && normalizedNewIdentifier === item.parentIdentifier) {
+        throw new ImportError(ReturnMessage.WrongParent.code, ReturnMessage.WrongParent.message)
+    }
+
+    if (!context.isAdmin()) {
+        throw new ImportError(ReturnMessage.ItemIdentifierAdminOnly.code, ReturnMessage.ItemIdentifierAdminOnly.message)
+    }
+
+    if (!typeAllowsIdentifierChange(typeNode)) {
+        throw new ImportError(ReturnMessage.ItemIdentifierTypeOption.code, ReturnMessage.ItemIdentifierTypeOption.message)
+    }
+
+    return normalizedNewIdentifier
+}
+
+function getDefaultItemIdentifierChangeDeps(): Required<ItemIdentifierChangeDeps> {
+    return {
+        findItemByIdentifier: async (context: Context, identifier: string, transaction: Transaction | null) => {
+            return Item.applyScope(context).findOne({
+                where: { identifier },
+                ...getTransactionOptions(transaction),
+            })
+        },
+        updateItemRelationSourceIdentifiers: async (context: Context, oldIdentifier: string, newIdentifier: string, transaction: Transaction | null) => {
+            return ItemRelation.applyScope(context).update(
+                { itemIdentifier: newIdentifier },
+                {
+                    where: { itemIdentifier: oldIdentifier },
+                    ...getTransactionOptions(transaction),
+                },
+            )
+        },
+        updateItemRelationTargetIdentifiers: async (context: Context, oldIdentifier: string, newIdentifier: string, transaction: Transaction | null) => {
+            return ItemRelation.applyScope(context).update(
+                { targetIdentifier: newIdentifier },
+                {
+                    where: { targetIdentifier: oldIdentifier },
+                    ...getTransactionOptions(transaction),
+                },
+            )
+        },
+        updateChildParentIdentifiers: async (context: Context, oldIdentifier: string, newIdentifier: string, transaction: Transaction | null) => {
+            return Item.applyScope(context).update(
+                { parentIdentifier: newIdentifier },
+                {
+                    where: { parentIdentifier: oldIdentifier },
+                    ...getTransactionOptions(transaction),
+                },
+            )
+        },
+    }
+}
+
+export async function changeItemIdentifier(request: ItemIdentifierChangeRequest): Promise<ItemIdentifierChangeResult> {
+    const { context, item, typeNode } = request
+    const transaction = request.transaction || null
+    const normalizedNewIdentifier = assertItemIdentifierChangeAllowed(context, item, typeNode, request.newIdentifier)
+
+    if (!normalizedNewIdentifier) return { changed: false }
+
+    const deps = { ...getDefaultItemIdentifierChangeDeps(), ...(request.deps || {}) }
+    const oldIdentifier = item.identifier
+
+    const existing = await deps.findItemByIdentifier(context, normalizedNewIdentifier, transaction)
+    if (existing && Number(existing.id) !== Number(item.id)) {
+        throw new ImportError(ReturnMessage.ItemIdentifierExists.code, ReturnMessage.ItemIdentifierExists.message + ': ' + normalizedNewIdentifier + ', tenant: ' + context.getCurrentUser?.()?.tenantId)
+    }
+
+    await deps.updateItemRelationSourceIdentifiers(context, oldIdentifier, normalizedNewIdentifier, transaction)
+    await deps.updateItemRelationTargetIdentifiers(context, oldIdentifier, normalizedNewIdentifier, transaction)
+    await deps.updateChildParentIdentifiers(context, oldIdentifier, normalizedNewIdentifier, transaction)
+
+    item.identifier = normalizedNewIdentifier
+    if (typeof item.changed === 'function') item.changed('identifier', true)
+
+    return {
+        changed: true,
+        oldIdentifier,
+        newIdentifier: normalizedNewIdentifier,
+    }
+}
 
 /*
 
@@ -129,7 +262,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     if (!item.skipActions) await processItemActions(context, EventType.AfterDelete, data, "", "", null, null, true, false, false, null)
                 } catch (err:any) {
                     if (transaction) await transaction.rollback()
-                    throw new Error(err.message)
+                    throw new ImportError(err.message)
                 }
                 if (audit.auditEnabled()) {
                     const itemChanges: ItemChanges = {
@@ -238,7 +371,7 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 if (!item.skipActions) await processItemActions(context, EventType.AfterCreate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, null)
             } catch (err:any) {
                 if (transaction) await transaction.rollback()
-                throw new Error(err.message)
+                throw new ImportError(err.message)
             }
 
             if (audit.auditEnabled()) {
@@ -277,6 +410,14 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 }
             } else {
                 item.typeIdentifier = data.typeIdentifier
+            }
+
+            const preparedNewIdentifier = assertItemIdentifierChangeAllowed(context, data, mng.getTypeByIdentifier(data.typeIdentifier), item.newIdentifier)
+            if (preparedNewIdentifier) {
+                const existedByNewIdentifier = await Item.applyScope(context).findOne({ where: { identifier: preparedNewIdentifier } })
+                if (existedByNewIdentifier && Number(existedByNewIdentifier.id) !== Number(data.id)) {
+                    throw new ImportError(ReturnMessage.ItemIdentifierExists.code, ReturnMessage.ItemIdentifierExists.message + ': ' + preparedNewIdentifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+                }
             }
 
             if (!item.values) item.values = {}
@@ -343,6 +484,19 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                     }
                 }
 
+                const identifierChange = await changeItemIdentifier({
+                    context,
+                    item: data,
+                    typeNode: mng.getTypeByIdentifier(data.typeIdentifier),
+                    newIdentifier: item.newIdentifier,
+                    transaction,
+                })
+
+                if (identifierChange.changed && audit.auditEnabled()) {
+                    itemDiff.changed!.identifier = identifierChange.newIdentifier
+                    itemDiff.old!.identifier = identifierChange.oldIdentifier
+                }
+
                 if (item.name) {
                     if (audit.auditEnabled()) {
                         const nameDiff: AuditItem = diff({name:data.name}, {name:item.name})
@@ -382,18 +536,19 @@ export async function importItem(context: Context, config: IImportConfig, item: 
                 if (!item.skipActions) await processItemActions(context, EventType.AfterUpdate, data, item.parentIdentifier, item.name, item.values, item.channels, true, false, false, null)
             } catch(err:any) {
                 if (transaction) await transaction.rollback()
-                throw new Error(err.message)
+                throw new ImportError(err.message)
             }
 
             if (audit.auditEnabled()) {
-                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, data.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)
+                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, data.id, data.identifier, itemDiff!, context.getCurrentUser()!.login, data.updatedAt)
             }
 
             result.id = ""+data.id
+            if (data.identifier !== item.identifier) result.identifier = data.identifier
             result.result = ImportResult.UPDATED
         }
     } catch (error) {
-        result.addError(new ReturnMessage(0, ""+error))
+        result.addError(ReturnMessage.fromError(error))
         result.result = ImportResult.REJECTED
         logger.error(error)
     }

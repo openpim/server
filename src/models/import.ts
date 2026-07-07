@@ -5,6 +5,7 @@ import Context from '../context';
 
 export interface IItemImportRequest {
   identifier: string
+  newIdentifier: string
   delete: boolean
   skipActions: boolean
   typeIdentifier: string
@@ -46,6 +47,9 @@ export class ReturnMessage {
   public static ItemDeleteFailedRelations = new ReturnMessage(12, "Can not delete this item because it has relations, remove them first")
   public static ItemMoveFailedChildren = new ReturnMessage(13, "Can not move this item because it has children, remove them first")
   public static WrongParent = new ReturnMessage(14, "Failed to create item with parentIdentifier same as item identifier")
+  public static ItemIdentifierExists = new ReturnMessage(15, "Identifier already exists")
+  public static ItemIdentifierAdminOnly = new ReturnMessage(16, "Item identifier can be changed only by admin role")
+  public static ItemIdentifierTypeOption = new ReturnMessage(17, "Item type must have allow_identifier_change = true option to change identifier")
 
   public static ItemRelationNotFound = new ReturnMessage(100, "Failed to find Item Relation by identifier")
   public static ItemRelationExist = new ReturnMessage(101, "Item Relation with such identifier already exists")
@@ -106,11 +110,38 @@ export class ReturnMessage {
   public static ActionExist = new ReturnMessage(1001, "Action with such identifier already exists")
   public static ActionItemFromNotFound = new ReturnMessage(1002, "Failed to find item specified in itemFrom by identifier")
 
-  code: number
-  message: string
+  public static InternalError = new ReturnMessage(0, "Internal error")
+  public static PermissionDenied = new ReturnMessage(1100, "User does not has permissions to perform this action")
+  public static ChannelMappingConflict = new ReturnMessage(1200, "Channel mapping conflict")
+
+  public readonly code: number
+  public readonly message: string
   constructor(code: number, message: string) {
     this.code = code
     this.message = message
+  }
+
+  public static fromError(error: unknown): ReturnMessage {
+    if (error instanceof ImportError) return error.toReturnMessage()
+    if (error instanceof ReturnMessage) return error
+    const message = error instanceof Error ? error.message : (typeof error === 'string' ? error : '' + error)
+    return new ReturnMessage(ReturnMessage.InternalError.code, message)
+  }
+}
+
+export class ImportError extends Error {
+  public readonly code: number
+  constructor(codeOrMessage: number | string, message?: string) {
+    if (typeof codeOrMessage === 'string') {
+      super(codeOrMessage)
+      this.code = ReturnMessage.InternalError.code
+    } else {
+      super(message ?? '')
+      this.code = codeOrMessage
+    }
+  }
+  public toReturnMessage(): ReturnMessage {
+    return new ReturnMessage(this.code, this.message)
   }
 }
 

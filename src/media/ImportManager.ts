@@ -308,7 +308,7 @@ export class ImportManager {
                 if (found || (!found && mapping.expression)) {
                     const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, found, mapping.expression, context) : found
                     if (mapping.attribute && mapping.attribute.length) {
-                        if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
+                        if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'newIdentifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
                             result.values[mapping.attribute] = mappedData
                             wasMapping = true
                         } else if (mapping.attribute.startsWith('$name#')) {
@@ -348,7 +348,7 @@ export class ImportManager {
                 if (idx !== -1 || (idx === -1 && mapping.expression)) {
                     const mappedData = (mapping.expression && mapping.expression.length) ? await this.evaluateExpression(data, data[idx], mapping.expression, context) : data[idx]
                     if (mapping.attribute && mapping.attribute.length) {
-                        if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
+                        if ((mapping.attribute !== 'identifier' && mapping.attribute !== 'newIdentifier' && mapping.attribute !== 'typeIdentifier' && mapping.attribute !== 'parentIdentifier') && !mapping.attribute.startsWith('$name#')) {
                             result.values[mapping.attribute] = mappedData
                         } else if (mapping.attribute.startsWith('$name#')) {
                             const langIdentifier = mapping.attribute.substring(6)

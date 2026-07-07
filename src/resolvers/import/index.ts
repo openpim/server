@@ -1,5 +1,5 @@
 import Context, { ConfigAccess } from '../../context'
-import { IItemImportRequest, IImportConfig, ImportResponses, IItemRelationImportRequest, ImportMode, ErrorProcessing, ITypeImportRequest, IRelationImportRequest, IAttrGroupImportRequest, IAttributeImportRequest, IRoleImportRequest, IUserImportRequest, ILOVImportRequest, ICollectionImportRequest, ICollectionItemsImportRequest, IActionImportRequest } from '../../models/import'
+import { IItemImportRequest, IImportConfig, ImportResponses, IItemRelationImportRequest, ImportMode, ErrorProcessing, ITypeImportRequest, IRelationImportRequest, IAttrGroupImportRequest, IAttributeImportRequest, IRoleImportRequest, IUserImportRequest, ILOVImportRequest, ICollectionImportRequest, ICollectionItemsImportRequest, IActionImportRequest, ReturnMessage, ImportError } from '../../models/import'
 import { importItem } from './items'
 import { importItemRelation } from './itemRelations'
 import { importType } from './types'
@@ -24,7 +24,7 @@ export default {
             const responses = new ImportResponses()
             if (types && types.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.TYPES)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit types, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit types, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.types = []
                 for (let index = 0; index < types.length; index++) {
@@ -35,7 +35,7 @@ export default {
             }
             if (relations && relations.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.RELATIONS)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit relations, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit relations, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.relations = []
                 for (let index = 0; index < relations.length; index++) {
@@ -62,7 +62,7 @@ export default {
             }
             if (attrGroups && attrGroups.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit attributes, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit attributes, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.attrGroups = []
                 for (let index = 0; index < attrGroups.length; index++) {
@@ -73,7 +73,7 @@ export default {
             }
             if (attributes && attributes.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.ATTRIBUTES)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit attributes, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit attributes, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.attributes = []
                 for (let index = 0; index < attributes.length; index++) {
@@ -84,7 +84,7 @@ export default {
             }
             if (roles && roles.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.ROLES)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit roles, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit roles, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.roles = []
                 for (let index = 0; index < roles.length; index++) {
@@ -95,7 +95,7 @@ export default {
             }
             if (users && users.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.USERS)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit users, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit users, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.users = []
                 for (let index = 0; index < users.length; index++) {
@@ -106,7 +106,7 @@ export default {
             }
             if (lovs && lovs.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.LOVS)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit list of values, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit list of values, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.lovs = []
                 for (let index = 0; index < lovs.length; index++) {
@@ -117,7 +117,7 @@ export default {
             }
             if (collections && collections.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.COLLECTIONS)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit collection, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit collection, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.collections = []
                 for (let index = 0; index < collections.length; index++) {
@@ -128,7 +128,7 @@ export default {
             }
             if (collectionItems && collectionItems.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.COLLECTIONITEMS)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit collection, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit collection, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.collectionItems = []
                 for (let index = 0; index < collectionItems.length; index++) {
@@ -139,7 +139,7 @@ export default {
             }
             if (actions && actions.length > 0) {
                 if (!context.canEditConfig(ConfigAccess.ACTIONS)) 
-                    throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit actions, tenant: ' + context.getCurrentUser()!.tenantId)
+                    throw new ImportError(ReturnMessage.PermissionDenied.code, 'User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit actions, tenant: ' + context.getCurrentUser()!.tenantId)
 
                 responses.actions = []
                 for (let index = 0; index < actions.length; index++) {

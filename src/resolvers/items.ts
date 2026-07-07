@@ -14,6 +14,7 @@ import { LOV } from '../models/lovs'
 
 import audit from '../audit'
 import { ChangeType, ItemChanges, AuditItem } from '../audit'
+import { assertItemIdentifierChangeAllowed, changeItemIdentifier } from './import/items'
 
 
 function generateOrder(order: string[][], mng: ModelManager) {
@@ -629,7 +630,7 @@ export default {
 
             return item
         },
-        updateItem: async (parent: any, { id, name, values, channels }: any, context: Context) => {
+        updateItem: async (parent: any, { id, name, values, channels, newIdentifier }: any, context: Context) => {
             context.checkAuth()
             const nId = parseInt(id)
 
@@ -643,6 +644,7 @@ export default {
             }
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            assertItemIdentifierChangeAllowed(context, item, mng.getTypeByIdentifier(item.typeIdentifier), newIdentifier)
             item.updatedBy = context.getCurrentUser()!.login
 
             if (!channels) channels = {}
@@ -673,6 +675,22 @@ export default {
                     relAttributesData = await checkRelationAttributes(context, mng, item, values, transaction)
                     item.values = mergeValues(values, item.values)
                     item.changed("values", true)
+                }
+
+                const identifierChange = await changeItemIdentifier({
+                    context,
+                    item,
+                    typeNode: mng.getTypeByIdentifier(item.typeIdentifier),
+                    newIdentifier,
+                    transaction,
+                })
+
+                if (identifierChange.changed && audit.auditEnabled()) {
+                    if (!itemDiff) itemDiff = { added: {}, changed: {}, old: {}, deleted: {} }
+                    if (!itemDiff.changed) itemDiff.changed = {}
+                    if (!itemDiff.old) itemDiff.old = {}
+                    itemDiff.changed.identifier = identifierChange.newIdentifier
+                    itemDiff.old.identifier = identifierChange.oldIdentifier
                 }
     
                 if (name) item.name = {...item.name, ...name}

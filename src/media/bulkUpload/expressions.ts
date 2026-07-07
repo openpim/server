@@ -46,6 +46,7 @@ export async function mapBulkFile(
 ): Promise<IItemImportRequest> {
     const result: IItemImportRequest = {
         identifier: '',
+        newIdentifier: '',
         delete: false,
         skipActions: false,
         typeIdentifier: '',
@@ -66,7 +67,7 @@ export async function mapBulkFile(
             ? await evaluateExpression(null, data, mapping.expression!, context)
             : data
 
-        if (mapping.attribute === 'identifier' || mapping.attribute === 'typeIdentifier' || mapping.attribute === 'parentIdentifier') {
+        if (mapping.attribute === 'identifier' || mapping.attribute === 'newIdentifier' || mapping.attribute === 'typeIdentifier' || mapping.attribute === 'parentIdentifier') {
             result[mapping.attribute] = mappedData == null ? '' : '' + mappedData
         } else if (mapping.attribute.startsWith('$name#')) {
             const langIdentifier = mapping.attribute.substring(6)
