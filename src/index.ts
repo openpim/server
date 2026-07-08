@@ -7,13 +7,13 @@ import * as crypto from "crypto";
 import * as dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
-import { graphqlHTTP } from 'express-graphql';
-import { GraphQLError, print } from 'graphql';
-import { importSchema } from 'graphql-import';
-import { IncomingMessage } from 'http';
+import { createHandler } from 'graphql-http/lib/use/express';
+import { ExecutionResult, GraphQLError, print } from 'graphql';
 import { ChannelsManagerFactory } from './channels';
 import { ChannelExecution } from './models/channels'
 import Context from './context';
+import { getGraphQLErrorStatus } from './graphql/errors';
+import { loadSchemaTypeDefs } from './graphql/schemaLoader';
 import logger from './logger';
 import i18next from './i18n';
 import i18nextMiddleware from 'i18next-express-middleware';
@@ -87,7 +87,7 @@ app.use(i18nextMiddleware.handle(i18next));
   StorageFactory.getStorageInstance()
   
   // Construct a schema, using GraphQL schema language
-  const typeDefs = await importSchema('./schema/index.graphql'); 
+  const typeDefs = await loadSchemaTypeDefs('./schema/index.graphql'); 
   const schema = await makeExecutableSchema({ typeDefs, resolvers })
 
   let channelTypes = undefined
@@ -137,18 +137,21 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
 
-  const responsePostProcessor:any  =  async (request:any, response:any, next:any) => {
-    const originalJson = response.json; // Store the original res.json
-    // Override res.json
-    response.json = function (body:any) {
-      if (body.errors && body.errors[0]?.message === 'Wrong login or password') response.status(401)
-      if (body.errors && body.errors[0]?.message === 'User is not authenticated') response.status(401)
-        originalJson.call(this, body); // Call the original res.json
-    };
+  const resolveAcceptedGraphQLContentType = (request: any) => {
+    const acceptHeader = typeof request.headers.accept === 'string' ? request.headers.accept.toLowerCase() : ''
+    if (acceptHeader.includes('application/graphql-response+json')) {
+      return 'application/graphql-response+json; charset=utf-8'
+    }
+    return 'application/json; charset=utf-8'
+  }
 
-    next()
-  } 
-  app.use('/graphql', [responsePostProcessor], async (request:any, response:any) => {
+  const serializeGraphQLResult = (result: ExecutionResult, errorFormatter: (error: Readonly<GraphQLError | Error>) => GraphQLError | Error) => {
+    return JSON.stringify(
+      result.errors ? { ...result, errors: result.errors.map(errorFormatter) } : result
+    )
+  }
+
+  app.all('/graphql', async (request:any, response:any) => {
     let ctx: Context | null = null
     try {
       ctx = await Context.create(request, response)
@@ -156,29 +159,57 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       response.status(401).json({errors:[{message:"Your session expired. Sign in again."}]})
       return
     }
-    const process = graphqlHTTP(async (request: IncomingMessage ) => { 
-      return {
+
+    const formatGraphQLError = (error: Readonly<GraphQLError | Error>) => {
+      logger.error('GraphQL error', error)
+      logger.error(`GraphQL request payload: ${JSON.stringify(request.body ?? null)}`)
+      return error
+    }
+
+    const process = createHandler<any>({
       schema,
-      graphiql: false,
-      context: ctx,
-      response: response,
-      customFormatErrorFn: (error: GraphQLError) => {
-        const params: any = {
-          message: error.message
-        };
-        if (error.extensions && error.extensions.code !== undefined) {
-          params.code = error.extensions.code;
-        }
-        logger.error('ERROR -', error, error.source);
-        logger.error(`   request - ${ JSON.stringify((<any>request).body)}`);
-        return (params);
+      context: (req: any, params: any) => {
+        ;(req.raw as any).graphqlParams = params
+        return ctx as Context
       },
-      extensions: ({ document, result }) => {
-        if (logger.transports[0].level === 'debug') logger.debug('Request ('+ctx?.getCurrentUser()?.login+'):\n'+print(document)+'Response:\n'+JSON.stringify(result)+'\n\n')
-        return undefined
-      }
-    }})
-    process(request, response)
+      formatError: formatGraphQLError,
+      onOperation: (req, args, result) => {
+        const requestText = print(args.document)
+        const responseText = JSON.stringify(result)
+        const userLogin = ctx?.getCurrentUser()?.login || 'anonymous'
+        const hasDebugLogging = logger.transports[0].level === 'debug'
+
+        if (hasDebugLogging) {
+          logger.debug(`Request (${userLogin}):\n${requestText}\nResponse:\n${responseText}\n`)
+        }
+
+        if (result.errors?.length) {
+          logger.error(`GraphQL request failed (${userLogin}):\n${requestText}`)
+          result.errors.forEach((error) => logger.error('GraphQL execution error', error))
+
+          const authStatus = result.errors
+            .map((error) => getGraphQLErrorStatus(error))
+            .find((status) => status === 401)
+
+          if (authStatus) {
+            return [
+              serializeGraphQLResult(result, formatGraphQLError),
+              {
+                status: authStatus,
+                statusText: 'Unauthorized',
+                headers: {
+                  'content-type': resolveAcceptedGraphQLContentType(request),
+                },
+              },
+            ] as const
+          }
+        }
+
+        return result
+      },
+    })
+
+    await process(request, response, () => undefined)
   });
 
   app.get('/healthcheck', async (req, res) => {

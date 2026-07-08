@@ -6,6 +6,7 @@ import { Item } from './models/items';
 import { LOV } from './models/lovs';
 import * as fs from 'fs'
 import logger from './logger'
+import { createUnauthorizedError } from './graphql/errors'
 
 export default class Context {
     private currentUser: LoggedUser | null = null
@@ -52,7 +53,9 @@ export default class Context {
     }
 
     public checkAuth() {
-        if (!this.currentUser || (this.currentUser.tenantId !== '0' && !this.user)) throw new Error('User is not authenticated')
+        if (!this.currentUser || (this.currentUser.tenantId !== '0' && !this.user)) {
+            throw createUnauthorizedError('User is not authenticated')
+        }
     }
 
     public async externalAuth(login: string, password: string) {

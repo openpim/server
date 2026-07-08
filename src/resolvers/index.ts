@@ -21,7 +21,7 @@ import reloadResolvers from './reload'
 import mediaResolvers from './media'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
 import LanguageDependentString from './utils/languageDependentString'
-import { GraphQLDateTime } from 'graphql-iso-date'
+import { DateTimeResolver } from 'graphql-scalars'
 import Context from '../context'
 import { QueryTypes } from 'sequelize'
 import { sequelize } from '../models'
@@ -199,7 +199,7 @@ export default {
     JSON: GraphQLJSON,
     JSONObject: GraphQLJSONObject,
     LanguageDependentString: LanguageDependentString,
-    UTCDateTime: GraphQLDateTime,
+    UTCDateTime: DateTimeResolver,
     Query: {
         ...resolver.Query,
         ...userResolvers.Query,

@@ -2,7 +2,7 @@ import Context from '../context'
 import { sequelize } from '../models'
 import { Process } from '../models/processes'
 import { FindAndCountOptions, fn, literal, Op } from 'sequelize'
-import { GraphQLResolveInfo } from 'graphql'
+import { FieldNode, GraphQLResolveInfo, SelectionNode } from 'graphql'
 import { replaceOperations } from './utils'
 
 let processCache:any = {}
@@ -26,13 +26,14 @@ const PROCESS_FIELDS = new Set([
 ])
 
 function getRequestedProcessAttributes(info: GraphQLResolveInfo): string[] {
-    const rowsField = info.fieldNodes[0]?.selectionSet?.selections.find(selection =>
-        selection.kind === 'Field' && selection.name.value === 'rows' && selection.selectionSet
+    const rowsField = info.fieldNodes[0]?.selectionSet?.selections.find(
+        (selection): selection is FieldNode =>
+            selection.kind === 'Field' && selection.name.value === 'rows' && !!selection.selectionSet
     )
-    if (!rowsField || rowsField.kind !== 'Field' || !rowsField.selectionSet) return ['id']
+    if (!rowsField?.selectionSet) return ['id']
 
     const attrs = rowsField.selectionSet.selections
-        .filter((selection): selection is typeof rowsField.selectionSet.selections[number] & { kind: 'Field' } => selection.kind === 'Field')
+        .filter((selection): selection is FieldNode => selection.kind === 'Field')
         .filter(selection => PROCESS_FIELDS.has(selection.name.value))
         .map(selection => selection.name.value)
 

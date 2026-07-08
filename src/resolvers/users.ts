@@ -11,6 +11,7 @@ import { cleaningDatabase } from './utils/cleaningDatabase'
 import logger from '../logger'
 import audit from '../audit'
 import { AttrGroup } from '../models/attributes';
+import { createUnauthorizedError } from '../graphql/errors';
 
 export default {
     Query: {
@@ -170,7 +171,7 @@ export default {
         signIn: async (parent: any, { login, password }: any, context: Context) => {
             if (!password) {
                 logger.error("Password was not provided for: " + login)
-                throw new GraphQLError('Wrong login or password')
+                throw createUnauthorizedError('Wrong login or password')
             }
 
             let where = { login: login } 
@@ -221,10 +222,10 @@ export default {
                 } else {
                     if (user) {
                         logger.error("Authentification failed for external user '" + login + "' with password '" + password + "'")
-                        throw new GraphQLError('Wrong login or password')
+                        throw createUnauthorizedError('Wrong login or password')
                     } else {
                         logger.error("No user found for login: " + login)
-                        throw new GraphQLError('Wrong login or password')
+                        throw createUnauthorizedError('Wrong login or password')
                     }
                 }
             }
@@ -247,11 +248,11 @@ export default {
                     return {token, user, auditEnabled: audit.auditEnabled()}
                 } else {
                     logger.error("Authentification failed for user '" + login + "' with password '" + password + "'")
-                    throw new GraphQLError('Wrong login or password')
+                    throw createUnauthorizedError('Wrong login or password')
                 }                   
             } else {
                 logger.error("No user found for login'" + login)
-                throw new GraphQLError('Wrong login or password')
+                throw createUnauthorizedError('Wrong login or password')
             }
         },
         signInAs: async (parent: any, { id }: any, context: Context) => {
