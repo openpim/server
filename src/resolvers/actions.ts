@@ -5,6 +5,55 @@ import { Action } from '../models/actions'
 import { Item } from '../models/items'
 import { diff, isObjectEmpty, mergeValues, processItemButtonActions, processItemButtonActions2, processTableButtonActions, testAction } from './utils'
 import audit, { AuditItem, ChangeType } from '../audit'
+import logger from '../logger'
+
+interface ActionExecutionResult {
+    result: any
+    persisted: boolean
+}
+
+export function shouldExecuteActionOnReplica(sourceServerUuid: string, currentServerUuid: string): boolean {
+    return sourceServerUuid !== currentServerUuid
+}
+
+async function executeActionLocally(context: Context, itemId: any, actionIdentifier: any, data: any): Promise<ActionExecutionResult> {
+    const nId = parseInt(itemId)
+
+    const item = await Item.applyScope(context).findByPk(nId)
+    if (!item) {
+        throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+    }
+
+    const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+    const action = mng.getActions().find(elem => elem.identifier === actionIdentifier)
+    if (!action) {
+        throw new Error('Failed to find action by identifier: ' + actionIdentifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+    }
+
+    const { channels, values, result } = await processItemButtonActions2(context, [action], item, data, '')
+
+    if (!context.canEditItem(item)) {
+        return { result, persisted: false }
+    }
+
+    let itemDiff: AuditItem
+    if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
+
+    item.values = mergeValues(values, item.values)
+    item.changed('values', true)
+    item.channels = channels
+
+    item.updatedBy = context.getCurrentUser()!.login
+    await sequelize.transaction(async (t) => {
+        await item.save({transaction: t})
+    })
+
+    if (audit.auditEnabled()) {
+        if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
+    }
+
+    return { result, persisted: true }
+}
 
 export default {
     Query: {
@@ -176,42 +225,25 @@ export default {
         executeAction: async (parent: any, { itemId, actionIdentifier, data }: any, context: Context) => {
             context.checkAuth()
 
-            const nId = parseInt(itemId)
-
-            const item = await Item.applyScope(context).findByPk(nId)
-            if (!item) {
-                throw new Error('Failed to find item by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            const executed = await executeActionLocally(context, itemId, actionIdentifier, data)
+            if (executed.persisted) {
+                const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+                mng.executeActionRemotely(parseInt(itemId), actionIdentifier, data, context.getUserToken())
             }
 
-            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
-            const action = mng.getActions().find(elem => elem.identifier === actionIdentifier)
-            if (!action) {
-                throw new Error('Failed to find action by identifier: ' + actionIdentifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
+            return executed.result
+        },
+        executeActionRemotely: async (parent: any, { itemId, actionIdentifier, data, serverUuid }: any, context: Context) => {
+            context.checkAuth()
+
+            const currentServerUuid = ModelsManager.getInstance().getServerUuid()
+            if (!shouldExecuteActionOnReplica(serverUuid, currentServerUuid)) {
+                logger.debug(`Received remote action request from itself, skip it. ${serverUuid}`)
+                return {}
             }
 
-            const { channels, values, result } = await processItemButtonActions2(context, [action], item, data, '')
-
-            if (!context.canEditItem(item)) {
-                return result
-            }
-
-            let itemDiff: AuditItem
-            if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
-
-            item.values = mergeValues(values, item.values)
-            item.changed("values", true)
-            item.channels = channels
-
-            item.updatedBy = context.getCurrentUser()!.login
-            await sequelize.transaction(async (t) => {
-                await item.save({transaction: t})
-            })
-
-            if (audit.auditEnabled()) {
-                if (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted)) audit.auditItem(ChangeType.UPDATE, item.id, item.identifier, itemDiff!, context.getCurrentUser()!.login, item.updatedAt)
-            }
-
-            return result
+            const executed = await executeActionLocally(context, itemId, actionIdentifier, data)
+            return executed.result
         },
         testAction: async (parent: any, { itemId, actionId }: any, context: Context) => {
             context.checkAuth()
