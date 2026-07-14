@@ -1,7 +1,19 @@
+interface RemoteActionResult {
+    error?: string | null
+    compileError?: string | null
+}
+
+interface RemoteActionResponseBody {
+    data?: {
+        executeAction?: RemoteActionResult
+    }
+    errors?: unknown
+}
+
 interface RemoteActionFetchResponse {
     ok: boolean
     status: number
-    json: () => Promise<{ data?: unknown, errors?: unknown }>
+    json: () => Promise<RemoteActionResponseBody>
 }
 
 interface RemoteActionFetchOptions {
@@ -62,7 +74,12 @@ export async function executeActionOnRemoteServers(options: RemoteActionExecutio
             })
             const body = await response.json()
             if (!response.ok) throw new Error(`Remote server responded with HTTP ${response.status}`)
-            if (body.errors) throw new Error(`Remote action failed: ${JSON.stringify(body.errors)}`)
+            if (body.errors && (!Array.isArray(body.errors) || body.errors.length > 0)) {
+                throw new Error(`Remote action failed: ${JSON.stringify(body.errors)}`)
+            }
+            const result = body.data?.executeAction
+            const errors = [result?.error, result?.compileError].filter(Boolean)
+            if (errors.length > 0) throw new Error(`Remote action failed: ${errors.join('; ')}`)
             options.logger.debug(JSON.stringify(body))
         } catch (error) {
             options.logger.error(`Failed to execute action remotely for server ${server}`)
