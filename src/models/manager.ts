@@ -18,7 +18,6 @@ import * as fs from 'fs'
 import i18next from '../i18n';
 import fetch from 'node-fetch'
 import { v4 as uuidv4 } from 'uuid';
-import { replicateAction } from './remoteActionReplication'
 
 const RELATION_ATTRIBUTE_TYPE = 9
 
@@ -255,19 +254,6 @@ export class ModelManager {
                 }
             }
         }
-    }
-
-    public executeActionRemotely(itemId: number, actionIdentifier: string, data: string | null, xToken: string | null): void {
-        void replicateAction({
-            servers: process.env.OPENPIM_SERVERS,
-            token: xToken,
-            serverUuid: ModelsManager.getInstance().getServerUuid(),
-            itemId,
-            actionIdentifier,
-            data,
-            fetch,
-            logger
-        })
     }
 
     private dumpChildren(arr: any[], children: TreeNode<Type>[]) {

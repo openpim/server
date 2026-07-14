@@ -51,6 +51,7 @@ import NodeCache = require("node-cache")
 import { StorageFactory } from "../storage/StorageFactory"
 import { Collection } from "../models/collections"
 import * as uuid from "uuid"
+import { executeActionOnRemoteServers } from '../models/remoteActionExecution'
 
 export async function checkRelationAttrDisplayValue(tenantId: string, attr: Attribute, attrValue: any, language: string, channel: Channel | null, lovCache: NodeCache) {
     if (!attrValue) return attrValue
@@ -2140,6 +2141,20 @@ export class ActionUtils {
 
     public getUserToken() {
         return this.#context.getUserToken()
+    }
+
+    public executeActionRemotely(itemId: number | string, actionIdentifier: string, data: string | null = null) {
+        void executeActionOnRemoteServers({
+            servers: process.env.OPENPIM_SERVERS,
+            token: this.#context.getUserToken(),
+            serverUuid: ModelsManager.getInstance().getServerUuid(),
+            itemId,
+            actionIdentifier,
+            data,
+            isRemoteExecution: this.#context.isRemoteActionExecution(),
+            fetch,
+            logger
+        })
     }
 
     public getUserByLogin(login: string) {

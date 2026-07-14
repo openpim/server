@@ -12,6 +12,7 @@ export default class Context {
     private currentUser: LoggedUser | null = null
     private token: string | null = null
     private user: UserWrapper | undefined = undefined
+    private remoteActionExecution: boolean = false
     private static externalAuthFunction:any = undefined
     private static externalSecurityFunction:any = undefined
 
@@ -50,6 +51,14 @@ export default class Context {
 
     public getUserToken() {
         return this.token
+    }
+
+    public setRemoteActionExecution() {
+        this.remoteActionExecution = true
+    }
+
+    public isRemoteActionExecution() {
+        return this.remoteActionExecution
     }
 
     public checkAuth() {
