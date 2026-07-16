@@ -213,6 +213,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                         headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
                     })
         
+                    this.logHeaders(res)
                     if (res.status !== 200) {
                         const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
                         context.log += msg                      
@@ -263,6 +264,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                     headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
                 })
 
+                this.logHeaders(res)
                 if (res.status !== 200) {
                     const msg = 'Ошибка запроса на Wildberries: ' + res.statusText
                     logger.info(msg)
@@ -293,12 +295,14 @@ export class WBNewChannelHandler extends ChannelHandler {
         logger.info(msg)
 
         for (const card of json.cards) {
-            const item = items.find(elem => elem.values[channel.config.wbCodeAttr] == card.vendorCode)
+            let item:any = items.find(elem => elem.values[channel.config.wbCodeAttr] == card.vendorCode)
             if (card.imtID) {
                 msg = `Обрабатывается карточка: nmID: ${card.nmID}, imtID: ${card.imtID}, vendorCode: ${card.vendorCode}\n`
                 if (channel.config.debug) context.log += msg
                 logger.info(msg)
                 if (item) {
+                    item = await Item.findByPk(item.id) // refresh item from DB (other channels can already change it)
+
                     msg = `Найден товар: ${item.identifier}\n`
                     if (channel.config.debug) context.log += msg
                     logger.info(msg)
@@ -380,6 +384,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                             headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken }
                         })
     
+                        this.logHeaders(resRating)
                         if (resRating.status !== 200) {
                             const msg = 'Ошибка запроса на WB при получении средней оценки товара: ' + resRating.statusText
                             context.log += msg + '\n'
@@ -558,6 +563,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 body:    JSON.stringify(existsBody),
                 headers: { 'Content-Type': 'application/json', 'Authorization': channel.config.wbToken },
             })
+            this.logHeaders(resExisting)
             if (resExisting.status !== 200) {
                 const msg = 'Ошибка запроса на Wildberries - https://content-api.wildberries.ru/content/v2/get/cards/list: ' + resExisting.statusText
                 context.log += msg                      
@@ -680,6 +686,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                     })
                     msg = "Response status from Windberries: " + res.status
                     logger.info(msg)
+                    this.logHeaders(res)
                     if (channel.config.debug) context.log += msg+'\n'
                     if (res.status !== 200) {
                         const msg = 'Ошибка запроса на Wildberries: ' + (await res.text())
@@ -691,6 +698,12 @@ export class WBNewChannelHandler extends ChannelHandler {
                 }
             }
         }
+    }
+
+    private logHeaders(res: any) {
+        for (const [key, value] of res.headers) {
+            if (key.startsWith('X-Ratelimit')) logger.info(`${key}: ${value}`);
+        }                        
     }
 
     private clearPreviousValue(arr: any[], type: string) {
@@ -749,6 +762,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         })
         msg = "Response status from Windberries: " + res.status
         logger.info(msg)
+        this.logHeaders(res)
         if (channel.config.debug) context.log += msg+'\n'
         if (res.status !== 200) {
             const msg = 'Ошибка запроса на Wildberries: ' + (await res.text())
