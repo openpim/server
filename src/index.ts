@@ -187,9 +187,9 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
           logger.error(`GraphQL request failed (${userLogin}):\n${requestText}`)
           result.errors.forEach((error) => logger.error('GraphQL execution error', error))
 
-          const authStatus = result.errors
+          const errorStatuses = result.errors
             .map((error) => getGraphQLErrorStatus(error))
-            .find((status) => status === 401)
+          const authStatus = errorStatuses.find((status) => status === 401)
 
           if (authStatus) {
             return [
@@ -197,6 +197,21 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
               {
                 status: authStatus,
                 statusText: 'Unauthorized',
+                headers: {
+                  'content-type': resolveAcceptedGraphQLContentType(request),
+                },
+              },
+            ] as const
+          }
+
+          const hasCustomHttpStatus = errorStatuses.some((status) => typeof status === 'number')
+
+          if (!hasCustomHttpStatus) {
+            return [
+              serializeGraphQLResult(result, formatGraphQLError),
+              {
+                status: 500,
+                statusText: 'Internal Server Error',
                 headers: {
                   'content-type': resolveAcceptedGraphQLContentType(request),
                 },
