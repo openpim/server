@@ -702,7 +702,7 @@ export class WBNewChannelHandler extends ChannelHandler {
 
     private logHeaders(res: any) {
         for (const [key, value] of res.headers) {
-            if (key.startsWith('X-Ratelimit')) logger.info(`${key}: ${value}`);
+            if (key.toLowerCase().startsWith('x-ratelimit')) logger.info(`${key}: ${value}`)
         }                        
     }
 
