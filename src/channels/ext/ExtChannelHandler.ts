@@ -12,7 +12,7 @@ export class ExtChannelHandler extends ChannelHandler {
             let chanExec: ChannelExecution | null = null
             if (!channel.config.externalExecMng) chanExec = await this.createExecution(channel)
             const tempName = temp.path({ prefix: 'openpim' })
-            const cmd = channel.config.extCmd.replaceAll('{executionId}', chanExec?.id).replaceAll('{channelIdentifier}', channel.identifier).replaceAll('{outputFile}', tempName).replaceAll('{language}', language).replaceAll('{user}', JSON.stringify(context?.getUserLogin()) || '').replaceAll('{roles}', JSON.stringify(context?.getUserRoles().join(',')) || '')
+            const cmd = channel.config.extCmd.replaceAll('{data}', data).replaceAll('{executionId}', chanExec?.id).replaceAll('{channelIdentifier}', channel.identifier).replaceAll('{outputFile}', tempName).replaceAll('{language}', language).replaceAll('{user}', JSON.stringify(context?.getUserLogin()) || '').replaceAll('{roles}', JSON.stringify(context?.getUserRoles().join(',')) || '')
             logger.info('Starting program :' + cmd + ' channel: ' + channel.identifier + ', tenant: ' + channel.tenantId)
             const result: any = await this.asyncExec(cmd)
             logger.debug('exec finished for channel: ' + channel.identifier + ', tenant: ' + channel.tenantId + ', result: ' + JSON.stringify(result))
