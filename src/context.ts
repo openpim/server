@@ -344,6 +344,7 @@ export default class Context {
 
     public getNotViewItemAttributes(item: Item): string[] | null {
         if (!this.user) return []
+        if (this.user.getRoles().some(role => role.identifier === 'admin')) return []
 
         const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId);
         const groups = mng.getAttrGroups()
@@ -392,6 +393,7 @@ export default class Context {
 
     public getNotEditItemAttributes2(typeId: number, path: string): string[] | null {
         if (!this.user) return []
+        if (this.user.getRoles().some(role => role.identifier === 'admin')) return []
 
         const mng = ModelsManager.getInstance().getModelManager(this.currentUser!.tenantId);
         const groups = mng.getAttrGroups()
