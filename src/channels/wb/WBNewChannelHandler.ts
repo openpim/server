@@ -527,6 +527,9 @@ export class WBNewChannelHandler extends ChannelHandler {
         const weightBruttoConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#weightBrutto')
         const weightBrutto = await this.getValueByMapping(channel, weightBruttoConfig, item, language)
 
+        const kizMarkedConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#kizMarked')
+        const kizMarked = await this.getValueByMapping(channel, kizMarkedConfig, item, language)
+
         const serverConfig = ModelManager.getServerConfig()
 
         const nmID = item.values[channel.config.nmIDAttr]
@@ -593,6 +596,7 @@ export class WBNewChannelHandler extends ChannelHandler {
         if (title) request.title = title
         if (description) request.description = description
         if (brand) request.brand = brand
+        if (kizMarked !== undefined && kizMarked !== null ) request.kizMarked = kizMarked
 
         // atributes
         const create = item.values[channel.config.imtIDAttr] ? false : true
