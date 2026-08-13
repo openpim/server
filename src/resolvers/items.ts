@@ -398,11 +398,17 @@ export default {
                 })
                 itemTypes = [...new Set(itemTypes)]
 
-                let query
+                let query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null and "tenantId" = :tenant`
+                let valData
                 if (value.length) {
-                    query = `select 1 as sortid, * from items where id in (:value) and "deletedAt" is null union select 2 as sortid, * from items where "typeId" in (:itemTypes) and "deletedAt" is null`
-                } else {
-                    query = `select * from items where "typeId" in (:itemTypes) and "deletedAt" is null`
+                    const valQuery = `select * from items where id in (:value) and "deletedAt" is null and "tenantId" = :tenant`
+                    valData = await sequelize.query(valQuery, {
+                        replacements: {
+                            tenant: context.getCurrentUser()!.tenantId,
+                            value
+                        },
+                        type: QueryTypes.SELECT
+                    })
                 }
 
                 let lovIds:any = []
@@ -438,7 +444,7 @@ export default {
                     query += ` and "values" ->> '${activeAttributeName.value}' = 'true'`
                 }
 
-                query += value.length ? ` order by sortid, "name" ${order}` : ` order by "name" ${order}`
+                query +=  ` order by "name" ->> '${langIdentifier}' ${order}`
                 query += ` limit ${limit} offset ${offset}`
 
                 const data = await sequelize.query(
@@ -451,6 +457,7 @@ export default {
                     },
                     type: QueryTypes.SELECT
                 })
+                if (valData) data.unshift(...valData)
 
                 if (attr.options.some((option: any) => option.name === 'showThumbnail' && option.value === 'true')) {
                     const ids = data.map((el: any) => el.id)
