@@ -191,7 +191,7 @@ export class OzonChannelHandler extends ChannelHandler {
         if (item.values[channel.config.ozonIdAttr] && item.channels[channel.identifier]) {
             const chanData = item.channels[channel.identifier]
             let skip = false
-            if (chanData.status == 3 && !chanData.ozonError) {
+            if (chanData.status == 3 && chanData.ozonError != undefined && !chanData.ozonError) {
                 context.log += 'Статус товара - ошибка, синхронизация не будет проводиться \n'
                 skip = true
             }
@@ -396,7 +396,7 @@ export class OzonChannelHandler extends ChannelHandler {
 
                 context.log += 'Товар c идентификатором ' + item.identifier + ' обрабатывается\n'
 
-                if (item.channels[channel.identifier]?.status == 3 && !item.channels[channel.identifier]?.ozonError) {
+                if (item.channels[channel.identifier]?.status == 3 && item.channels[channel.identifier]?.ozonError != undefined && !item.channels[channel.identifier]?.ozonError) {
                     context.log += 'Статус товара ' + item.identifier + ' ошибка, синхронизация не будет проводиться \n'
                     if (result.sku) {
                         skus.push(result.sku)
