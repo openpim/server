@@ -50,9 +50,10 @@ import {
   metricsMiddleware 
 } from './metrics'
 import { generateTemplate, generateTemplateForItems } from './templates';
-import { ModelsManager } from './models/manager';
+import { ModelManager, ModelsManager } from './models/manager';
 import resolvers from './resolvers';
 import version from './version';
+import { sanitizeForLog, StructuredRequestLogger } from './structuredLogger';
 
 import userResolver from './resolvers/users'
 import { FileManager } from './media/FileManager';
@@ -137,6 +138,11 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
 
+  // Structured request logging is independent from the existing Winston
+  // application logger and is a no-op unless server.config.log.enabled is true.
+  const structuredRequestLogger = new StructuredRequestLogger(ModelManager.getServerConfig().log)
+  app.use(structuredRequestLogger.middleware())
+
   const resolveAcceptedGraphQLContentType = (request: any) => {
     const acceptHeader = typeof request.headers.accept === 'string' ? request.headers.accept.toLowerCase() : ''
     if (acceptHeader.includes('application/graphql-response+json')) {
@@ -162,7 +168,7 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
 
     const formatGraphQLError = (error: Readonly<GraphQLError | Error>) => {
       logger.error('GraphQL error', error)
-      logger.error(`GraphQL request payload: ${JSON.stringify(request.body ?? null)}`)
+      logger.error(`GraphQL request payload: ${JSON.stringify(sanitizeForLog(request.body ?? null))}`)
       return error
     }
 
@@ -174,17 +180,18 @@ XWhRphP+pl2nJQLVRu+oDpf2wKc/AgMBAAE=
       },
       formatError: formatGraphQLError,
       onOperation: (req, args, result) => {
+        ;(req.raw as any).structuredLogResponse = result
         const requestText = print(args.document)
         const responseText = JSON.stringify(result)
         const userLogin = ctx?.getCurrentUser()?.login || 'anonymous'
         const hasDebugLogging = logger.transports[0].level === 'debug'
 
         if (hasDebugLogging) {
-          logger.debug(`Request (${userLogin}):\n${requestText}\nResponse:\n${responseText}\n`)
+          logger.debug(`Request (${userLogin}):\n${sanitizeForLog(requestText)}\nResponse:\n${sanitizeForLog(responseText)}\n`)
         }
 
         if (result.errors?.length) {
-          logger.error(`GraphQL request failed (${userLogin}):\n${requestText}`)
+          logger.error(`GraphQL request failed (${userLogin}):\n${sanitizeForLog(requestText)}`)
           result.errors.forEach((error) => logger.error('GraphQL execution error', error))
 
           const errorStatuses = result.errors

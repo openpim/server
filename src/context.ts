@@ -88,13 +88,14 @@ export default class Context {
                 const resJWT = await jwt.verify(token, <string>process.env.SECRET);
                 ctx.currentUser = <LoggedUser>resJWT
                 ctx.token = token
+                ;(req as any).structuredLogLogin = ctx.currentUser.login || 'unknown'
                 if (ctx.currentUser.tenantId !== '0') {
                     const mng = ModelsManager.getInstance().getModelManager(ctx.currentUser.tenantId)
                     ctx.user = mng?.getUsers().find(user => user.getUser().id === ctx.currentUser!.id)
                     res.setHeader('Openpim-Login', ctx.user?.getUserLogin() || '')
                 }
             } catch (e) {
-                logger.error('Failed to validate token: '+ token + ', error:' + (e as Error).toString())
+                logger.error('Failed to validate token: [REDACTED], error:' + (e as Error).toString())
                 throw new jwt.JsonWebTokenError('Your session expired. Sign in again.');
             }
         }

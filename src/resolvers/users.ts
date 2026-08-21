@@ -221,7 +221,7 @@ export default {
                     }
                 } else {
                     if (user) {
-                        logger.error("Authentification failed for external user '" + login + "' with password '" + password + "'")
+                        logger.error("Authentification failed for external user '" + login + "' with password '[REDACTED]'")
                         throw createUnauthorizedError('Wrong login or password')
                     } else {
                         logger.error("No user found for login: " + login)
@@ -243,11 +243,11 @@ export default {
 
                     (<any>user).internalId = user.id
 
-                    logger.info("User " + login + " was logged on. Token: " + token)
+                    logger.info("User " + login + " was logged on. Token: [REDACTED]")
 
                     return {token, user, auditEnabled: audit.auditEnabled()}
                 } else {
-                    logger.error("Authentification failed for user '" + login + "' with password '" + password + "'")
+                    logger.error("Authentification failed for user '" + login + "' with password '[REDACTED]'")
                     throw createUnauthorizedError('Wrong login or password')
                 }                   
             } else {

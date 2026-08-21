@@ -1,0 +1,43 @@
+{
+"log": {
+        "enabled": true,
+        "fromApp": "%OPENPIM_INSTANCE_NAME%",
+        "maxMessageSize": 10000,
+        "output": {
+            "type": "file",
+            "path": "/server/request.log",
+            "maxSize": 10485760,
+            "maxFiles": 5
+        }
+    },
+"log": {
+        "enabled": true,
+        "fromApp": "PIM",
+        "maxMessageSize": 10000,
+        "output": {
+            "type": "console.output"
+        }
+    },
+"log": {
+        "enabled": true,
+        "fromApp": "PIM",
+        "maxMessageSize": 10000,
+        "output": {
+            "type": "console.error"
+        }
+    },
+"log": {
+    "enabled": true,
+    "fromApp": "PIM",
+    "maxMessageSize": 10000,
+    "output": {
+      "type": "elasticsearch",
+      "node": "url",
+      "index": "pim-logs",
+      "auth": {
+        "username": "username",
+        "password": "password"
+      }
+    }
+  }
+}

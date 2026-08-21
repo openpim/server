@@ -7,6 +7,7 @@ import { Issuer, Client } from 'openid-client'
 import logger from '../logger'
 import audit from '../audit'
 import { ModelsManager, ModelManager, UserWrapper } from '../models/manager'
+import { sanitizeForLog } from '../structuredLogger'
 
 export default {
     Query: {
@@ -52,7 +53,7 @@ export default {
 
             const tokenSet = await client.callback(redirectURI, params)
             const userinfo = await client.userinfo(tokenSet)
-            logger.debug(`tokenSet - ${JSON.stringify(tokenSet)}`)
+            logger.debug(`tokenSet - ${JSON.stringify(sanitizeForLog(tokenSet))}`)
             logger.debug(`userinfo - ${JSON.stringify(userinfo)}`)
 
             let user = await User.findOne({ where: { login: userinfo.email } })
