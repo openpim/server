@@ -26,6 +26,9 @@ export class Role extends Base {
   public otherAccess!: any
   public channelAccess!: any
   public options!: any
+  public group!: boolean
+  public parentIds!: any
+  public order!: number
   public static applyScope(context: Context) {
     return Role.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
@@ -122,6 +125,18 @@ export function init(sequelize: Sequelize):void {
       },
       options: {
         type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      group: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+      },
+      parentIds: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      order: {
+        type: new DataTypes.INTEGER,
         allowNull: false,
       },
   ...BaseColumns,
