@@ -478,20 +478,21 @@ class StructuredLogTransport {
         const client = this.getElasticsearchClient()
 
         const updateExistingMapping = async () => {
+            const mappingResponse: any = await client.indices.getMapping({ index: elasticsearch.index })
+            const indexMapping = mappingResponse[elasticsearch.index] || Object.values(mappingResponse)[0] || {}
+            const existingProperties = indexMapping?.mappings?.properties || {}
+            const missingProperties: Record<string,
+                { type: 'keyword' } |
+                { type: 'date'; format: 'epoch_millis' }
+            > = {}
+
+            if (!existingProperties['__from_app']) missingProperties['__from_app'] = { type: 'keyword' }
+            if (!existingProperties['@timestamp']) missingProperties['@timestamp'] = { type: 'date', format: 'epoch_millis' }
+            if (Object.keys(missingProperties).length === 0) return
+
             await client.indices.putMapping({
                 index: elasticsearch.index,
-                properties: {
-                    '__from_app': { type: 'keyword' },
-                    '@timestamp': { type: 'date', format: 'epoch_millis' },
-                    request_type: { type: 'keyword' },
-                    request_operation: { type: 'keyword' },
-                    login: { type: 'keyword' },
-                    execution_time: { type: 'long' },
-                    status: { type: 'integer' },
-                    request_parameters: { type: 'text', index: false },
-                    request: { type: 'text', index: false },
-                    response: { type: 'text', index: false },
-                },
+                properties: missingProperties,
             })
         }
 
