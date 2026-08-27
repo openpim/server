@@ -1,6 +1,6 @@
 import Context from '../context'
 import * as jwt from 'jsonwebtoken'
-import { User } from '../models/users'
+import { User, expandRoleIds } from '../models/users'
 import { sequelize } from '../models'
 import { Issuer, Client } from 'openid-client'
 
@@ -70,7 +70,8 @@ export default {
             if (!user) {
                 // create external user on the fly
                 const userRoles = serverConfig.rolesMapping ? resolveUserRoles() : serverConfig.roles.map((roleId: number) => mng!.getRoles().find(elem => elem.id === roleId))
-                const rolesId = userRoles.map((role: any) => role.id)
+                const rolesId = expandRoleIds(userRoles.filter(Boolean).map((role: any) => role.id), mng.getRoles())
+                const effectiveRoles = rolesId.map(roleId => mng.getRoles().find(role => role.id === roleId)!)
                 logger.debug(`userRoles - ${JSON.stringify(rolesId)}`)
                 user = await sequelize.transaction(async t => {
                     return User.create({
@@ -87,10 +88,10 @@ export default {
                     }, { transaction: t })
                 })
 
-                mng.getUsers().push(new UserWrapper(user, userRoles))
+                mng.getUsers().push(new UserWrapper(user, effectiveRoles))
             } else if (serverConfig.rolesMapping) {
                 const userRoles = resolveUserRoles()
-                const rolesId = userRoles.map((role: any) => role.id)
+                const rolesId = expandRoleIds(userRoles.map((role: any) => role.id), mng.getRoles())
                 if (JSON.stringify(rolesId) !== JSON.stringify(user.roles)) {
                     logger.debug(`update userRoles - ${JSON.stringify(rolesId)}`)
                     user.roles = rolesId
@@ -98,6 +99,7 @@ export default {
 
                     const wrapper  = mng.getUsers().find(usr => usr.getUser().id === user!.id)
                     wrapper!.getUser().roles = rolesId
+                    wrapper!.setRoles(rolesId.map(roleId => mng.getRoles().find(role => role.id === roleId)!))
                 }
             }
 

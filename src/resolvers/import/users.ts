@@ -2,7 +2,7 @@ import Context from "../../context"
 import { IImportConfig, ImportResponse, ReturnMessage, ImportResult, ImportMode, IUserImportRequest } from "../../models/import"
 import { sequelize } from "../../models"
 import { ModelsManager, ModelManager, AttrGroupWrapper, UserWrapper } from "../../models/manager"
-import { User } from "../../models/users"
+import { User, expandRoleIds } from "../../models/users"
 import bcrypt from 'bcryptjs';
 import { Op, literal } from 'sequelize'
 
@@ -151,6 +151,6 @@ function checkRoles(roles: [string], mng: ModelManager, result: ImportResponse) 
             res.push(tst.id)
         }
     }
-    return res
+    return expandRoleIds(res, mng.getRoles())
 }
 
