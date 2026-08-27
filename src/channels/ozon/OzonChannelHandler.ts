@@ -715,15 +715,11 @@ export class OzonChannelHandler extends ChannelHandler {
         const existingOzonAttributesById = new Map<number, any>()
         let existingOzonComplexGroups: any[] = []
 
-        const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
-        const price = await this.getValueByMapping(channel, priceConfig, item, language)
-        if (price && (newProduct || channel.config.sendPriceUpdate)) product.price = ''+price
-        /*if (!price) {
-            const msg = 'Не введена конфигурация или нет данных для "Цены" для категории: ' + categoryConfig.name
-            context.log += msg
-            this.reportError(channel, item, msg)
-            return
-        }*/
+        if (newProduct || channel.config.sendPriceUpdate) {
+            const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
+            const price = await this.getValueByMapping(channel, priceConfig, item, language)
+            if (price) product.price = ''+price
+        }
 
         const priceOldConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#oldprice')
         const priceOld = await this.getValueByMapping(channel, priceOldConfig, item, language)
