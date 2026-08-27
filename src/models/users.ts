@@ -20,18 +20,40 @@ export class User extends Base {
 export class Role extends Base {
   public identifier!: string
   public name!: string
+  public order!: number
+  public parentIds!: any
+  public group!: boolean
   public configAccess!: any
   public relAccess!: any
   public itemAccess!: any
   public otherAccess!: any
   public channelAccess!: any
   public options!: any
-  public group!: boolean
-  public parentIds!: any
-  public order!: number
   public static applyScope(context: Context) {
     return Role.scope({ method: ['tenant', context.getCurrentUser()!.tenantId] })
   }
+}
+
+export function expandRoleIds(roleIds: any, roles: Role[]): number[] {
+  if (!Array.isArray(roleIds)) return []
+
+  const result = new Set<number>()
+  const sameId = (left: any, right: any) => String(left) === String(right)
+  roleIds.forEach(id => {
+    const role = roles.find(item => sameId(item.id, id))
+    if (!role) return
+
+    if (role.group) {
+      roles.forEach(child => {
+        if (!child.group && Array.isArray(child.parentIds) && child.parentIds.some(parentId => sameId(parentId, role.id))) {
+          result.add(child.id)
+        }
+      })
+    } else {
+      result.add(role.id)
+    }
+  })
+  return Array.from(result)
 }
 
 export class LoggedUser {
@@ -103,6 +125,21 @@ export function init(sequelize: Sequelize):void {
         type: DataTypes.STRING(250),
         allowNull: false,
       },
+      order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      parentIds: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: [],
+      },
+      group: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       configAccess: {
         type: DataTypes.JSONB,
         allowNull: false,
@@ -125,18 +162,6 @@ export function init(sequelize: Sequelize):void {
       },
       options: {
         type: DataTypes.JSONB,
-        allowNull: false,
-      },
-      group: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-      },
-      parentIds: {
-        type: DataTypes.JSONB,
-        allowNull: false,
-      },
-      order: {
-        type: new DataTypes.INTEGER,
         allowNull: false,
       },
   ...BaseColumns,

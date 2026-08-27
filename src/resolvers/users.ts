@@ -1,7 +1,7 @@
 import Context, { ConfigAccess } from '../context'
 import * as jwt from 'jsonwebtoken';
 import { sequelize } from '../models'
-import { User, Role } from '../models/users'
+import { User, Role, expandRoleIds } from '../models/users'
 import { GraphQLError } from 'graphql';
 import bcrypt from 'bcryptjs';
 import { ModelManager, ModelsManager, UserWrapper } from '../models/manager';
@@ -13,6 +13,15 @@ import audit from '../audit'
 import { AttrGroup } from '../models/attributes';
 import { createUnauthorizedError } from '../graphql/errors';
 
+function normalizeParentIds(parentIds: any, roles: Role[], currentRoleId?: number): number[] {
+    if (!Array.isArray(parentIds)) return []
+
+    const requested = new Set(parentIds.map(id => String(id)))
+    return roles
+        .filter(role => role.group && role.id !== currentRoleId && requested.has(String(role.id)))
+        .map(role => role.id)
+}
+
 export default {
     Query: {
         me: async (parent: any, args: any, context: Context) => { 
@@ -22,7 +31,7 @@ export default {
         getRoles: async (parent: any, args: any, context: Context) => {
             context.checkAuth()
             
-            if (context.getCurrentUser()!.tenantId === '0') return [{id: 1, internalId: 1, identifier: 'admin', name: {}, configAccess: {"lovs": 2, "roles": 2, "types": 2, "users": 2, "actions": 2, "channels": 2, "languages": 2, "relations": 2, "attributes": 2, "dashboards": 2}, relAccess: {"access": 0, "groups": [], "relations": []}, itemAccess: {"valid": [], "access": 0, "groups": [], "fromItems": []}, otherAccess: {"audit": true, "search": true, "exportCSV": true, "exportXLS": true, "importXLS": true, "searchRelations": true, "exportRelationsXLS": true, "importRelationsXLS": true}, channelAccess: [], options: []}]
+            if (context.getCurrentUser()!.tenantId === '0') return [{id: 1, internalId: 1, identifier: 'admin', name: {}, order: 0, parentIds: [], group: false, configAccess: {"lovs": 2, "roles": 2, "types": 2, "users": 2, "actions": 2, "channels": 2, "languages": 2, "relations": 2, "attributes": 2, "dashboards": 2}, relAccess: {"access": 0, "groups": [], "relations": []}, itemAccess: {"valid": [], "access": 0, "groups": [], "fromItems": []}, otherAccess: {"audit": true, "search": true, "exportCSV": true, "exportXLS": true, "importXLS": true, "searchRelations": true, "exportRelationsXLS": true, "importRelationsXLS": true}, channelAccess: [], options: []}]
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
             return mng.getRoles()
@@ -58,7 +67,7 @@ export default {
         }
     },
     Mutation: {
-        createRole: async (parent: any, { identifier, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess, options }: any, context: Context) => {
+        createRole: async (parent: any, { identifier, name, order, parentIds, group, configAccess, relAccess, itemAccess, channelAccess, otherAccess, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ROLES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to create roles, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -72,6 +81,7 @@ export default {
                 throw new Error('Identifier already exists: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
+            const normalizedParentIds = group ? [] : normalizeParentIds(parentIds, mng.getRoles())
             const role = await sequelize.transaction(async (t) => {
                 return await Role.create ({
                     identifier: identifier,
@@ -79,6 +89,9 @@ export default {
                     createdBy: context.getCurrentUser()!.login,
                     updatedBy: context.getCurrentUser()!.login,
                     name: name || '',
+                    order: order != null ? order : 0,
+                    parentIds: normalizedParentIds,
+                    group: group === true,
                     configAccess: configAccess || { types: 0, attributes: 0, relations: 0, users: 0, roles: 0, languages: 0 },
                     relAccess: relAccess || { relations: [], access: 0, groups: [] },
                     itemAccess: itemAccess || { valid: [], fromItems: [], access: 0, groups: [] },
@@ -96,7 +109,7 @@ export default {
 
             return role.id
         },
-        updateRole: async (parent: any, { id, name, configAccess, relAccess, itemAccess, channelAccess, otherAccess, options }: any, context: Context) => {
+        updateRole: async (parent: any, { id, name, order, parentIds, group, configAccess, relAccess, itemAccess, channelAccess, otherAccess, options }: any, context: Context) => {
             context.checkAuth()
             if (!context.canEditConfig(ConfigAccess.ROLES)) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to edit roles, tenant: ' + context.getCurrentUser()!.tenantId)
@@ -112,8 +125,14 @@ export default {
             if (role.identifier === 'admin') {
                 throw new Error('Administrator role can not be updated, tenant: ' + mng.getTenantId())
             }
+            if (group != null && group !== role.group) {
+                throw new Error('Role group type can not be changed after creation, tenant: ' + mng.getTenantId())
+            }
 
             if (name) role.name = name
+            if (order != null) role.order = order
+            if (group != null) role.group = group
+            if (parentIds != null) role.parentIds = role.group ? [] : normalizeParentIds(parentIds, mng.getRoles(), role.id)
             if (configAccess) role.configAccess = configAccess
             if (relAccess) role.relAccess = relAccess
             if (itemAccess) role.itemAccess = itemAccess
@@ -145,6 +164,9 @@ export default {
             if (role.identifier === 'admin') {
                 throw new Error('Administrator role can not be deleted, tenant: ' + mng.getTenantId())
             }
+
+            const child = mng.getRoles().find(candidate => candidate.id !== role.id && Array.isArray(candidate.parentIds) && candidate.parentIds.some((parentId: any) => String(parentId) === String(role.id)))
+            if (child) throw new Error('Can not remove this role group because it contains roles.')
 
             // check Users
             // const tst1 = await User.applyScope(context).findOne({where: {roles: { [Op.contains]: nId}}})
@@ -192,7 +214,8 @@ export default {
                         // create external user on the fly
                         const mng = ModelsManager.getInstance().getModelManager(tst.tenantId)
                         const userRoles = tst.groups ? tst.groups.map((grp:string) =>  mng.getRoles().find(elem => elem.identifier === grp)) : []
-                        const roles:any = userRoles.map((grp:AttrGroup) =>  grp.id)
+                        const roles:any = expandRoleIds(userRoles.filter(Boolean).map((grp:AttrGroup) => grp.id), mng.getRoles())
+                        const effectiveRoles = roles.map((roleId: number) => mng.getRoles().find(role => role.id === roleId)!)
                         user= await sequelize.transaction(async (t) => {
                             const user = await User.create({
                                 tenantId: tst.tenantId,
@@ -208,7 +231,7 @@ export default {
                               }, {transaction: t});
                             return user
                         })
-                        mng.getUsers().push(new UserWrapper(user, userRoles))
+                        mng.getUsers().push(new UserWrapper(user, effectiveRoles))
 
                         // send token with id 1 (admin) because this user is not at remote server yet so checkAuth will fail without this
                         const token = await jwt.sign({
@@ -318,7 +341,7 @@ export default {
                     name: name,
                     password: await bcrypt.hash(password, 10),
                     email: email,
-                    roles: roles || [],
+                    roles: expandRoleIds(roles || [], mng.getRoles()),
                     props: props || {},
                     options: options ? options : []
                   }, {transaction: t});
@@ -366,8 +389,8 @@ export default {
 
                 const adminRole = wrapper.getRoles().find(role => role.identifier === 'admin')
 
-                user.roles = roles
                 const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+                user.roles = expandRoleIds(roles, mng.getRoles())
                 const userRoles = user.roles ? user.roles.map((roleId: number) => mng!.getRoles().find(role => role.id === roleId)) : []
 
                 if (adminRole) {

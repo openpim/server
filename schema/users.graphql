@@ -14,8 +14,8 @@ type Mutation {
   createUser(login: String!, name: String!, password: String!, email: String, roles: JSON, props: JSONObject, options: JSON): ID!
   updateUser(id: ID!, name: String, password: String, email: String, roles: JSON, props: JSONObject, options: JSON): ID!
   removeUser(id: ID!) : Boolean!
-  createRole(identifier: String!, name: String!, configAccess: JSONObject, relAccess: JSONObject, itemAccess: JSONObject, channelAccess: JSON, otherAccess: JSONObject, options: JSON): ID!
-  updateRole(id: ID!, name: String, configAccess: JSONObject, relAccess: JSONObject, itemAccess: JSONObject, channelAccess: JSON, otherAccess: JSONObject, options: JSON) : ID!
+  createRole(identifier: String!, name: String!, order: Int, parentIds: JSON, group: Boolean, configAccess: JSONObject, relAccess: JSONObject, itemAccess: JSONObject, channelAccess: JSON, otherAccess: JSONObject, options: JSON): ID!
+  updateRole(id: ID!, name: String, order: Int, parentIds: JSON, group: Boolean, configAccess: JSONObject, relAccess: JSONObject, itemAccess: JSONObject, channelAccess: JSON, otherAccess: JSONObject, options: JSON) : ID!
   removeRole(id: ID!) : Boolean!
 }
 
@@ -48,6 +48,9 @@ type Role {
   internalId: Int!
   identifier: String!
   name: String!
+  order: Int!
+  parentIds: JSON!
+  group: Boolean!
   configAccess: JSONObject
   relAccess: JSONObject
   itemAccess: JSONObject
