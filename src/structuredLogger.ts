@@ -32,6 +32,8 @@ export interface StructuredLogConfig {
     enabled?: boolean
     fromApp?: string
     maxMessageSize?: number
+    truncateArrays?: boolean
+    truncateArraysRows?: number
     output?: StructuredLogOutput
 }
 
@@ -64,6 +66,8 @@ interface NormalizedConfig {
     enabled: boolean
     fromApp: string
     maxMessageSize: number
+    truncateArrays: boolean
+    truncateArraysRows: number
     outputType: StructuredLogOutputType
     filePath: string
     fileMaxSize: number
@@ -94,7 +98,7 @@ const TRUNCATED = '... [TRUNCATED]'
 const MIN_MESSAGE_SIZE = 256
 const DEFAULT_MESSAGE_SIZE = 10_000
 const DEFAULT_FILE_SIZE = 10 * 1024 * 1024
-const MAX_LOGGED_ROWS = 2
+const DEFAULT_TRUNCATE_ARRAY_ROWS = 3
 const FROM_APP_ENV_PATTERN = /^%([A-Za-z_][A-Za-z0-9_]*)%$/
 const DEFAULT_ELASTICSEARCH_INDEX = 'pim-request-logs'
 const DEFAULT_WRITERS: StructuredLogWriters = {
@@ -103,7 +107,8 @@ const DEFAULT_WRITERS: StructuredLogWriters = {
 }
 
 interface SanitizationOptions {
-    maxRows?: number
+    truncateArrays?: boolean
+    maxArrayItems?: number
 }
 
 const SENSITIVE_KEYS = new Set([
@@ -172,6 +177,8 @@ export function normalizeStructuredLogConfig(
         enabled: config?.enabled === true,
         fromApp: resolveFromApp(config?.fromApp, environment),
         maxMessageSize,
+        truncateArrays: config?.truncateArrays === true,
+        truncateArraysRows: positiveInteger(config?.truncateArraysRows, DEFAULT_TRUNCATE_ARRAY_ROWS),
         outputType: outputType === 'console.error' || outputType === 'file' || outputType === 'elasticsearch' ? outputType : 'console.out',
         filePath: typeof fileOutput?.path === 'string' ? fileOutput.path : '',
         fileMaxSize: Math.max(configuredFileMaxSize, maxMessageSize + 1),
@@ -226,8 +233,7 @@ function sanitizeString(value: string, options: SanitizationOptions = {}): strin
 export function sanitizeForLog(
     value: unknown,
     seen = new WeakSet<object>(),
-    options: SanitizationOptions = {},
-    limitRows = false
+    options: SanitizationOptions = {}
 ): unknown {
     if (value === null) return null
     if (value === undefined) return '[UNDEFINED]'
@@ -253,8 +259,8 @@ export function sanitizeForLog(
 
     try {
         if (Array.isArray(value)) {
-            const items = limitRows && typeof options.maxRows === 'number'
-                ? value.slice(0, options.maxRows)
+            const items = options.truncateArrays && typeof options.maxArrayItems === 'number'
+                ? value.slice(0, options.maxArrayItems)
                 : value
             return items.map(item => sanitizeForLog(item, seen, options))
         }
@@ -266,12 +272,7 @@ export function sanitizeForLog(
                 continue
             }
             try {
-                result[key] = sanitizeForLog(
-                    (value as Record<string, unknown>)[key],
-                    seen,
-                    options,
-                    key.toLowerCase() === 'rows'
-                )
+                result[key] = sanitizeForLog((value as Record<string, unknown>)[key], seen, options)
             } catch (_) {
                 result[key] = '[UNAVAILABLE]'
             }
@@ -291,12 +292,12 @@ function safelySerialize(value: unknown, options: SanitizationOptions = {}): str
     }
 }
 
-function containsRowsArray(value: unknown, seen = new WeakSet<object>()): boolean {
+function containsArray(value: unknown, seen = new WeakSet<object>()): boolean {
     if (typeof value === 'string') {
         const trimmed = value.trim()
         if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) return false
         try {
-            return containsRowsArray(JSON.parse(value), seen)
+            return containsArray(JSON.parse(value), seen)
         } catch (_) {
             return false
         }
@@ -306,7 +307,7 @@ function containsRowsArray(value: unknown, seen = new WeakSet<object>()): boolea
     seen.add(value)
 
     try {
-        if (Array.isArray(value)) return value.some(item => containsRowsArray(item, seen))
+        if (Array.isArray(value)) return true
         for (const key of Object.keys(value as Record<string, unknown>)) {
             let child: unknown
             try {
@@ -314,8 +315,7 @@ function containsRowsArray(value: unknown, seen = new WeakSet<object>()): boolea
             } catch (_) {
                 continue
             }
-            if (key.toLowerCase() === 'rows' && Array.isArray(child)) return true
-            if (containsRowsArray(child, seen)) return true
+            if (containsArray(child, seen)) return true
         }
         return false
     } finally {
@@ -377,8 +377,11 @@ export function formatStructuredLog(config: StructuredLogConfig | null | undefin
     if (!normalized.enabled) return null
 
     const fieldLimit = normalized.maxMessageSize
-    const preserveStructuredResponse = containsRowsArray(input.response)
-    const serializedResponse = safelySerialize(input.response, { maxRows: MAX_LOGGED_ROWS })
+    const preserveStructuredResponse = normalized.truncateArrays && containsArray(input.response)
+    const serializedResponse = safelySerialize(input.response, {
+        truncateArrays: normalized.truncateArrays,
+        maxArrayItems: normalized.truncateArraysRows,
+    })
     const record: StructuredLogRecord = {
         '__from_app': normalized.fromApp,
         '@timestamp': input.timestamp ?? Date.now(),

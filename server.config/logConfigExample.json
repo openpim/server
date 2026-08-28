@@ -3,6 +3,7 @@
         "enabled": true,
         "fromApp": "%OPENPIM_INSTANCE_NAME%",
         "maxMessageSize": 10000,
+        "truncateArrays": false,
         "output": {
             "type": "file",
             "path": "/server/request.log",
@@ -14,14 +15,18 @@
         "enabled": true,
         "fromApp": "PIM",
         "maxMessageSize": 10000,
+        "truncateArrays": true,
+        "truncateArraysRows": 3,
         "output": {
-            "type": "console.output"
+            "type": "console.out"
         }
     },
 "log": {
         "enabled": true,
         "fromApp": "PIM",
         "maxMessageSize": 10000,
+        "truncateArrays": true,
+        "truncateArraysRows": 3,
         "output": {
             "type": "console.error"
         }
