@@ -88,7 +88,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     context.log += '\n\n'
                 }
             } else if (data.sync) {
-                await this.syncJob(channel, context, data)
+                await this.syncJob(channel, context, data, language)
             } else if (data.clearCache) {
                 this.cache.flushAll()
                 this.clearLOVCache()
@@ -103,19 +103,32 @@ export class OzonChannelHandler extends ChannelHandler {
         }
     }
 
-    async syncJob(channel: Channel, context: JobContext, data: any) {
+    async syncJob(channel: Channel, context: JobContext, data: any, language: string) {
         context.log += 'Запущена синхронизация с Ozon\n'
 
+        let item: Item | null = null
+        let itemsWithoutOzonId: Item[] = []
         if (data.item) {
-            const item = await Item.findByPk(data.item)
+            item = await Item.findByPk(data.item)
+            if (item && item.channels[channel.identifier]?.status != 1 && !item.values[channel.config.ozonIdAttr]) {
+                itemsWithoutOzonId.push(item)
+            }
+        } else {
+            const channelsQuery:any = {}
+            channelsQuery[channel.identifier] = { status: { [Op.ne]: 1 } }
+            itemsWithoutOzonId = await Item.findAll({
+                where: { tenantId: channel.tenantId, channels: channelsQuery }
+            })
+            itemsWithoutOzonId = itemsWithoutOzonId.filter(item => !item.values[channel.config.ozonIdAttr])
+        }
+        await this.recoverOzonIds(channel, itemsWithoutOzonId, language, context)
+
+        if (data.item) {
             await this.syncItem(channel, item!, context, true)
         } else {
-
-
-
             const query:any = {}
             query[channel.config.ozonIdAttr] = { [Op.ne]: '' }
-            let items = await Item.findAll({ 
+            const items = await Item.findAll({
                 where: { tenantId: channel.tenantId, values: query} 
             })
             context.log += 'Найдено ' + items.length + ' записей для обработки \n\n'
@@ -129,6 +142,117 @@ export class OzonChannelHandler extends ChannelHandler {
 
         }
         context.log += 'Cинхронизация закончена'
+    }
+
+    private async recoverOzonIds(channel: Channel, items: Item[], language: string, context: JobContext): Promise<Item[]> {
+        const offerIdToItem = new Map<string, Item>()
+
+        for (const item of items) {
+            try {
+                const categoryConfig = await this.getCategoryConfig(channel, item)
+                const productCodeConfig = categoryConfig?.attributes.find((attribute: any) => attribute.id === '#productCode')
+                const offerId = await this.getValueByMapping(channel, productCodeConfig, item, language)
+
+                if (offerId === null || offerId === undefined || offerId === '') {
+                    context.log += `OfferId не настроен или не указан для товара ${item.identifier}\n`
+                    continue
+                }
+
+                offerIdToItem.set('' + offerId, item)
+            } catch (err) {
+                const msg = `Ошибка получения offerId для товара: ${item.identifier}: ${err}`
+                context.log += msg + '\n'
+                logger.error(msg)
+            }
+        }
+
+        const recoveredItems: Item[] = []
+        const offerIds = Array.from(offerIdToItem.keys())
+        const chunkSize = 1000
+
+        for (let i = 0; i < offerIds.length; i += chunkSize) {
+            const chunk = offerIds.slice(i, i + chunkSize)
+            const url = 'https://api-seller.ozon.ru/v3/product/info/list'
+            const request = { offer_id: chunk }
+            const log = "Sending request to Ozon: " + url + " => " + JSON.stringify(request)
+            logger.info(log)
+            if (channel.config.debug) context.log += log + '\n'
+
+            const res = await fetch(url, {
+                method: 'post',
+                body: JSON.stringify(request),
+                headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
+            })
+
+            if (res.status !== 200) {
+                const text = await res.text()
+                const msg = 'Ошибка восстановления Ozon Product ID: ' + res.statusText + ' ' + text
+                context.log += msg + '\n'
+                logger.error(msg)
+                continue
+            }
+
+            const data = await res.json()
+            const foundOfferIds = new Set<string>()
+            for (const result of data.items || []) {
+                const offerId = '' + result.offer_id
+                foundOfferIds.add(offerId)
+                const item = offerIdToItem.get(offerId)
+                if (!item || !result.id) continue
+
+                item.values[channel.config.ozonIdAttr] = result.id
+                item.changed('values', true)
+                await this.saveItemIfChanged(channel, item)
+                recoveredItems.push(item)
+                context.log += `ВОССТАНОВЛЕНИЕ OZON PRODUCT ID ${result.id} ДЛЯ ТОВАРА ${item.identifier}\n`
+            }
+
+            for (const offerId of chunk) {
+                if (!foundOfferIds.has(offerId)) {
+                    const item = offerIdToItem.get(offerId)
+                    context.log += `Товар ${item?.identifier || ''} с Offer ID ${offerId} не найден в Ozon\n`
+                }
+            }
+        }
+
+        return recoveredItems
+    }
+
+    private async getCategoryConfig(channel: Channel, item: Item) {
+        for (const categoryId in channel.mappings) {
+            const categoryConfig = channel.mappings[categoryId]
+
+            if (categoryConfig.valid && categoryConfig.valid.length > 0 && (
+                (categoryConfig.visible && categoryConfig.visible.length > 0) || categoryConfig.categoryExpr || (categoryConfig.categoryAttr && categoryConfig.categoryAttrValue))) {
+                const pathArr = item.path.split('.')
+                const validType = categoryConfig.valid.includes(item.typeId) || categoryConfig.valid.includes('' + item.typeId)
+                if (!validType) continue
+
+                let matches = null
+                if (categoryConfig.visible && categoryConfig.visible.length > 0) {
+                    if (categoryConfig.visibleRelation) {
+                        const sources = await Item.findAll({
+                            where: { tenantId: channel.tenantId, '$sourceRelation.relationId$': categoryConfig.visibleRelation, '$sourceRelation.targetId$': item.id },
+                            include: [{ model: ItemRelation, as: 'sourceRelation' }]
+                        })
+                        matches = sources.some(source => {
+                            const sourcePath = source.path.split('.')
+                            return categoryConfig.visible.find((element: any) => sourcePath.includes('' + element))
+                        })
+                    } else {
+                        matches = categoryConfig.visible.find((element: any) => pathArr.includes('' + element))
+                    }
+                } else if (categoryConfig.categoryExpr) {
+                    matches = await this.evaluateExpression(channel, item, categoryConfig.categoryExpr)
+                } else {
+                    matches = item.values[categoryConfig.categoryAttr] && item.values[categoryConfig.categoryAttr] == categoryConfig.categoryAttrValue
+                }
+
+                if (matches) return categoryConfig
+            }
+        }
+
+        return null
     }
 
     processProductStatus(item: Item, result: any, channel: Channel, context: JobContext) {
@@ -718,12 +842,15 @@ export class OzonChannelHandler extends ChannelHandler {
         const existingOzonAttributesById = new Map<number, any>()
         let existingOzonComplexGroups: any[] = []
 
-        let priceConfig
-        if (newProduct || channel.config.sendPriceUpdate) {
-            priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
-            const price = await this.getValueByMapping(channel, priceConfig, item, language)
-            if (price) product.price = ''+price
-        }
+        const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
+        const price = await this.getValueByMapping(channel, priceConfig, item, language)
+        if (price && (newProduct || channel.config.sendPriceUpdate)) product.price = ''+price
+        /*if (!price) {
+            const msg = 'Не введена конфигурация или нет данных для "Цены" для категории: ' + categoryConfig.name
+            context.log += msg
+            this.reportError(channel, item, msg)
+            return
+        }*/
 
         const priceOldConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#oldprice')
         const priceOld = await this.getValueByMapping(channel, priceOldConfig, item, language)
