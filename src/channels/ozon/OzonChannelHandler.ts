@@ -715,8 +715,9 @@ export class OzonChannelHandler extends ChannelHandler {
         const existingOzonAttributesById = new Map<number, any>()
         let existingOzonComplexGroups: any[] = []
 
+        let priceConfig
         if (newProduct || channel.config.sendPriceUpdate) {
-            const priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
+            priceConfig = categoryConfig.attributes.find((elem:any) => elem.id === '#price')
             const price = await this.getValueByMapping(channel, priceConfig, item, language)
             if (price) product.price = ''+price
         }
