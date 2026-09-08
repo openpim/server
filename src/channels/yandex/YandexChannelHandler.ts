@@ -630,7 +630,7 @@ export class YandexChannelHandler extends ChannelHandler {
             return
         }
 
-~       let yandexCategoryId: number = data.category
+       const yandexCategoryId = data.category
 
         const offer: UpdateOfferDTO = { 
             offerId, description,
