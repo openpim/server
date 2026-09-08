@@ -630,11 +630,10 @@ export class YandexChannelHandler extends ChannelHandler {
             return
         }
 
-~       const yandexCategoryId = parseInt(new String(categoryConfig.id).replace('ymcat_',''))
+~       let yandexCategoryId: number = data.category
 
         const offer: UpdateOfferDTO = { 
-            offerId,
-            description,
+            offerId, description,
             name,
             vendor,
             marketCategoryId: yandexCategoryId,
