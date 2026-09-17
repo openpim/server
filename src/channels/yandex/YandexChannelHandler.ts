@@ -518,7 +518,7 @@ export class YandexChannelHandler extends ChannelHandler {
         const changedValues: any = {}
 
         const data = item.channels[channel.identifier]
-        data.category = (typeof categoryConfig.id === 'number' && !isNaN(categoryConfig.id)) ? categoryConfig.id : parseInt(categoryConfig.id.substring(6))
+        data.category = (typeof categoryConfig.id === 'number' || !isNaN(categoryConfig.id)) ? categoryConfig.id : parseInt(categoryConfig.id.substring(6))
 
         /* const offerIdConfig = categoryConfig.attributes.find((elem:any) => elem.id === 'offerid')
         const offerid = await this.getValueByMapping(channel, offerIdConfig, item, language)
