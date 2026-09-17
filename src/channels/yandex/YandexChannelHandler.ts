@@ -190,7 +190,8 @@ export class YandexChannelHandler extends ChannelHandler {
                             })
                             tst = sources.some(source => {
                                 const pathArr = source.path.split('.')
-                                return categoryConfig.visible.find((elem: any) => pathArr.includes('' + elem))
+                                const catId = source.identifier.replace('ymcat_','')
+                                return  catId == categoryConfig.id && categoryConfig.visible.find((elem: any) => pathArr.includes('' + elem))
                             })
                         } else {
                             tst = categoryConfig.visible.find((elem: any) => pathArr.includes('' + elem))
