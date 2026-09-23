@@ -26,6 +26,8 @@ export default {
                     channel.config.wbToken = '*****'
                 } else if (channel.type === 3 && channel.config.ozonApiKey) { // Ozon
                     channel.config.ozonApiKey = '*****'
+                } else if (channel.type === 10 && channel.config.dnsApiToken) { // DNS
+                    channel.config.dnsApiToken = '*****'
                 }
             })
             return cloned
@@ -208,6 +210,21 @@ export default {
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
             return channelMng.getHandler(chan).getAttributes(chan, categoryId)
         },
+        getChannelSubCategories: async (parent: any, { channelId, nodeId }: any, context: Context) => {
+            context.checkAuth()
+            const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+
+            const nId = parseInt(channelId)
+            const chan = mng.getChannels().find( chan => chan.id === nId)
+            if (!chan) {
+                throw new Error('Failed to find channel by id: ' + channelId + ', tenant: ' + mng.getTenantId())
+            }
+            if (!context.canViewChannel(chan.identifier)) {
+                throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to view channel, tenant: ' + context.getCurrentUser()!.tenantId)
+            }
+            const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
+            return channelMng.getHandler(chan).getSubCategories(chan, nodeId)
+        },
         getChannelAttributeValues: async (parent: any, { channelId, categoryId, attributeId }: any, context: Context) => {
             context.checkAuth()
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
@@ -309,6 +326,8 @@ export default {
                     config.wbToken = chan.config.wbToken
                 } else if (type === 3 && config.ozonApiKey === '*****') { // Ozon
                     config.ozonApiKey = chan.config.ozonApiKey
+                } else if (type === 10 && config.dnsApiToken === '*****') { // DNS
+                    config.dnsApiToken = chan.config.dnsApiToken
                 }
                 chan.config = config
             }
