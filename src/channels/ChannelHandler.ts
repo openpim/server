@@ -24,12 +24,6 @@ export abstract class ChannelHandler {
 
   abstract getAttributes(channel: Channel, categoryId: string): Promise<{ id: string; name: string; required: boolean; dictionary: boolean, dictionaryLink?: string }[]>
 
-  // Optional lazy loading of nested channel categories (e.g. DNS class -> specs).
-  // Channels that return a fully built tree can keep the default null.
-  async getSubCategories(channel: Channel, nodeId: string): Promise<ChannelCategory[] | null> {
-    return null
-  }
-
   async getChannelAttributeValues(channel: Channel, categoryId: string, attributeId: string): Promise<any> {
     return {}
   }

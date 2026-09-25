@@ -91,8 +91,12 @@ function parseClassNodeId(id: string): string | null {
 
 export class DnsChannelHandler extends ChannelHandler {
     // Channel type 10 is gated by the licence key (OPENPIM_KEY must list 10).
-    private cache = new NodeCache({ useClones: false });
+    private cache = new NodeCache({ stdTTL: 0, useClones: false });
     private lastRequestAt = 0
+    private rateLimitRemaining: number | null = null
+    private rateLimitResetAt: number | null = null
+    private classesInFlight: Promise<any[]> | null = null
+    private specsInFlight = new Map<string, Promise<any[]>>()
 
     // ------------------------------------------------------------------
     // low level API helpers
@@ -110,6 +114,8 @@ export class DnsChannelHandler extends ChannelHandler {
 
     private async dnsRequest(channel: Channel, context: JobContext | null, method: string, path: string, body?: any, extraHeaders?: any): Promise<DnsResponse> {
         const url = path.indexOf('http') === 0 ? path : DNS_API + path
+
+        await this.waitForRateLimit()
 
         // global throttle: DNS rate limits per API key, keep requests spaced out
         const minInterval = parseInt(process.env.OPENPIM_DNS_REQUEST_DELAY || '250', 10)
@@ -142,7 +148,56 @@ export class DnsChannelHandler extends ChannelHandler {
         logger.info(respLog)
         if (context && channel.config.debug) context.log += respLog + '\n'
 
+        this.updateRateLimit(res.headers)
         return { status: res.status, json, text, headers: res.headers }
+    }
+
+    private getHeader(headers: any, names: string[]): string | null {
+        if (!headers) return null
+        for (const name of names) {
+            const value = headers.get ? headers.get(name) : headers[name] || headers[name.toLowerCase()]
+            if (value !== undefined && value !== null && value !== '') return '' + value
+        }
+        return null
+    }
+
+    private updateRateLimit(headers: any): void {
+        const remaining = this.getHeader(headers, ['ratelimit-remaining', 'x-ratelimit-remaining', 'x-rate-limit-remaining'])
+        if (remaining !== null) {
+            const parsed = Number(remaining)
+            if (Number.isFinite(parsed)) this.rateLimitRemaining = parsed
+        }
+
+        const reset = this.getHeader(headers, ['ratelimit-reset', 'x-ratelimit-reset', 'x-rate-limit-reset'])
+        if (reset !== null) {
+            const parsed = Number(reset)
+            if (Number.isFinite(parsed) && parsed >= 0) {
+                // RateLimit-Reset is a delay in seconds; legacy X-RateLimit-Reset is often an epoch.
+                this.rateLimitResetAt = parsed > 1000000000 ? parsed * 1000 : Date.now() + parsed * 1000
+            } else {
+                const date = Date.parse(reset)
+                if (Number.isFinite(date)) this.rateLimitResetAt = date
+            }
+        }
+
+        if (this.rateLimitRemaining === 0 && this.rateLimitResetAt === null) {
+            const retryAfter = this.getHeader(headers, ['retry-after'])
+            if (retryAfter !== null) {
+                const seconds = Number(retryAfter)
+                if (Number.isFinite(seconds) && seconds >= 0) this.rateLimitResetAt = Date.now() + seconds * 1000
+            }
+        }
+    }
+
+    private async waitForRateLimit(): Promise<void> {
+        if (this.rateLimitRemaining !== 0) return
+
+        const waitMs = this.rateLimitResetAt === null
+            ? 1000
+            : Math.max(0, this.rateLimitResetAt - Date.now())
+        if (waitMs > 0) await this.sleep(waitMs)
+        this.rateLimitRemaining = null
+        this.rateLimitResetAt = null
     }
 
     // Retries throttled responses (429) and temporary server errors, honouring Retry-After.
@@ -198,56 +253,83 @@ export class DnsChannelHandler extends ChannelHandler {
 
         let tree: ChannelCategory | undefined = this.cache.get('categories')
         if (!tree) {
-            const classes: any[] = []
-            let cursor: string | null = null
-            do {
-                const path: string = '/catalog/classes?limit=200' + (cursor ? '&cursor=' + encodeURIComponent(cursor as string) : '')
-                const res: DnsResponse = await this.dnsRequestWithRetry(channel, null, 'get', path)
-                if (res.status !== 200) throw new Error('Не удалось получить классы DNS: ' + this.describeError(res))
-                const page: any = res.json || {}
-                const items: any[] = Array.isArray(page.items) ? page.items : []
-                for (const cls of items) classes.push(cls)
-                cursor = page.nextCursor || null
-            } while (cursor)
-            logger.info('DNS getCategories: received ' + classes.length + ' classes (specs are loaded lazily on expand)')
+            const classes = await this.loadClasses(channel)
+            logger.info('DNS getCategories: received ' + classes.length + ' classes')
             if (classes.length === 0) {
                 throw new Error('DNS вернул пустой список классов. Проверьте права API-ключа (catalog.read) и наличие открытых классов в кабинете DNS.')
             }
 
-            // classes are returned as lazy nodes: specs are requested on expand via getChannelSubCategories
-            const children: any[] = classes.map((cls: any) => ({
-                id: classNodeId(cls.mdmClassId),
-                name: cls.name,
-                children: [],
-                lazy: true
-            }))
+            const children: any[] = []
+            for (const cls of classes) {
+                const classId = '' + cls.mdmClassId
+                const specs = await this.loadSpecs(channel, classId)
+                children.push({
+                    id: classNodeId(classId),
+                    name: cls.name,
+                    disabled: specs.length === 0,
+                    children: specs.map((spec: any) => ({
+                        id: specNodeId(classId, spec.uniformSpecId),
+                        name: spec.title
+                    }))
+                })
+            }
             tree = { id: '', name: 'root', children }
-            this.cache.set('categories', tree, 6 * 3600)
+            this.cache.set('categories', tree)
         }
         return { list: null, tree: tree ?? null }
     }
 
-    // Called on expand of a class node: returns its spec nodes.
-    public async getSubCategories(channel: Channel, nodeId: string): Promise<ChannelCategory[] | null> {
-        if (!channel.config.dnsApiToken) throw new Error('Не введен API-ключ DNS в конфигурации канала.')
-        const classId = parseClassNodeId(nodeId)
-        if (!classId) return null // spec leaf or foreign id
-        const specs = await this.loadSpecs(channel, classId)
-        return specs.map((spec: any) => ({
-            id: specNodeId(classId, spec.uniformSpecId),
-            name: spec.title
-        })) as ChannelCategory[]
+    private async loadClasses(channel: Channel): Promise<any[]> {
+        const cached = this.cache.get('classes') as any[] | undefined
+        if (cached) return cached
+        if (this.classesInFlight) return this.classesInFlight
+
+        this.classesInFlight = (async () => {
+            const classes: any[] = []
+            let cursor: string | null = null
+            do {
+                const path: string = '/catalog/classes?limit=200' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')
+                const res: DnsResponse = await this.dnsRequestWithRetry(channel, null, 'get', path)
+                if (res.status !== 200) throw new Error('Не удалось получить классы DNS: ' + this.describeError(res))
+                const page: any = res.json || {}
+                const items: any[] = Array.isArray(page.items) ? page.items : []
+                classes.push(...items)
+                cursor = page.nextCursor || null
+            } while (cursor)
+
+            if (classes.length > 0) this.cache.set('classes', classes)
+            return classes
+        })()
+
+        try {
+            return await this.classesInFlight
+        } finally {
+            this.classesInFlight = null
+        }
     }
 
     private async loadSpecs(channel: Channel, classId: string): Promise<any[]> {
-        let specs = this.cache.get('specs_' + classId) as any[] | undefined
-        if (!specs) {
+        const cacheKey = 'specs_' + classId
+        const cached = this.cache.get(cacheKey) as any[] | undefined
+        if (cached) return cached
+
+        const inFlight = this.specsInFlight.get(cacheKey)
+        if (inFlight) return inFlight
+
+        const request = (async () => {
             const res: DnsResponse = await this.dnsRequestWithRetry(channel, null, 'get', '/catalog/classes/' + encodeURIComponent(classId) + '/specs')
             if (res.status !== 200) throw new Error('Не удалось получить спецификации класса DNS: ' + this.describeError(res))
-            specs = (res.json && Array.isArray(res.json.items)) ? res.json.items : []
-            this.cache.set('specs_' + classId, specs, 6 * 3600)
+            const specs = (res.json && Array.isArray(res.json.items)) ? res.json.items : []
+            this.cache.set(cacheKey, specs)
+            return specs
+        })()
+
+        this.specsInFlight.set(cacheKey, request)
+        try {
+            return await request
+        } finally {
+            this.specsInFlight.delete(cacheKey)
         }
-        return specs || []
     }
 
     // Accepts either a spec node (dnsclass_<class>_spec_<spec>) or a class node (dnsclass_<class>).
@@ -259,7 +341,7 @@ export class DnsChannelHandler extends ChannelHandler {
         if (!classId) throw new Error('Некорректный идентификатор категории DNS: ' + categoryId)
         const specs = await this.loadSpecs(channel, classId)
         if (specs.length === 1) return { classId, specId: specs[0].uniformSpecId }
-        throw new Error('Для категории выбрана группа классов без спецификации. Разверните класс и выберите спецификацию (доступно спецификаций: ' + specs.length + ').')
+        throw new Error('Для категории выбрана группа классов без спецификации. Выберите спецификацию (доступно спецификаций: ' + specs.length + ').')
     }
 
     public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
@@ -320,7 +402,7 @@ export class DnsChannelHandler extends ChannelHandler {
             })
 
             data = attrs
-            this.cache.set(cacheKey, data, 6 * 3600)
+            this.cache.set(cacheKey, data)
         }
 
         // categoryId embeds both class and spec, so always re-stamp it for the caller
@@ -390,7 +472,7 @@ export class DnsChannelHandler extends ChannelHandler {
             if (cursor && pages >= MAX_PAGES) { hasNext = true; break }
         } while (cursor)
         const result = { values, has_next: hasNext }
-        this.cache.set(cacheKey, result, 3600)
+        this.cache.set(cacheKey, result)
         return result
     }
 

@@ -7,7 +7,6 @@ type Query {
   getExecutionById(id: ID!): Execution
   getChannelCategories(id: ID!) : ChannelCategoriesResponse
   getChannelAttributes(channelId: ID!, categoryId: ID!) : [ChannelAttribute]
-  getChannelSubCategories(channelId: ID!, nodeId: String!) : JSON
   getChannelAttributeValues(channelId: ID!, categoryId: ID!, attributeId: ID!) : JSONObject
 }
 
