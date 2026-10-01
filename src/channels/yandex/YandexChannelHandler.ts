@@ -38,7 +38,6 @@ interface UpdateOfferDTO {
     condition?: any,
     description?: string,
     downloadable?: boolean,
-    firstVideoAsCover?: boolean,
     guaranteePeriod?: any,
     lifeTime?: any,
     manuals?: any,
@@ -87,7 +86,6 @@ const standardAttributes = [
     'commodityCodes',
     'condition',
     'downloadable',
-    'firstVideoAsCover',
     'guaranteePeriod',
     'lifeTime',
     'manuals',
@@ -658,6 +656,8 @@ export class YandexChannelHandler extends ChannelHandler {
         // atributes
         for (let i = 0; i < categoryConfig.attributes.length; i++) {
             const attrConfig = categoryConfig.attributes[i]
+            // Ignore saved mappings for the removed video-cover API field.
+            if (attrConfig.id === 'firstVideoAsCover') continue
             // standard attributes have been already processed
             if (standardAttributes.find(el => el === attrConfig.id)) continue
             const attr = attrs.find(elem => elem.id === attrConfig.id)
