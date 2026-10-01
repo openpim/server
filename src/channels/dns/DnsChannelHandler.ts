@@ -466,7 +466,8 @@ export class DnsChannelHandler extends ChannelHandler {
             }
             const json: any = res.json || {}
             const items: any[] = Array.isArray(json.items) ? json.items : []
-            for (const item of items) values.push(map(item))
+            for (const item of items) {
+                const mapped = map(item)
             cursor = json.nextCursor || null
             pages++
             if (cursor && pages >= MAX_PAGES) { hasNext = true; break }
@@ -747,7 +748,7 @@ export class DnsChannelHandler extends ChannelHandler {
                 mapped.push('' + sv)
             }
             if (mapped.length > 0) {
-                optionValues[optionId] = opt.multiValue ? mapped.join(', ') : mapped[0]
+                optionValues[optionId.replace(/-/g, '')] = opt.multiValue ? mapped.join(', ') : mapped[0]
             }
         }
 
@@ -764,7 +765,7 @@ export class DnsChannelHandler extends ChannelHandler {
             const msg = 'Включена эмуляция работы, сообщение не было послано в DNS: ' + JSON.stringify(emulated)
             context.log += msg + '\n'
             data.status = 4
-            data.message = msg
+            data.message = 'Эмуляция DNS: запрос не отправлен (' + emulated.method + ' ' + emulated.url + ')'
             delete data.dnsError
             item.changed('channels', true)
             return changedValues
