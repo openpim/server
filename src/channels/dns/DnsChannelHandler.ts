@@ -468,6 +468,9 @@ export class DnsChannelHandler extends ChannelHandler {
             const items: any[] = Array.isArray(json.items) ? json.items : []
             for (const item of items) {
                 const mapped = map(item)
+                if (!mapped || mapped.id === undefined || mapped.id === null || mapped.value === undefined || mapped.value === null || mapped.value === '') continue
+                values.push(mapped)
+            }
             cursor = json.nextCursor || null
             pages++
             if (cursor && pages >= MAX_PAGES) { hasNext = true; break }
