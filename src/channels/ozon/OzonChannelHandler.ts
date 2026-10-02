@@ -1,6 +1,6 @@
 import { Channel, ChannelExecution } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
-import fetch from 'node-fetch'
+import fetch, { RequestInit, Response } from 'node-fetch'
 import * as FormData from 'form-data'
 import NodeCache = require('node-cache')
 import { Item } from '../../models/items'
@@ -54,6 +54,21 @@ function normalizeOzonComplexGroups(complexAttributes: any[] | undefined) {
 
 export class OzonChannelHandler extends ChannelHandler {
     private cache = new NodeCache({useClones: false});
+
+    private async fetchOzon(url: string, options: RequestInit, context?: JobContext): Promise<Response> {
+        const response = await fetch(url, options)
+        const remaining = response.headers.get('Ratelimit-Remaining')
+        const retryAfter = response.headers.get('Retry-After')
+        const limits: string[] = []
+        if (remaining !== null) limits.push('Ratelimit-Remaining=' + remaining)
+        if (retryAfter !== null) limits.push('Retry-After=' + retryAfter + ' сек.')
+        if (limits.length > 0) {
+            const message = 'Ozon ' + new URL(url).pathname + ': HTTP ' + response.status + '; ' + limits.join('; ')
+            logger.info(message)
+            if (context) context.log += message + '\n'
+        }
+        return response
+    }
 
     public async processChannel(channel: Channel, language: string, data: any): Promise<void> {
         const chanExec = await this.createExecution(channel)
@@ -178,11 +193,11 @@ export class OzonChannelHandler extends ChannelHandler {
             logger.info(log)
             if (channel.config.debug) context.log += log + '\n'
 
-            const res = await fetch(url, {
+            const res = await this.fetchOzon(url, {
                 method: 'post',
                 body: JSON.stringify(request),
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
+            }, context)
 
             if (res.status !== 200) {
                 const text = await res.text()
@@ -335,11 +350,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 const log2 = "Sending request to Ozon to check task id: " + taskId
                 logger.info(log2)
                 if (channel.config.debug) context.log += log2 + '\n'
-                const res2 = await fetch('https://api-seller.ozon.ru/v1/product/import/info', {
+                const res2 = await this.fetchOzon('https://api-seller.ozon.ru/v1/product/import/info', {
                     method: 'post',
                     body: JSON.stringify({ task_id: taskId }),
                     headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-                })
+                }, context)
                 if (res2.status !== 200) {
                     const text = await res2.text()
                     const msg = 'Ошибка запроса на Ozon: ' + res2.statusText + " " + text
@@ -395,11 +410,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 const log = "Sending request Ozon: " + url + " => " + JSON.stringify(request)
                 logger.info(log)
                 if (channel.config.debug) context.log += log + '\n'
-                const res = await fetch(url, {
+                const res = await this.fetchOzon(url, {
                     method: 'post',
                     body: JSON.stringify(request),
                     headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-                })
+                }, context)
                 if (res.status !== 200) {
                     const msg = 'Ошибка запроса на Ozon: ' + res.statusText
                     context.log += msg
@@ -431,11 +446,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 logger.info(logRating)
                 if (channel.config.debug) context.log += logRating + '\n'
 
-                const resRating = await fetch(urlRating, {
+                const resRating = await this.fetchOzon(urlRating, {
                     method: 'post',
                     body: JSON.stringify(requestRating),
                     headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-                })
+                }, context)
 
                 if (resRating.status !== 200) {
                     const msg = 'Ошибка запроса на Ozon: ' + resRating.statusText
@@ -497,11 +512,11 @@ export class OzonChannelHandler extends ChannelHandler {
             logger.info(log)
             if (channel.config.debug) context.log += log + '\n'
 
-            const res = await fetch(url, {
+            const res = await this.fetchOzon(url, {
                 method: 'post',
                 body: JSON.stringify(request),
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
+            }, context)
 
             if (res.status !== 200) {
                 const msg = 'Ошибка запроса на Ozon: ' + res.statusText
@@ -555,11 +570,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 logger.info(logRating)
                 if (channel.config.debug) context.log += logRating + '\n'
     
-                const resRating = await fetch(urlRating, {
+                const resRating = await this.fetchOzon(urlRating, {
                     method: 'post',
                     body: JSON.stringify(requestRating),
                     headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-                })
+                }, context)
     
                 if (resRating.status !== 200) {
                     const msg = 'Ошибка запроса на Ozon: ' + resRating.statusText
@@ -928,7 +943,7 @@ export class OzonChannelHandler extends ChannelHandler {
             wasData = true
         }
 
-        const attrs = await this.getAttributes(channel, categoryConfig.id)
+        const attrs = await this.getAttributes(channel, categoryConfig.id, context)
 
         if (!videoUrlsValue) {
             await this.processItemVideo(channel, item, context, product, attrs, complex_attributes)
@@ -987,7 +1002,7 @@ export class OzonChannelHandler extends ChannelHandler {
                             for (let j = 0; j < value.length; j++) {
                                 let elem = value[j];
                                 if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
-                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem)
+                                const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem, context)
                                 if (!ozonValue) {
                                     const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/' + ozonCategoryId + '/' + ozonTypeId + ')'
                                     context.log += msg                      
@@ -999,7 +1014,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         } else if (typeof value === 'object') {
                             data.values.push(value)
                         } else {
-                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value)
+                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value, context)
                             if (!ozonValue) {
                                 const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/'  + ozonCategoryId + '/' + ozonTypeId + ')'
                                 context.log += msg                      
@@ -1071,7 +1086,7 @@ export class OzonChannelHandler extends ChannelHandler {
                         for (let j = 0; j < value.length; j++) {
                             let elem = value[j];
                             if (elem && (typeof elem === 'string' || elem instanceof String)) elem = elem.trim()
-                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem)
+                            const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, elem, context)
                             if (!ozonValue) {
                                 const msg = 'Значение "' + elem + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/' + ozonCategoryId + '/' + ozonTypeId + ')'
                                 context.log += msg                      
@@ -1083,7 +1098,7 @@ export class OzonChannelHandler extends ChannelHandler {
                     } else if (typeof value === 'object') {
                         currentValArr.push(value)
                     } else {
-                        const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value)
+                        const ozonValue = await this.generateValue(channel, ozonCategoryId, ozonTypeId, ozonAttrId, attr.dictionary, value, context)
                         if (!ozonValue) {
                             const msg = 'Значение "' + value + '" не найдено в справочнике для атрибута "' + attr.name + '" для категории: ' + categoryConfig.name + ' (' + ozonAttrId + '/'  + ozonCategoryId + '/' + ozonTypeId + ')'
                             context.log += msg                      
@@ -1226,11 +1241,11 @@ export class OzonChannelHandler extends ChannelHandler {
             return changedValues
         }
 
-        const res = await fetch(url, {
+        const res = await this.fetchOzon(url, {
             method: 'post',
             body:    JSON.stringify(request),
             headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-        })
+        }, context)
         logger.info("Response status from Ozon: " + res.status)
         if (res.status !== 200) {
             const text = await res.text()
@@ -1251,11 +1266,11 @@ export class OzonChannelHandler extends ChannelHandler {
             const log2 = "Sending request to Ozon to check task id: " + taskId
             logger.info(log2)
             if (channel.config.debug) context.log += log2+'\n'
-            const res2 = await fetch('https://api-seller.ozon.ru/v1/product/import/info', {
+            const res2 = await this.fetchOzon('https://api-seller.ozon.ru/v1/product/import/info', {
                 method: 'post',
                 body:    JSON.stringify({task_id: taskId}),
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
+            }, context)
             if (res2.status !== 200) {
                 const text = await res2.text()
                 const msg = 'Ошибка запроса на Ozon: ' + res2.statusText + "   " + text
@@ -1330,11 +1345,11 @@ export class OzonChannelHandler extends ChannelHandler {
         const logPr = "Sending request to Ozon: " + existingProductInfoUrl + " => " + JSON.stringify(existingProductInfoReq)
         logger.info(logPr)
         if (channel.config.debug) context.log += logPr+'\n'
-        const existingProductInfoRes = await fetch(existingProductInfoUrl, {
+        const existingProductInfoRes = await this.fetchOzon(existingProductInfoUrl, {
             method: 'post',
             body:    JSON.stringify(existingProductInfoReq),
             headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-        })
+        }, context)
         logger.info("Response status from Ozon: " + existingProductInfoRes.status)
         if (existingProductInfoRes.status !== 200) {
             const text = await existingProductInfoRes.text()
@@ -1361,11 +1376,11 @@ export class OzonChannelHandler extends ChannelHandler {
         logger.info(log)
         if (channel.config.debug) context.log += log + '\n'
 
-        const existingDataRes = await fetch(existingDataUrl, {
+        const existingDataRes = await this.fetchOzon(existingDataUrl, {
             method: 'post',
             body: JSON.stringify(existingDataReq),
             headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-        })
+        }, context)
         logger.info("Response status from Ozon: " + existingDataRes.status)
         if (existingDataRes.status !== 200) {
             const text = await existingDataRes.text()
@@ -1617,7 +1632,7 @@ export class OzonChannelHandler extends ChannelHandler {
         }
     }
 
-    private async generateValue(channel: Channel, ozonCategoryId: number, ozonTypeId: number|null, ozonAttrId: number, dictionary: boolean, value: any) {
+    private async generateValue(channel: Channel, ozonCategoryId: number, ozonTypeId: number|null, ozonAttrId: number, dictionary: boolean, value: any, context?: JobContext) {
         if (dictionary) {
             let dict: any[] | string | undefined = this.cache.get('dict_'+ozonCategoryId+'_'+ozonAttrId+'_'+ozonTypeId)
             if (!dict) {
@@ -1637,11 +1652,11 @@ export class OzonChannelHandler extends ChannelHandler {
                             "limit": 5000
                         }
                         if (channel.config.debug) console.log('generateValue - request to https://api-seller.ozon.ru/v1/description-category/attribute/values '+JSON.stringify(body))
-                        res = await fetch('https://api-seller.ozon.ru/v1/description-category/attribute/values', {
+                        res = await this.fetchOzon('https://api-seller.ozon.ru/v1/description-category/attribute/values', {
                             method: 'post',
                             body:    JSON.stringify(body),
                             headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-                        })
+                        }, context)
                     } else {
                         const body = {
                             "attribute_id": ozonAttrId,
@@ -1651,11 +1666,11 @@ export class OzonChannelHandler extends ChannelHandler {
                             "limit": 5000
                         }
                         if (channel.config.debug) console.log('generateValue - request to https://api-seller.ozon.ru/v2/category/attribute/values '+JSON.stringify(body))
-                        res = await fetch('https://api-seller.ozon.ru/v2/category/attribute/values', {
+                        res = await this.fetchOzon('https://api-seller.ozon.ru/v2/category/attribute/values', {
                             method: 'post',
                             body:    JSON.stringify(body),
                             headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-                        })
+                        }, context)
                     }
                     const json = await res.json()
                     if (channel.config.debug) console.log(`generateValue - response: result length ${json.result.length}, has_next: ${json.has_next} `)
@@ -1698,12 +1713,12 @@ export class OzonChannelHandler extends ChannelHandler {
         }
     }
 
-    public async getAttributes(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
+    public async getAttributes(channel: Channel, categoryId: string, context?: JobContext): Promise<ChannelAttribute[]> {
         const newVersion = categoryId.indexOf(NEW_VER_DELIMETER) > 0
         if (newVersion) {
-            return await this.getAttributesNew(channel, categoryId)
+            return await this.getAttributesNew(channel, categoryId, context)
         } else {
-            return await this.getAttributesOld(channel, categoryId)
+            return await this.getAttributesOld(channel, categoryId, context)
         }
     }
 
@@ -1714,7 +1729,7 @@ export class OzonChannelHandler extends ChannelHandler {
         let tree:ChannelCategory | undefined = this.cache.get('categories')
         if (! tree) {
             tree  = {id: '', name: 'root', children: []}
-            const res = await fetch('https://api-seller.ozon.ru/v2/category/tree?language=DEFAULT', {
+            const res = await this.fetchOzon('https://api-seller.ozon.ru/v2/category/tree?language=DEFAULT', {
                 method: 'post',
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
             })
@@ -1735,7 +1750,7 @@ export class OzonChannelHandler extends ChannelHandler {
             }  
         })
     }
-    public async getAttributesOld(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
+    public async getAttributesOld(channel: Channel, categoryId: string, context?: JobContext): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_'+categoryId)
         if (! data) {
             const query = {
@@ -1744,11 +1759,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 language: "DEFAULT"
               }
               logger.info("Sending request to Ozon: https://api-seller.ozon.ru/v3/category/attribute => " + JSON.stringify(query))
-              const res = await fetch('https://api-seller.ozon.ru/v3/category/attribute', {
+              const res = await this.fetchOzon('https://api-seller.ozon.ru/v3/category/attribute', {
                 method: 'post',
                 body:    JSON.stringify(query),
                 headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
+            }, context)
             if (res.status !== 200) {
                 const text = await res.text()
                 throw new Error("Failed to query attributes with error: " + res.statusText+", text: " + text)
@@ -1787,7 +1802,7 @@ export class OzonChannelHandler extends ChannelHandler {
         let tree:ChannelCategory | undefined = this.cache.get('categories_new')
         if (! tree) {
             tree  = {id: '', name: 'root', children: []}
-            const res = await fetch('https://api-seller.ozon.ru/v1/description-category/tree', {
+            const res = await this.fetchOzon('https://api-seller.ozon.ru/v1/description-category/tree', {
                 method: 'post',
                 headers: { 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
             })
@@ -1809,7 +1824,7 @@ export class OzonChannelHandler extends ChannelHandler {
         })
     }
 
-    public async getAttributesNew(channel: Channel, categoryId: string): Promise<ChannelAttribute[]> {
+    public async getAttributesNew(channel: Channel, categoryId: string, context?: JobContext): Promise<ChannelAttribute[]> {
         let data = this.cache.get('attr_'+categoryId)
         if (! data) {
             const tmp = categoryId.substring(4)
@@ -1822,11 +1837,11 @@ export class OzonChannelHandler extends ChannelHandler {
                 language: "DEFAULT"
               }
               logger.info("Sending request to Ozon: https://api-seller.ozon.ru/v1/description-category/attribute => " + JSON.stringify(query))
-              const res = await fetch('https://api-seller.ozon.ru/v1/description-category/attribute', {
+              const res = await this.fetchOzon('https://api-seller.ozon.ru/v1/description-category/attribute', {
                 method: 'post',
                 body:    JSON.stringify(query),
                 headers: { 'Content-Type': 'application/json', 'Client-Id': channel.config.ozonClientId, 'Api-Key': channel.config.ozonApiKey }
-            })
+            }, context)
             if (res.status !== 200) {
                 const text = await res.text()
                 throw new Error("Failed to query attributes with error: " + res.statusText+", text: " + text)
@@ -1867,7 +1882,7 @@ export class OzonChannelHandler extends ChannelHandler {
         const attrs = await this.getAttributes(channel, categoryId)
         const attr = attrs.find(elem => elem.id == attributeId)
         if (attr && attr.dictionaryLinkPost) {
-            const resp =await fetch(attr.dictionaryLink!, {
+            const resp =await this.fetchOzon(attr.dictionaryLink!, {
                 method: 'POST',
                 headers: attr.dictionaryLinkPost.headers,
                 body: JSON.stringify(attr.dictionaryLinkPost.body)

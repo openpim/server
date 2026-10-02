@@ -11,6 +11,7 @@ import { OzonChannelHandler } from "./ozon/OzonChannelHandler"
 import { YMChannelHandler } from "./ym/YMChannelHandler"
 import { YandexChannelHandler } from "./yandex/YandexChannelHandler"
 import { DnsChannelHandler } from "./dns/DnsChannelHandler"
+import { MVideoChannelHandler } from "./mvideo/MVideoChannelHandler"
 import Context from "../context"
 
 export class ChannelsManager {
@@ -196,6 +197,7 @@ export class ChannelsManager {
     private ymChannelHandler = new YMChannelHandler()
     private yandexChannelHandler = new YandexChannelHandler()
     private dnsChannelHandler = new DnsChannelHandler()
+    private mvideoChannelHandler = new MVideoChannelHandler()
     public getHandler(channel: Channel): ChannelHandler {
         if (channel.type === 1 || channel.type === 5 || channel.type === 6 || channel.type === 7 || channel.type === 8) return this.extChannelHandler
         // if (channel.type === 2) return this.wbChannelHandler
@@ -204,6 +206,7 @@ export class ChannelsManager {
         if (channel.type === 4) return this.ymChannelHandler
         if (channel.type === 9) return this.yandexChannelHandler
         if (channel.type === 10) return this.dnsChannelHandler
+        if (channel.type === 11) return this.mvideoChannelHandler
         throw new Error('Failed to find handler for channel type: ' + channel.type)
     }
 }

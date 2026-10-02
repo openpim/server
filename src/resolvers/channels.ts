@@ -28,6 +28,8 @@ export default {
                     channel.config.ozonApiKey = '*****'
                 } else if (channel.type === 10 && channel.config.dnsApiToken) { // DNS
                     channel.config.dnsApiToken = '*****'
+                } else if (channel.type === 11 && channel.config.mvideoApiKey) {
+                    channel.config.mvideoApiKey = '*****'
                 }
             })
             return cloned
@@ -313,6 +315,8 @@ export default {
                     config.ozonApiKey = chan.config.ozonApiKey
                 } else if (type === 10 && config.dnsApiToken === '*****') { // DNS
                     config.dnsApiToken = chan.config.dnsApiToken
+                } else if (chan.type === 11 && config.mvideoApiKey === '*****') {
+                    config.mvideoApiKey = chan.config.mvideoApiKey
                 }
                 chan.config = config
             }
@@ -321,7 +325,11 @@ export default {
             if (mappings) {
                 chan.mappings = updateChannelMappings(context, chan, mappings, conflictedCategories)
             }
-            if (runtime) chan.runtime = runtime
+            if (runtime) chan.runtime = chan.type === 11 ? {
+                ...runtime,
+                mvideoAcceptedTasks: chan.runtime.mvideoAcceptedTasks || [],
+                mvideoRetryAt: chan.runtime.mvideoRetryAt || 0
+            } : runtime
             chan.updatedBy = context.getCurrentUser()!.login
             await sequelize.transaction(async (t) => {
                 await chan!.save({ transaction: t })
