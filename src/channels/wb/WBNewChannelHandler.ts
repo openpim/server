@@ -8,10 +8,10 @@ import logger from "../../logger"
 import { sequelize } from '../../models'
 import * as uuid from "uuid"
 import * as fs from 'fs'
-import { Op } from 'sequelize'
+import { Op, Transaction } from 'sequelize'
 import { ItemRelation } from '../../models/itemRelations'
 import { request } from 'http'
-import { ModelManager } from '../../models/manager'
+import { ModelManager, ModelsManager } from '../../models/manager'
 
 interface JobContext {
     log: string
@@ -405,6 +405,7 @@ export class WBNewChannelHandler extends ChannelHandler {
 
                     await sequelize.transaction(async (t) => {
                         await item.save({ transaction: t })
+                        await this.syncCertificateStatuses(channel, item, card.documents, context, language, t)
                     })
                 } else {
                     let msg = "Ошибка, не найден товар по артикулу для синхронизации: " + card.vendorCode
@@ -413,6 +414,88 @@ export class WBNewChannelHandler extends ChannelHandler {
             } else {
                 context.log += 'новых данных не получено\n'
             }
+        }
+    }
+
+    private getWBVerdictValue(verdict: any): string | undefined {
+        if (verdict?.verified !== true) return 'awaiting_verification'
+        if (verdict.status === 1) return 'approved'
+        if (verdict.status === 2) {
+            const reason = typeof verdict.reason === 'string' ? verdict.reason.trim() : ''
+            return reason || 'unknown'
+        }
+        return undefined
+    }
+
+    private async syncCertificateStatuses(channel: Channel, item: Item, documents: any, context: JobContext, language: string, transaction: Transaction) {
+        if (!channel.config.wbGetCertificateStatus) return
+
+        // The overall verdict also includes non-document checks; it belongs in
+        // the job log and must never replace a certificate's own verdict.
+        const overallStatus = this.getWBVerdictValue(documents?.overallVerdict)
+        context.log += `Общий результат проверки карточки ${item.identifier}: ${overallStatus === undefined ? 'проверка не завершена' : overallStatus}\n`
+
+        const statusAttr = channel.config.wbCertificateStatusAttr
+        const numberAttr = channel.config.wbCertificateNumberAttr
+        const relationIds: number[] = Array.isArray(channel.config.wbCertificateRelations)
+            ? [...new Set<number>(channel.config.wbCertificateRelations.map(Number))].filter(id => Number.isSafeInteger(id) && id > 0)
+            : []
+        if (!statusAttr || !numberAttr || relationIds.length === 0) {
+            context.log += 'Не настроены атрибуты или зависимости для получения статусов сертификатов\n'
+            return
+        }
+        const statusAttribute = ModelsManager.getInstance().getModelManager(channel.tenantId).getAttributeByIdentifier(statusAttr, true)?.attr
+        if (!statusAttribute || statusAttribute.type !== 1 || !Array.isArray(statusAttribute.relations)
+            || !relationIds.every(id => statusAttribute.relations.map(Number).includes(id))) {
+            context.log += `Атрибут статуса сертификата ${statusAttr} должен быть текстовым и доступным на всех выбранных зависимостях\n`
+            return
+        }
+        if (!Array.isArray(documents?.items) || documents.items.length === 0) return
+
+        const relations = await ItemRelation.findAll({
+            where: {
+                tenantId: channel.tenantId,
+                relationId: { [Op.in]: relationIds },
+                [Op.or]: [{ itemId: item.id }, { targetId: item.id }]
+            },
+            transaction
+        })
+        if (relations.length === 0) return
+
+        const certificateIds = [...new Set(relations.map(relation => relation.itemId === item.id ? relation.targetId : relation.itemId))]
+        const certificates = await Item.findAll({
+            where: { tenantId: channel.tenantId, id: { [Op.in]: certificateIds } },
+            transaction
+        })
+        const certificatesById = new Map(certificates.map(certificate => [certificate.id, certificate]))
+        for (const relation of relations) {
+            const certificateId = relation.itemId === item.id ? relation.targetId : relation.itemId
+            const certificate = certificatesById.get(certificateId)
+            let number = certificate?.values?.[numberAttr]
+            if (number && typeof number === 'object') number = number[language]
+            if (typeof number !== 'string' && typeof number !== 'number') continue
+            number = String(number).trim()
+            if (!number) continue
+
+            const matches = documents.items.filter((document: any) => typeof document?.number === 'string' && document.number.trim() === number)
+            if (matches.length === 0) continue
+            // If WB returned several documents with this number, a failed or
+            // unfinished check must not be hidden by another successful check.
+            const errors = matches.filter((document: any) => document.verdict?.verified === true && document.verdict.status === 2)
+                .map((document: any) => this.getWBVerdictValue(document.verdict))
+            const results = matches.map((document: any) => this.getWBVerdictValue(document.verdict))
+            const value = errors.length > 0 ? [...new Set(errors)].join('; ')
+                : results.includes('awaiting_verification') ? 'awaiting_verification'
+                    : results.every((result: any) => result === 'approved') ? 'approved' : undefined
+            if (value === undefined) continue
+            const previous = relation.values?.[statusAttr]
+            if ((statusAttribute.languageDependent ? previous?.[language] : previous) === value) continue
+
+            const localized = previous && typeof previous === 'object' && !Array.isArray(previous) ? previous : {}
+            relation.values = { ...relation.values, [statusAttr]: statusAttribute.languageDependent ? { ...localized, [language]: value } : value }
+            relation.changed('values', true)
+            await relation.save({ transaction })
+            context.log += `Сертификат ${number}, зависимость ${relation.identifier}: ${value}\n`
         }
     }
 
