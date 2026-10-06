@@ -547,8 +547,17 @@ export class WBNewChannelHandler extends ChannelHandler {
                 })
 
                 // await new Promise(resolve => setTimeout(resolve, 5000))
-            } catch (err) {
+            } catch (err: any) {
                 logger.error("Failed to process item with id: " + item.id + " for tenant: " + item.tenantId, err)
+                const data = item.channels[channel.identifier]
+                data.status = 3
+                data.wbError = false
+                data.message = `Ошибка обработки товара: ${err.message}`
+                context.log += data.message+'\n'
+                item.changed('channels', true)
+                await sequelize.transaction(async (t) => {
+                    await item.save({transaction: t})
+                })
             }
         } else {
             context.log += 'Запись с идентификатором: ' + item.identifier + ' не подходит под конфигурацию канала.\n'
