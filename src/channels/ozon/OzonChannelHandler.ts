@@ -275,7 +275,13 @@ export class OzonChannelHandler extends ChannelHandler {
         if (result.errors) status.errors = result.errors
         context.log += '   статус товара: ' + JSON.stringify(status)
 
-        if (status.is_created && !status.is_failed && status.moderate_status !== 'declined' && !(status.errors?.length > 0)) {
+        if (status.status_description === 'Убран из продажи') {
+            item.channels[channel.identifier].status = 3
+            item.channels[channel.identifier].message = JSON.stringify(status)
+            item.channels[channel.identifier].syncedAt = new Date().getTime()
+            item.channels[channel.identifier].ozonError = true
+            item.changed('channels', true)
+        } else if (status.is_created && !status.is_failed && status.moderate_status !== 'declined' && !(status.errors?.length > 0)) {
             item.channels[channel.identifier].status = 2
             item.channels[channel.identifier].message = JSON.stringify(status)
             item.channels[channel.identifier].syncedAt = new Date().getTime()
