@@ -4,6 +4,7 @@
         "fromApp": "%OPENPIM_INSTANCE_NAME%",
         "maxMessageSize": 10000,
         "truncateArrays": false,
+        "jsonToString": true,
         "output": {
             "type": "file",
             "path": "/server/request.log",
@@ -17,6 +18,7 @@
         "maxMessageSize": 10000,
         "truncateArrays": true,
         "truncateArraysRows": 3,
+        "jsonToString": true,
         "output": {
             "type": "console.out"
         }
@@ -27,6 +29,7 @@
         "maxMessageSize": 10000,
         "truncateArrays": true,
         "truncateArraysRows": 3,
+        "jsonToString": true,
         "output": {
             "type": "console.error"
         }
@@ -35,6 +38,7 @@
     "enabled": true,
     "fromApp": "PIM",
     "maxMessageSize": 10000,
+    "jsonToString": true,
     "output": {
       "type": "elasticsearch",
       "node": "url",

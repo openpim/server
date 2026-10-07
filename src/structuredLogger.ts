@@ -34,6 +34,7 @@ export interface StructuredLogConfig {
     maxMessageSize?: number
     truncateArrays?: boolean
     truncateArraysRows?: number
+    jsonToString?: boolean
     output?: StructuredLogOutput
 }
 
@@ -68,6 +69,7 @@ interface NormalizedConfig {
     maxMessageSize: number
     truncateArrays: boolean
     truncateArraysRows: number
+    jsonToString: boolean
     outputType: StructuredLogOutputType
     filePath: string
     fileMaxSize: number
@@ -179,6 +181,7 @@ export function normalizeStructuredLogConfig(
         maxMessageSize,
         truncateArrays: config?.truncateArrays === true,
         truncateArraysRows: positiveInteger(config?.truncateArraysRows, DEFAULT_TRUNCATE_ARRAY_ROWS),
+        jsonToString: config?.jsonToString === true,
         outputType: outputType === 'console.error' || outputType === 'file' || outputType === 'elasticsearch' ? outputType : 'console.out',
         filePath: typeof fileOutput?.path === 'string' ? fileOutput.path : '',
         fileMaxSize: Math.max(configuredFileMaxSize, maxMessageSize + 1),
@@ -292,6 +295,11 @@ function safelySerialize(value: unknown, options: SanitizationOptions = {}): str
     }
 }
 
+function replaceRequestBraces(value: string, enabled: boolean): string {
+    if (!enabled) return value
+    return value.replace(/\{/g, '[').replace(/\}/g, ']')
+}
+
 function containsArray(value: unknown, seen = new WeakSet<object>()): boolean {
     if (typeof value === 'string') {
         const trimmed = value.trim()
@@ -382,6 +390,10 @@ export function formatStructuredLog(config: StructuredLogConfig | null | undefin
         truncateArrays: normalized.truncateArrays,
         maxArrayItems: normalized.truncateArraysRows,
     })
+    const serializedRequest = replaceRequestBraces(
+        safelySerialize(input.request),
+        normalized.jsonToString
+    )
     const record: StructuredLogRecord = {
         '__from_app': normalized.fromApp,
         '@timestamp': input.timestamp ?? Date.now(),
@@ -390,7 +402,7 @@ export function formatStructuredLog(config: StructuredLogConfig | null | undefin
         request_parameters: truncateUtf8(safelySerialize(input.request_parameters), fieldLimit),
         login: truncateUtf8(safelySerialize(input.login || 'unknown'), fieldLimit),
         execution_time: Math.max(0, Math.round(input.execution_time)),
-        request: truncateUtf8(safelySerialize(input.request), fieldLimit),
+        request: truncateUtf8(serializedRequest, fieldLimit),
         response: preserveStructuredResponse ? serializedResponse : truncateUtf8(serializedResponse, fieldLimit),
         status: input.status,
     }
