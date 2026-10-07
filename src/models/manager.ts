@@ -529,7 +529,6 @@ export class ModelsManager {
     }
 
     public async initAttributes(where: WhereOptions | undefined) {
-        // TODO optimize this to load data by 1 select with join
         const groups = await AttrGroup.findAll({
             where: where,
             include: [{ model: Attribute }],
@@ -543,11 +542,13 @@ export class ModelsManager {
             if (!mng || mng.getTenantId() !== grp.tenantId) {
                 mng = this.tenantMap[grp.tenantId]
             }
-            mng.getAttrGroups().push(new AttrGroupWrapper(grp, await grp.getAttributes()))
+            const attributes = grp.get('Attributes') as Attribute[]
+            mng.getAttrGroups().push(new AttrGroupWrapper(grp, attributes))
         }
 
         Object.values(this.tenantMap).forEach(mng => mng.rebuildAttributeIndexes())
     }
+
 
     public async initRelations(where: WhereOptions | undefined) {
         const rels = await Relation.findAll({
