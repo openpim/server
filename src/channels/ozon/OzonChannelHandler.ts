@@ -275,7 +275,7 @@ export class OzonChannelHandler extends ChannelHandler {
         if (result.errors) status.errors = result.errors
         context.log += '   статус товара: ' + JSON.stringify(status)
 
-        if (status.status_description === 'Убран из продажи') {
+        if (status.status_description === 'Убран из продажи' && status.availabilities && Array.isArray(status.availabilities) && status.availabilities.some((elem:any) => elem.reasons?.some((reason:any) => reason.id == 42))) {
             item.channels[channel.identifier].status = 3
             item.channels[channel.identifier].message = JSON.stringify(status)
             item.channels[channel.identifier].syncedAt = new Date().getTime()
