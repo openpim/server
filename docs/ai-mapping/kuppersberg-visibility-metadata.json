@@ -1,0 +1,2221 @@
+{
+  "date": "2026-10-08T08:57:03.480Z",
+  "database": "kuppersberg",
+  "channel": "ym",
+  "mode": "metadata-only; no LLM request",
+  "visibilityFilter": true,
+  "visibilityAlgorithm": "catalog subtrees plus incoming sources of selected products; preserve unknown relation domains and standard product attributes",
+  "channelId": 21,
+  "tenant": "default",
+  "model": "deepseek-v4.1-flash",
+  "timeoutMs": 300000,
+  "batchSize": 5,
+  "methodology": "Up to 5 existing direct mappings plus up to 5 empty rows per category. Existing mappings are a reference, not a manually validated gold standard. No mappings are saved.",
+  "categories": [
+    {
+      "id": "90601",
+      "name": "Все товары/Бытовая техника/Мелкая техника для кухни/Измельчение и смешивание/Кухонные комбайны и измельчители",
+      "liveAttributes": 30,
+      "poolBefore": 5099,
+      "poolAfter": 4000,
+      "selected": 5,
+      "elapsedMs": 0,
+      "referenceCount": 5,
+      "referenceInShortlist": 3,
+      "agreesWithReference": 0,
+      "proposed": 0,
+      "rows": [
+        {
+          "id": "yandexattr_14805583",
+          "name": "Единиц в одной упаковке, шт (Number)",
+          "numeric": true,
+          "dictionary": false,
+          "reference": "ymattr_14805583",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "ymattr_14805583",
+              "name": "Единиц в одной упаковке, шт"
+            },
+            {
+              "attrIdent": "attr_20767",
+              "name": "Количество таблеток/капсул в одной упаковке, шт"
+            },
+            {
+              "attrIdent": "attr_8513",
+              "name": "Количество в упаковке, шт"
+            },
+            {
+              "attrIdent": "attr_8962",
+              "name": "Единиц в одном товаре"
+            },
+            {
+              "attrIdent": "dataWB21",
+              "name": "Количество предметов в упаковке (шт.) ВБ"
+            },
+            {
+              "attrIdent": "mv1753",
+              "name": "Нагрев с одной стороны"
+            },
+            {
+              "attrIdent": "mv614242",
+              "name": "Количество в упаковке"
+            },
+            {
+              "attrIdent": "mv625010",
+              "name": "Габариты в упаковке (В*Ш*Г)"
+            },
+            {
+              "attrIdent": "oz_weight",
+              "name": "Вес товара в упаковке, г"
+            },
+            {
+              "attrIdent": "wbattr_179792",
+              "name": "Количество предметов в упаковке"
+            },
+            {
+              "attrIdent": "wbattr_90702",
+              "name": "Количество предметов в упаковке (шт.) (шт.) [число]"
+            },
+            {
+              "attrIdent": "accessories_link",
+              "name": "ACCESSORIES_LINK"
+            },
+            {
+              "attrIdent": "actions_block",
+              "name": "ACTIONS_BLOCK"
+            },
+            {
+              "attrIdent": "adres_dostavki",
+              "name": "ADRES_DOSTAVKI"
+            },
+            {
+              "attrIdent": "aerogril",
+              "name": "AEROGRIL"
+            },
+            {
+              "attrIdent": "aerogril_1",
+              "name": "AEROGRIL_1"
+            },
+            {
+              "attrIdent": "after_characteristic",
+              "name": "AFTER_CHARACTERISTIC"
+            },
+            {
+              "attrIdent": "air_wash",
+              "name": "AIR_WASH"
+            },
+            {
+              "attrIdent": "alfa_market_cat",
+              "name": "ALFA_MARKET_CAT"
+            },
+            {
+              "attrIdent": "amortizator",
+              "name": "AMORTIZATOR"
+            },
+            {
+              "attrIdent": "antiallergiya",
+              "name": "ANTIALLERGIYA"
+            },
+            {
+              "attrIdent": "antiallergiya_1",
+              "name": "ANTIALLERGIYA_1"
+            },
+            {
+              "attrIdent": "antiallergiya_par",
+              "name": "ANTIALLERGIYA_PAR"
+            },
+            {
+              "attrIdent": "antibakterialnaya_sistema",
+              "name": "ANTIBAKTERIALNAYA_SISTEMA"
+            },
+            {
+              "attrIdent": "antibakterialnyy_plastik",
+              "name": "ANTIBAKTERIALNYY_PLASTIK"
+            },
+            {
+              "attrIdent": "antibakterialnyy_plastik_1",
+              "name": "ANTIBAKTERIALNYY_PLASTIK_1"
+            },
+            {
+              "attrIdent": "antiprigarnoe_pokrytie",
+              "name": "ANTIPRIGARNOE_POKRYTIE"
+            },
+            {
+              "attrIdent": "ArchivedOZ1",
+              "name": "В архиве на Озон 1"
+            },
+            {
+              "attrIdent": "ArchivedOZ3",
+              "name": "В архиве на Озон регионы"
+            },
+            {
+              "attrIdent": "aromat",
+              "name": "AROMAT"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_21194330",
+          "name": "Тип",
+          "numeric": false,
+          "dictionary": true,
+          "reference": "ymattr_21194330_90601",
+          "referenceInShortlist": false,
+          "candidates": [
+            {
+              "attrIdent": "mv862",
+              "name": "Тип"
+            },
+            {
+              "attrIdent": "attr_10806_17039646_95262",
+              "name": "Тип панели (плиты) (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_11035_17039627_94973",
+              "name": "Тип управления (Блендер)"
+            },
+            {
+              "attrIdent": "attr_11035_17039628_504866213",
+              "name": "Тип управления (Кофеварка)"
+            },
+            {
+              "attrIdent": "attr_11035_17039628_94971",
+              "name": "Тип управления (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_11035_17039630_96031",
+              "name": "Тип управления (Тостер)"
+            },
+            {
+              "attrIdent": "attr_11035_17039631_94968",
+              "name": "Тип управления (Электрический чайник)"
+            },
+            {
+              "attrIdent": "attr_11035_17039632_94047",
+              "name": "Тип управления (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_11035_17039633_93828",
+              "name": "Тип управления (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_11035_17039634_93822",
+              "name": "Тип управления (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_11035_17039634_93826",
+              "name": "Тип управления (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_11035_17039646_95262",
+              "name": "Тип управления (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_11035_17039647_93827",
+              "name": "Тип управления (Кухонная вытяжка)"
+            },
+            {
+              "attrIdent": "attr_12486_17039628_94971",
+              "name": "Тип установки (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_12486_17039633_93828",
+              "name": "Тип установки (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_12486_17039633_93829",
+              "name": "Тип установки (Сушильная машина)"
+            },
+            {
+              "attrIdent": "attr_12486_17039634_93821",
+              "name": "Тип установки (Винный шкаф)"
+            },
+            {
+              "attrIdent": "attr_12486_17039634_93822",
+              "name": "Тип установки (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_12486_17039634_93826",
+              "name": "Тип установки (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_12486_17039643_94972",
+              "name": "Тип установки (Микроволновая печь)"
+            },
+            {
+              "attrIdent": "attr_12486_17039648_94566",
+              "name": "Тип установки (Посудомоечная машина)"
+            },
+            {
+              "attrIdent": "attr_4686_17039631_94968",
+              "name": "Тип нагревательного элемента (Электрический чайник)"
+            },
+            {
+              "attrIdent": "attr_4710_17039627_94973",
+              "name": "Тип блендера/комбайна (Блендер)"
+            },
+            {
+              "attrIdent": "attr_4722_17039628_504866213",
+              "name": "Тип используемого кофе (Кофеварка)"
+            },
+            {
+              "attrIdent": "attr_4722_17039628_94971",
+              "name": "Тип используемого кофе (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_4750_17039632_94048",
+              "name": "Тип конфорок (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_4799_17039647_93827",
+              "name": "Тип освещения вытяжки (Кухонная вытяжка)"
+            },
+            {
+              "attrIdent": "attr_4804_17039632_94047",
+              "name": "Тип питания (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_4804_17039632_94048",
+              "name": "Тип питания (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_4810_17039632_94047",
+              "name": "Тип установки (Духовой шкаф)"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_39549730",
+          "name": "Мультирезка (Boolean)",
+          "numeric": false,
+          "dictionary": false,
+          "reference": "ymattr_39549730",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "ymattr_39549730",
+              "name": "Мультирезка"
+            },
+            {
+              "attrIdent": "accessories_link",
+              "name": "ACCESSORIES_LINK"
+            },
+            {
+              "attrIdent": "actions_block",
+              "name": "ACTIONS_BLOCK"
+            },
+            {
+              "attrIdent": "adres_dostavki",
+              "name": "ADRES_DOSTAVKI"
+            },
+            {
+              "attrIdent": "aerogril",
+              "name": "AEROGRIL"
+            },
+            {
+              "attrIdent": "aerogril_1",
+              "name": "AEROGRIL_1"
+            },
+            {
+              "attrIdent": "after_characteristic",
+              "name": "AFTER_CHARACTERISTIC"
+            },
+            {
+              "attrIdent": "air_wash",
+              "name": "AIR_WASH"
+            },
+            {
+              "attrIdent": "alfa_market_cat",
+              "name": "ALFA_MARKET_CAT"
+            },
+            {
+              "attrIdent": "amortizator",
+              "name": "AMORTIZATOR"
+            },
+            {
+              "attrIdent": "antiallergiya",
+              "name": "ANTIALLERGIYA"
+            },
+            {
+              "attrIdent": "antiallergiya_1",
+              "name": "ANTIALLERGIYA_1"
+            },
+            {
+              "attrIdent": "antiallergiya_par",
+              "name": "ANTIALLERGIYA_PAR"
+            },
+            {
+              "attrIdent": "antibakterialnaya_sistema",
+              "name": "ANTIBAKTERIALNAYA_SISTEMA"
+            },
+            {
+              "attrIdent": "antibakterialnyy_plastik",
+              "name": "ANTIBAKTERIALNYY_PLASTIK"
+            },
+            {
+              "attrIdent": "antibakterialnyy_plastik_1",
+              "name": "ANTIBAKTERIALNYY_PLASTIK_1"
+            },
+            {
+              "attrIdent": "antiprigarnoe_pokrytie",
+              "name": "ANTIPRIGARNOE_POKRYTIE"
+            },
+            {
+              "attrIdent": "ArchivedOZ1",
+              "name": "В архиве на Озон 1"
+            },
+            {
+              "attrIdent": "ArchivedOZ3",
+              "name": "В архиве на Озон регионы"
+            },
+            {
+              "attrIdent": "aromat",
+              "name": "AROMAT"
+            },
+            {
+              "attrIdent": "aromat_1",
+              "name": "AROMAT_1"
+            },
+            {
+              "attrIdent": "article",
+              "name": "Артикул"
+            },
+            {
+              "attrIdent": "askaron_reviews_average",
+              "name": "ASKARON_REVIEWS_AVERAGE"
+            },
+            {
+              "attrIdent": "askaron_reviews_count",
+              "name": "ASKARON_REVIEWS_COUNT"
+            },
+            {
+              "attrIdent": "askaron_reviews_rating",
+              "name": "ASKARON_REVIEWS_RATING"
+            },
+            {
+              "attrIdent": "attached_to_slider",
+              "name": "ATTACHED_TO_SLIDER"
+            },
+            {
+              "attrIdent": "attr_10078_17039633_93828",
+              "name": "Программы стирки (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039627_94973",
+              "name": "Цвет товара (Блендер)"
+            },
+            {
+              "attrIdent": "attr_10096_17039628_504866213",
+              "name": "Цвет товара (Кофеварка)"
+            },
+            {
+              "attrIdent": "attr_10096_17039628_94971",
+              "name": "Цвет товара (Автоматическая кофемашина)"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_14805494",
+          "name": "Максимальная мощность, Вт (Number)",
+          "numeric": true,
+          "dictionary": false,
+          "reference": "ymattr_14805494",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "attr_Maksimal_nayaMoschnost_",
+              "name": "Максимальная мощность: (Блендеры)"
+            },
+            {
+              "attrIdent": "attr_Maksimal_nayaMoschnost_Vt",
+              "name": "Максимальная мощность, Вт (Кофемашины)"
+            },
+            {
+              "attrIdent": "attr_Maksimal_nayaMoschnost_Vt2",
+              "name": "Максимальная мощность, Вт (Шкафы для подогрева посуды)"
+            },
+            {
+              "attrIdent": "attr_Maksimal_nayaMoschnost_Vt3",
+              "name": "Максимальная мощность, Вт. (Мини-печи)"
+            },
+            {
+              "attrIdent": "mv11949",
+              "name": "Максимальная мощность"
+            },
+            {
+              "attrIdent": "ymattr_14805494",
+              "name": "Максимальная потребляемая мощность, Вт"
+            },
+            {
+              "attrIdent": "attr_11079",
+              "name": "Мощность подсветки, Вт"
+            },
+            {
+              "attrIdent": "attr_4770",
+              "name": "Мощность варочной панели, Вт"
+            },
+            {
+              "attrIdent": "attr_4781",
+              "name": "Макс. мощность СВЧ, Вт"
+            },
+            {
+              "attrIdent": "attr_4783",
+              "name": "Макс. мощность гриля, Вт"
+            },
+            {
+              "attrIdent": "attr_4851",
+              "name": "Мощность, Вт"
+            },
+            {
+              "attrIdent": "attr_4903",
+              "name": "Потребляемая мощность, Вт"
+            },
+            {
+              "attrIdent": "attr_4927",
+              "name": "Максимальная скорость отжима, об./мин."
+            },
+            {
+              "attrIdent": "attr_4942",
+              "name": "Мощность замораживания (кг/сут)"
+            },
+            {
+              "attrIdent": "attr_8472",
+              "name": "Потребляемая мощность, Вт"
+            },
+            {
+              "attrIdent": "attr_Maksimal_nayaProizvoditel_nost_M3CH",
+              "name": "Максимальная производительность, м3/ч (Вытяжки)"
+            },
+            {
+              "attrIdent": "attr_Maksimal_nayaTemperaturaC",
+              "name": "Максимальная температура, °C (Духовые шкафы)"
+            },
+            {
+              "attrIdent": "attr_Maksimal_nayaZagruzkaSHPP",
+              "name": "Максимальная загрузка (Шкафы для подогрева посуды)"
+            },
+            {
+              "attrIdent": "attr_MaksTempMinipechi",
+              "name": "Максимальная температура, °C (Мини-печи)"
+            },
+            {
+              "attrIdent": "attr_Moschnost_",
+              "name": "Мощность (Измельчители)"
+            },
+            {
+              "attrIdent": "attr_Moschnost_Dvigatelya",
+              "name": "Мощность двигателя (Вытяжки)"
+            },
+            {
+              "attrIdent": "attr_Moschnost_GrilyaVt",
+              "name": "Мощность гриля, Вт"
+            },
+            {
+              "attrIdent": "attr_Moschnost_KonforokKVtLevaya",
+              "name": "Мощность конфорок, кВт: левая"
+            },
+            {
+              "attrIdent": "attr_Moschnost_KonforokKVtPerednyaya",
+              "name": "Мощность конфорок, кВт: передняя"
+            },
+            {
+              "attrIdent": "attr_Moschnost_KonforokKVtPerednyaya2",
+              "name": "Мощность конфорок, кВт: передняя"
+            },
+            {
+              "attrIdent": "attr_Moschnost_KonforokKVtPerednyayaLevaya",
+              "name": "Мощность конфорок, кВт: передняя левая"
+            },
+            {
+              "attrIdent": "attr_Moschnost_KonforokKVtPerednyayaLevaya2",
+              "name": "Мощность конфорок, кВт: передняя левая"
+            },
+            {
+              "attrIdent": "attr_Moschnost_KonforokKVtPerednyayaPravaya",
+              "name": "Мощность конфорок, кВт: передняя правая"
+            },
+            {
+              "attrIdent": "attr_Moschnost_KonforokKVtPerednyayaPravaya2",
+              "name": "Мощность конфорок, кВт: передняя правая"
+            },
+            {
+              "attrIdent": "attr_Moschnost_KonforokKVtPravaya",
+              "name": "Мощность конфорок, кВт: правая"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_14805551",
+          "name": "Ёмкость чаши, л (Number)",
+          "numeric": true,
+          "dictionary": false,
+          "reference": "ymattr_14805551",
+          "referenceInShortlist": false,
+          "candidates": [
+            {
+              "attrIdent": "wbattr_90631",
+              "name": "Емкость чаши измельчителя (л) [число]"
+            },
+            {
+              "attrIdent": "attr_10496",
+              "name": "Емкость резервуара для зерен, г"
+            },
+            {
+              "attrIdent": "attr_10841_17039627_94973",
+              "name": "Материал чаши (Блендер)"
+            },
+            {
+              "attrIdent": "attr_4715",
+              "name": "Объем чаши, л"
+            },
+            {
+              "attrIdent": "attr_4775_53968796_95805",
+              "name": "Внутреннее покрытие чаши (Аксессуары, запчасти для кофемашины)"
+            },
+            {
+              "attrIdent": "attr_4857",
+              "name": "Емкость для воды, л"
+            },
+            {
+              "attrIdent": "attr_Emkost_DlyaL_da",
+              "name": "Емкость для льда"
+            },
+            {
+              "attrIdent": "attr_Emkost_DlyaL_da2",
+              "name": "Емкость для льда"
+            },
+            {
+              "attrIdent": "attr_GlubinaCHashi",
+              "name": "Глубина чаши, см (Мойки композитные)"
+            },
+            {
+              "attrIdent": "attr_GlubinaDopolnitel_noiCHashiSm",
+              "name": "Глубина дополнительной чаши, см (Мойки композитные)"
+            },
+            {
+              "attrIdent": "attr_MaterialCHashi",
+              "name": "Материал чаши: (Блендеры)"
+            },
+            {
+              "attrIdent": "attr_Ob_yomCHashiL",
+              "name": "Объём чаши, л: (Блендеры)"
+            },
+            {
+              "attrIdent": "attr_RazmerDopolnitel_noiCHashi",
+              "name": "Размер дополнительной чаши (Мойки композитные)"
+            },
+            {
+              "attrIdent": "attr_RazmerOsnovnoiCHashi",
+              "name": "Размер основной чаши (Мойки композитные)"
+            },
+            {
+              "attrIdent": "mv1724",
+              "name": "Материал чаши"
+            },
+            {
+              "attrIdent": "mv3774",
+              "name": "Диаметр чаши"
+            },
+            {
+              "attrIdent": "mv620366",
+              "name": "Ширина чаши"
+            },
+            {
+              "attrIdent": "mv620367",
+              "name": "Глубина чаши"
+            },
+            {
+              "attrIdent": "mv620368",
+              "name": "Высота чаши"
+            },
+            {
+              "attrIdent": "mv620369",
+              "name": "Ширина дополнительной чаши"
+            },
+            {
+              "attrIdent": "mv620370",
+              "name": "Глубина дополнительной чаши"
+            },
+            {
+              "attrIdent": "mv620371",
+              "name": "Высота дополнительной чаши"
+            },
+            {
+              "attrIdent": "mv620372",
+              "name": "Размер чаши"
+            },
+            {
+              "attrIdent": "mv620373",
+              "name": "Размер дополнительной чаши"
+            },
+            {
+              "attrIdent": "mv621945",
+              "name": "Самоочистка чаши"
+            },
+            {
+              "attrIdent": "wbattr_112832",
+              "name": "Емкость мерного стакана (л) [число]"
+            },
+            {
+              "attrIdent": "wbattr_113717",
+              "name": "Емкость слайсера (л) [число]"
+            },
+            {
+              "attrIdent": "wbattr_115565",
+              "name": "Материал чаши блендера"
+            },
+            {
+              "attrIdent": "wbattr_65430",
+              "name": "Емкость контейнера для зерен (г) [число]"
+            },
+            {
+              "attrIdent": "ymattr_38836570",
+              "name": "Ёмкость блендера, л"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        }
+      ]
+    },
+    {
+      "id": "15450095",
+      "name": "Все товары/Бытовая техника/Крупная техника для кухни/Холодильники, морозильники, винные шкафы/Винные шкафы",
+      "liveAttributes": 30,
+      "poolBefore": 5099,
+      "poolAfter": 4004,
+      "selected": 5,
+      "elapsedMs": 0,
+      "referenceCount": 5,
+      "referenceInShortlist": 5,
+      "agreesWithReference": 0,
+      "proposed": 0,
+      "rows": [
+        {
+          "id": "yandexattr_14871214",
+          "name": "Название цвета от производителя",
+          "numeric": false,
+          "dictionary": true,
+          "reference": "ymattr_14871214_15450095",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "ymattr_14871214_15450095",
+              "name": "Название цвета от производителя (Винные шкафы)"
+            },
+            {
+              "attrIdent": "ym_vendor",
+              "name": "Название бренда или производителя"
+            },
+            {
+              "attrIdent": "attr_12141",
+              "name": "Название модели для шаблона наименования"
+            },
+            {
+              "attrIdent": "attr_12776",
+              "name": "Название аромата"
+            },
+            {
+              "attrIdent": "attr_21837",
+              "name": "Озон.Видео: название"
+            },
+            {
+              "attrIdent": "attr_4180",
+              "name": "Название"
+            },
+            {
+              "attrIdent": "attr_8789",
+              "name": "Название файла PDF"
+            },
+            {
+              "attrIdent": "attr_9048",
+              "name": "*Название модели (для объединения в одну карточку)"
+            },
+            {
+              "attrIdent": "mv620282",
+              "name": "Аромат производителя"
+            },
+            {
+              "attrIdent": "mv620311",
+              "name": "Цвет производителя"
+            },
+            {
+              "attrIdent": "oz_name",
+              "name": "Название"
+            },
+            {
+              "attrIdent": "wbattr_247321",
+              "name": "Код производителя"
+            },
+            {
+              "attrIdent": "ym_purchasePrice",
+              "name": "Себестоимость - затраты на самостоятельное производство товара или закупку у производителя или поставщиков"
+            },
+            {
+              "attrIdent": "ym_vendorCode",
+              "name": "Артикул товара от производителя"
+            },
+            {
+              "attrIdent": "ymattr_200",
+              "name": "Название группы вариантов"
+            },
+            {
+              "attrIdent": "attr_10078_17039633_93828",
+              "name": "Программы стирки (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039627_94973",
+              "name": "Цвет товара (Блендер)"
+            },
+            {
+              "attrIdent": "attr_10096_17039628_504866213",
+              "name": "Цвет товара (Кофеварка)"
+            },
+            {
+              "attrIdent": "attr_10096_17039628_94971",
+              "name": "Цвет товара (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039630_95612",
+              "name": "Цвет товара (Подогреватель посуды)"
+            },
+            {
+              "attrIdent": "attr_10096_17039630_96031",
+              "name": "Цвет товара (Тостер)"
+            },
+            {
+              "attrIdent": "attr_10096_17039631_94968",
+              "name": "Цвет товара (Электрический чайник)"
+            },
+            {
+              "attrIdent": "attr_10096_17039632_94047",
+              "name": "Цвет товара (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_10096_17039632_94048",
+              "name": "Цвет товара (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_10096_17039633_93828",
+              "name": "Цвет товара (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039633_93829",
+              "name": "Цвет товара (Сушильная машина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039634_93821",
+              "name": "Цвет товара (Винный шкаф)"
+            },
+            {
+              "attrIdent": "attr_10096_17039634_93822",
+              "name": "Цвет товара (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_10096_17039634_93826",
+              "name": "Цвет товара (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_10096_17039641_91480",
+              "name": "Цвет товара (Измельчитель бытовых отходов)"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_37705770",
+          "name": "Количество температурных зон",
+          "numeric": false,
+          "dictionary": true,
+          "reference": "ymattr_37705770_15450095",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "mv3319",
+              "name": "Количество температурных зон"
+            },
+            {
+              "attrIdent": "attr_23062_17039634_93821",
+              "name": "Количество температурных зон (Винный шкаф)"
+            },
+            {
+              "attrIdent": "ymattr_37705770_15450095",
+              "name": "Количество температурных зон (Винные шкафы)"
+            },
+            {
+              "attrIdent": "attr_11411_17039648_94566",
+              "name": "Количество температурных режимов (Посудомоечная машина)"
+            },
+            {
+              "attrIdent": "attr_KolVoTemperaturnihZon",
+              "name": "Кол-во температурных зон (Шкафы Винные)"
+            },
+            {
+              "attrIdent": "mv3390",
+              "name": "Количество температурных режимов"
+            },
+            {
+              "attrIdent": "wbattr_63034",
+              "name": "Количество температурных режимов"
+            },
+            {
+              "attrIdent": "attr_11073_17039647_93827",
+              "name": "Количество двигателей (Кухонная вытяжка)"
+            },
+            {
+              "attrIdent": "attr_11080_17039647_93827",
+              "name": "Количество ламп освещения вытяжки, шт (Кухонная вытяжка)"
+            },
+            {
+              "attrIdent": "attr_12435_17039634_93822",
+              "name": "Количество ящиков (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_4711_17039627_94973",
+              "name": "Количество скоростей (Блендер)"
+            },
+            {
+              "attrIdent": "attr_4711_17039647_93827",
+              "name": "Количество скоростей (Кухонная вытяжка)"
+            },
+            {
+              "attrIdent": "attr_4749_17039632_94048",
+              "name": "Количество конфорок (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_4749_17039646_95262",
+              "name": "Количество конфорок (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_4753_17039646_95262",
+              "name": "Количество двухконтурных конфорок (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_4754_17039646_95262",
+              "name": "Количество трехконтурных конфорок (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_4756_17039646_95262",
+              "name": "Количество конфорок с двойным рядом пламени (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_4757_17039646_95262",
+              "name": "Количество конфорок с тройным рядом пламени (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_4819_17039630_96031",
+              "name": "Количество тостов (Тостер)"
+            },
+            {
+              "attrIdent": "attr_4820_17039630_96031",
+              "name": "Количество отделений (Тостер)"
+            },
+            {
+              "attrIdent": "attr_4895_17039632_94047",
+              "name": "Количество режимов работы (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_4895_17039632_94048",
+              "name": "Количество режимов работы (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_4898_17039632_94047",
+              "name": "Количество стекол дверцы духовки (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_4898_17039632_94048",
+              "name": "Количество стекол дверцы духовки (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_4936_17039634_93822",
+              "name": "Количество компрессоров (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_4936_17039634_93826",
+              "name": "Количество компрессоров (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_4941_17039634_93821",
+              "name": "Количество камер (Винный шкаф)"
+            },
+            {
+              "attrIdent": "attr_4941_17039634_93822",
+              "name": "Количество камер (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_4941_17039634_93826",
+              "name": "Количество камер (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_4943_17039634_93822",
+              "name": "Количество секций (Морозильная камера)"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_27142991",
+          "name": "Класс энергопотребления",
+          "numeric": false,
+          "dictionary": true,
+          "reference": "ymattr_27142991_15450095",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "attr_KlassEnergopotrebleniya",
+              "name": "Класс энергопотребления"
+            },
+            {
+              "attrIdent": "attr_KlassEnergopotrebleniya2",
+              "name": "Класс энергопотребления"
+            },
+            {
+              "attrIdent": "attr_KlassEnergopotrebleniya3",
+              "name": "Класс энергопотребления"
+            },
+            {
+              "attrIdent": "attr_KlassEnergopotrebleniya4",
+              "name": "Класс энергопотребления"
+            },
+            {
+              "attrIdent": "attr_KlassEnergopotrebleniya5",
+              "name": "Класс энергопотребления"
+            },
+            {
+              "attrIdent": "wbattr_8871",
+              "name": "Класс энергопотребления"
+            },
+            {
+              "attrIdent": "attr_4906_17039633_93828",
+              "name": "Класс энергопотребления (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_4906_17039633_93829",
+              "name": "Класс энергопотребления (Сушильная машина)"
+            },
+            {
+              "attrIdent": "attr_4906_17039634_93821",
+              "name": "Класс энергопотребления (Винный шкаф)"
+            },
+            {
+              "attrIdent": "attr_4906_17039634_93822",
+              "name": "Класс энергопотребления (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_4906_17039634_93826",
+              "name": "Класс энергопотребления (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_4906_17039648_94566",
+              "name": "Класс энергопотребления (Посудомоечная машина)"
+            },
+            {
+              "attrIdent": "attr_KlassEnergopotrebleniya6",
+              "name": "Класс энергопотребления (Справочник \"Номенклатура\" (Общие))"
+            },
+            {
+              "attrIdent": "ymattr_27142991_15450095",
+              "name": "Класс энергопотребления (Винные шкафы)"
+            },
+            {
+              "attrIdent": "attr_4847_17039632_94047",
+              "name": "Класс энергоэффективности (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_4907_17039648_94566",
+              "name": "Класс мойки (Посудомоечная машина)"
+            },
+            {
+              "attrIdent": "attr_4908_17039648_94566",
+              "name": "Класс сушки (Посудомоечная машина)"
+            },
+            {
+              "attrIdent": "attr_4919_17039633_93828",
+              "name": "Класс стирки (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_4920_17039633_93828",
+              "name": "Класс отжима (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_4920_17039633_93829",
+              "name": "Класс отжима (Сушильная машина)"
+            },
+            {
+              "attrIdent": "attr_4953_17039634_93821",
+              "name": "Климатический класс (Винный шкаф)"
+            },
+            {
+              "attrIdent": "attr_4953_17039634_93822",
+              "name": "Климатический класс (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_4953_17039634_93826",
+              "name": "Климатический класс (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_9782_17027920_509837604",
+              "name": "*Класс опасности товара (Таблетки для посудомоечных машин)"
+            },
+            {
+              "attrIdent": "attr_9782_17027920_92695",
+              "name": "*Класс опасности товара (Жидкое средство для стирки)"
+            },
+            {
+              "attrIdent": "attr_9782_17027920_92697",
+              "name": "Класс опасности товара (Кондиционер, ополаскиватель)"
+            },
+            {
+              "attrIdent": "attr_9782_17027920_92701",
+              "name": "*Класс опасности товара (Чистящее средство)"
+            },
+            {
+              "attrIdent": "attr_9782_17027920_970617626",
+              "name": "*Класс опасности товара (Соль для посудомоечных машин)"
+            },
+            {
+              "attrIdent": "attr_9782_17027920_970630176",
+              "name": "*Класс опасности товара (Ополаскиватель для посудомоечных машин)"
+            },
+            {
+              "attrIdent": "attr_9782_17027920_971013007",
+              "name": "*Класс опасности товара (Капсулы для посудомоечной машины)"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_38676530",
+          "name": "Емкость винного шкафа, бут. (Number)",
+          "numeric": true,
+          "dictionary": false,
+          "reference": "ymattr_38676530",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "ymattr_38676530",
+              "name": "Емкость винного шкафа, бут."
+            },
+            {
+              "attrIdent": "attr_MaterialPolokVinnogoSHkafa",
+              "name": "Материал полок винного шкафа (Отдельно стоящие холодильники)"
+            },
+            {
+              "attrIdent": "attr_PolezniiOb_emVinnogoSHkafa",
+              "name": "Полезный объем винного шкафа (Отдельно стоящие холодильники)"
+            },
+            {
+              "attrIdent": "attr_Vmestimost_VinnogoSHkafa",
+              "name": "Вместимость винного шкафа (Отдельно стоящие холодильники)"
+            },
+            {
+              "attrIdent": "attr_10496",
+              "name": "Емкость резервуара для зерен, г"
+            },
+            {
+              "attrIdent": "attr_4857",
+              "name": "Емкость для воды, л"
+            },
+            {
+              "attrIdent": "attr_Emkost_DlyaL_da",
+              "name": "Емкость для льда"
+            },
+            {
+              "attrIdent": "attr_Emkost_DlyaL_da2",
+              "name": "Емкость для льда"
+            },
+            {
+              "attrIdent": "attr_Ob_emDuhovogoSHkafaL",
+              "name": "Объем духового шкафа, л"
+            },
+            {
+              "attrIdent": "attr_S_emnayaDvertsaDuhovogoSHkafa",
+              "name": "Съемная дверца духового шкафа"
+            },
+            {
+              "attrIdent": "attr_TSvetDveriSHkafa",
+              "name": "Цвет двери шкафа (Паровой шкаф)"
+            },
+            {
+              "attrIdent": "attr_TSvetKorpusaSHkafa",
+              "name": "Цвет корпуса шкафа (Паровой шкаф)"
+            },
+            {
+              "attrIdent": "dataWB38",
+              "name": "Особенности духового шкафа ВБ (Духовые шкафы)"
+            },
+            {
+              "attrIdent": "wbattr_112832",
+              "name": "Емкость мерного стакана (л) [число]"
+            },
+            {
+              "attrIdent": "wbattr_113717",
+              "name": "Емкость слайсера (л) [число]"
+            },
+            {
+              "attrIdent": "wbattr_387304",
+              "name": "Тип духового шкафа"
+            },
+            {
+              "attrIdent": "wbattr_65430",
+              "name": "Емкость контейнера для зерен (г) [число]"
+            },
+            {
+              "attrIdent": "wbattr_83469",
+              "name": "Особенности духового шкафа"
+            },
+            {
+              "attrIdent": "wbattr_90631",
+              "name": "Емкость чаши измельчителя (л) [число]"
+            },
+            {
+              "attrIdent": "accessories_link",
+              "name": "ACCESSORIES_LINK"
+            },
+            {
+              "attrIdent": "actions_block",
+              "name": "ACTIONS_BLOCK"
+            },
+            {
+              "attrIdent": "adres_dostavki",
+              "name": "ADRES_DOSTAVKI"
+            },
+            {
+              "attrIdent": "aerogril",
+              "name": "AEROGRIL"
+            },
+            {
+              "attrIdent": "aerogril_1",
+              "name": "AEROGRIL_1"
+            },
+            {
+              "attrIdent": "after_characteristic",
+              "name": "AFTER_CHARACTERISTIC"
+            },
+            {
+              "attrIdent": "air_wash",
+              "name": "AIR_WASH"
+            },
+            {
+              "attrIdent": "alfa_market_cat",
+              "name": "ALFA_MARKET_CAT"
+            },
+            {
+              "attrIdent": "amortizator",
+              "name": "AMORTIZATOR"
+            },
+            {
+              "attrIdent": "antiallergiya",
+              "name": "ANTIALLERGIYA"
+            },
+            {
+              "attrIdent": "antiallergiya_1",
+              "name": "ANTIALLERGIYA_1"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_14805336",
+          "name": "Высота, см (Number)",
+          "numeric": true,
+          "dictionary": false,
+          "reference": "ymattr_14805336",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "attr_11077",
+              "name": "Мин. высота над электрической плитой, см"
+            },
+            {
+              "attrIdent": "attr_11078",
+              "name": "Мин. высота над газовой плитой, см"
+            },
+            {
+              "attrIdent": "attr_4082",
+              "name": "Размер упаковки (Длина х Ширина х Высота), см"
+            },
+            {
+              "attrIdent": "attr_4788",
+              "name": "Высота, см"
+            },
+            {
+              "attrIdent": "attr_8414",
+              "name": "Высота, см"
+            },
+            {
+              "attrIdent": "attr_SHirinaHVisotaHGlubinaPoKrishke",
+              "name": "Ширина х Высота х Глубина (по крышке) (Сушильные машины)"
+            },
+            {
+              "attrIdent": "attr_SHirinaHVisotaHGlubinaPoKrishke2",
+              "name": "Ширина х Высота х Глубина (по крышке) (Стиральные машины)"
+            },
+            {
+              "attrIdent": "attr_Visota",
+              "name": "Высота"
+            },
+            {
+              "attrIdent": "attr_VisotaDozatoraSm",
+              "name": "Высота дозатора, см (Дозаторы)"
+            },
+            {
+              "attrIdent": "attr_VisotaSm",
+              "name": "Высота, см"
+            },
+            {
+              "attrIdent": "attr_VisotaSm2",
+              "name": "Высота, см (Справочник \"Номенклатура\" (Общие))"
+            },
+            {
+              "attrIdent": "attr_VisotaSmesitelyaSm",
+              "name": "Высота смесителя, см (Смесители)"
+            },
+            {
+              "attrIdent": "mv111",
+              "name": "Высота"
+            },
+            {
+              "attrIdent": "mv11934",
+              "name": "Высота"
+            },
+            {
+              "attrIdent": "mv1797",
+              "name": "Максимальная высота чашки"
+            },
+            {
+              "attrIdent": "mv214",
+              "name": "Минимальная высота над  газовой плитой"
+            },
+            {
+              "attrIdent": "mv215",
+              "name": "Минимальная высота над  электрической плитой"
+            },
+            {
+              "attrIdent": "mv223",
+              "name": "Рекомендуемая площадь (высота 2.6 м)"
+            },
+            {
+              "attrIdent": "mv30853131",
+              "name": "Размер ниши (высота)"
+            },
+            {
+              "attrIdent": "mv607852",
+              "name": "Высота излива"
+            },
+            {
+              "attrIdent": "mv620368",
+              "name": "Высота чаши"
+            },
+            {
+              "attrIdent": "mv620371",
+              "name": "Высота дополнительной чаши"
+            },
+            {
+              "attrIdent": "mv625053",
+              "name": "Высота без крышки"
+            },
+            {
+              "attrIdent": "oz_height",
+              "name": "Высота упаковки, мм"
+            },
+            {
+              "attrIdent": "wb_height",
+              "name": "Высота, см"
+            },
+            {
+              "attrIdent": "wbattr_240986",
+              "name": "Высота холодильника"
+            },
+            {
+              "attrIdent": "wbattr_90630",
+              "name": "Высота предмета (см) [число]"
+            },
+            {
+              "attrIdent": "wbattr_90846",
+              "name": "Высота упаковки (см) [число]"
+            },
+            {
+              "attrIdent": "ym_height",
+              "name": "Высота упаковки в см"
+            },
+            {
+              "attrIdent": "ymattr_14805336",
+              "name": "Высота, мм"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        }
+      ]
+    },
+    {
+      "id": "61377314",
+      "name": "Все товары/Товары для дома/Посуда и кухонные принадлежности/Приготовление пищи/Посуда для готовки/Сковороды и сотейники/Сковороды-гриль",
+      "liveAttributes": 24,
+      "poolBefore": 5099,
+      "poolAfter": 3994,
+      "selected": 6,
+      "elapsedMs": 1,
+      "referenceCount": 5,
+      "referenceInShortlist": 2,
+      "agreesWithReference": 0,
+      "proposed": 0,
+      "rows": [
+        {
+          "id": "yandexattr_23681530",
+          "name": "Диаметр верха, см (Number)",
+          "numeric": true,
+          "dictionary": false,
+          "reference": "ymattr_23681530",
+          "referenceInShortlist": false,
+          "candidates": [
+            {
+              "attrIdent": "attr_10802",
+              "name": "Диаметр поворотного стола, см"
+            },
+            {
+              "attrIdent": "attr_10920",
+              "name": "Диаметр воздуховода, мм"
+            },
+            {
+              "attrIdent": "attr_6783",
+              "name": "Диаметр дна, см"
+            },
+            {
+              "attrIdent": "attr_7703",
+              "name": "Диаметр, мм"
+            },
+            {
+              "attrIdent": "attr_DiametrLyukaMm",
+              "name": "Диаметр люка, мм"
+            },
+            {
+              "attrIdent": "attr_DiametrLyukaMm2",
+              "name": "Диаметр люка, мм (Сушильные машины)"
+            },
+            {
+              "attrIdent": "attr_DiametrSlivnogoOtverstiyaMm",
+              "name": "Диаметр сливного отверстия, мм (Измельчители)"
+            },
+            {
+              "attrIdent": "attr_DiametrVirezaPodPnevmoknopkuMm",
+              "name": "Диаметр выреза под пневмокнопку, мм (Измельчители)"
+            },
+            {
+              "attrIdent": "attr_DiametrVozduhovoda",
+              "name": "Диаметр воздуховода (Вытяжки)"
+            },
+            {
+              "attrIdent": "attr_DiametrZagruzochnogoLyukaMm",
+              "name": "Диаметр загрузочного люка, мм (Стиральные машины)"
+            },
+            {
+              "attrIdent": "attr_DiametrZagruzochnogoLyukaMm2",
+              "name": "Диаметр загрузочного люка, мм (Сушильные машины)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmPerednyaya",
+              "name": "Диаметр зон, мм. передняя (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmPerednyayaLevaya",
+              "name": "Диаметр зон, мм. передняя левая (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmPerednyayaPravaya",
+              "name": "Диаметр зон, мм. передняя правая (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmSrednyaya",
+              "name": "Диаметр зон, мм. средняя (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmZadnyaya",
+              "name": "Диаметр зон, мм. задняя (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmZadnyayaLevaya",
+              "name": "Диаметр зон, мм. задняя левая (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmZadnyayaPravaya",
+              "name": "Диаметр зон, мм. задняя правая (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "dataWB25",
+              "name": "Диаметр конфорок ВБ (Варочные панели)"
+            },
+            {
+              "attrIdent": "mv1428",
+              "name": "Диаметр люка"
+            },
+            {
+              "attrIdent": "mv1507",
+              "name": "Диаметр поворотного стола"
+            },
+            {
+              "attrIdent": "mv3774",
+              "name": "Диаметр чаши"
+            },
+            {
+              "attrIdent": "mv609403",
+              "name": "Диаметр воздуховода"
+            },
+            {
+              "attrIdent": "mv617477",
+              "name": "Диаметр картриджа"
+            },
+            {
+              "attrIdent": "mv617805",
+              "name": "Диаметр сливного отверстия"
+            },
+            {
+              "attrIdent": "mv625107",
+              "name": "Минимальный диаметр посуды"
+            },
+            {
+              "attrIdent": "mv8296",
+              "name": "Диаметр"
+            },
+            {
+              "attrIdent": "wbattr_220504",
+              "name": "Диаметр воздуховодов (мм) [число]"
+            },
+            {
+              "attrIdent": "wbattr_251626",
+              "name": "Диаметр конфорок"
+            },
+            {
+              "attrIdent": "wbattr_65313",
+              "name": "Диаметр поворотного стола (мм) [число]"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_36912930",
+          "name": "Диаметр дна, см (Number)",
+          "numeric": true,
+          "dictionary": false,
+          "reference": "ymattr_36912930",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "attr_6783",
+              "name": "Диаметр дна, см"
+            },
+            {
+              "attrIdent": "ymattr_36912930",
+              "name": "Диаметр дна, см"
+            },
+            {
+              "attrIdent": "attr_10802",
+              "name": "Диаметр поворотного стола, см"
+            },
+            {
+              "attrIdent": "attr_10920",
+              "name": "Диаметр воздуховода, мм"
+            },
+            {
+              "attrIdent": "attr_7703",
+              "name": "Диаметр, мм"
+            },
+            {
+              "attrIdent": "attr_DiametrLyukaMm",
+              "name": "Диаметр люка, мм"
+            },
+            {
+              "attrIdent": "attr_DiametrLyukaMm2",
+              "name": "Диаметр люка, мм (Сушильные машины)"
+            },
+            {
+              "attrIdent": "attr_DiametrSlivnogoOtverstiyaMm",
+              "name": "Диаметр сливного отверстия, мм (Измельчители)"
+            },
+            {
+              "attrIdent": "attr_DiametrVirezaPodPnevmoknopkuMm",
+              "name": "Диаметр выреза под пневмокнопку, мм (Измельчители)"
+            },
+            {
+              "attrIdent": "attr_DiametrVozduhovoda",
+              "name": "Диаметр воздуховода (Вытяжки)"
+            },
+            {
+              "attrIdent": "attr_DiametrZagruzochnogoLyukaMm",
+              "name": "Диаметр загрузочного люка, мм (Стиральные машины)"
+            },
+            {
+              "attrIdent": "attr_DiametrZagruzochnogoLyukaMm2",
+              "name": "Диаметр загрузочного люка, мм (Сушильные машины)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmPerednyaya",
+              "name": "Диаметр зон, мм. передняя (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmPerednyayaLevaya",
+              "name": "Диаметр зон, мм. передняя левая (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmPerednyayaPravaya",
+              "name": "Диаметр зон, мм. передняя правая (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmSrednyaya",
+              "name": "Диаметр зон, мм. средняя (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmZadnyaya",
+              "name": "Диаметр зон, мм. задняя (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmZadnyayaLevaya",
+              "name": "Диаметр зон, мм. задняя левая (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "attr_DiametrZonMmZadnyayaPravaya",
+              "name": "Диаметр зон, мм. задняя правая (Варочные поверхности электрические)"
+            },
+            {
+              "attrIdent": "dataWB25",
+              "name": "Диаметр конфорок ВБ (Варочные панели)"
+            },
+            {
+              "attrIdent": "mv1428",
+              "name": "Диаметр люка"
+            },
+            {
+              "attrIdent": "mv1507",
+              "name": "Диаметр поворотного стола"
+            },
+            {
+              "attrIdent": "mv3774",
+              "name": "Диаметр чаши"
+            },
+            {
+              "attrIdent": "mv609403",
+              "name": "Диаметр воздуховода"
+            },
+            {
+              "attrIdent": "mv617477",
+              "name": "Диаметр картриджа"
+            },
+            {
+              "attrIdent": "mv617805",
+              "name": "Диаметр сливного отверстия"
+            },
+            {
+              "attrIdent": "mv625107",
+              "name": "Минимальный диаметр посуды"
+            },
+            {
+              "attrIdent": "mv8296",
+              "name": "Диаметр"
+            },
+            {
+              "attrIdent": "wbattr_220504",
+              "name": "Диаметр воздуховодов (мм) [число]"
+            },
+            {
+              "attrIdent": "wbattr_251626",
+              "name": "Диаметр конфорок"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_14871214",
+          "name": "Название цвета от производителя",
+          "numeric": false,
+          "dictionary": true,
+          "reference": "ymattr_14871214_61377314",
+          "referenceInShortlist": true,
+          "candidates": [
+            {
+              "attrIdent": "ymattr_14871214_61377314",
+              "name": "Название цвета от производителя (Сковороды-гриль)"
+            },
+            {
+              "attrIdent": "ym_vendor",
+              "name": "Название бренда или производителя"
+            },
+            {
+              "attrIdent": "attr_12141",
+              "name": "Название модели для шаблона наименования"
+            },
+            {
+              "attrIdent": "attr_12776",
+              "name": "Название аромата"
+            },
+            {
+              "attrIdent": "attr_21837",
+              "name": "Озон.Видео: название"
+            },
+            {
+              "attrIdent": "attr_4180",
+              "name": "Название"
+            },
+            {
+              "attrIdent": "attr_8789",
+              "name": "Название файла PDF"
+            },
+            {
+              "attrIdent": "attr_9048",
+              "name": "*Название модели (для объединения в одну карточку)"
+            },
+            {
+              "attrIdent": "mv620282",
+              "name": "Аромат производителя"
+            },
+            {
+              "attrIdent": "mv620311",
+              "name": "Цвет производителя"
+            },
+            {
+              "attrIdent": "oz_name",
+              "name": "Название"
+            },
+            {
+              "attrIdent": "wbattr_247321",
+              "name": "Код производителя"
+            },
+            {
+              "attrIdent": "ym_purchasePrice",
+              "name": "Себестоимость - затраты на самостоятельное производство товара или закупку у производителя или поставщиков"
+            },
+            {
+              "attrIdent": "ym_vendorCode",
+              "name": "Артикул товара от производителя"
+            },
+            {
+              "attrIdent": "ymattr_200",
+              "name": "Название группы вариантов"
+            },
+            {
+              "attrIdent": "attr_10078_17039633_93828",
+              "name": "Программы стирки (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039627_94973",
+              "name": "Цвет товара (Блендер)"
+            },
+            {
+              "attrIdent": "attr_10096_17039628_504866213",
+              "name": "Цвет товара (Кофеварка)"
+            },
+            {
+              "attrIdent": "attr_10096_17039628_94971",
+              "name": "Цвет товара (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039630_95612",
+              "name": "Цвет товара (Подогреватель посуды)"
+            },
+            {
+              "attrIdent": "attr_10096_17039630_96031",
+              "name": "Цвет товара (Тостер)"
+            },
+            {
+              "attrIdent": "attr_10096_17039631_94968",
+              "name": "Цвет товара (Электрический чайник)"
+            },
+            {
+              "attrIdent": "attr_10096_17039632_94047",
+              "name": "Цвет товара (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_10096_17039632_94048",
+              "name": "Цвет товара (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_10096_17039633_93828",
+              "name": "Цвет товара (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039633_93829",
+              "name": "Цвет товара (Сушильная машина)"
+            },
+            {
+              "attrIdent": "attr_10096_17039634_93821",
+              "name": "Цвет товара (Винный шкаф)"
+            },
+            {
+              "attrIdent": "attr_10096_17039634_93822",
+              "name": "Цвет товара (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_10096_17039634_93826",
+              "name": "Цвет товара (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_10096_17039641_91480",
+              "name": "Цвет товара (Измельчитель бытовых отходов)"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_21194330",
+          "name": "Тип",
+          "numeric": false,
+          "dictionary": true,
+          "reference": "ymattr_21194330_61377314",
+          "referenceInShortlist": false,
+          "candidates": [
+            {
+              "attrIdent": "mv862",
+              "name": "Тип"
+            },
+            {
+              "attrIdent": "attr_10806_17039646_95262",
+              "name": "Тип панели (плиты) (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_11035_17039627_94973",
+              "name": "Тип управления (Блендер)"
+            },
+            {
+              "attrIdent": "attr_11035_17039628_504866213",
+              "name": "Тип управления (Кофеварка)"
+            },
+            {
+              "attrIdent": "attr_11035_17039628_94971",
+              "name": "Тип управления (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_11035_17039630_96031",
+              "name": "Тип управления (Тостер)"
+            },
+            {
+              "attrIdent": "attr_11035_17039631_94968",
+              "name": "Тип управления (Электрический чайник)"
+            },
+            {
+              "attrIdent": "attr_11035_17039632_94047",
+              "name": "Тип управления (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_11035_17039633_93828",
+              "name": "Тип управления (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_11035_17039634_93822",
+              "name": "Тип управления (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_11035_17039634_93826",
+              "name": "Тип управления (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_11035_17039646_95262",
+              "name": "Тип управления (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_11035_17039647_93827",
+              "name": "Тип управления (Кухонная вытяжка)"
+            },
+            {
+              "attrIdent": "attr_12486_17039628_94971",
+              "name": "Тип установки (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_12486_17039633_93828",
+              "name": "Тип установки (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_12486_17039633_93829",
+              "name": "Тип установки (Сушильная машина)"
+            },
+            {
+              "attrIdent": "attr_12486_17039634_93821",
+              "name": "Тип установки (Винный шкаф)"
+            },
+            {
+              "attrIdent": "attr_12486_17039634_93822",
+              "name": "Тип установки (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_12486_17039634_93826",
+              "name": "Тип установки (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_12486_17039643_94972",
+              "name": "Тип установки (Микроволновая печь)"
+            },
+            {
+              "attrIdent": "attr_12486_17039648_94566",
+              "name": "Тип установки (Посудомоечная машина)"
+            },
+            {
+              "attrIdent": "attr_4686_17039631_94968",
+              "name": "Тип нагревательного элемента (Электрический чайник)"
+            },
+            {
+              "attrIdent": "attr_4710_17039627_94973",
+              "name": "Тип блендера/комбайна (Блендер)"
+            },
+            {
+              "attrIdent": "attr_4722_17039628_504866213",
+              "name": "Тип используемого кофе (Кофеварка)"
+            },
+            {
+              "attrIdent": "attr_4722_17039628_94971",
+              "name": "Тип используемого кофе (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_4750_17039632_94048",
+              "name": "Тип конфорок (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_4799_17039647_93827",
+              "name": "Тип освещения вытяжки (Кухонная вытяжка)"
+            },
+            {
+              "attrIdent": "attr_4804_17039632_94047",
+              "name": "Тип питания (Духовой шкаф)"
+            },
+            {
+              "attrIdent": "attr_4804_17039632_94048",
+              "name": "Тип питания (Мини-печь)"
+            },
+            {
+              "attrIdent": "attr_4810_17039632_94047",
+              "name": "Тип установки (Духовой шкаф)"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_17352854",
+          "name": "Материал",
+          "numeric": false,
+          "dictionary": true,
+          "reference": "ymattr_17352854_61377314",
+          "referenceInShortlist": false,
+          "candidates": [
+            {
+              "attrIdent": "mv2342",
+              "name": "Материал"
+            },
+            {
+              "attrIdent": "attr_10824_17039627_94973",
+              "name": "Материал корпуса (Блендер)"
+            },
+            {
+              "attrIdent": "attr_10824_17039628_504866213",
+              "name": "Материал корпуса (Кофеварка)"
+            },
+            {
+              "attrIdent": "attr_10824_17039628_94971",
+              "name": "Материал корпуса (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_10824_17039630_96031",
+              "name": "Материал корпуса (Тостер)"
+            },
+            {
+              "attrIdent": "attr_10824_17039647_93827",
+              "name": "Материал корпуса (Кухонная вытяжка)"
+            },
+            {
+              "attrIdent": "attr_10841_17039627_94973",
+              "name": "Материал чаши (Блендер)"
+            },
+            {
+              "attrIdent": "attr_12026_17039633_93828",
+              "name": "Материал бака (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_12026_17039633_93829",
+              "name": "Материал бака (Сушильная машина)"
+            },
+            {
+              "attrIdent": "attr_12825_17039627_94973",
+              "name": "Материал погружной части (Блендер)"
+            },
+            {
+              "attrIdent": "attr_20126_17039641_91480",
+              "name": "Материал камеры (Измельчитель бытовых отходов)"
+            },
+            {
+              "attrIdent": "attr_22452_17039633_93828",
+              "name": "Материал барабана (Стиральная машина)"
+            },
+            {
+              "attrIdent": "attr_22452_17039633_93829",
+              "name": "Материал барабана (Сушильная машина)"
+            },
+            {
+              "attrIdent": "attr_4679_17039628_94971",
+              "name": "Материал жерновов (Автоматическая кофемашина)"
+            },
+            {
+              "attrIdent": "attr_4716_53968796_95805",
+              "name": "Материал (Аксессуары, запчасти для кофемашины)"
+            },
+            {
+              "attrIdent": "attr_4716_53968796_970663046",
+              "name": "Материал (Аксессуары, запчасти для холодильника)"
+            },
+            {
+              "attrIdent": "attr_4716_53968796_970707408",
+              "name": "Материал (Запчасть для варочной панели)"
+            },
+            {
+              "attrIdent": "attr_4716_53968796_970729309",
+              "name": "Материал (Аксессуар для вытяжки)"
+            },
+            {
+              "attrIdent": "attr_4716_53968796_971010844",
+              "name": "Материал (Аксессуары, запчасти для сушильной машины)"
+            },
+            {
+              "attrIdent": "attr_4751_17039646_95262",
+              "name": "Материал рабочей поверхности панели (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_4752_17039646_95262",
+              "name": "Материал решетки варочной панели (Варочная панель)"
+            },
+            {
+              "attrIdent": "attr_4764_17039630_95612",
+              "name": "Материал корпуса (Подогреватель посуды)"
+            },
+            {
+              "attrIdent": "attr_4815_17039630_95612",
+              "name": "Материал рабочей поверхности (Подогреватель посуды)"
+            },
+            {
+              "attrIdent": "attr_4954_17039634_93822",
+              "name": "Материал полок (Морозильная камера)"
+            },
+            {
+              "attrIdent": "attr_4954_17039634_93826",
+              "name": "Материал полок (Холодильник)"
+            },
+            {
+              "attrIdent": "attr_9398_17039631_94968",
+              "name": "Материал корпуса (Электрический чайник)"
+            },
+            {
+              "attrIdent": "attr_BarabanNerzhaveyuschayaStal_",
+              "name": "Материал барабана"
+            },
+            {
+              "attrIdent": "attr_BarabanNerzhaveyuschayaStal_2",
+              "name": "Материал барабана (Сушильные машины)"
+            },
+            {
+              "attrIdent": "attr_Fasad2",
+              "name": "Материал фасада (Справочник \"Номенклатура\" (Общие))"
+            },
+            {
+              "attrIdent": "attr_Material",
+              "name": "Материал (Мойки композитные)"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        },
+        {
+          "id": "yandexattr_14805583",
+          "name": "Единиц в одной упаковке, шт (Number)",
+          "numeric": true,
+          "dictionary": false,
+          "reference": null,
+          "referenceInShortlist": null,
+          "candidates": [
+            {
+              "attrIdent": "attr_20767",
+              "name": "Количество таблеток/капсул в одной упаковке, шт"
+            },
+            {
+              "attrIdent": "attr_8513",
+              "name": "Количество в упаковке, шт"
+            },
+            {
+              "attrIdent": "attr_8962",
+              "name": "Единиц в одном товаре"
+            },
+            {
+              "attrIdent": "dataWB21",
+              "name": "Количество предметов в упаковке (шт.) ВБ"
+            },
+            {
+              "attrIdent": "mv1753",
+              "name": "Нагрев с одной стороны"
+            },
+            {
+              "attrIdent": "mv614242",
+              "name": "Количество в упаковке"
+            },
+            {
+              "attrIdent": "mv625010",
+              "name": "Габариты в упаковке (В*Ш*Г)"
+            },
+            {
+              "attrIdent": "oz_weight",
+              "name": "Вес товара в упаковке, г"
+            },
+            {
+              "attrIdent": "wbattr_179792",
+              "name": "Количество предметов в упаковке"
+            },
+            {
+              "attrIdent": "wbattr_90702",
+              "name": "Количество предметов в упаковке (шт.) (шт.) [число]"
+            },
+            {
+              "attrIdent": "accessories_link",
+              "name": "ACCESSORIES_LINK"
+            },
+            {
+              "attrIdent": "actions_block",
+              "name": "ACTIONS_BLOCK"
+            },
+            {
+              "attrIdent": "adres_dostavki",
+              "name": "ADRES_DOSTAVKI"
+            },
+            {
+              "attrIdent": "aerogril",
+              "name": "AEROGRIL"
+            },
+            {
+              "attrIdent": "aerogril_1",
+              "name": "AEROGRIL_1"
+            },
+            {
+              "attrIdent": "after_characteristic",
+              "name": "AFTER_CHARACTERISTIC"
+            },
+            {
+              "attrIdent": "air_wash",
+              "name": "AIR_WASH"
+            },
+            {
+              "attrIdent": "alfa_market_cat",
+              "name": "ALFA_MARKET_CAT"
+            },
+            {
+              "attrIdent": "amortizator",
+              "name": "AMORTIZATOR"
+            },
+            {
+              "attrIdent": "antiallergiya",
+              "name": "ANTIALLERGIYA"
+            },
+            {
+              "attrIdent": "antiallergiya_1",
+              "name": "ANTIALLERGIYA_1"
+            },
+            {
+              "attrIdent": "antiallergiya_par",
+              "name": "ANTIALLERGIYA_PAR"
+            },
+            {
+              "attrIdent": "antibakterialnaya_sistema",
+              "name": "ANTIBAKTERIALNAYA_SISTEMA"
+            },
+            {
+              "attrIdent": "antibakterialnyy_plastik",
+              "name": "ANTIBAKTERIALNYY_PLASTIK"
+            },
+            {
+              "attrIdent": "antibakterialnyy_plastik_1",
+              "name": "ANTIBAKTERIALNYY_PLASTIK_1"
+            },
+            {
+              "attrIdent": "antiprigarnoe_pokrytie",
+              "name": "ANTIPRIGARNOE_POKRYTIE"
+            },
+            {
+              "attrIdent": "ArchivedOZ1",
+              "name": "В архиве на Озон 1"
+            },
+            {
+              "attrIdent": "ArchivedOZ3",
+              "name": "В архиве на Озон регионы"
+            },
+            {
+              "attrIdent": "aromat",
+              "name": "AROMAT"
+            },
+            {
+              "attrIdent": "aromat_1",
+              "name": "AROMAT_1"
+            }
+          ],
+          "suggestion": null,
+          "needsReview": true,
+          "reason": "LLM not called.",
+          "agreesWithReference": null,
+          "humanVerdict": "pending"
+        }
+      ]
+    }
+  ]
+}

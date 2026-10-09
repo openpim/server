@@ -1,0 +1,300 @@
+{
+  "date": "2026-10-08T09:38:05.709Z",
+  "method": "Read-only diagnostic: ordinary attributes intersect ancestors of actual relation targets; this is NOT the production filter or an asserted gold standard.",
+  "categories": [
+    {
+      "categoryId": "61377314",
+      "name": "Все товары/Товары для дома/Посуда и кухонные принадлежности/Приготовление пищи/Посуда для готовки/Сковороды и сотейники/Сковороды-гриль",
+      "relatedTargets": 1,
+      "ordinaryAttributes": 926,
+      "ordinaryAttributesIntersectTargetPaths": 34,
+      "names": [
+        {
+          "id": "attr_TSvet9",
+          "name": "Цвет"
+        },
+        {
+          "id": "attr_Kategoriya",
+          "name": "Категория (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_KodOZON",
+          "name": "КодОЗОН (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_TSenovayaGruppaBitriks",
+          "name": "Ценовая группа (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_IdTovara2",
+          "name": "Ид товара (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_SearchGoods",
+          "name": "SearchGoods (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_SkidkaSait",
+          "name": "Скидка Сайт (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_IDGoods",
+          "name": "IDGoods (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_MaterialPaneli",
+          "name": "Панель управления"
+        },
+        {
+          "id": "attr_SegmentKontenta",
+          "name": "Сегмент контента (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_TipFil_tra",
+          "name": "Тип фильтра"
+        },
+        {
+          "id": "attr_Sovmestimost_",
+          "name": "Совместимость"
+        },
+        {
+          "id": "attr_barcode",
+          "name": "Штрихкод"
+        },
+        {
+          "id": "attr_nonMatrix",
+          "name": "Не матрица"
+        },
+        {
+          "id": "attr_ves",
+          "name": "Вес"
+        },
+        {
+          "id": "attr_Visota",
+          "name": "Высота"
+        },
+        {
+          "id": "attr_Shirina",
+          "name": "Ширина"
+        },
+        {
+          "id": "attr_Dlina",
+          "name": "Длина"
+        },
+        {
+          "id": "attr_vesnetto",
+          "name": "ВесНетто"
+        },
+        {
+          "id": "attr_taxNDS",
+          "name": "Ставка НДС"
+        },
+        {
+          "id": "attr_TNVED",
+          "name": "Код ТНВЭД"
+        },
+        {
+          "id": "attr_Country",
+          "name": "Страна производства"
+        },
+        {
+          "id": "attr_NCertificate",
+          "name": "Номер сертификата соответствия"
+        },
+        {
+          "id": "attr_DateEndCert",
+          "name": "Дата окончания действия сертификата соответствия"
+        },
+        {
+          "id": "attr_DateStCert",
+          "name": "Дата начала действия сертификата соответствия"
+        },
+        {
+          "id": "attr_DateEndDekl",
+          "name": "Дата окончания действия декларации соответствия"
+        },
+        {
+          "id": "attr_DateStDekl",
+          "name": "Дата начала действия декларации соответствия"
+        },
+        {
+          "id": "attr_NDecl",
+          "name": "Номер декларации соответствия"
+        },
+        {
+          "id": "attr_Brand",
+          "name": "Бренд"
+        },
+        {
+          "id": "attr_DateSale",
+          "name": "Дата начала официальных продаж"
+        },
+        {
+          "id": "attr_group",
+          "name": "Группа списка"
+        },
+        {
+          "id": "attr_VidNom",
+          "name": "Вид номенклатуры"
+        },
+        {
+          "id": "attr_TypeNom",
+          "name": "Тип номенклатуры"
+        },
+        {
+          "id": "attr_PriceRRC",
+          "name": "Цена РРЦ"
+        }
+      ]
+    },
+    {
+      "categoryId": "15450095",
+      "name": "Все товары/Бытовая техника/Крупная техника для кухни/Холодильники, морозильники, винные шкафы/Винные шкафы",
+      "relatedTargets": 7,
+      "ordinaryAttributes": 926,
+      "ordinaryAttributesIntersectTargetPaths": 65,
+      "names": [
+        {
+          "id": "attr_Kollektsiya",
+          "name": "Коллекция"
+        },
+        {
+          "id": "attr_TSvet9",
+          "name": "Цвет"
+        },
+        {
+          "id": "attr_SHirinaSm5",
+          "name": "Ширина, см (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_VisotaSm2",
+          "name": "Высота, см (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_GlubinaSm2",
+          "name": "Глубина, см (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_KodOZON",
+          "name": "КодОЗОН (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_TSenovayaGruppaBitriks",
+          "name": "Ценовая группа (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_IdTovara2",
+          "name": "Ид товара (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_SkidkaSait",
+          "name": "Скидка Сайт (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_SegmentKontenta",
+          "name": "Сегмент контента (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_DlinaSetevogoSHnura",
+          "name": "Длина сетевого шнура (Справочник \"Номенклатура\" (Общие))"
+        },
+        {
+          "id": "attr_ObschiiPolezniiOb_em",
+          "name": "Объем (Шкафы Винные)"
+        },
+        {
+          "id": "attr_RazmeriVstraivaniyaVSHG",
+          "name": "Размеры встраивания В/Ш/Г (Шкафы Винные)"
+        },
+        {
+          "id": "attr_KlimaticheskiiKlass3",
+          "name": "Климатический класс (Шкафы Винные)"
+        },
+        {
+          "id": "attr_Razmorazhivanie4",
+          "name": "Размораживание (Шкафы Винные)"
+        },
+        {
+          "id": "attr_KolVoKompressorov",
+          "name": "Кол-во компрессоров (Шкафы Винные)"
+        },
+        {
+          "id": "attr_TipKompressora",
+          "name": "Тип компрессора (Шкафы Винные)"
+        },
+        {
+          "id": "attr_Maksimal_niiUrN_SHuma",
+          "name": "Максимальный ур-нь шума (Шкафы Винные)"
+        },
+        {
+          "id": "attr_EnergopotreblenieVGod",
+          "name": "Энергопотребление в год (Шкафы Винные)"
+        },
+        {
+          "id": "attr_KolVoPolok",
+          "name": "Кол-во полок (Шкафы Винные)"
+        },
+        {
+          "id": "attr_MaterialPolok",
+          "name": "Материал полок (Шкафы Винные)"
+        },
+        {
+          "id": "attr_KolVoTemperaturnihZon",
+          "name": "Кол-во температурных зон (Шкафы Винные)"
+        },
+        {
+          "id": "attr_DiapazonRegulirovkiTemperaturi",
+          "name": "Диапазон регулировки температуры (Шкафы Винные)"
+        },
+        {
+          "id": "attr_TipUpravleniya2",
+          "name": "Тип управления (Шкафы Винные)"
+        },
+        {
+          "id": "attr_Displei5",
+          "name": "Дисплей (Шкафы Винные)"
+        },
+        {
+          "id": "attr_Fil_tr2",
+          "name": "Фильтр (Шкафы Винные)"
+        },
+        {
+          "id": "attr_TipOsvescheniya",
+          "name": "Тип освещения (Шкафы Винные)"
+        },
+        {
+          "id": "attr_OtkritieDveri",
+          "name": "Открытие двери (Шкафы Винные)"
+        },
+        {
+          "id": "attr_VneshneePokritieDveri",
+          "name": "Внешнее покрытие двери (Шкафы Винные)"
+        },
+        {
+          "id": "attr_TonirovkaDverei",
+          "name": "Тонировка дверей (Шкафы Винные)"
+        },
+        {
+          "id": "attr_PerenaveshivaemieDveri3",
+          "name": "Перенавешиваемые двери (Шкафы Винные)"
+        },
+        {
+          "id": "attr_ZaschitaOtDetei2",
+          "name": "Защита от детей (Шкафы Винные)"
+        },
+        {
+          "id": "attr_IndikatsiyaTemperaturi",
+          "name": "Индикация температуры (Шкафы Винные)"
+        },
+        {
+          "id": "attr_IndikatsiyaNeispravnostei",
+          "name": "Индикация неисправностей (Шкафы Винные)"
+        },
+        {
+          "id": "attr_RezhimEkonomiiEnergii",
+          "name": "Режим экономии энергии (Шкафы Винные)"
+        }
+      ]
+    }
+  ]
+}

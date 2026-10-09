@@ -3,14 +3,30 @@ import { ModelManager, ModelsManager } from '../models/manager'
 import { sequelize } from '../models'
 import { Channel, ChannelExecution } from '../models/channels'
 import { Item } from '../models/items'
-import { fn, literal, Op } from 'sequelize'
+import { fn, literal, Op, QueryTypes } from 'sequelize'
 import { ChannelsManagerFactory } from '../channels'
 import { replaceOperations, processBulkUpdateChannelsActions } from './utils'
 import { EventType } from '../models/actions'
 import { updateChannelMappings } from './import/channels'
+import { authorizeMapping, resolveMappingSuggestions } from '../channels/ai/access'
+import { readMappingConfig } from '../channels/ai/mapping'
+import { mappingVisibilityPathsSQL, mappingVisibilityTargetsSQL } from '../channels/ai/visibility'
+import { mappingLOVSamplesSQL } from '../channels/ai/values'
 
 export default {
     Query: {
+        getChannelAIMappingStatus: async (parent: any, { channelId }: any, context: Context) => {
+            context.checkAuth()
+            const manager = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            const channel = authorizeMapping(context, manager, channelId, false, ConfigAccess.CHANNELS)
+            if (![2, 3, 9].includes(channel.type)) return { enabled: false, message: 'Channel type is not supported.' }
+            try {
+                const config = readMappingConfig()
+                return { enabled: config.enabled, message: config.enabled ? null : 'AI mapping is disabled.' }
+            } catch (error: any) {
+                return { enabled: false, message: error.message }
+            }
+        },
         getChannelTypes: async (parent: any, args: any, context: Context) => {
             context.checkAuth()
             
@@ -229,6 +245,23 @@ export default {
         }
     },
     Mutation: {
+        suggestChannelAttributeMappings: async (parent: any, args: any, context: Context) => {
+            context.checkAuth()
+            const manager = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            authorizeMapping(context, manager, args.channelId, true, ConfigAccess.CHANNELS)
+            const channelManager = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
+            return resolveMappingSuggestions(context, manager, args, readMappingConfig(), channel => channelManager.getHandler(channel), undefined, ConfigAccess.CHANNELS,
+                async (ids, tenantId, relationId) => {
+                    const options = { bind: [tenantId, ids.map(Number), relationId], type: QueryTypes.SELECT as const }
+                    const [rows, targets] = await Promise.all([
+                        sequelize.query<{ path: string }>(mappingVisibilityPathsSQL, options),
+                        relationId === null ? Promise.resolve([]) : sequelize.query<{ path: string }>(mappingVisibilityTargetsSQL, options)
+                    ])
+                    return { paths: rows.map(row => row.path), targetPaths: targets.map(row => row.path) }
+                }, async (ids, tenantId) => sequelize.query<{ id: number; values: any[]; total: number }>(mappingLOVSamplesSQL, {
+                    bind: [tenantId, ids], type: QueryTypes.SELECT
+                }))
+        },
         triggerChannel: async (parent: any, { id, language, data }: any, context: Context) => {
             context.checkAuth()
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)

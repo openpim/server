@@ -1,0 +1,3766 @@
+{
+  "date": "2026-10-08T09:56:16.622Z",
+  "categoryId": "15450095",
+  "group": "mainAttrGroup",
+  "model": "deepseek-v4.1-flash",
+  "readOnly": true,
+  "elapsedMs": 13232,
+  "methodology": "Five dictionary attributes; values and explicit PIM types added together. Baseline was a different batch composition. This is a context delivery trial, not an isolated measurement of dictionary improvement.",
+  "rows": [
+    {
+      "attribute": {
+        "id": "yandexattr_37705770",
+        "name": "Количество температурных зон",
+        "description": "Выберите значение из списка\n id: 37705770, category: 15450095",
+        "required": false,
+        "dictionary": true,
+        "numeric": false,
+        "valueOptions": {
+          "status": "loaded",
+          "examples": [
+            "двухтемпературный",
+            "монотемпературный",
+            "мультитемпературный",
+            "трехтемпературный"
+          ],
+          "total": 4,
+          "truncated": false
+        }
+      },
+      "candidates": [
+        {
+          "attrIdent": "attr_KolVoTemperaturnihZon",
+          "name": "Кол-во температурных зон (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_DiametrZonMmPerednyaya",
+          "name": "Диаметр зон, мм. передняя (Варочные поверхности электрические)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_DiametrZonMmPerednyayaLevaya",
+          "name": "Диаметр зон, мм. передняя левая (Варочные поверхности электрические)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_DiametrZonMmPerednyayaPravaya",
+          "name": "Диаметр зон, мм. передняя правая (Варочные поверхности электрические)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_DiametrZonMmSrednyaya",
+          "name": "Диаметр зон, мм. средняя (Варочные поверхности электрические)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_DiametrZonMmZadnyaya",
+          "name": "Диаметр зон, мм. задняя (Варочные поверхности электрические)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_DiametrZonMmZadnyayaLevaya",
+          "name": "Диаметр зон, мм. задняя левая (Варочные поверхности электрические)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_DiametrZonMmZadnyayaPravaya",
+          "name": "Диаметр зон, мм. задняя правая (Варочные поверхности электрические)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoavtomaticheskihProgramm",
+          "name": "Количество автоматических программ (Мини-печи)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoCHash",
+          "name": "Количество чаш (Мойки композитные)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoDverei",
+          "name": "Количество дверей",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoDverei2",
+          "name": "Количество дверей (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoDvernihPolok",
+          "name": "Количество дверных полок",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoDvigatelei",
+          "name": "Количество двигателей (Вытяжки)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoKonforok",
+          "name": "Количество конфорок",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoKonforok3",
+          "name": "Количество конфорок",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoKonforokObschii",
+          "name": "Количество конфорок (Справочник \"Номенклатура\" (Общие))",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoKorzin",
+          "name": "Количество корзин (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoLampOsvescheniya",
+          "name": "Количество ламп освещения (Вытяжки)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoNapitkov",
+          "name": "Количество напитков (Кофемашины)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoOtsekov",
+          "name": "Количество отсеков (Тостеры)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolok",
+          "name": "Количество полок",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolok2",
+          "name": "Количество полок (Отдельно стоящие холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolokMK",
+          "name": "Количество полок м/к (Встраиваемые холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolokMK2",
+          "name": "Количество полок м/к (Отдельно стоящие холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolokNaDveri",
+          "name": "Количество полок на двери",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolozheniiSredneiKorzini",
+          "name": "Количество положений средней корзины (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoProgramm",
+          "name": "Количество программ",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoProgramm3",
+          "name": "Количество программ (Сушильные машины)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoRazbrizgivatelei",
+          "name": "Количество разбрызгивателей (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        }
+      ],
+      "suggestion": {
+        "id": "yandexattr_37705770",
+        "attrIdent": "attr_KolVoTemperaturnihZon",
+        "needsReview": true,
+        "reason": "Смысл совпадает (температурные зоны винного шкафа), но в PIM атрибут числовой float, а на маркетплейсе — категориальный словарь (моно/двух/трёхтемпературный); нужно преобразование значений."
+      },
+      "baselineSuggestion": "attr_KolVoTemperaturnihZon",
+      "humanVerdict": "pending"
+    },
+    {
+      "attribute": {
+        "id": "yandexattr_27142991",
+        "name": "Класс энергопотребления",
+        "description": "Класс энергопотребления от производителя. Классы вида A-20% относятся к классу А.\n id: 27142991, category: 15450095",
+        "required": false,
+        "dictionary": true,
+        "numeric": false,
+        "valueOptions": {
+          "status": "loaded",
+          "examples": [
+            "A",
+            "A+",
+            "A++",
+            "A+++",
+            "B",
+            "C",
+            "D",
+            "E"
+          ],
+          "total": 10,
+          "truncated": true
+        }
+      },
+      "candidates": [
+        {
+          "attrIdent": "attr_KlassEnergopotrebleniya",
+          "name": "Класс энергопотребления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassEnergopotrebleniya2",
+          "name": "Класс энергопотребления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassEnergopotrebleniya3",
+          "name": "Класс энергопотребления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassEnergopotrebleniya4",
+          "name": "Класс энергопотребления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassEnergopotrebleniya5",
+          "name": "Класс энергопотребления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassEnergopotrebleniya6",
+          "name": "Класс энергопотребления (Справочник \"Номенклатура\" (Общие))",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_IndikatorEnergopotrebleniya",
+          "name": "Индикатор энергопотребления (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassMoiki",
+          "name": "Класс мойки",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassOtzhima",
+          "name": "Класс отжима",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassStirki",
+          "name": "Класс стирки",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassSushki",
+          "name": "Класс сушки",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassSushkiCM",
+          "name": "Класс сушки (Сушильные машины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlassZaschitiOtPorazheniyaElTokom",
+          "name": "Класс защиты от поражения эл. током (Паровой шкаф)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlimaticheskiiKlass",
+          "name": "Климатический класс",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlimaticheskiiKlass2",
+          "name": "Климатический класс",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KlimaticheskiiKlass3",
+          "name": "Климатический класс (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_58Min",
+          "name": "58 мин. (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_59Min",
+          "name": "59 мин. (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_60Min",
+          "name": "60 мин (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_80Min",
+          "name": "80 мин (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_90min",
+          "name": "90 мин (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_aerogril_",
+          "name": "Аэрогриль (Мини-печи)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_aerogril_DSH",
+          "name": "Аэрогриль (Духовые шкафы)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_AirWash",
+          "name": "Air Wash (Сушильные машины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_amortizator",
+          "name": "Амортизатор (Вытяжки)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_antiallergiya",
+          "name": "Антиаллергия (Стиральные машины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_antiallergiya2",
+          "name": "Антиаллергия (Сушильные машины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_antiallergiyaPar",
+          "name": "Антиаллергия + пар (Стиральные машины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_antibakterial_nayaSistema",
+          "name": "Антибактериальная система",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_antibakterial_niiPlastik",
+          "name": "Антибактериальный пластик",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        }
+      ],
+      "suggestion": {
+        "id": "yandexattr_27142991",
+        "attrIdent": "attr_KlassEnergopotrebleniya",
+        "needsReview": true,
+        "reason": "Название и тип (словарь) совпадают, но в PIM несколько неотличимых кандидатов «Класс энергопотребления» без указания категории — требуется ручной выбор нужного справочника."
+      },
+      "baselineSuggestion": null,
+      "humanVerdict": "pending"
+    },
+    {
+      "attribute": {
+        "id": "yandexattr_25611830",
+        "name": "Тип управления",
+        "description": "\n id: 25611830, category: 15450095",
+        "required": false,
+        "dictionary": true,
+        "numeric": false,
+        "valueOptions": {
+          "status": "loaded",
+          "examples": [
+            "электромеханическое",
+            "электронное"
+          ],
+          "total": 2,
+          "truncated": false
+        }
+      },
+      "candidates": [
+        {
+          "attrIdent": "attr_PereklyuchateliTip",
+          "name": "Тип управления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipUpravleniyaStirM",
+          "name": "Тип управления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipUpravleniya",
+          "name": "Тип управления (Мини-печи)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipUpravleniya2",
+          "name": "Тип управления (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipUpravleniyaCHn",
+          "name": "Тип управления (Чайники)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipUpravleniyaPSH",
+          "name": "Тип управления (Паровой шкаф)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_BlokirovkaPaneliUpravleniya",
+          "name": "Блокировка панели управления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_BlokirovkaPUGazVark",
+          "name": "Блокировка панели управления (Варочные поверхности газовые)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_HeatPump",
+          "name": "Тип сушки (Сушильные машины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_InvertorniiKompressor",
+          "name": "Тип компрессора",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialPaneli",
+          "name": "Панель управления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_PodsvetkaElementovUpravleniya",
+          "name": "Подсветка элементов управления: (Блендеры)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_PodsvetkaPUGazVark",
+          "name": "Подсветка панели управления (Варочные поверхности газовые)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_Stiral_nayaMashinaTip",
+          "name": "Стиральная машина (тип)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_Tip",
+          "name": "Тип (Смесители)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipCHn",
+          "name": "Тип (Чайники)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDispleya",
+          "name": "Тип дисплея (Кофемашины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDispleya2",
+          "name": "Тип дисплея (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDispleya3",
+          "name": "Тип дисплея (Справочник \"Номенклатура\" (Общие))",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDuhovki2",
+          "name": "Тип духовки",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDvigatelya",
+          "name": "Тип компрессора (Встраиваемые холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipFil_tra",
+          "name": "Тип фильтра",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipGrilya",
+          "name": "Тип гриля (СВЧ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipIspol_zuemogoKofe",
+          "name": "Тип используемого кофе (Кофемашины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKofemolki",
+          "name": "Тип кофемолки (Кофемашины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKompressora",
+          "name": "Тип компрессора (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKonforok",
+          "name": "Тип конфорок (Варочные поверхности газовые)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKorziniDlyaStolovihPriborov",
+          "name": "Тип корзины для столовых приборов (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKrepleniyaDveri",
+          "name": "Тип крепления двери",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipMikrovolnovoiPechi",
+          "name": "Тип микроволновой печи",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        }
+      ],
+      "suggestion": {
+        "id": "yandexattr_25611830",
+        "attrIdent": "attr_TipUpravleniya2",
+        "needsReview": true,
+        "reason": "Точное совпадение названия и категории: «Тип управления (Шкафы Винные)», оба атрибута словарные, тип совместим."
+      },
+      "baselineSuggestion": "attr_TipUpravleniya2",
+      "humanVerdict": "pending"
+    },
+    {
+      "attribute": {
+        "id": "yandexattr_27143891",
+        "name": "Тип компрессора",
+        "description": "\n id: 27143891, category: 15450095",
+        "required": false,
+        "dictionary": true,
+        "numeric": false,
+        "valueOptions": {
+          "status": "loaded",
+          "examples": [
+            "инверторный",
+            "стандартный"
+          ],
+          "total": 2,
+          "truncated": false
+        }
+      },
+      "candidates": [
+        {
+          "attrIdent": "attr_InvertorniiKompressor",
+          "name": "Тип компрессора",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDvigatelya",
+          "name": "Тип компрессора (Встраиваемые холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKompressora",
+          "name": "Тип компрессора (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_HeatPump",
+          "name": "Тип сушки (Сушильные машины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_PereklyuchateliTip",
+          "name": "Тип управления",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_Stiral_nayaMashinaTip",
+          "name": "Стиральная машина (тип)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_Tip",
+          "name": "Тип (Смесители)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipCHn",
+          "name": "Тип (Чайники)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDispleya",
+          "name": "Тип дисплея (Кофемашины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDispleya2",
+          "name": "Тип дисплея (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDispleya3",
+          "name": "Тип дисплея (Справочник \"Номенклатура\" (Общие))",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipDuhovki2",
+          "name": "Тип духовки",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipFil_tra",
+          "name": "Тип фильтра",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipGrilya",
+          "name": "Тип гриля (СВЧ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipIspol_zuemogoKofe",
+          "name": "Тип используемого кофе (Кофемашины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKofemolki",
+          "name": "Тип кофемолки (Кофемашины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKonforok",
+          "name": "Тип конфорок (Варочные поверхности газовые)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKorziniDlyaStolovihPriborov",
+          "name": "Тип корзины для столовых приборов (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipKrepleniyaDveri",
+          "name": "Тип крепления двери",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipMikrovolnovoiPechi",
+          "name": "Тип микроволновой печи",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipMotora",
+          "name": "Тип мотора (Измельчители)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipNagreva",
+          "name": "Тип нагрева",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipNagrevatel_nogoElementa",
+          "name": "Тип нагревательного элемента (Мини-печи)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipNagrevatelya",
+          "name": "Тип нагревателя (Кофемашины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipOsvescheniya",
+          "name": "Тип освещения (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipPaneli",
+          "name": "Тип панели",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipPaneliVarP",
+          "name": "Тип панели (Справочник \"Номенклатура\" (Общие))",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipPosudomoechnoiMashini",
+          "name": "Тип посудомоечной машины",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipSushki",
+          "name": "Тип сушки",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_TipTkani",
+          "name": "Тип ткани (Паровой шкаф)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        }
+      ],
+      "suggestion": {
+        "id": "yandexattr_27143891",
+        "attrIdent": "attr_TipKompressora",
+        "needsReview": true,
+        "reason": "Атрибут категории винных шкафов «Тип компрессора (Шкафы Винные)», словарный тип совпадает с маркетплейсом."
+      },
+      "baselineSuggestion": "attr_TipKompressora",
+      "humanVerdict": "pending"
+    },
+    {
+      "attribute": {
+        "id": "yandexattr_37941350",
+        "name": "Материал полок",
+        "description": "\n id: 37941350, category: 15450095",
+        "required": false,
+        "dictionary": true,
+        "numeric": false,
+        "valueOptions": {
+          "status": "loaded",
+          "examples": [
+            "дерево",
+            "металл",
+            "пластик",
+            "стекло"
+          ],
+          "total": 4,
+          "truncated": false
+        }
+      },
+      "candidates": [
+        {
+          "attrIdent": "attr_MaterialPolok",
+          "name": "Материал полок (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialPolokVinnogoSHkafa",
+          "name": "Материал полок винного шкафа (Отдельно стоящие холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_BarabanNerzhaveyuschayaStal_",
+          "name": "Материал барабана",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_BarabanNerzhaveyuschayaStal_2",
+          "name": "Материал барабана (Сушильные машины)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_Fasad2",
+          "name": "Материал фасада (Справочник \"Номенклатура\" (Общие))",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoDvernihPolok",
+          "name": "Количество дверных полок",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolok",
+          "name": "Количество полок",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolok2",
+          "name": "Количество полок (Отдельно стоящие холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolokMK",
+          "name": "Количество полок м/к (Встраиваемые холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolokMK2",
+          "name": "Количество полок м/к (Отдельно стоящие холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoPolokNaDveri",
+          "name": "Количество полок на двери",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoReguliruemihPolok",
+          "name": "Количество регулируемых полок",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoReguliruemihPolokMK",
+          "name": "Количество регулируемых полок м/к (Встраиваемые холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoReguliruemihPolokMK2",
+          "name": "Количество регулируемых полок м/к (Отдельно стоящие холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoReguliruemihPolokOtdH",
+          "name": "Количество регулируемых полок (Отдельно стоящие холодильники)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolichestvoSteklyannihPolok",
+          "name": "Количество стеклянных полок",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_KolVoPolok",
+          "name": "Кол-во полок (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 4,
+          "dictionary": true,
+          "typeName": "float",
+          "numeric": true,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_Material",
+          "name": "Материал (Мойки композитные)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_Material2",
+          "name": "Материал (Смесители)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialCHashi",
+          "name": "Материал чаши: (Блендеры)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialDveri",
+          "name": "Материал двери (Шкафы Винные)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialIspolneniyaVityazhki",
+          "name": "Материал исполнения вытяжки (Вытяжки)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialKameriDrobleniya",
+          "name": "Материал камеры дробления (Измельчители)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialKolbi",
+          "name": "Материал колбы (Дозаторы)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialKorpusa",
+          "name": "Материал корпуса: (Блендеры)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialKorpusa2",
+          "name": "Материал корпуса (Тостеры)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialKorpusa3",
+          "name": "Материал корпуса (Чайники)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialPompi",
+          "name": "Материал помпы (Дозаторы)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialPoverhnostiDveri",
+          "name": "Материал поверхности двери (Паровой шкаф)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        },
+        {
+          "attrIdent": "attr_MaterialRabocheiKameri",
+          "name": "Материал рабочей камеры (ПММ)",
+          "group": "Основные (из 1С)",
+          "type": 7,
+          "dictionary": true,
+          "typeName": "dictionary",
+          "numeric": false,
+          "valueOptions": {
+            "status": "loaded",
+            "examples": [
+              "177х900х300",
+              "1х3",
+              "45х290х520",
+              "KFP 2 (приобретается отдельно)",
+              "185х600х332",
+              "150-120",
+              "кнопочный, мультифункциональный",
+              "815х448х558"
+            ],
+            "total": 3267,
+            "truncated": true
+          }
+        }
+      ],
+      "suggestion": {
+        "id": "yandexattr_37941350",
+        "attrIdent": "attr_MaterialPolok",
+        "needsReview": true,
+        "reason": "Точное совпадение: «Материал полок (Шкафы Винные)», словарный тип, значения (дерево/металл/пластик/стекло) совместимы по смыслу."
+      },
+      "baselineSuggestion": "attr_MaterialPolok",
+      "humanVerdict": "pending"
+    }
+  ]
+}

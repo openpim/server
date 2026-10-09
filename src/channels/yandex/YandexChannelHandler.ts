@@ -1025,6 +1025,8 @@ export class YandexChannelHandler extends ChannelHandler {
                     filtering: param.filtering,
                     allowCustomValues: param.allowCustomValues,
                     dictionary: param.type === 'ENUM',
+                    dictionaryValues: param.type === 'ENUM' && Array.isArray(param.values) ? param.values : undefined,
+                    unit: defaultUnit?.name,
                     dictionaryLinkPost: param.type === 'ENUM' ? {
                         body: {
                             attribute_id: param.id,
