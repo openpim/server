@@ -24,6 +24,7 @@ export interface MappingSuggestion {
     attrIdent: string | null
     needsReview: boolean
     reason: string
+    alternatives?: { attrIdent: string; reason: string; needsReview: boolean }[]
 }
 
 export interface MappingVisibilityContext {
@@ -133,8 +134,8 @@ export function buildMappingRequests(groups: any[], attributes: any[], language:
             id: String(attr.id), name: String(attr.name || '').slice(0, 400),
             description: String(attr.description || '').slice(0, 1500),
             required: !!attr.required, dictionary: !!attr.dictionary,
-            typeName: ({ ENUM: 'dictionary', TEXT: 'text', NUMERIC: 'number', BOOLEAN: 'boolean' } as Record<string, string>)[String(attr.type).toUpperCase()],
-            numeric: !!attr.isNumber || attr.type === 'NUMERIC' || /\[(число|number)\]|\((integer|decimal|number)\)/i.test(attr.name || '')
+            typeName: ({ ENUM: 'dictionary', TEXT: 'text', NUMERIC: 'number', INTEGER: 'integer', BOOLEAN: 'boolean', OBJECT: 'object', TEXT_ARRAY: 'textArray', OBJECT_ARRAY: 'objectArray' } as Record<string, string>)[String(attr.type).toUpperCase()],
+            numeric: !!attr.isNumber || ['NUMERIC', 'INTEGER'].includes(attr.type) || /\[(число|number)\]|\((integer|decimal|number)\)/i.test(attr.name || '')
         }
         const keywords = tokens(attribute.name)
         const ranked = [...candidates.values()].map(candidate => {
@@ -158,6 +159,7 @@ export function validateMappingResponse(response: any, requests: MappingRequest[
         const request = requests.find(row => row.attribute.id === entry.id)
         if (!request) throw new Error('Invalid marketplace identifier in AI mapping response.')
         if (seen.has(entry.id)) throw new Error('Duplicate marketplace identifier in AI mapping response.')
+        if (entry.alternatives !== undefined && (!Array.isArray(entry.alternatives) || entry.alternatives.length > 3 || entry.alternatives.some((row: any) => !row || typeof row.attrIdent !== 'string' || typeof row.reason !== 'string'))) throw new Error('Invalid AI mapping alternatives.')
         const candidate = request.candidates.find(row => row.attrIdent === entry.attrIdent)
         if (entry.attrIdent !== null && !candidate) {
             seen.set(entry.id, {
@@ -168,13 +170,19 @@ export function validateMappingResponse(response: any, requests: MappingRequest[
             })
             continue
         }
-        const needsReview = entry.needsReview || request.attribute.dictionary || request.attribute.numeric || !!candidate?.dictionary || [3, 4, 9].includes(candidate?.type || 0)
-        seen.set(entry.id, { id: entry.id, attrIdent: entry.attrIdent, needsReview, reason: entry.reason.slice(0, 600) })
+        const alternativeIds = new Set([entry.attrIdent])
+        const alternatives = (entry.alternatives || []).filter((row: any) => {
+            if (alternativeIds.has(row.attrIdent) || !request.candidates.some(candidate => candidate.attrIdent === row.attrIdent)) return false
+            alternativeIds.add(row.attrIdent)
+            return true
+        }).map((row: any) => ({ attrIdent: row.attrIdent, reason: row.reason.slice(0, 600), needsReview: true }))
+        const needsReview = entry.needsReview || alternatives.length > 0 || request.attribute.dictionary || request.attribute.numeric || !!candidate?.dictionary || [3, 4, 9].includes(candidate?.type || 0)
+        seen.set(entry.id, { id: entry.id, attrIdent: entry.attrIdent, needsReview, reason: entry.reason.slice(0, 600), ...(alternatives.length ? { alternatives } : {}) })
     }
     return requests.map(row => seen.get(row.attribute.id) || { id: row.attribute.id, attrIdent: null, needsReview: true, reason: 'No unambiguous match found.' })
 }
 
-export async function suggestMappings(requests: MappingRequest[], config: MappingAIConfig, context: { category?: string; language?: string } = {}): Promise<MappingSuggestion[]> {
+export async function suggestMappings(requests: MappingRequest[], config: MappingAIConfig, context: { category?: string; language?: string; marketplace?: string } = {}): Promise<MappingSuggestion[]> {
     if (!config.enabled) throw new Error('AI mapping is disabled.')
     if (requests.length > 200) throw new Error('AI mapping supports at most 200 attributes per request.')
     const deadline = Date.now() + config.timeoutMs

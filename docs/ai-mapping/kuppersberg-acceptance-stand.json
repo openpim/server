@@ -1,0 +1,131 @@
+{
+  "date": "2026-10-09T10:58:46.072Z",
+  "database": "kuppersberg",
+  "sourceChannel": 21,
+  "sourceIdentifier": "ym",
+  "copyChannel": 32,
+  "identifier": "ym_ai_sandbox_20261009_cooktop",
+  "copyActive": false,
+  "categoryId": "237418",
+  "categoryName": "Все товары/Бытовая техника/Встраиваемая техника/Варочные панели",
+  "clearedCount": 20,
+  "cleared": [
+    {
+      "id": "yandexattr_23679910",
+      "name": null,
+      "previousAttrIdent": "ymattr_23679910"
+    },
+    {
+      "id": "yandexattr_14805523",
+      "name": null,
+      "previousAttrIdent": "ymattr_14805523"
+    },
+    {
+      "id": "yandexattr_14805336",
+      "name": null,
+      "previousAttrIdent": "ymattr_14805336"
+    },
+    {
+      "id": "yandexattr_14805494",
+      "name": null,
+      "previousAttrIdent": "ymattr_14805494"
+    },
+    {
+      "id": "yandexattr_23681910",
+      "name": null,
+      "previousAttrIdent": "ymattr_23681910"
+    },
+    {
+      "id": "yandexattr_38641390",
+      "name": null,
+      "previousAttrIdent": "ymattr_38641390"
+    },
+    {
+      "id": "yandexattr_38642810",
+      "name": null,
+      "previousAttrIdent": "ymattr_38642810"
+    },
+    {
+      "id": "yandexattr_38635950",
+      "name": null,
+      "previousAttrIdent": "ymattr_38635950"
+    },
+    {
+      "id": "yandexattr_38635670",
+      "name": null,
+      "previousAttrIdent": "ymattr_38635670"
+    },
+    {
+      "id": "yandexattr_38635850",
+      "name": null,
+      "previousAttrIdent": "ymattr_38635850"
+    },
+    {
+      "id": "yandexattr_38485730",
+      "name": null,
+      "previousAttrIdent": "ymattr_38485730_237418"
+    },
+    {
+      "id": "yandexattr_38486550",
+      "name": null,
+      "previousAttrIdent": "ymattr_38486550_237418"
+    },
+    {
+      "id": "yandexattr_22454033",
+      "name": null,
+      "previousAttrIdent": "ymattr_22454033_237418"
+    },
+    {
+      "id": "yandexattr_13887626",
+      "name": null,
+      "previousAttrIdent": "ymattr_13887626_237418"
+    },
+    {
+      "id": "yandexattr_44234790",
+      "name": null,
+      "previousAttrIdent": "ymattr_44234790_237418"
+    },
+    {
+      "id": "yandexattr_38485570",
+      "name": null,
+      "previousAttrIdent": "ymattr_38485570_237418"
+    },
+    {
+      "id": "yandexattr_38304130",
+      "name": null,
+      "previousAttrIdent": "ymattr_38304130_237418"
+    },
+    {
+      "id": "yandexattr_39375370",
+      "name": null,
+      "previousAttrIdent": "ymattr_39375370"
+    },
+    {
+      "id": "yandexattr_39596190",
+      "name": null,
+      "previousAttrIdent": "ymattr_39596190"
+    },
+    {
+      "id": "yandexattr_39565950",
+      "name": null,
+      "previousAttrIdent": "ymattr_39565950"
+    }
+  ],
+  "preservedCounts": {
+    "filled": 45,
+    "expr": 12,
+    "empty": 28
+  },
+  "methodology": "Inactive single-category copy for the manual UI acceptance run. Only the listed rows were cleared; all other rows, expressions, service rows and visibility are preserved. No LLM calls; the user runs the AI scenario in the UI. Source channel untouched.",
+  "verification": {
+    "sourceUnchanged": true,
+    "copyInactive": true,
+    "clearedRowsEmpty": true,
+    "preservedRowsEqual": true
+  },
+  "baseline": {
+    "sourceMappingsSha256": "539de4d9ab1abc6c4e0a1f569264fc7deb88f4ffacf129a188ed6ba18e59fdaa",
+    "copyMappingsSha256AtCreation": "ab156d06add0a094384401f14a3c03cae2d9efb1789e93196a207d9901d6f5cf",
+    "recordedAt": "2026-10-09T11:01:28.484Z"
+  }
+}

@@ -8,11 +8,14 @@
 
 ## Документы
 
+- [Выбор источника из альтернатив AI](source-alternatives.md).
+- [Общие поля Яндекса: подбор источников и ограничения применения](yandex-general-fields.md).
 - [Журнал выполненной работы](work-log.md).
 - [WEB и серверный контекст проверки](web-review.md).
 - [Выводы по методу прямых запросов к LLM](llm-conclusions.md).
 - [Альтернативные подходы и порядок развития](approaches.md).
 - [Тест самых используемых маппингов Kuppersberg](kuppersberg-popular.md).
+- [Стенд ручной приёмки: копия варочных панелей и чек-лист](kuppersberg-acceptance-run.md).
 - [Исправления видимости товаров и поиска: повторный тест](target-visibility-and-search.md).
 - [Специфические характеристики техники: 45 новых строк](kuppersberg-specific.md).
 - [План испытаний Kuppersberg](kuppersberg-next-steps.md).

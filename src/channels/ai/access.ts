@@ -4,6 +4,7 @@ import type { ModelManager } from '../../models/manager'
 import { buildMappingRequests, MappingAIConfig, MappingRequest, MappingSuggestion, MappingVisibilityContext, suggestMappings } from './mapping'
 import { enrichMappingRequests, loadMarketplaceDictionary, LoadPIMDictionaries } from './values'
 import { buildMappingReview } from './review'
+import { yandexGeneralFields } from './yandexFields'
 
 type MappingContext = Pick<Context, 'checkAuth' | 'getCurrentUser' | 'canEditConfig' | 'canEditChannel' | 'canViewChannel'>
 type MappingManager = Pick<ModelManager, 'getChannels' | 'getLanguages' | 'getAttributesInfo'>
@@ -36,7 +37,7 @@ interface SuggestionArguments {
 }
 
 type MappingHandlerFactory = (channel: any) => { getAttributes(channel: any, categoryId: string): Promise<any[]> }
-type Suggest = (requests: MappingRequest[], config: MappingAIConfig, context: { category?: string; language?: string }) => Promise<MappingSuggestion[]>
+type Suggest = (requests: MappingRequest[], config: MappingAIConfig, context: { category?: string; language?: string; marketplace?: string }) => Promise<MappingSuggestion[]>
 type LoadVisibilityPaths = (ids: string[], tenantId: string, relationId: number | null) => Promise<string[] | { paths: string[]; targetPaths: string[] }>
 
 export async function resolveMappingSuggestions(context: MappingContext, manager: MappingManager, args: SuggestionArguments, config: MappingAIConfig,
@@ -63,10 +64,12 @@ export async function resolveMappingSuggestions(context: MappingContext, manager
             if ([...paths, ...(targetPaths || [])].some(path => !/^\d+(\.\d+)*$/.test(path)) || !ids.every(id => paths.some(path => path.split('.').pop() === id))) throw new Error('AI mapping category visibility is unavailable; reload the channel.')
             visibility = { paths, targetPaths, relationId }
         }
-        const attributes = await getHandler(channel).getAttributes(channel, args.categoryId)
         const requestedIds = [...new Set(args.attributeIds)].filter(id => !id.startsWith('#'))
+        const generalFields = channel.type === 9 ? yandexGeneralFields : []
+        const attributes = requestedIds.some(id => !generalFields.some(field => field.id === id))
+            ? await getHandler(channel).getAttributes(channel, args.categoryId) : []
         const selectedAttributes = requestedIds.map(id => {
-            const attribute = attributes.find(row => row.id === id)
+            const attribute = generalFields.find(row => row.id === id) || attributes.find(row => row.id === id)
             if (!attribute) throw new Error('Unknown AI mapping marketplace attribute identifier.')
             return attribute
         })
@@ -79,12 +82,17 @@ export async function resolveMappingSuggestions(context: MappingContext, manager
         const requests = await enrichMappingRequests(baseRequests, allGroups, selectedAttributes, args.language, channel.tenantId, loadPIMDictionaries,
             attribute => loadMarketplaceDictionary(attribute, config, metadataDeadline - Date.now()))
         const categoryName = typeof storedCategory?.name === 'string' ? storedCategory.name : storedCategory?.name?.[args.language]
-        const suggestions = await suggest(requests, config, { category: String(categoryName || args.categoryId).slice(0, 500), language: args.language })
+        const suggestions = await suggest(requests, config, { category: String(categoryName || args.categoryId).slice(0, 500), language: args.language,
+            marketplace: ({ 2: 'Wildberries', 3: 'Ozon', 9: 'Yandex Market' } as Record<number, string>)[channel.type] })
         return suggestions.map(suggestion => {
             const request = requests.find(request => request.attribute.id === suggestion.id)
             if (!request) throw new Error('Invalid AI mapping suggestion scope.')
             const review = buildMappingReview(request, suggestion)
-            return { ...suggestion, needsReview: suggestion.needsReview || review.kind !== 'direct', review }
+            const options = [suggestion, ...(suggestion.alternatives || [])].filter(option => option.attrIdent && request.candidates.some(candidate => candidate.attrIdent === option.attrIdent))
+                .map((option, index) => ({ attrIdent: option.attrIdent, reason: option.reason, needsReview: true, recommended: index === 0 && option.attrIdent === suggestion.attrIdent,
+                    review: buildMappingReview(request, { ...suggestion, ...option, needsReview: true }) }))
+            if (options.length > 1 || (!suggestion.attrIdent && options.length)) Object.assign(review, { options })
+            return { ...suggestion, needsReview: suggestion.needsReview || options.length > 1 || review.kind !== 'direct' || selectedAttributes.some(row => row.id === suggestion.id && row.aiMappingScope === 'general'), review }
         })
     })
 }

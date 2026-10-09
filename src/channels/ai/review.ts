@@ -31,10 +31,12 @@ export function buildMappingReview(request: MappingRequest, suggestion: MappingS
     const checks: string[] = []
     let kind = !chosen ? 'unmatched' : suggestion.needsReview ? 'review' : 'direct'
     if (chosen && pim) {
-        const sameRepresentation = (attribute.dictionary && chosen.type === 7) || (attribute.numeric && [3, 4].includes(chosen.type)) ||
+        const sameRepresentation = (attribute.dictionary && chosen.type === 7) || (attribute.numeric && (marketType === 'integer' ? chosen.type === 3 : [3, 4].includes(chosen.type))) ||
             (marketType === 'boolean' && chosen.type === 2) || (marketType === 'text' && [1, 8].includes(chosen.type))
         if (marketType === 'unknown') checks.push('marketplace_type_unknown')
         else if (!sameRepresentation) { checks.push('representation_differs'); kind = 'conversion' }
+        if (['textArray', 'objectArray'].includes(marketType)) checks.push('list_format_required')
+        if (['object', 'objectArray'].includes(marketType)) checks.push('object_structure_required')
         if (attribute.numeric && marketplace.unit && pim.unit && (units[marketplace.unit.toLowerCase()] || marketplace.unit) !== pim.unit) {
             checks.push('units_differ'); kind = 'conversion'
         }
@@ -44,7 +46,7 @@ export function buildMappingReview(request: MappingRequest, suggestion: MappingS
         const packaging = /упаков/i
         const gasBurners = /конфор/i.test(attribute.name) && /газов/i.test(attribute.name) && /конфор/i.test(chosen.name) && !/газов/i.test(chosen.name)
         if ((dimension && ((niche.test(attribute.name) !== niche.test(chosen.name)) || (packaging.test(attribute.name) !== packaging.test(chosen.name)))) || gasBurners) {
-            checks.push('scope_differs'); kind = 'review'
+            checks.push('scope_differs'); if (kind !== 'conversion') kind = 'review'
         }
         if ((pim.valueOptions?.sharedByAttributes || 0) > 1) checks.push('shared_dictionary')
         if ((attribute.dictionary && marketplace.valueOptions?.status !== 'loaded') || (chosen.type === 7 && pim.valueOptions?.status !== 'loaded')) checks.push('dictionary_unknown')

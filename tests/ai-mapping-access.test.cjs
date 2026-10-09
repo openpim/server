@@ -12,6 +12,59 @@ function fixtures() {
   return { channel, context, manager }
 }
 
+test('Yandex general fields use trusted metadata without a category API request and preserve mappings', async () => {
+  const { context, manager, channel } = fixtures()
+  channel.type = 9
+  const before = JSON.stringify(channel)
+  const result = await resolveMappingSuggestions(context, manager, {
+    channelId: '42', categoryId: 'cat_1', mappingKey: 'category', language: 'ru',
+    attributeIds: ['vendor', 'pictures', 'basicPrice', 'boxCount', 'adult']
+  }, { enabled: true }, () => { throw Error('category API must not be needed') }, async requests => {
+    assert.deepEqual(requests.map(row => row.attribute.typeName), ['text', 'textArray', 'object', 'integer', 'boolean'])
+    return requests.map(row => ({ id: row.attribute.id, attrIdent: 'color', needsReview: false, reason: 'match' }))
+  })
+  assert.equal(result[0].needsReview, true)
+  assert.equal(result[1].review.kind, 'conversion')
+  assert.equal(result[2].review.kind, 'conversion')
+  assert.equal(JSON.stringify(channel), before)
+})
+
+test('general field metadata cannot be redefined by category metadata or invented from saved mappings', async () => {
+  const { context, manager, channel } = fixtures()
+  channel.type = 9
+  channel.mappings.category.attributes = [{ id: 'invented' }]
+  const args = { channelId: '42', categoryId: 'cat_1', mappingKey: 'category', language: 'ru', attributeIds: ['vendor', 'a'] }
+  const handler = () => ({ getAttributes: async () => [{ id: 'vendor', type: 'NUMERIC' }, { id: 'a', type: 'TEXT' }] })
+  await resolveMappingSuggestions(context, manager, args, { enabled: true }, handler, async requests => {
+    assert.equal(requests[0].attribute.typeName, 'text')
+    return []
+  })
+  await assert.rejects(resolveMappingSuggestions(context, manager, { ...args, attributeIds: ['invented'] }, { enabled: true }, handler), /Unknown/)
+  channel.type = 3
+  await assert.rejects(resolveMappingSuggestions(context, manager, { ...args, attributeIds: ['name'] }, { enabled: true }, handler), /Unknown/)
+})
+
+test('resolver reviews every AI alternative using authoritative PIM types', async () => {
+  const { context, manager, channel } = fixtures()
+  channel.type = 9
+  manager.getAttributesInfo = () => [{ visible: true, name: 'YM', attributes: [
+    { identifier: 'color', name: 'Название', valid: [10], type: 1 },
+    { identifier: 'number', name: 'Название числом', valid: [10], type: 4 },
+  ] }]
+  const result = await resolveMappingSuggestions(context, manager, {
+    channelId: '42', categoryId: 'cat_1', mappingKey: 'category', language: 'ru', attributeIds: ['name']
+  }, { enabled: true }, () => { throw Error('no API') }, async () => [{
+    id: 'name', attrIdent: 'color', reason: 'Preferred', needsReview: true,
+    alternatives: [{ attrIdent: 'number', reason: 'Other', needsReview: false }],
+  }])
+  const options = result[0].review.options
+  assert.equal(options.length, 2)
+  assert.equal(options[0].recommended, true)
+  assert.equal(options[0].review.pim.group, 'YM')
+  assert.equal(options[1].review.kind, 'conversion')
+  assert.equal(options[1].needsReview, true)
+})
+
 test('authorization requires authentication, tenant isolation and both channel/config permissions', () => {
   const { context, manager, channel } = fixtures()
   assert.equal(authorizeMapping(context, manager, '42', true).id, 42)

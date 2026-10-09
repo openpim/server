@@ -155,6 +155,19 @@ test('known matches are returned and omitted results become unmatched', () => {
   assert.equal(result[1].attrIdent, null)
 })
 
+test('alternatives are bounded, unique and restricted to the same marketplace shortlist', () => {
+  const input = requests()
+  input[0].candidates.push({ attrIdent: 'other_title', name: 'Название', type: 1, dictionary: false, group: 'YM' })
+  const result = validateMappingResponse({ suggestions: [{ ...entry(), alternatives: [
+    { attrIdent: 'other_title', reason: 'Источник для Яндекса' },
+    { attrIdent: 'other_title', reason: 'duplicate' },
+    { attrIdent: 'invented', reason: 'invalid' },
+  ] }] }, input)
+  assert.deepEqual(result[0].alternatives, [{ attrIdent: 'other_title', reason: 'Источник для Яндекса', needsReview: true }])
+  assert.equal(result[0].needsReview, true)
+  assert.throws(() => validateMappingResponse({ suggestions: [{ ...entry(), alternatives: 'bad' }] }, input), /Invalid/)
+})
+
 test('unknown marketplace IDs, duplicates and invalid shapes fail atomically', () => {
   for (const suggestions of [[entry('unknown')], [entry(), entry()], [{ ...entry(), needsReview: 'false' }]]) {
     assert.throws(() => validateMappingResponse({ suggestions }, requests()), /identifier|duplicate|invalid/i)
