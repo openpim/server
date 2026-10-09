@@ -18,6 +18,7 @@ const SPEC_MARKER = '_spec_'
 const OPTION_PREFIX = 'dnsattr_'
 const BRAND_ATTR_ID = 'dnsbrand'
 const COUNTRY_ATTR_ID = 'dnscountry'
+const REJECTION_CORRECTION_MESSAGE = 'Исправления сохранены в DNS. Отправьте товар на повторную модерацию в личном кабинете DNS.'
 
 interface JobContext {
     log: string
@@ -605,7 +606,12 @@ export class DnsChannelHandler extends ChannelHandler {
             tmp.status = data.status
             tmp.message = data.message
             if (data.syncedAt) tmp.syncedAt = data.syncedAt
-            if (typeof data.dnsError !== 'undefined') tmp.dnsError = data.dnsError
+        }
+        for (const field of ['dnsError', 'dnsNeedsResubmission']) {
+            if (typeof data[field] !== 'undefined' && tmp[field] !== data[field]) {
+                changed = true
+                tmp[field] = data[field]
+            }
         }
         if (data.url && tmp.url !== data.url) {
             changed = true
@@ -760,16 +766,59 @@ export class DnsChannelHandler extends ChannelHandler {
         if (Object.keys(optionValues).length > 0) product.specOptionValues = optionValues
 
         const existingId = item.values[channel.config.dnsIdAttr] ? ('' + item.values[channel.config.dnsIdAttr]).trim() : ''
+        let rejected = false
+        if (existingId) {
+            const productRes = await this.dnsRequestWithRetry(channel, context, 'get', '/products/' + encodeURIComponent(existingId))
+            if (productRes.status !== 200 || !productRes.json || !productRes.json.stage) {
+                const msg = 'Ошибка получения статуса товара DNS: ' + this.describeError(productRes)
+                context.log += msg
+                this.reportChannelError(channel, item, msg, true)
+                return changedValues
+            }
+            rejected = productRes.json.stage === 'Rejected'
+        }
+        let editResource = rejected ? 'rejection-correction' : 'uniform'
+        let editPath = '/products/' + encodeURIComponent(existingId) + '/' + editResource
+        let revision = ''
+        if (existingId) {
+            let editRes = await this.dnsRequestWithRetry(channel, context, 'get', editPath)
+            // Uniform is also unavailable before the product is sent to the DNS catalog.
+            if (!rejected && editRes.status === 409 && editRes.json &&
+                editRes.json.type === 'https://seller.dns-shop.ru/problems/PRODUCT_UNIFORM_EDIT_NOT_ALLOWED') {
+                editResource = 'rejection-correction'
+                editPath = '/products/' + encodeURIComponent(existingId) + '/' + editResource
+                editRes = await this.dnsRequestWithRetry(channel, context, 'get', editPath)
+            }
+            if (editRes.status !== 200) {
+                const msg = 'Ошибка получения текущей карточки DNS (' + editResource + '): ' + this.describeError(editRes)
+                context.log += msg
+                this.reportChannelError(channel, item, msg, true)
+                return changedValues
+            }
+            const editRevision = editRes.json && editRes.json.editRevision
+            if (typeof editRevision !== 'string' || !editRevision.trim()) {
+                const msg = 'DNS не вернул ревизию карточки (' + editResource + '), обновление не выполнено'
+                context.log += msg
+                this.reportChannelError(channel, item, msg, true)
+                return changedValues
+            }
+            revision = editRevision
+        }
+        const replace: any = {
+            specOptionValues: optionValues,
+            media: this.buildMedia(product),
+            mainPhotoUrl: product.mainPhotoUrl || ''
+        }
 
         if (process.env.OPENPIM_DNS_EMULATION === 'true') {
             const emulated = existingId
-                ? { method: 'PUT', url: '/products/' + existingId + '/uniform', body: { specOptionValues: optionValues, media: this.buildMedia(product), mainPhotoUrl: product.mainPhotoUrl || '' } }
+                ? { method: 'PUT', url: editPath, body: replace }
                 : { method: 'POST', url: '/products', body: product }
             const msg = 'Включена эмуляция работы, сообщение не было послано в DNS: ' + JSON.stringify(emulated)
             context.log += msg + '\n'
             data.status = 4
             data.message = 'Эмуляция DNS: запрос не отправлен (' + emulated.method + ' ' + emulated.url + ')'
-            delete data.dnsError
+            data.dnsError = false
             item.changed('channels', true)
             return changedValues
         }
@@ -792,30 +841,19 @@ export class DnsChannelHandler extends ChannelHandler {
             }
             data.status = 4
             data.message = JSON.stringify(created)
-            delete data.dnsError
+            data.dnsError = false
+            data.dnsNeedsResubmission = false
             item.changed('channels', true)
         } else {
-            // update: PUT uniform fully replaces specOptionValues/media
-            const uniformRes = await this.dnsRequestWithRetry(channel, context, 'get', '/products/' + encodeURIComponent(existingId) + '/uniform')
-            if (uniformRes.status !== 200) {
-                const msg = 'Ошибка получения текущей карточки DNS: ' + this.describeError(uniformRes)
-                context.log += msg
-                this.reportChannelError(channel, item, msg, true)
-                return changedValues
-            }
-            const uniform = uniformRes.json || {}
-            const replace: any = {
-                specOptionValues: optionValues,
-                media: this.buildMedia(product),
-                mainPhotoUrl: product.mainPhotoUrl || ''
-            }
+            // Both edit resources fully replace characteristics/media and require their own revision.
+            const revisionHeader = editResource === 'rejection-correction' ? 'If-Product-Rejection-Correction-Revision' : 'If-Product-Uniform-Revision'
             const putRes = await this.dnsRequest(
                 channel,
                 context,
                 'put',
-                '/products/' + encodeURIComponent(existingId) + '/uniform',
+                editPath,
                 replace,
-                { 'If-Product-Uniform-Revision': uniform.editRevision || '' }
+                { [revisionHeader]: revision }
             )
             if (putRes.status !== 200) {
                 const msg = 'Ошибка обновления карточки DNS: ' + this.describeError(putRes)
@@ -824,8 +862,10 @@ export class DnsChannelHandler extends ChannelHandler {
                 return changedValues
             }
             data.status = 4
-            data.message = JSON.stringify(putRes.json || {})
-            delete data.dnsError
+            data.dnsNeedsResubmission = rejected
+            data.message = rejected ? REJECTION_CORRECTION_MESSAGE : JSON.stringify(putRes.json || {})
+            data.dnsError = false
+            if (rejected) context.log += REJECTION_CORRECTION_MESSAGE + '\n'
             item.changed('channels', true)
         }
 
@@ -849,6 +889,7 @@ export class DnsChannelHandler extends ChannelHandler {
 
     private reportChannelError(channel: Channel, item: Item, message: string, fromDns: boolean) {
         const data = this.reportError(channel, item, message)
+        data.dnsNeedsResubmission = false
         if (fromDns) data.dnsError = true
         else delete data.dnsError
         item.changed('channels', true)
@@ -938,7 +979,13 @@ export class DnsChannelHandler extends ChannelHandler {
         if (product && product.id) data.dnsId = product.id
         if (data.dnsId) data.url = 'https://www.dns-shop.ru/product/' + data.dnsId + '/'
 
-        if (stage === 'Approved' && (sub === 'Selling' || sub === 'Paused' || !sub)) {
+        const needsResubmission = stage === 'Rejected' && !errKind && data.dnsNeedsResubmission === true
+        if ((stage && stage !== 'Rejected') || errKind) data.dnsNeedsResubmission = false
+
+        if (needsResubmission) {
+            data.status = 4
+            data.dnsError = false
+        } else if (stage === 'Approved' && (sub === 'Selling' || sub === 'Paused' || !sub)) {
             data.status = 2
             data.dnsError = false
         } else if (stage === 'Review' || sub === 'CreatingProduct' || sub === 'CreatingCard') {
@@ -951,7 +998,7 @@ export class DnsChannelHandler extends ChannelHandler {
             context.log += 'Неизвестный статус товара в DNS: stage=' + stage + ', subStatus=' + sub + '\n'
         }
 
-        data.message = JSON.stringify(product)
+        data.message = needsResubmission ? REJECTION_CORRECTION_MESSAGE : JSON.stringify(product)
         data.syncedAt = new Date().getTime()
         item.changed('channels', true)
     }
