@@ -66,7 +66,16 @@ export interface CatalogClient {
     close(): Promise<void>
 }
 
-export async function connectCatalog(config: ChatConfig, signal: AbortSignal): Promise<CatalogClient> {
+export interface ChatRequestContext {
+    chatId: string
+    messageId: string
+    runId: string
+    tenantId: string
+    userId: number
+    prompt: string
+}
+
+export async function connectCatalog(config: ChatConfig, signal: AbortSignal, context?: ChatRequestContext): Promise<CatalogClient> {
     const { Client } = require('@modelcontextprotocol/sdk/client/index.js')
     const { StreamableHTTPClientTransport } = require('@modelcontextprotocol/sdk/client/streamableHttp.js')
     const { CallToolResultSchema } = require('@modelcontextprotocol/sdk/types.js')
@@ -74,11 +83,33 @@ export async function connectCatalog(config: ChatConfig, signal: AbortSignal): P
     const client = new Client({ name: 'openpim-ai-chat', version: '1.0.0' }, { capabilities: {} })
     const nativeFetch = (globalThis as any).fetch
     if (!nativeFetch) throw new Error('MCP_REQUIRES_NODE_18')
+    const chatContext = context ? { ...context, prompt: context.prompt.slice(0, 12000),
+        promptTruncated: context.prompt.length > 12000 } : undefined
     const transport = new StreamableHTTPClientTransport(new URL(config.mcp.url), {
         requestInit: { headers: { authorization: `Bearer ${config.mcp.bearerToken}` } },
         fetch: async (url: any, options: any) => {
+            // Send context in protocol metadata, never in headers, tool arguments or model history.
+            // Include initialization/listing so prompts remain visible even when no tool is called.
+            let body = options?.body
+            if (chatContext && typeof body === 'string') {
+                const message = JSON.parse(body)
+                if (message && typeof message.method === 'string' && message.id !== undefined) {
+                    const diagnostic = { ...chatContext }
+                    message.params = { ...message.params, _meta: { ...message.params?._meta,
+                        'com.openpim/chat': diagnostic } }
+                    let annotated = JSON.stringify(message)
+                    // Leave headroom below MCP's 100 KiB body limit. Diagnostics must not
+                    // turn an otherwise valid large tool call into an HTTP 413.
+                    while (Buffer.byteLength(annotated, 'utf8') > 96 * 1024 && diagnostic.prompt.length) {
+                        diagnostic.prompt = diagnostic.prompt.slice(0, Math.floor(diagnostic.prompt.length / 2))
+                        diagnostic.promptTruncated = true
+                        annotated = JSON.stringify(message)
+                    }
+                    if (Buffer.byteLength(annotated, 'utf8') <= 96 * 1024) body = annotated
+                }
+            }
             // Requests never redirect a bearer credential to another endpoint.
-            const response = await nativeFetch(url, { ...options, redirect: 'error', signal })
+            const response = await nativeFetch(url, { ...options, body, redirect: 'error', signal })
             if (!response.body) return response
             const reader = response.body.getReader()
             let bytes = 0

@@ -211,7 +211,10 @@ async function execute(id: string, runId: string, user: ChatIdentity): Promise<v
             if (!updated) throw new Error('AI_CANCELLED')
         }
         await onProgress({ stage: 'catalog_connect' })
-        catalog = await connectCatalog(config, controller.signal)
+        catalog = await connectCatalog(config, controller.signal, {
+            chatId: current.chatId, messageId: input.id, runId,
+            tenantId: user.tenantId, userId: user.id, prompt: input.content
+        })
         const content = await runConversation({ config, provider: new OpenAICompatibleProvider(config), catalog,
             messages, catalogHistory: history.catalogHistory, signal: controller.signal, check, trace, onProgress })
         await check()
