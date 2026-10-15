@@ -1,0 +1,31 @@
+{
+  "AI_Chat": true,
+  "AI_ChatConfig": {
+    "tenantId": "default",
+    "provider": {
+      "adapter": "openai-compatible",
+      "baseUrl": "https://YOUR_PROVIDER/v1",
+      "apiKey": "YOUR_API_KEY",
+      "model": "gpt-6.1-sol",
+      "maxTokensParameter": "max_tokens"
+    },
+    "mcp": {
+      "url": "https://YOUR_PIM/mcp",
+      "bearerToken": "YOUR_MCP_TOKEN"
+    },
+    "limits": {
+      "requestTimeoutMs": 120000,
+      "maxToolRounds": 8,
+      "maxToolCalls": 20,
+      "maxConcurrentRequests": 5,
+      "maxConcurrentRequestsPerUser": 1,
+      "maxInputChars": 12000,
+      "maxHistoryChars": 48000,
+      "maxHistoryTurns": 20,
+      "maxToolResultChars": 16000,
+      "maxStoredToolResultChars": 64000,
+      "maxResponseBytes": 2000000,
+      "maxOutputTokens": 4096
+    }
+  }
+}
