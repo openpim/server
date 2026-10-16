@@ -1,3 +1,4 @@
+import { ozonAttributeType } from './attributeMetadata'
 import { Channel, ChannelExecution } from '../../models/channels'
 import { ChannelAttribute, ChannelCategory, ChannelHandler } from '../ChannelHandler'
 import fetch, { RequestInit, Response } from 'node-fetch'
@@ -1780,6 +1781,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 return { 
                     id: 'attr_' + elem.id, 
                     name: elem.name + ' ('+ elem.type + ')',
+                    ...ozonAttributeType(elem.type),
                     required: elem.is_required,
                     category: categoryId,
                     description: elem.description+'\n id: '+elem.id+', category: '+categoryId,
@@ -1858,6 +1860,7 @@ export class OzonChannelHandler extends ChannelHandler {
                 return { 
                     id: 'attr_' + elem.id, 
                     name: elem.name + ' ('+ elem.type + ')',
+                    ...ozonAttributeType(elem.type),
                     required: elem.is_required,
                     category: categoryId,
                     description: elem.description+'\n id: '+elem.id+', category: '+categoryId,

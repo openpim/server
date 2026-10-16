@@ -39,7 +39,7 @@ async function main () {
     const base = buildMappingRequests(candidates, attributes, 'ru', category.valid?.length ? category.valid : channel.valid,
       { paths, targetPaths, relationId: Number(category.visibleRelation) })
     requests = await enrichMappingRequests(base, candidates, attributes, 'ru', channel.tenantId,
-      async (ids, tenantId) => (await client.query(mappingLOVSamplesSQL, [tenantId, ids])).rows)
+      async (ids, tenantId, identifiers) => (await client.query(mappingLOVSamplesSQL, [tenantId, ids, identifiers])).rows)
     await client.query('ROLLBACK')
   } finally { await client.end() }
   const started = Date.now()

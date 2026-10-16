@@ -51,7 +51,7 @@ async function main () {
         .filter(attr => attr.identifier && attr.valid?.length && (!valid.length || attr.valid.some(type => valid.map(String).includes(String(type)))))
         .filter(createMappingVisibilityFilter(visibility)).map(attr => attr.identifier)).size
       requests = await enrichMappingRequests(buildMappingRequests(candidates, selected, 'ru', valid, visibility), candidates, selected, 'ru', channel.tenantId,
-        async (ids, tenantId) => (await db.query(mappingLOVSamplesSQL, [tenantId, ids])).rows)
+        async (ids, tenantId, identifiers) => (await db.query(mappingLOVSamplesSQL, [tenantId, ids, identifiers])).rows)
       await db.query('ROLLBACK')
     } finally { await db.end() }
     const result = { id: previous.id, name: previous.name, products: previous.products, liveAttributes: live.length,

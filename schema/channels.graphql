@@ -1,4 +1,6 @@
 type Query {
+  validateChannelMappingExpression(channelId: ID!, expression: String!): JSONObject!
+  previewChannelMappingExpression(channelId: ID!, expression: String!, sample: JSONObject!): JSONObject!
   getChannelAIMappingStatus(channelId: ID!): ChannelAIMappingStatus!
   getChannelTypes: [Int]!
   getChannels: [Channel]
@@ -12,7 +14,7 @@ type Query {
 }
 
 type Mutation {
-  suggestChannelAttributeMappings(channelId: ID!, categoryId: ID!, mappingKey: String!, language: String!, attributeIds: [ID!]!, groupIdentifier: String): [ChannelAIMappingSuggestion!]!
+  suggestChannelAttributeMappings(channelId: ID!, categoryId: ID!, mappingKey: String!, language: String!, attributeIds: [ID!]!, groupIdentifier: String, groupIdentifiers: [String!]): [ChannelAIMappingSuggestion!]!
   createChannel(identifier: String!, name: LanguageDependentString!, order: Int!, group: Boolean!, active: Boolean!, type: Int!, valid: [ID], visible: [ID], config: JSONObject, mappings: JSONObject, runtime: JSONObject, parentId: Int): ID!
   updateChannel(id: ID!, name: LanguageDependentString, order: Int, group: Boolean, active: Boolean, type: Int, valid: [ID], visible: [ID], config: JSONObject, mappings: JSONObject, runtime: JSONObject, parentId: Int) : ID!
   removeChannel(id: ID!) : Boolean!

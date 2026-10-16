@@ -1,7 +1,8 @@
 import type Context from '../../context'
 import type { ConfigAccess } from '../../context'
 import type { ModelManager } from '../../models/manager'
-import { buildMappingRequests, MappingAIConfig, MappingRequest, MappingSuggestion, MappingVisibilityContext, suggestMappings } from './mapping'
+import { buildMappingCandidatePools, MappingAIConfig, MappingRequest, MappingSuggestion, MappingVisibilityContext, suggestMappings } from './mapping'
+import { retrieveMappingCandidates } from './runtimeRetrieval'
 import { enrichMappingRequests, loadMarketplaceDictionary, LoadPIMDictionaries } from './values'
 import { buildMappingReview } from './review'
 import { yandexGeneralFields } from './yandexFields'
@@ -34,6 +35,7 @@ interface SuggestionArguments {
     language: string
     attributeIds: string[]
     groupIdentifier?: string | null
+    groupIdentifiers?: string[] | null
 }
 
 type MappingHandlerFactory = (channel: any) => { getAttributes(channel: any, categoryId: string): Promise<any[]> }
@@ -42,7 +44,7 @@ type LoadVisibilityPaths = (ids: string[], tenantId: string, relationId: number 
 
 export async function resolveMappingSuggestions(context: MappingContext, manager: MappingManager, args: SuggestionArguments, config: MappingAIConfig,
     getHandler: MappingHandlerFactory, suggest: Suggest = suggestMappings, configAccess: ConfigAccess, loadVisibilityPaths?: LoadVisibilityPaths,
-    loadPIMDictionaries?: LoadPIMDictionaries): Promise<MappingSuggestion[]> {
+    loadPIMDictionaries?: LoadPIMDictionaries, retrieve: typeof retrieveMappingCandidates = retrieveMappingCandidates): Promise<MappingSuggestion[]> {
     const channel = authorizeMapping(context, manager, args.channelId, true, configAccess)
     if (!config.enabled) throw new Error('AI mapping is disabled.')
     if (typeof args.categoryId !== 'string' || !args.categoryId || args.categoryId.length > 250 || typeof args.mappingKey !== 'string' || !args.mappingKey || args.mappingKey.length > 250) throw new Error('Invalid AI mapping category.')
@@ -75,19 +77,31 @@ export async function resolveMappingSuggestions(context: MappingContext, manager
         })
         const allGroups = manager.getAttributesInfo()
         if (args.groupIdentifier != null && (typeof args.groupIdentifier !== 'string' || !args.groupIdentifier || args.groupIdentifier.length > 250)) throw new Error('Invalid AI mapping group.')
-        const groups = args.groupIdentifier == null ? allGroups : allGroups.filter(group => group.identifier === args.groupIdentifier && group.visible)
-        if (args.groupIdentifier != null && groups.length !== 1) throw new Error('AI mapping group is unavailable or ambiguous.')
-        const baseRequests = buildMappingRequests(groups, selectedAttributes, args.language, storedCategory?.valid?.length ? storedCategory.valid : channel.valid, visibility)
+        if (args.groupIdentifiers != null && (args.groupIdentifier != null || !Array.isArray(args.groupIdentifiers) || args.groupIdentifiers.length > 200 ||
+            args.groupIdentifiers.some(id => typeof id !== 'string' || !id || id.length > 250))) throw new Error('Invalid AI mapping groups.')
+        const selectedGroups = [...new Set(args.groupIdentifiers ?? (args.groupIdentifier == null ? [] : [args.groupIdentifier]))]
+        const groups = selectedGroups.length ? allGroups.filter(group => selectedGroups.includes(group.identifier) && group.visible) : allGroups
+        if (selectedGroups.some(id => groups.filter(group => group.identifier === id).length !== 1)) throw new Error('AI mapping group is unavailable or ambiguous.')
+        const pools = buildMappingCandidatePools(groups, selectedAttributes, args.language, storedCategory?.valid?.length ? storedCategory.valid : channel.valid, visibility)
+        // Only hybrid needs full-pool metadata. Oversized pools use bounded lexical fallback.
+        const fullPool = config.retrievalMode === 'hybrid' && (pools[0]?.candidates.length || 0) <= 2000
+        const baseRequests = fullPool ? pools : pools.map(request => ({ ...request, candidates: request.candidates.slice(0, 30) }))
         const metadataDeadline = Date.now() + 10000
-        const requests = await enrichMappingRequests(baseRequests, allGroups, selectedAttributes, args.language, channel.tenantId, loadPIMDictionaries,
+        const enriched = await enrichMappingRequests(baseRequests, allGroups, selectedAttributes, args.language, channel.tenantId, loadPIMDictionaries,
             attribute => loadMarketplaceDictionary(attribute, config, metadataDeadline - Date.now()))
         const categoryName = typeof storedCategory?.name === 'string' ? storedCategory.name : storedCategory?.name?.[args.language]
-        const suggestions = await suggest(requests, config, { category: String(categoryName || args.categoryId).slice(0, 500), language: args.language,
+        const category = String(categoryName || args.categoryId).slice(0, 500)
+        const retrieved = await retrieve(enriched, { tenantId: channel.tenantId, channelId: String(channel.id), language: args.language, category },
+            fullPool ? 'hybrid' : 'lexical')
+        if (config.retrievalMode === 'hybrid' && !fullPool) retrieved.diagnostics.fallback = 'pool_limit'
+        retrieved.diagnostics.candidates = pools[0]?.candidates.length || 0
+        const requests = retrieved.requests
+        const suggestions = await suggest(requests, config, { category, language: args.language,
             marketplace: ({ 2: 'Wildberries', 3: 'Ozon', 9: 'Yandex Market' } as Record<number, string>)[channel.type] })
         return suggestions.map(suggestion => {
             const request = requests.find(request => request.attribute.id === suggestion.id)
             if (!request) throw new Error('Invalid AI mapping suggestion scope.')
-            const review = buildMappingReview(request, suggestion)
+            const review = { ...buildMappingReview(request, suggestion), retrieval: retrieved.diagnostics }
             const options = [suggestion, ...(suggestion.alternatives || [])].filter(option => option.attrIdent && request.candidates.some(candidate => candidate.attrIdent === option.attrIdent))
                 .map((option, index) => ({ attrIdent: option.attrIdent, reason: option.reason, needsReview: true, recommended: index === 0 && option.attrIdent === suggestion.attrIdent,
                     review: buildMappingReview(request, { ...suggestion, ...option, needsReview: true }) }))

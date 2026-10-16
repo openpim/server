@@ -3,6 +3,20 @@ const assert = require('node:assert/strict')
 const { sampleDictionary, enrichMappingRequests, loadMarketplaceDictionary } = require('../src/channels/ai/values.ts')
 const { buildMappingRequests } = require('../src/channels/ai/mapping.ts')
 
+test('shared LOV samples are keyed by attribute after filtering, including empty domains', async () => {
+  const groups = [{ attributes: [{ identifier: 'control', lov: 10 }, { identifier: 'material', lov: 10 }, { identifier: 'empty', lov: 10 }] }]
+  const requests = [{ attribute: { id: 'a' }, candidates: ['control', 'material', 'empty'].map(attrIdent => ({ attrIdent, type: 7, dictionary: true })) }]
+  const result = await enrichMappingRequests(requests, groups, [], 'ru', 'tenant', async (ids, tenant, identifiers) => {
+    assert.deepEqual(identifiers, ['control', 'material', 'empty'])
+    return [{ id: 10, attributeIdent: 'control', values: [{ value: 'слайдерное' }], total: 1 },
+      { id: 10, attributeIdent: 'material', values: [{ value: 'сталь' }], total: 1 },
+      { id: 10, attributeIdent: 'empty', values: [], total: 0 }]
+  })
+  assert.deepEqual(result[0].candidates.map(row => row.valueOptions.examples), [['слайдерное'], ['сталь'], []])
+  assert.equal(result[0].candidates[0].valueOptions.attributeFiltered, true)
+  assert.equal(result[0].candidates[2].valueOptions.total, 0)
+})
+
 test('dictionary samples localize, deduplicate, bound labels and omit IDs/headers', () => {
   const values = Array.from({ length: 12 }, (_, i) => ({ id: i, value: { ru: 'вариант ' + i + 'x'.repeat(100), en: 'SECRET_OTHER_LOCALE' }, headers: { token: 'SECRET_KEY' } }))
   const sample = sampleDictionary({ values, has_next: true }, 'ru')

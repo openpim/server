@@ -7,6 +7,8 @@ import { fn, literal, Op, QueryTypes } from 'sequelize'
 import { ChannelsManagerFactory } from '../channels'
 import { replaceOperations, processBulkUpdateChannelsActions } from './utils'
 import { EventType } from '../models/actions'
+import { validateChannelExpressions } from '../channels/expressionValidation'
+import { evaluateMappingExpression, validateMappingExpression } from '../channels/expressions'
 import { updateChannelMappings } from './import/channels'
 import { authorizeMapping, resolveMappingSuggestions } from '../channels/ai/access'
 import { readMappingConfig } from '../channels/ai/mapping'
@@ -15,6 +17,23 @@ import { mappingLOVSamplesSQL } from '../channels/ai/values'
 
 export default {
     Query: {
+        validateChannelMappingExpression: async (_parent: any, { channelId, expression }: any, context: Context) => {
+            context.checkAuth()
+            const manager = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            authorizeMapping(context, manager, channelId, false, ConfigAccess.CHANNELS)
+            return validateMappingExpression(expression)
+        },
+        previewChannelMappingExpression: async (_parent: any, { channelId, expression, sample }: any, context: Context) => {
+            context.checkAuth()
+            const manager = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
+            const channel = authorizeMapping(context, manager, channelId, false, ConfigAccess.CHANNELS)
+            const diagnostic = validateMappingExpression(expression)
+            if (!diagnostic.valid) return { ok: false, diagnostic, error: diagnostic.message }
+            try {
+                const value = await evaluateMappingExpression(expression, { item: sample.item || { values: {} }, data: sample.data || {}, channel: { id: channel.id, identifier: channel.identifier, type: channel.type } })
+                return { ok: true, diagnostic, valueType: value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value, value: value === undefined ? null : value }
+            } catch (error: any) { return { ok: false, diagnostic, error: error.message } }
+        },
         getChannelAIMappingStatus: async (parent: any, { channelId }: any, context: Context) => {
             context.checkAuth()
             const manager = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
@@ -258,8 +277,8 @@ export default {
                         relationId === null ? Promise.resolve([]) : sequelize.query<{ path: string }>(mappingVisibilityTargetsSQL, options)
                     ])
                     return { paths: rows.map(row => row.path), targetPaths: targets.map(row => row.path) }
-                }, async (ids, tenantId) => sequelize.query<{ id: number; values: any[]; total: number }>(mappingLOVSamplesSQL, {
-                    bind: [tenantId, ids], type: QueryTypes.SELECT
+                }, async (ids, tenantId, identifiers) => sequelize.query<{ id: number; attributeIdent: string; values: any[]; total: number }>(mappingLOVSamplesSQL, {
+                    bind: [tenantId, ids, identifiers], type: QueryTypes.SELECT
                 }))
         },
         triggerChannel: async (parent: any, { id, language, data }: any, context: Context) => {
@@ -291,6 +310,8 @@ export default {
                 throw new Error('Identifier already exists: ' + identifier + ', tenant: ' + context.getCurrentUser()!.tenantId)
             }
 
+            validateChannelExpressions(config, mappings)
+            const initialMappings = mappings ? updateChannelMappings(context, { type, mappings: {} }, Object.fromEntries(Object.entries<any>(mappings).map(([key, value]) => [key, { ...value, changed: true, _expectedUpdatedAt: null }])), []) : {}
             const val = valid ? valid.map((elem: string) => parseInt(elem)) : []
             const vis = visible ? visible.map((elem: string) => parseInt(elem)) : []
             const chan = await sequelize.transaction(async (t) => {
@@ -307,7 +328,7 @@ export default {
                     valid: val,
                     visible: vis,
                     config: config ? config : {},
-                    mappings: mappings ? mappings : {},
+                    mappings: initialMappings,
                     runtime: runtime ? runtime : {},
                     parentId: parentId != null ? parentId : 0,
                 }, {transaction: t})
@@ -329,44 +350,52 @@ export default {
 
             const mng = ModelsManager.getInstance().getModelManager(context.getCurrentUser()!.tenantId)
 
-            let chan  = mng.getChannels().find( (chan) => chan.id === nId)
-            if (!chan) {
-                throw new Error('Failed to find channel by id: ' + id + ', tenant: ' + mng.getTenantId())
-            }
-
-            if (name) chan.name = name
-            if (order != null) chan.order = order
-            if (group) chan.group = group
-            if (active != null) chan.active = active
-            if (type != null) chan.type = type
-            if (valid) chan.valid = valid.map((elem: string) => parseInt(elem))
-            if (visible) chan.visible = visible.map((elem: string) => parseInt(elem))
-            if (config) {
-                if (type === 2 && config.wbToken === '*****') { // WB
-                    config.wbToken = chan.config.wbToken
-                } else if (type === 3 && config.ozonApiKey === '*****') { // Ozon
-                    config.ozonApiKey = chan.config.ozonApiKey
-                } else if (type === 10 && config.dnsApiToken === '*****') { // DNS
-                    config.dnsApiToken = chan.config.dnsApiToken
-                } else if (chan.type === 11 && config.mvideoApiKey === '*****') {
-                    config.mvideoApiKey = chan.config.mvideoApiKey
+            authorizeMapping(context, mng, String(id), false, ConfigAccess.CHANNELS)
+            const chan = await sequelize.transaction(async (t) => {
+                const chan = await Channel.applyScope(context).findOne({ where: { id: nId }, transaction: t, lock: t.LOCK.UPDATE })
+                if (!chan) throw new Error('Channel not found.')
+                const previousType = chan.type
+                const previousConfig = chan.config
+                const previousMappings = chan.mappings
+                if (name) chan.name = name
+                if (order != null) chan.order = order
+                if (group) chan.group = group
+                if (active != null) chan.active = active
+                if (type != null) chan.type = type
+                if (valid) chan.valid = valid.map((elem: string) => parseInt(elem))
+                if (visible) chan.visible = visible.map((elem: string) => parseInt(elem))
+                if (config) {
+                    config = JSON.parse(JSON.stringify(config))
+                    if (chan.type === 2 && config.wbToken === '*****') { // WB
+                        config.wbToken = chan.config.wbToken
+                    } else if (chan.type === 3 && config.ozonApiKey === '*****') { // Ozon
+                        config.ozonApiKey = chan.config.ozonApiKey
+                    } else if (chan.type === 10 && config.dnsApiToken === '*****') { // DNS
+                        config.dnsApiToken = chan.config.dnsApiToken
+                    } else if (chan.type === 11 && config.mvideoApiKey === '*****') {
+                        config.mvideoApiKey = chan.config.mvideoApiKey
+                    }
+                    chan.config = config
                 }
-                chan.config = config
-            }
-            if (parentId != null) chan.parentId = parentId
-            const conflictedCategories: string[] = []
-            if (mappings) {
-                chan.mappings = updateChannelMappings(context, chan, mappings, conflictedCategories)
-            }
-            if (runtime) chan.runtime = chan.type === 11 ? {
-                ...runtime,
-                mvideoAcceptedTasks: chan.runtime.mvideoAcceptedTasks || [],
-                mvideoRetryAt: chan.runtime.mvideoRetryAt || 0
-            } : runtime
-            chan.updatedBy = context.getCurrentUser()!.login
-            await sequelize.transaction(async (t) => {
-                await chan!.save({ transaction: t })
+                if (parentId != null) chan.parentId = parentId
+                const conflictedCategories: string[] = []
+                if (mappings) {
+                    chan.mappings = updateChannelMappings(context, { type: [2, 3, 9].includes(previousType) ? previousType : chan.type, mappings: previousMappings }, mappings, conflictedCategories)
+                }
+                if (runtime) chan.runtime = chan.type === 11 ? {
+                    ...runtime,
+                    mvideoAcceptedTasks: chan.runtime.mvideoAcceptedTasks || [],
+                    mvideoRetryAt: chan.runtime.mvideoRetryAt || 0
+                } : runtime
+                chan.updatedBy = context.getCurrentUser()!.login
+
+                if (conflictedCategories.length) throw new Error('Mapping conflicts: ' + conflictedCategories.join(', '))
+                validateChannelExpressions(chan.config, chan.mappings, previousConfig, previousMappings)
+                await chan.save({ transaction: t })
+                return chan
             })
+            const cachedIndex = mng.getChannels().findIndex(row => row.id === nId)
+            if (cachedIndex >= 0) mng.getChannels()[cachedIndex] = chan
 
             const channelMng = ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId)
             if (chan.active) {
@@ -375,8 +404,6 @@ export default {
                 channelMng.stopChannel(chan)
             }
             await mng.reloadModelRemotely(chan.id, null, 'CHANNEL', false, context.getUserToken())
-            if (conflictedCategories.length > 0)
-                throw new Error('The following categories could not be updated due to conflicts: ' + conflictedCategories.join(', '))
 
             return chan.id
         },

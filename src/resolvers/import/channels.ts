@@ -1,50 +1,35 @@
 import Context from "../../context"
-import logger from "../../logger"
 
 export function updateChannelMappings(context: Context, chan: any, mappings: any, conflictedCategories: string[]) {
-    const tmp = { ...chan.mappings, ...mappings } // merge mappings to avoid deletion from another user
-    for (const prop in mappings) {
-        if (mappings[prop].deleted) {
-            delete tmp[prop]             
-        } else if (chan.type === 2 || chan.type === 3) { // WB || Ozon
-            if (typeof mappings[prop] === 'object' && mappings[prop] !== null) {
-                const newMapping = mappings[prop]
-                const oldMapping = chan.mappings[prop]
-                if (newMapping.changed) {
-                    delete newMapping.changed
-                    if (oldMapping && (!oldMapping.updatedAt || oldMapping.updatedAt < newMapping.readingTime)) {
-                        delete newMapping.readingTime
-                        if (JSON.stringify(oldMapping) !== JSON.stringify(newMapping)) {
-                            tmp[prop] = {
-                                ...newMapping,
-                                updatedAt: new Date().toISOString(),
-                                updatedBy: context.getCurrentUser()!.login
-                            }
-                        }
-                    } else {
-                        if (oldMapping) {
-                            logger.info(`The following categories could not be updated due to conflicts: ${oldMapping.name}`)
-                            logger.info(`updatedAt -> ${oldMapping.updatedAt}`)
-                            logger.info(`readingTime -> ${newMapping.readingTime}`)
-                            logger.info(`oldMapping -> ${JSON.stringify(oldMapping)}`)
-                            logger.info(`newMapping -> ${JSON.stringify(newMapping)}`)
-                            delete newMapping.readingTime
-                            if (!process.env.NO_MAPPING_ERROR) conflictedCategories.push(oldMapping.name)
-                            tmp[prop] = oldMapping
-                        } else {
-                            delete newMapping.readingTime
-                            tmp[prop] = {
-                                ...newMapping,
-                                updatedAt: new Date().toISOString(),
-                                updatedBy: context.getCurrentUser()!.login
-                            }
-                        }
-                    }
-                } else {
-                    tmp[prop] = oldMapping
-                }
-            }
+    const tmp = { ...chan.mappings }
+    const tracked = [2, 3, 9].includes(chan.type)
+    for (const prop of Object.keys(mappings)) {
+        if (['__proto__', 'constructor', 'prototype'].includes(prop)) throw new Error('Invalid mapping key.')
+        const draft = mappings[prop]
+        if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('Invalid channel mapping.')
+        const oldMapping = chan.mappings?.[prop]
+        const versioned = Object.prototype.hasOwnProperty.call(draft, '_expectedUpdatedAt')
+        const checked = tracked && (prop !== '_default' || versioned)
+        // Unmarked legacy Yandex clients retain their original SAVE contract.
+        if (checked && !draft.deleted && !draft.changed && (versioned || chan.type !== 9)) continue
+        const conflict = checked && (versioned
+            ? (oldMapping?.updatedAt || null) !== draft._expectedUpdatedAt
+            : !!oldMapping?.updatedAt && (!draft.readingTime || oldMapping.updatedAt >= draft.readingTime))
+        if (conflict) {
+            conflictedCategories.push(String(oldMapping?.name || draft.name || prop))
+            continue
         }
+        if (draft.deleted) { delete tmp[prop]; continue }
+        const clean = JSON.parse(JSON.stringify(draft))
+        delete clean.changed
+        delete clean.readingTime
+        delete clean._savedAIContext
+        delete clean._expectedUpdatedAt
+        tmp[prop] = checked ? {
+            ...clean,
+            updatedAt: new Date(Math.max(Date.now(), Date.parse(oldMapping?.updatedAt || '') + 1 || 0)).toISOString(),
+            updatedBy: context.getCurrentUser()!.login
+        } : clean
     }
     return tmp
 }

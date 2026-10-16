@@ -12,6 +12,8 @@ export interface MappingCandidate {
     typeName?: string
     numeric?: boolean
     valueOptions?: DictionarySample
+    description?: string
+    unit?: string
 }
 
 export interface MappingRequest {
@@ -73,23 +75,26 @@ export function readMappingConfig(env: NodeJS.ProcessEnv = process.env): Mapping
     try { url = new URL(baseUrl) } catch { throw new Error('Invalid OPENPIM_AI_BASE_URL.') }
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error('Invalid OPENPIM_AI_BASE_URL.')
     const apiKey = env.OPENPIM_AI_API_KEY?.trim() || ''
+    if (apiKey && url.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error('Remote AI endpoints with credentials require HTTPS.')
     if (provider === 'openai' && !apiKey) throw new Error('OPENPIM_AI_API_KEY is required.')
     const model = env.OPENPIM_AI_MODEL?.trim() || ''
     if (!model) throw new Error('OPENPIM_AI_MODEL is required.')
     const responseFormat = env.OPENPIM_AI_RESPONSE_FORMAT || 'json_schema'
     if (responseFormat !== 'json_schema' && responseFormat !== 'json_object') throw new Error('Invalid OPENPIM_AI_RESPONSE_FORMAT.')
+    const retrievalMode = env.OPENPIM_AI_MAPPING_RETRIEVAL || 'hybrid'
+    if (retrievalMode !== 'hybrid' && retrievalMode !== 'lexical') throw new Error('Invalid OPENPIM_AI_MAPPING_RETRIEVAL.')
     return {
-        enabled: true, provider, baseUrl, apiKey, model, responseFormat,
+        enabled: true, provider, baseUrl, apiKey, model, responseFormat, retrievalMode,
         useSystemCA: env.OPENPIM_AI_USE_SYSTEM_CA === 'true',
         timeoutMs: positiveInteger(env, 'OPENPIM_AI_TIMEOUT_MS', 60000, 300000),
         batchSize: positiveInteger(env, 'OPENPIM_AI_MAPPING_BATCH_SIZE', 20, 30)
     }
 }
 
-function localizedName(name: any, language: string): string {
-    if (typeof name === 'string') return name.slice(0, 400)
+function localizedName(name: any, language: string, limit = 400): string {
+    if (typeof name === 'string') return name.slice(0, limit)
     if (!name || typeof name !== 'object') return ''
-    return String(name[language] || Object.values(name).find(value => typeof value === 'string' && value) || '').slice(0, 400)
+    return String(name[language] || Object.values(name).find(value => typeof value === 'string' && value) || '').slice(0, limit)
 }
 
 const ignoredTokens = new Set(['для', 'при', 'или', 'the', 'and', 'for', 'number', 'numeric', 'integer', 'decimal', 'text', 'boolean'])
@@ -109,6 +114,26 @@ function tokens(value: string): string[] {
 }
 
 export function buildMappingRequests(groups: any[], attributes: any[], language: string, validTypes: any[], visibility?: MappingVisibilityContext): MappingRequest[] {
+    return buildMappingCandidatePools(groups, attributes, language, validTypes, visibility)
+        .map(request => ({ ...request, candidates: request.candidates.slice(0, 30) }))
+}
+
+export function rankLexicalCandidates(attribute: { name: string; dictionary?: boolean; numeric?: boolean }, candidates: MappingCandidate[]): MappingCandidate[] {
+    const keywords = tokens(attribute.name)
+    return candidates.map(candidate => {
+        const candidateWords = tokens(candidate.name + ' ' + candidate.attrIdent)
+        const common = keywords.filter(word => candidateWords.includes(word)).length
+        const exact = candidate.name.toLowerCase() === attribute.name.toLowerCase() ? 100 : 0
+        const groupCommon = keywords.filter(word => tokens(candidate.group).includes(word)).length
+        const dictionaryScore = attribute.dictionary && candidate.dictionary ? 1 : 0
+        const numericScore = attribute.numeric && [3, 4].includes(candidate.type) ? 2 : 0
+        return { candidate, score: exact + common * 10 + groupCommon + dictionaryScore + numericScore }
+    }).sort((a, b) => b.score - a.score || a.candidate.attrIdent.localeCompare(b.candidate.attrIdent)).map(row => row.candidate)
+}
+
+// Complete pools retain the same tenant-supplied groups, type and visibility filters.
+// Retrieval must run before truncation, never on the existing top30.
+export function buildMappingCandidatePools(groups: any[], attributes: any[], language: string, validTypes: any[], visibility?: MappingVisibilityContext): MappingRequest[] {
     const candidates = new Map<string, MappingCandidate>()
     const isVisible = createMappingVisibilityFilter(visibility)
     for (const group of groups) {
@@ -123,7 +148,9 @@ export function buildMappingRequests(groups: any[], attributes: any[], language:
             if (found) { found.group = (found.group + ', ' + groupName).slice(0, 800); continue }
             candidates.set(attrIdent, {
                 attrIdent, name: localizedName(attr.name, language), group: groupName,
-                type: Number(attr.type), dictionary: Number(attr.type) === 7
+                type: Number(attr.type), dictionary: Number(attr.type) === 7,
+                description: localizedName(attr.description || (Array.isArray(attr.options) ? attr.options.find((option: any) => option.name === 'description')?.value : ''), language, 1500),
+                ...(typeof attr.unit === 'string' ? { unit: attr.unit.slice(0, 80) } : {})
             })
         }
     }
@@ -137,17 +164,7 @@ export function buildMappingRequests(groups: any[], attributes: any[], language:
             typeName: ({ ENUM: 'dictionary', TEXT: 'text', NUMERIC: 'number', INTEGER: 'integer', BOOLEAN: 'boolean', OBJECT: 'object', TEXT_ARRAY: 'textArray', OBJECT_ARRAY: 'objectArray' } as Record<string, string>)[String(attr.type).toUpperCase()],
             numeric: !!attr.isNumber || ['NUMERIC', 'INTEGER'].includes(attr.type) || /\[(число|number)\]|\((integer|decimal|number)\)/i.test(attr.name || '')
         }
-        const keywords = tokens(attribute.name)
-        const ranked = [...candidates.values()].map(candidate => {
-            const candidateWords = tokens(candidate.name + ' ' + candidate.attrIdent)
-            const common = keywords.filter(word => candidateWords.includes(word)).length
-            const exact = candidate.name.toLowerCase() === attribute.name.toLowerCase() ? 100 : 0
-            const groupCommon = keywords.filter(word => tokens(candidate.group).includes(word)).length
-            const dictionaryScore = attribute.dictionary && candidate.dictionary ? 1 : 0
-            const numericScore = attribute.numeric && [3, 4].includes(candidate.type) ? 2 : 0
-            return { candidate, score: exact + common * 10 + groupCommon + dictionaryScore + numericScore }
-        }).sort((a, b) => b.score - a.score || a.candidate.attrIdent.localeCompare(b.candidate.attrIdent))
-        return { attribute, candidates: ranked.slice(0, 30).map(row => row.candidate) }
+        return { attribute, candidates: rankLexicalCandidates(attribute, [...candidates.values()]) }
     })
 }
 

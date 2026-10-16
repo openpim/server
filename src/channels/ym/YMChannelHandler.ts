@@ -30,17 +30,17 @@ export class YMChannelHandler extends ChannelHandler {
             let fileName = temp.path({prefix: 'openpim'})
 
             if (channel.config.ymShopAttributes) {
-                const name = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'name'))
-                const company = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'company'))
-                const url = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'url'))
-                const currency1 = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'currency1'))
+                const name = await this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'name'))
+                const company = await this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'company'))
+                const url = await this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'url'))
+                const currency1 = await this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === 'currency1'))
 
                 if (name && company && url && currency1) {
                     const yml:any = {yml_catalog : {$: {date: dateFormat(new Date(), 'yyyy-mm-dd HH:MM')}, shop: {name: name, company: company, url: url, currencies:{ currency:[]}}}}
 
-                    channel.config.ymShopAttributes.forEach((attrConfig:any) => {
+                    for (const attrConfig of channel.config.ymShopAttributes) {
                         if (attrConfig.id !== 'name' && attrConfig.id !== 'company' && attrConfig.id !== 'url') {
-                            const attr = this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === attrConfig.id))
+                            const attr = await this.getValueByExpression(channel.config.ymShopAttributes.find((elem:any) => elem.id === attrConfig.id))
                             if (attr != null) {
                                 if (attrConfig.id.startsWith('currency')) {
                                     const arr = attr.split(',')
@@ -56,7 +56,7 @@ export class YMChannelHandler extends ChannelHandler {
                                 }
                             }
                         }                    
-                    })
+                    }
 
                     await this.processCategories(channel, yml, language, context)
 

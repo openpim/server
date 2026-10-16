@@ -195,3 +195,39 @@ test('resolver filters the requested group before ranking and returns server rev
   assert.equal(result[0].review.marketplace.typeName, 'dictionary')
   await assert.rejects(access.resolveMappingSuggestions(context, manager, { ...args, groupIdentifier: 'missing' }, { enabled: true }, handler, suggest, 7), /group/i)
 })
+
+test('resolver unions selected groups before one hybrid retrieval and one LLM call', async () => {
+  const { context, manager } = fixtures()
+  const groups = [
+    { identifier: 'erp', visible: true, name: 'ERP', attributes: [{ identifier: 'color', name: 'Цвет', type: 1, valid: [10] }] },
+    { identifier: 'market', visible: true, name: 'Market', attributes: [{ identifier: 'other', name: 'Оттенок', type: 1, valid: [10] }, { identifier: 'color', name: 'Цвет', type: 1, valid: [10] }] },
+    { identifier: 'outside', visible: true, attributes: [{ identifier: 'excluded', name: 'Цвет', type: 1, valid: [10] }] },
+    { identifier: 'hidden', visible: false, attributes: [{ identifier: 'hidden', name: 'Цвет', type: 1, valid: [10] }] }
+  ]
+  manager.getAttributesInfo = () => groups
+  let calls = 0; let retrievals = 0
+  const args = { channelId: '42', categoryId: 'cat_1', mappingKey: 'category', language: 'ru', attributeIds: ['a'], groupIdentifiers: ['erp', 'market', 'erp'] }
+  await access.resolveMappingSuggestions(context, manager, args, { enabled: true, retrievalMode: 'hybrid' }, () => ({ getAttributes: async () => [{ id: 'a', name: 'Цвет' }] }),
+    async requests => { calls++; assert.deepEqual(requests[0].candidates.map(row => row.attrIdent).sort(), ['color', 'other']); return [] }, 7, undefined, undefined,
+    async requests => { retrievals++; assert.equal(requests[0].candidates.length, 2); return { requests, diagnostics: { mode: 'hybrid' } } })
+  assert.equal(calls, 1); assert.equal(retrievals, 1)
+})
+
+test('empty plural group selection retains all visible groups; unavailable and malformed selections are rejected', async () => {
+  const { context, manager } = fixtures()
+  manager.getAttributesInfo = () => [
+    { identifier: 'a', visible: true, attributes: [{ identifier: 'color', name: 'Цвет', type: 1, valid: [10] }] },
+    { identifier: 'b', visible: true, attributes: [{ identifier: 'weight', name: 'Вес', type: 4, valid: [10] }] },
+    { identifier: 'hidden', visible: false, attributes: [{ identifier: 'hidden', valid: [10] }] },
+    { identifier: 'duplicate', visible: true, attributes: [] }, { identifier: 'duplicate', visible: true, attributes: [] }
+  ]
+  const args = { channelId: '42', categoryId: 'cat_1', mappingKey: 'category', language: 'ru', attributeIds: ['x'], groupIdentifiers: [] }
+  const handler = () => ({ getAttributes: async () => [{ id: 'x', name: 'Цвет' }] })
+  await access.resolveMappingSuggestions(context, manager, args, { enabled: true }, handler, async requests => {
+    assert.deepEqual(requests[0].candidates.map(row => row.attrIdent).sort(), ['color', 'weight']); return []
+  }, 7)
+  for (const groupIdentifiers of [['missing'], ['a', 'hidden'], ['duplicate'], [''], [4], 'a', Array(201).fill('a')]) {
+    await assert.rejects(access.resolveMappingSuggestions(context, manager, { ...args, groupIdentifiers }, { enabled: true }, handler, async () => { throw Error('must not call LLM') }, 7), /group/i)
+  }
+  await assert.rejects(access.resolveMappingSuggestions(context, manager, { ...args, groupIdentifiers: ['b'], groupIdentifier: 'a' }, { enabled: true }, handler, async () => [], 7), /group/i)
+})

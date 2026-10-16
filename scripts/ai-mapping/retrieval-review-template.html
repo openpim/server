@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AIMapping · Проверка источников</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#263336;background:#f3f5f4}*{box-sizing:border-box}body{margin:0}header{padding:24px 30px;background:#fff;border-bottom:1px solid #d6dfdb}h1{font-size:25px;margin:0 0 8px}p{line-height:1.5}.muted{color:#61736b;font-size:13px}.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}button,input,select,textarea{font:inherit}button{border:1px solid #baccc3;background:#fff;border-radius:5px;padding:8px 12px;cursor:pointer;color:#254d3c}button.primary{background:#245e46;color:#fff;border-color:#245e46}button:disabled{opacity:.5;cursor:default}input,select,textarea{padding:9px;border:1px solid #becbc4;border-radius:4px;background:#fff}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #31755a;outline-offset:2px}main{display:grid;grid-template-columns:280px minmax(0,1fr);max-width:1500px;margin:auto}aside{padding:20px;border-right:1px solid #d6dfdb}aside input,aside select{width:100%;margin-bottom:12px}#case-list{max-height:70vh;overflow:auto;display:grid;gap:4px}.case-button{text-align:left;color:#334a40;width:100%;font-size:13px}.case-button.active{background:#dfece4;border-color:#5f9779}.case-button.done{border-left:4px solid #5f9779}article{padding:26px;min-width:0}h2{font-size:23px;line-height:1.3;margin:0 0 8px}.rankings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:22px 0}h3{font-size:15px;margin:0 0 12px}ol{padding-left:20px;margin:0}li{margin-bottom:12px;font-size:14px;line-height:1.4}code{font-size:11px;overflow-wrap:anywhere;color:#597065}.pick{display:block;margin-top:5px;padding:3px 7px;font-size:11px}#review-form{border-top:1px solid #d6dfdb;padding-top:22px;display:grid;gap:12px}label{display:grid;gap:6px;font-size:14px}label.inline{display:flex;align-items:center;gap:8px}textarea{width:100%;min-height:65px}.warning{border-left:3px solid #c3a35e;padding-left:12px;color:#655d42;font-size:13px}.status{min-height:20px;color:#28583e;font-size:13px}.legend{display:flex;gap:12px;justify-content:space-between}.reference{font-size:12px}footer{margin-top:20px}.empty{padding:24px;font-size:14px}@media(max-width:850px){main{grid-template-columns:1fr}aside{border:0}#case-list{max-height:180px}.rankings{grid-template-columns:1fr}article{padding:20px}header{padding:20px}}
+.value-samples{font-size:12px;line-height:1.5;background:#eaf0ec;border-radius:4px;padding:8px 10px;margin:7px 0;overflow-wrap:anywhere}.value-samples p{margin:4px 0}.value-samples .warning{font-size:11px;margin:5px 0}.type-info{font-size:12px;color:#526b5e;margin-top:4px}
+</style>
+<header>
+<h1>AIMapping · Проверка источников</h1>
+<p class="muted">Подтвердите подходящий PIM-источник по смыслу характеристики. Разные единицы или представления требуют отдельного правила преобразования; эта проверка не сохраняет маппинг канала.</p>
+<p class="warning">В исторических данных сохранены неполные пулы кандидатов. Подтверждение меток не делает их полными: для измерения Recall@30 нужен отдельный полный снимок доступных атрибутов. «Нет соответствия» означает отсутствие подходящего источника в проверенном контексте.</p>
+<div class="toolbar"><label>Проверяющий <input id="reviewer" placeholder="Имя или рабочий псевдоним" autocomplete="off"></label><button class="primary" id="export">Сохранить JSON</button><span id="progress" class="muted"></span></div>
+<p id="message" role="status" class="status"></p>
+</header>
+<main>
+<aside><input id="search" aria-label="Поиск характеристики" placeholder="Поиск характеристики"><select id="filter" aria-label="Фильтр статуса"><option value="all">Все строки</option><option value="pending">Не проверены</option><option value="confirmed">Подтверждены</option><option value="changed">Методы расходятся в первом выборе</option></select><nav id="case-list" aria-label="Характеристики"></nav></aside>
+<article><div class="legend muted"><span id="position"></span><span id="model"></span></div><h2 id="title"></h2><p id="category" class="muted"></p><p id="reference" class="reference"></p><div id="target-values"></div><div id="rankings" class="rankings"></div>
+<form id="review-form"><label>Источник PIM (identifier; несколько допустимых — через запятую)<input id="expected" list="all-candidates" autocomplete="off"><datalist id="all-candidates"></datalist></label><label class="inline"><input id="unmatched" type="checkbox"> Нет подходящего соответствия в проверенном контексте</label><label>Комментарий / необходимое преобразование<textarea id="notes"></textarea></label><div class="toolbar"><button class="primary" type="submit">Подтвердить</button><button id="pending" type="button">Вернуть к проверке</button><button id="next" type="button">Следующая непроверенная</button></div></form>
+<footer class="muted">Изменения сохраняются в черновик браузера, если это разрешено. Для передачи результатов используйте «Сохранить JSON». API, БД и выгрузка не вызываются.</footer>
+</article></main>
+<script id="review-data" type="application/json">__REVIEW_DATA__</script>
+<script>
+const payload=JSON.parse(document.getElementById('review-data').textContent);
+const dataset=payload.dataset, byId=new Map(dataset.cases.map(row=>[row.id,row]));
+const storageKey='openpim-embedding-review:'+payload.checksum;
+const get=id=>document.getElementById(id);
+let selected=dataset.cases[0]?.id;
+function message(text){get('message').textContent=text}
+try{const saved=JSON.parse(localStorage.getItem(storageKey)||'null');if(saved){for(const [id,label]of Object.entries(saved.labels||{})){const row=byId.get(id);if(row&&['pending','confirmed'].includes(label.status)&&Array.isArray(label.expectedAttrIdents)&&label.expectedAttrIdents.every(id=>typeof id==='string')&&typeof label.reviewer==='string'&&typeof label.notes==='string')row.label=label}get('reviewer').value=saved.reviewer||''}}catch{message('Автосохранение недоступно. Используйте «Сохранить JSON», прежде чем закрыть страницу.')}
+function persist(){try{localStorage.setItem(storageKey,JSON.stringify({reviewer:get('reviewer').value,labels:Object.fromEntries(dataset.cases.map(row=>[row.id,row.label]))}))}catch{message('Автосохранение недоступно. Сохраните результаты в JSON.')}}
+function draft(){byId.get(selected).label={status:'pending',expectedAttrIdents:[...new Set(get('expected').value.split(',').map(id=>id.trim()).filter(Boolean))],reviewer:get('reviewer').value.trim(),notes:get('notes').value,noMatch:get('unmatched').checked};persist();renderList()}
+function renderList(){const search=get('search').value.toLowerCase(),filter=get('filter').value;get('case-list').replaceChildren();for(const row of dataset.cases){const rank=payload.rankings[row.id];if(search&&!((row.attribute.name+' '+row.categoryName+' '+row.attribute.id).toLowerCase().includes(search)))continue;if(filter==='pending'&&row.label.status==='confirmed'||filter==='confirmed'&&row.label.status!=='confirmed'||filter==='changed'&&rank.lexical[0]===rank.semantic[0]&&rank.lexical[0]===rank.hybrid[0])continue;const button=document.createElement('button');button.type='button';button.className='case-button'+(row.id===selected?' active':'')+(row.label.status==='confirmed'?' done':'');button.textContent=row.attribute.name;button.onclick=()=>{selected=row.id;render()};get('case-list').append(button)}get('progress').textContent='Подтверждено '+dataset.cases.filter(row=>row.label.status==='confirmed').length+' / '+dataset.cases.length}
+const types={1:'Текст',2:'Булево',3:'Целое число',4:'Число',5:'Дата',6:'Время',7:'Справочник',8:'URL',9:'Связь'};
+function typeName(row){return types[row.type]||({dictionary:'Справочник',boolean:'Булево',integer:'Целое число',number:'Число',float:'Число',text:'Текст',textArray:'Список текстов',object:'Объект',objectArray:'Список объектов'}[row.typeName])||(row.dictionary?'Справочник':row.numeric?'Число':'Тип не указан')}
+function valueSamples(row){
+ const box=document.createElement('div');box.className='value-samples';
+ const options=row.valueOptions, examples=options?.status==='loaded'&&Array.isArray(options.examples)?options.examples:[];
+ const title=document.createElement('strong');title.textContent='Возможные значения / примеры';box.append(title);
+ if(options?.attributeFiltered){const note=document.createElement('p');note.className='muted';note.textContent='Значения отфильтрованы по атрибуту.';box.append(note)}
+ else if((options?.sharedByAttributes||0)>1){const warning=document.createElement('p');warning.className='warning';warning.textContent='Общий справочник: '+options.sharedByAttributes+' атрибутов. Эти примеры могут не относиться к данному полю.';box.append(warning)}
+ const values=document.createElement('p');values.textContent=examples.length?examples.slice(0,4).join(' · '):options?.status==='unavailable'?'Справочник недоступен в сохранённых данных.':options?.status==='loaded'&&options.total===0?'Справочник пуст в сохранённом снимке.':'Примеры значений не сохранены.';box.append(values);
+ if(examples.length>4){const more=document.createElement('details'),summary=document.createElement('summary'),text=document.createElement('p');summary.textContent='Все сохранённые примеры ('+examples.length+')';text.textContent=examples.join(' · ');more.append(summary,text);box.append(more)}
+ if(options?.status==='loaded'&&(options.truncated||options.total>examples.length)){const note=document.createElement('p');note.className='muted';note.textContent='Выборка неполная'+(options.total!==null&&options.total!==undefined?': всего '+options.total+' значений.':'.');box.append(note)}
+ return box;
+}
+function render(){
+ const row=byId.get(selected);if(!row)return;renderList();
+ get('position').textContent=(dataset.cases.indexOf(row)+1)+' / '+dataset.cases.length;get('model').textContent=payload.model;get('title').textContent=row.attribute.name;
+ get('category').textContent=(row.categoryName||row.category)+' · '+row.candidates.length+' кандидатов · '+row.attribute.id+' · '+typeName(row.attribute);
+ get('reference').textContent=row.reference?'Ранее сохранённый источник (не эталон): '+row.reference:'';
+ get('target-values').replaceChildren(valueSamples(row.attribute));get('rankings').replaceChildren();
+ const candidates=new Map(row.candidates.map(candidate=>[candidate.attrIdent,candidate]));
+ for(const [mode,title]of[['lexical','По словам'],['semantic','Embeddings'],['hybrid','Гибрид']]){
+  const section=document.createElement('section'),heading=document.createElement('h3'),list=document.createElement('ol');heading.textContent=title;section.append(heading,list);
+  for(const id of payload.rankings[row.id][mode].slice(0,5)){
+   const candidate=candidates.get(id),item=document.createElement('li'),name=document.createElement('span'),code=document.createElement('code'),info=document.createElement('p'),button=document.createElement('button');
+   name.textContent=candidate?.name||id;code.textContent=id;info.className='type-info';info.textContent=typeName(candidate||{})+' · '+(candidate?.group||'Группа не указана');
+   button.type='button';button.className='pick';button.textContent='Выбрать источник';button.onclick=()=>{get('expected').value=id;get('unmatched').checked=false;get('expected').disabled=false;draft()};
+   item.append(name,document.createElement('br'),code,info,valueSamples(candidate||{}),button);list.append(item);
+  }
+  get('rankings').append(section);
+ }
+ get('all-candidates').replaceChildren();
+ for(const candidate of row.candidates){const option=document.createElement('option');option.value=candidate.attrIdent;option.label=candidate.name;get('all-candidates').append(option)}
+ get('expected').value=row.label.expectedAttrIdents.join(', ');get('unmatched').checked=row.label.status==='confirmed'&&!row.label.expectedAttrIdents.length||row.label.noMatch===true;get('expected').disabled=get('unmatched').checked;get('notes').value=row.label.notes||'';
+}
+get('review-form').onsubmit=event=>{event.preventDefault();const reviewer=get('reviewer').value.trim(),expected=get('unmatched').checked?[]:[...new Set(get('expected').value.split(',').map(id=>id.trim()).filter(Boolean))];if(!reviewer||!get('unmatched').checked&&!expected.length){message('Укажите проверяющего и источник либо отметьте отсутствие соответствия.');return}byId.get(selected).label={status:'confirmed',expectedAttrIdents:expected,reviewer,notes:get('notes').value};persist();renderList();message('Метка подтверждена. Сохраните JSON для оценки.')};
+get('pending').onclick=()=>{byId.get(selected).label={status:'pending',expectedAttrIdents:[],reviewer:'',notes:get('notes').value};persist();render();message('Строка возвращена к проверке.')};
+get('next').onclick=()=>{const start=dataset.cases.findIndex(row=>row.id===selected);for(let step=1;step<=dataset.cases.length;step++){const row=dataset.cases[(start+step)%dataset.cases.length];if(row.label.status!=='confirmed'){selected=row.id;render();return}}message('Все строки проверены. Сохраните JSON.')};
+get('unmatched').onchange=()=>{get('expected').disabled=get('unmatched').checked;draft()};
+get('expected').oninput=draft;get('notes').oninput=draft;
+get('search').oninput=renderList;get('filter').onchange=renderList;get('reviewer').onchange=persist;
+get('export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(dataset,null,2)+'\n'],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='aimapping-reviewed-dataset.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);message('JSON сформирован. Перед запуском оценки используйте полный пул кандидатов.')};
+render();
+</script>
+</html>

@@ -76,14 +76,29 @@ test('visibility SQL preserves descendants and multiple incoming sources, isolat
       UNION ALL SELECT 2, '[{"value":"foreign"}]'::jsonb, 'other', NULL::timestamptz
       UNION ALL SELECT 3, '[{"value":"deleted"}]'::jsonb, 'tenant', '2020-01-01'::timestamptz
       UNION ALL SELECT 4, '{}'::jsonb, 'tenant', NULL::timestamptz
+    ), attributes(id,identifier,lov,"tenantId","deletedAt") AS (
+      VALUES (11,'source',1,'tenant',NULL::timestamptz), (12,'foreign',2,'tenant',NULL::timestamptz)
     ) ` + mappingLOVSamplesSQL
-    const samples = (await client.query(lovSQL, ['tenant', [1, 2, 3, 4]])).rows
+    const samples = (await client.query(lovSQL, ['tenant', [1, 2, 3, 4], ['source','foreign']])).rows
     assert.equal(samples.length, 1)
     assert.equal(samples[0].id, 1)
     assert.equal(samples[0].total, 12)
     assert.equal(samples[0].values.length, 8)
     assert.equal(samples[0].values[0].value.ru, 'value 1')
     assert.equal(samples[0].values[7].value.ru, 'value 8')
+    const scopedSQL = `WITH lovs(id,"values","tenantId","deletedAt") AS (
+      SELECT 1, jsonb_agg(jsonb_build_object('value','foreign '||n,'attrs',jsonb_build_array(99)) ORDER BY n)
+        || '[{"value":"global"},{"value":"slider","attrs":[11]},{"value":"steel","attrs":[12]}]'::jsonb,
+        'tenant', NULL::timestamptz FROM generate_series(1,20) n
+    ), attributes(id,identifier,lov,"tenantId","deletedAt") AS (
+      VALUES (11,'control',1,'tenant',NULL::timestamptz), (12,'material',1,'tenant',NULL::timestamptz),
+        (13,'foreign',1,'other',NULL::timestamptz), (14,'deleted',1,'tenant','2020-01-01'::timestamptz)
+    ) ` + mappingLOVSamplesSQL
+    const scoped = (await client.query(scopedSQL, ['tenant', [1], ['control','material','foreign','deleted']])).rows
+    assert.equal(scoped.length, 2)
+    assert.deepEqual(scoped.find(row => row.attributeIdent === 'control').values.map(row => row.value), ['global','slider'])
+    assert.deepEqual(scoped.find(row => row.attributeIdent === 'material').values.map(row => row.value), ['global','steel'])
+    assert.equal(scoped[0].total, 2)
     await client.query('ROLLBACK')
   } finally { await client.end() }
 })

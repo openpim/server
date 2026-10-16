@@ -27,8 +27,11 @@ export class ChannelsManager {
 
     public stopChannel(channel: Channel) {
         logger.info(`Stopping channel ${channel.identifier}`)
-        const tst = this.jobMap[channel.identifier]
-        if (tst && tst[0]) tst[0].cancel()
+        for (const key of [channel.identifier, channel.identifier + '_sync']) {
+            const details = this.jobMap[key]
+            if (details?.[0]) details[0].cancel()
+            if (details) details[0] = null
+        }
     }
 
     public async triggerChannel(channel: Channel, language: string, data: any, context?: Context) {
@@ -103,7 +106,14 @@ export class ChannelsManager {
         }
     }
 
+    private setScheduledJob(key: string, job: Job | null) {
+        const details = this.jobMap[key]
+        if (details) details[0] = job
+        else this.jobMap[key] = [job, false]
+    }
+
     public startChannel(channel: Channel) {
+        this.stopChannel(channel)
         if (channel.group) return
         logger.info(`Starting channel ${channel.identifier}`)
         if (process.env.OPENPIM_NO_CHANNEL_SCHEDULER === 'true') {
@@ -111,9 +121,8 @@ export class ChannelsManager {
             return
         }
         if (channel.active) {
-            this.stopChannel(channel)
             if (!channel.config.start || channel.config.start === 1) {
-                this.jobMap[channel.identifier] = [null, false]
+                this.setScheduledJob(channel.identifier, null)
                 logger.info(`   channel ${channel.identifier} has no scheduling`)
             } else if (channel.config.start === 2) { //interval
                 if(channel.config.interval) {
@@ -121,7 +130,7 @@ export class ChannelsManager {
                     const job = scheduleJob({minute: range}, () => {
                         this.triggerChannel(channel, channel.config.language, null)
                     })  
-                    this.jobMap[channel.identifier] = [job, false]
+                    this.setScheduledJob(channel.identifier, job)
                     logger.info(`   channel ${channel.identifier} has interval scheduling: ${channel.config.interval} `)
                 } else {
                     logger.warn('Interval is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
@@ -131,7 +140,7 @@ export class ChannelsManager {
                     const job = scheduleJob(channel.config.cron, () => {
                         this.triggerChannel(channel, channel.config.language, null)
                     })  
-                    this.jobMap[channel.identifier] = [job, false]
+                    this.setScheduledJob(channel.identifier, job)
                     logger.info(`   channel ${channel.identifier} has cron scheduling: ${channel.config.cron} `)
                 } else {
                     logger.warn('Cron expression is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
@@ -142,7 +151,7 @@ export class ChannelsManager {
                     const job = scheduleJob({hour: parseInt(arr[0]), minute: parseInt(arr[1])}, () => {
                         this.triggerChannel(channel, channel.config.language, null)
                     })  
-                    this.jobMap[channel.identifier] = [job, false]
+                    this.setScheduledJob(channel.identifier, job)
                     logger.info(`   channel ${channel.identifier} has time scheduling: ${channel.config.time} `)
                 } else {
                     logger.warn('Time is not set for channel: ' + channel.identifier + ', tenant: ' + this.tenantId)
@@ -151,7 +160,7 @@ export class ChannelsManager {
 
             // sync
             if (!channel.config.syncStart || channel.config.syncStart === 1) {
-                this.jobMap[channel.identifier+'_sync'] = [null, false]
+                this.setScheduledJob(channel.identifier+'_sync', null)
                 logger.info(`   channel ${channel.identifier} has no sync scheduling`)
             } else if (channel.config.syncStart === 2) { // sync interval
                 if(channel.config.syncInterval) {
@@ -159,7 +168,7 @@ export class ChannelsManager {
                     const job = scheduleJob({minute: range}, () => {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
-                    this.jobMap[channel.identifier+'_sync'] = [job, false]
+                    this.setScheduledJob(channel.identifier+'_sync', job)
                     logger.info(`   channel ${channel.identifier} has interval sync scheduling: ${channel.config.syncInterval} `)
                 } else {
                     logger.warn('Interval is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
@@ -169,7 +178,7 @@ export class ChannelsManager {
                     const job = scheduleJob(channel.config.syncCron, () => {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
-                    this.jobMap[channel.identifier+'_sync'] = [job, false]
+                    this.setScheduledJob(channel.identifier+'_sync', job)
                     logger.info(`   channel ${channel.identifier} has cron sync scheduling: ${channel.config.syncCron} `)
                 } else {
                     logger.warn('Cron expression is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)
@@ -180,7 +189,7 @@ export class ChannelsManager {
                     const job = scheduleJob({hour: parseInt(arr[0]), minute: parseInt(arr[1])}, () => {
                         this.triggerChannel(channel, channel.config.language, {sync:true})
                     })  
-                    this.jobMap[channel.identifier+'_sync'] = [job, false]
+                    this.setScheduledJob(channel.identifier+'_sync', job)
                     logger.info(`   channel ${channel.identifier} has time sync scheduling: ${channel.config.syncTime} `)
                 } else {
                     logger.warn('Time expression is not set for channel sync: ' + channel.identifier + ', tenant: ' + this.tenantId)

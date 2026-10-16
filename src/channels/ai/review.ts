@@ -4,7 +4,7 @@ const types: Record<number, string> = { 1: 'text', 2: 'boolean', 3: 'integer', 4
 const units: Record<string, string> = { 'квт': 'кВт', kw: 'кВт', 'вт': 'Вт', w: 'Вт', 'кг': 'кг', kg: 'кг', 'г': 'г', g: 'г', 'см': 'см', cm: 'см', 'мм': 'мм', mm: 'мм', 'м': 'м', m: 'м', 'л': 'л', l: 'л', 'мл': 'мл', ml: 'мл', 'дб': 'дБ', db: 'дБ' }
 
 function candidateUnit(name: string): string | null {
-    const match = name.match(/(?:^|[^\p{L}])(квт|kw|вт|w|кг|kg|г|g|см|cm|мм|mm|мл|ml|л|l|дб|db)(?=$|[^\p{L}])/iu)
+    const match = name.match(/(?:^|[^\p{L}])(квт|kw|вт|w|кг|kg|г|g|см|cm|мм|mm|мл|ml|м|m|л|l|дб|db)(?=$|[^\p{L}])/iu)
     return match ? units[match[1].toLowerCase()] : null
 }
 

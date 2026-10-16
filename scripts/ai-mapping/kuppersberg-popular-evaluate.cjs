@@ -97,7 +97,7 @@ async function main () {
       if (roots.some(id => !paths.some(path => path.split('.').pop() === String(id)))) throw Error('Missing visibility roots')
       const base = buildMappingRequests(candidates, selected, 'ru', cat.valid?.length ? cat.valid : channel.valid || [], { paths, targetPaths, relationId })
       requests = await enrichMappingRequests(base, candidates, selected, 'ru', channel.tenantId,
-        async (ids, tenantId) => (await db.query(mappingLOVSamplesSQL, [tenantId, ids])).rows)
+        async (ids, tenantId, identifiers) => (await db.query(mappingLOVSamplesSQL, [tenantId, ids, identifiers])).rows)
       if (compareVisibility) for (const request of requests) {
         const old = baseline.categories.find(row => row.id === ranked.id).runs[0].rows.find(row => row.attribute.id === request.attribute.id)
         request.attribute = old.attribute

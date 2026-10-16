@@ -13,6 +13,7 @@ export interface MappingAIConfig {
     batchSize: number
     responseFormat: 'json_schema' | 'json_object'
     useSystemCA: boolean
+    retrievalMode?: 'lexical' | 'hybrid'
 }
 
 export function createMappingHTTPSAgent(useSystemCA: boolean): Agent | undefined {

@@ -8,8 +8,9 @@ export interface DictionarySample {
     total: number | null
     truncated: boolean
     sharedByAttributes?: number
+    attributeFiltered?: boolean
 }
-export type LoadPIMDictionaries = (ids: number[], tenantId: string) => Promise<{ id: number; values: any[]; total?: number }[]>
+export type LoadPIMDictionaries = (ids: number[], tenantId: string, attributeIdentifiers: string[]) => Promise<{ id: number; attributeIdent?: string; values: any[]; total?: number }[]>
 const typeNames: Record<number, string> = { 1: 'text', 2: 'boolean', 3: 'integer', 4: 'float', 5: 'date', 6: 'time', 7: 'dictionary', 8: 'url', 9: 'relation' }
 const unavailable = (): DictionarySample => ({ status: 'unavailable', examples: [], total: null, truncated: false })
 
@@ -45,10 +46,16 @@ export async function enrichMappingRequests(requests: MappingRequest[], groups: 
     const ids = [...new Set(requests.flatMap(request => request.candidates.filter(candidate => candidate.dictionary).map(candidate => Number(originals.get(candidate.attrIdent)?.lov)))
         .filter(id => Number.isSafeInteger(id) && id > 0))].slice(0, 200)
     const dictionaries = new Map<number, DictionarySample>()
+    const attributeDictionaries = new Map<string, DictionarySample>()
+    const identifiers = [...new Set(requests.flatMap(request => request.candidates.filter(candidate => candidate.dictionary)
+        .map(candidate => originals.get(candidate.attrIdent)?.identifier)).filter(identifier => typeof identifier === 'string'))] as string[]
     if (ids.length && loadPIM) {
         try {
-            for (const row of await loadPIM(ids, tenantId)) {
-                if (ids.includes(Number(row.id))) dictionaries.set(Number(row.id), sampleDictionary(row, language))
+            for (const row of await loadPIM(ids, tenantId, identifiers)) {
+                if (!ids.includes(Number(row.id))) continue
+                if (row.attributeIdent && identifiers.includes(row.attributeIdent)) {
+                    attributeDictionaries.set(row.id + '/' + row.attributeIdent, { ...sampleDictionary(row, language), attributeFiltered: true })
+                } else if (!row.attributeIdent) dictionaries.set(Number(row.id), sampleDictionary(row, language))
             }
         } catch { /* unavailable metadata must not expose errors or imply an empty dictionary */ }
     }
@@ -75,7 +82,8 @@ export async function enrichMappingRequests(requests: MappingRequest[], groups: 
             const enriched = { ...candidate, typeName: typeNames[candidate.type] || 'unknown', numeric: [3, 4].includes(candidate.type) }
             if (candidate.dictionary) {
                 const id = Number(originals.get(candidate.attrIdent)?.lov)
-                enriched.valueOptions = { ...(dictionaries.get(id) || unavailable()), sharedByAttributes: shared.get(id) || 0 }
+                const identifier = originals.get(candidate.attrIdent)?.identifier
+                enriched.valueOptions = { ...(attributeDictionaries.get(id + '/' + identifier) || dictionaries.get(id) || unavailable()), sharedByAttributes: shared.get(id) || 0 }
             }
             return enriched
         }) }
@@ -83,10 +91,21 @@ export async function enrichMappingRequests(requests: MappingRequest[], groups: 
 }
 
 export const mappingLOVSamplesSQL = `
-SELECT id, jsonb_array_length("values") AS total,
-    COALESCE((SELECT jsonb_agg(l."values" -> ord ORDER BY ord)
-        FROM generate_series(0, LEAST(7,jsonb_array_length(l."values")-1)) ord), '[]'::jsonb) AS "values"
-FROM lovs l WHERE "tenantId"=$1 AND "deletedAt" IS NULL AND id=ANY($2::integer[]) AND jsonb_typeof("values")='array'
+SELECT l.id, a.identifier AS "attributeIdent", sample.total, sample."values"
+FROM lovs l JOIN attributes a ON a.lov=l.id AND a."tenantId"=$1 AND a."deletedAt" IS NULL
+    AND a.identifier=ANY($3::text[])
+CROSS JOIN LATERAL (
+    SELECT count(*)::integer AS total,
+        COALESCE(jsonb_agg(value ORDER BY ord) FILTER (WHERE rn<=8), '[]'::jsonb) AS "values"
+    FROM (
+        SELECT value, ord, row_number() OVER (ORDER BY ord) AS rn
+        FROM jsonb_array_elements(CASE WHEN jsonb_typeof(l."values")='array' THEN l."values" ELSE '[]'::jsonb END)
+            WITH ORDINALITY AS entries(value,ord)
+        WHERE value->'attrs' IS NULL OR value->'attrs'='null'::jsonb OR value->'attrs'='[]'::jsonb
+            OR (jsonb_typeof(value->'attrs')='array' AND value->'attrs' @> jsonb_build_array(a.id))
+    ) filtered
+) sample
+WHERE l."tenantId"=$1 AND l."deletedAt" IS NULL AND l.id=ANY($2::integer[]) AND jsonb_typeof(l."values")='array'
 `
 
 export async function loadMarketplaceDictionary(attribute: any, config: MappingAIConfig, timeoutMs: number, request: typeof fetch = fetch): Promise<any> {
