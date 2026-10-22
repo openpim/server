@@ -776,6 +776,7 @@ export class DnsChannelHandler extends ChannelHandler {
                 return changedValues
             }
             rejected = productRes.json.stage === 'Rejected'
+            Object.assign(changedValues, this.getDnsCodeValues(channel, productRes.json))
         }
         let editResource = rejected ? 'rejection-correction' : 'uniform'
         let editPath = '/products/' + encodeURIComponent(existingId) + '/' + editResource
@@ -839,6 +840,7 @@ export class DnsChannelHandler extends ChannelHandler {
                 data.dnsId = dnsId
                 data.url = 'https://www.dns-shop.ru/product/' + dnsId + '/'
             }
+            Object.assign(changedValues, this.getDnsCodeValues(channel, created))
             data.status = 4
             data.message = JSON.stringify(created)
             data.dnsError = false
@@ -861,6 +863,7 @@ export class DnsChannelHandler extends ChannelHandler {
                 this.reportChannelError(channel, item, msg, true)
                 return changedValues
             }
+            Object.assign(changedValues, this.getDnsCodeValues(channel, putRes.json))
             data.status = 4
             data.dnsNeedsResubmission = rejected
             data.message = rejected ? REJECTION_CORRECTION_MESSAGE : JSON.stringify(putRes.json || {})
@@ -964,13 +967,21 @@ export class DnsChannelHandler extends ChannelHandler {
                 continue
             }
 
-            this.processProductStatus(item, res.json, channel, context)
-            await this.saveItemIfChanged(channel, item)
+            const changedValues = this.processProductStatus(item, res.json, channel, context)
+            await this.saveItemIfChanged(channel, item, changedValues)
             context.log += '  товар c идентификатором ' + item.identifier + ' синхронизирован\n'
         }
     }
 
-    processProductStatus(item: Item, product: any, channel: Channel, context: JobContext) {
+    private getDnsCodeValues(channel: Channel, product: any): Record<string, string | number> {
+        const attr = channel.config.dnsCodeAttr
+        const code = product && product.mdmNomenclatureCode
+        if (!attr) return {}
+        if (typeof code === 'string' ? !code.trim() : typeof code !== 'number' || !Number.isFinite(code)) return {}
+        return { [attr]: code }
+    }
+
+    processProductStatus(item: Item, product: any, channel: Channel, context: JobContext): Record<string, string | number> {
         const data = item.channels[channel.identifier]
         const stage = product && product.stage
         const sub = product && product.approvedSubStatus
@@ -1001,5 +1012,6 @@ export class DnsChannelHandler extends ChannelHandler {
         data.message = needsResubmission ? REJECTION_CORRECTION_MESSAGE : JSON.stringify(product)
         data.syncedAt = new Date().getTime()
         item.changed('channels', true)
+        return this.getDnsCodeValues(channel, product)
     }
 }
