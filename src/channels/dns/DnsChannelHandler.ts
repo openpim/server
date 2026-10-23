@@ -18,7 +18,7 @@ const SPEC_MARKER = '_spec_'
 const OPTION_PREFIX = 'dnsattr_'
 const BRAND_ATTR_ID = 'dnsbrand'
 const COUNTRY_ATTR_ID = 'dnscountry'
-const REJECTION_CORRECTION_MESSAGE = 'Исправления сохранены в DNS. Отправьте товар на повторную модерацию в личном кабинете DNS.'
+const REJECTION_CORRECTION_MESSAGE = 'Исправления сохранены в DNS. Отправьте товар на повторную модерацию в личном кабинете DNS. Повторно отправлять товар из PIM не требуется.'
 
 interface JobContext {
     log: string
@@ -596,16 +596,19 @@ export class DnsChannelHandler extends ChannelHandler {
         newChannels[channel.identifier] = JSON.parse(JSON.stringify(reloadedItem.channels[channel.identifier] || {}))
         const tmp = newChannels[channel.identifier]
 
-        if (dnsId && !tmp.dnsId) {
+        const storedDnsId = ('' + (data.dnsId || dnsId || '')).trim()
+        if (storedDnsId && tmp.dnsId !== storedDnsId) {
             changed = true
-            tmp.dnsId = dnsId
-            tmp.url = 'https://www.dns-shop.ru/product/' + dnsId + '/'
+            tmp.dnsId = storedDnsId
         }
         if (tmp.status !== data.status || tmp.message !== data.message) {
             changed = true
             tmp.status = data.status
             tmp.message = data.message
-            if (data.syncedAt) tmp.syncedAt = data.syncedAt
+        }
+        if (typeof data.syncedAt !== 'undefined' && tmp.syncedAt !== data.syncedAt) {
+            changed = true
+            tmp.syncedAt = data.syncedAt
         }
         for (const field of ['dnsError', 'dnsNeedsResubmission']) {
             if (typeof data[field] !== 'undefined' && tmp[field] !== data[field]) {
@@ -613,9 +616,10 @@ export class DnsChannelHandler extends ChannelHandler {
                 tmp[field] = data[field]
             }
         }
-        if (data.url && tmp.url !== data.url) {
+        const productUrl = storedDnsId ? 'https://www.dns-shop.ru/product/' + storedDnsId + '/' : data.url
+        if (productUrl && tmp.url !== productUrl) {
             changed = true
-            tmp.url = data.url
+            tmp.url = productUrl
         }
 
         if (changedValues && Object.keys(changedValues).length > 0) {
@@ -767,6 +771,7 @@ export class DnsChannelHandler extends ChannelHandler {
 
         const existingId = item.values[channel.config.dnsIdAttr] ? ('' + item.values[channel.config.dnsIdAttr]).trim() : ''
         let rejected = false
+        let currentProduct: any = null
         if (existingId) {
             const productRes = await this.dnsRequestWithRetry(channel, context, 'get', '/products/' + encodeURIComponent(existingId))
             if (productRes.status !== 200 || !productRes.json || !productRes.json.stage) {
@@ -775,7 +780,9 @@ export class DnsChannelHandler extends ChannelHandler {
                 this.reportChannelError(channel, item, msg, true)
                 return changedValues
             }
-            rejected = productRes.json.stage === 'Rejected'
+            currentProduct = productRes.json
+            rejected = currentProduct.stage === 'Rejected'
+            data.dnsId = productRes.json.id || existingId
             Object.assign(changedValues, this.getDnsCodeValues(channel, productRes.json))
         }
         let editResource = rejected ? 'rejection-correction' : 'uniform'
@@ -866,9 +873,9 @@ export class DnsChannelHandler extends ChannelHandler {
             Object.assign(changedValues, this.getDnsCodeValues(channel, putRes.json))
             data.status = 4
             data.dnsNeedsResubmission = rejected
-            data.message = rejected ? REJECTION_CORRECTION_MESSAGE : JSON.stringify(putRes.json || {})
+            data.message = rejected ? this.formatRejectionMessage(currentProduct, true) : JSON.stringify(putRes.json || {})
             data.dnsError = false
-            if (rejected) context.log += REJECTION_CORRECTION_MESSAGE + '\n'
+            if (rejected) context.log += data.message + '\n'
             item.changed('channels', true)
         }
 
@@ -981,6 +988,14 @@ export class DnsChannelHandler extends ChannelHandler {
         return { [attr]: code }
     }
 
+    private formatRejectionMessage(product: any, correctionsSaved: boolean): string {
+        const reason = product && typeof product.rejectionComment === 'string' ? product.rejectionComment.trim() : ''
+        let message = correctionsSaved ? REJECTION_CORRECTION_MESSAGE : 'Товар отклонён DNS.'
+        message += '\n' + (reason ? 'Последняя причина отклонения DNS: ' + reason : 'DNS не сообщил причину отклонения')
+        if (product && product.errorKind) message += '\nОшибка DNS (errorKind): ' + JSON.stringify(product.errorKind)
+        return message
+    }
+
     processProductStatus(item: Item, product: any, channel: Channel, context: JobContext): Record<string, string | number> {
         const data = item.channels[channel.identifier]
         const stage = product && product.stage
@@ -1009,7 +1024,7 @@ export class DnsChannelHandler extends ChannelHandler {
             context.log += 'Неизвестный статус товара в DNS: stage=' + stage + ', subStatus=' + sub + '\n'
         }
 
-        data.message = needsResubmission ? REJECTION_CORRECTION_MESSAGE : JSON.stringify(product)
+        data.message = stage === 'Rejected' ? this.formatRejectionMessage(product, needsResubmission) : JSON.stringify(product)
         data.syncedAt = new Date().getTime()
         item.changed('channels', true)
         return this.getDnsCodeValues(channel, product)
