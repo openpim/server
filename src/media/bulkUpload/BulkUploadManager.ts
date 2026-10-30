@@ -69,7 +69,7 @@ export class BulkUploadManager {
             if (existing.runtime?.type && existing.runtime.type !== 'bulk-upload') {
                 throw new Error('Process is not bulk-upload type')
             }
-            if (existing.createdBy !== currentUser.login) {
+            if (existing.createdBy !== currentUser.login && !context.isAdmin()) {
                 throw new Error('User ' + currentUser.id + ' does not has permissions to update process: ' + existing.id + ', tenant: ' + currentUser.tenantId)
             }
             if (existing.active) throw new Error('Process is already running')

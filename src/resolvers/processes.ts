@@ -123,7 +123,7 @@ export default {
             const nId = parseInt(id)
             const proc = await Process.applyScope(context).findByPk(nId)
             if (!proc) throw new Error('Failed to find process by id: ' + nId + ', tenant: ' + context.getCurrentUser()!.tenantId)
-            if (proc.createdBy !== context.getCurrentUser()?.login) 
+            if (proc.createdBy !== context.getCurrentUser()?.login && !context.isAdmin()) 
                 throw new Error('User '+ context.getCurrentUser()?.id+ ' does not has permissions to update process: '+proc.id+', tenant: ' + context.getCurrentUser()!.tenantId)
 
             if (title) proc.title = title
