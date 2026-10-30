@@ -118,7 +118,7 @@ export default {
             }
 
             let itemDiff: AuditItem
-            if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
+            if (audit.auditEnabled()) itemDiff = diff({ values: item.values, channels: item.channels }, { values: values, channels: channels })
 
             item.values = values
             item.changed("values", true)
@@ -156,7 +156,7 @@ export default {
 
             if (item) {
                 let itemDiff: AuditItem
-                if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
+                if (audit.auditEnabled()) itemDiff = diff({ values: item.values, channels: item.channels }, { values: values, channels: channels })
 
                 item.values = values
                 item.changed("values", true)
@@ -206,7 +206,7 @@ export default {
             }
 
             let itemDiff: AuditItem
-            if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
+            if (audit.auditEnabled()) itemDiff = diff({ values: item.values, channels: item.channels }, { values: values, channels: channels })
 
             item.values = mergeValues(values, item.values)
             item.changed('values', true)
@@ -250,7 +250,7 @@ export default {
                 const { values, log, compileError, message, error } = await testAction(context, act, item)
 
                 let itemDiff: AuditItem
-                if (audit.auditEnabled()) itemDiff = diff({values: item.values}, {values: values})
+                if (audit.auditEnabled()) itemDiff = diff({ values: item.values, channels: item.channels }, { values: values, channels: channels })
     
                 item.values = values
 

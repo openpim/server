@@ -9,7 +9,7 @@ import { exec } from 'child_process'
 const { Op, literal } = require("sequelize");
 import { sequelize } from '../models'
 import { QueryTypes, Transaction } from 'sequelize'
-import audit, { AuditItem, ChangeType, ItemChanges, ItemRelationChanges } from '../audit'
+import audit, { AuditItem, ChangeType, ItemChanges, AuditItemRelation, ItemRelationChanges } from '../audit'
 
 const util = require('util');
 const awaitExec = util.promisify(exec);
@@ -763,7 +763,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                 item.values = mergeValues(newValues, item.values)
                 item.changed('values', true)
                 await item.save({ transaction })
-                await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, false, true, transaction)
+                // await processItemActions(context, EventType.AfterUpdate, item, item.parentIdentifier, item.name, item.values, item.channels, false, false, true, transaction)
             }
         } else {
             if (!del && audit.auditEnabled()) itemDiff = diff({ values: item.values }, { values: newValues || item.values })
@@ -819,7 +819,7 @@ export async function updateItemRelationAttributes(context: Context, mng: ModelM
                     targetItem.values = mergeValues(newTargetValues, targetItem.values)
                     targetItem.changed('values', true)
                     await targetItem.save({ transaction })
-                    await processItemActions(context, EventType.AfterUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, targetItem.values, targetItem.channels, false, false, true, transaction)
+                    // await processItemActions(context, EventType.AfterUpdate, targetItem, targetItem.parentIdentifier, targetItem.name, targetItem.values, targetItem.channels, false, false, true, transaction)
                 }
             } else {
                 if (!del && audit.auditEnabled()) itemDiff = diff({ values: targetItem.values }, { values: newTargetValues || targetItem.values })
@@ -1034,9 +1034,8 @@ export async function processItemActions(context: Context, event: EventType, ite
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         isImport: isImport,
-        item: makeItemProxy(item, EventType[event], transaction), 
-        values:
-        newValues,
+        item: makeItemProxy(item, EventType[event], context, transaction),
+        values: newValues,
         channels: newChannels,
         name: newName,
         transaction,
@@ -1135,7 +1134,7 @@ export async function processItemButtonActions2(context: Context, actions: Actio
         llmUtils: new llmUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
         buttonText: buttonText,
-        item: item ? makeItemProxy(item, 'Button:' + buttonText) : null, values: valuesCopy, channels: channelsCopy, name: nameCopy,
+        item: item ? makeItemProxy(item, 'Button:' + buttonText, context) : null, values: valuesCopy, channels: channelsCopy, name: nameCopy,
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
@@ -1226,7 +1225,7 @@ export async function testAction(context: Context, action: Action, item: Item) {
         roles: context.getUser()?.getRoles(),
         utils: new ActionUtils(context),
         system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, XLSX, FS, pipe, stream, archiver, extractzip, HtmlValidate, uuid },
-        item: makeItemProxy(item, 'Test'), values: values, channels: channels, name: nameCopy,
+        item: makeItemProxy(item, 'Test', context), values: values, channels: channels, name: nameCopy,
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy),
@@ -1549,12 +1548,27 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
     })
 }
 
-function makeItemProxy(item: any, event: string, transaction: Transaction | null = null): Item {
+function makeItemProxy(item: any, event: string, context: Context, transaction: Transaction | null = null): Item {
+    let oldValues:any
+    let oldChannels:any
+    if (event === 'AfterCreate' || event === 'AfterUpdate') {
+        const rawItem = item.get({ plain: true })
+        oldValues = structuredClone(rawItem.values)
+        oldChannels = structuredClone(rawItem.channels)
+    }
+
     return new Proxy(item, {
         get: function (target, property, receiver) {
             if ((<string>property) == 'save') {
                 if (event === 'BeforeCreate') throw new Error('It is forbidden to call method save() during BeforeCreate')
+
                 return async (...args: any) => {
+                    if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
+                        const itemDiff: AuditItem = diff({ values: oldValues, channels: oldChannels }, { values: target.values, channels: target.channels })
+
+                        if (itemDiff && (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted))) audit.auditItem(ChangeType.UPDATE, target.id, target.identifier, itemDiff!, context.getCurrentUser()!.login, target.updatedAt)
+                    }
+
                     if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
                 }
@@ -1662,7 +1676,7 @@ export async function processItemRelationActions(context: Context, event: EventT
         isImport: isImport,
         transaction,
         fromRelationAttribute: fromRelationAttribute,
-        itemRelation: makeItemRelationProxy(itemRelation, transaction), values: newValues, changes: changes,
+        itemRelation: makeItemRelationProxy(itemRelation, EventType[event], context, transaction), values: newValues, changes: changes,
         models: {
             item: makeModelProxy(Item.applyScope(context), makeItemProxy, transaction),
             itemRelation: makeModelProxy(ItemRelation.applyScope(context), makeItemRelationProxy, transaction),
@@ -1678,11 +1692,23 @@ export async function processItemRelationActions(context: Context, event: EventT
     })
 }
 
-function makeItemRelationProxy(item: any, transaction: Transaction | null = null) {
+function makeItemRelationProxy(item: any, event: string | '', context: Context, transaction: Transaction | null = null) {
+    let oldValues:any
+    if (event === 'AfterCreate' || event === 'AfterUpdate') {
+        const rawItem = item.get({ plain: true })
+        oldValues = structuredClone(rawItem.values)
+    }
+   
     return new Proxy(item, {
         get: function (target, property, receiver) {
             if ((<string>property) == 'save') {
                 return async (...args: any) => {
+                    if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
+                        const relDiff: AuditItemRelation = diff({ values: oldValues}, { values: target.values })
+
+                        if (relDiff && (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted))) audit.auditItemRelation(ChangeType.UPDATE, target.id, target.identifier, relDiff!, context.getCurrentUser()!.login, target.updatedAt)
+                    }
+
                     if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
                 }
@@ -2333,7 +2359,7 @@ export class ActionUtils {
             llmUtils: new llmUtils(context),
             system: { fs, exec, awaitExec, fetch, URLSearchParams, mailer, nodemailerNTLMAuth, http, https, http2, moment, XLSX, archiver, stream, pipe, FS, KafkaJS, extractzip, HtmlValidate, uuid },
             isImport: isImport,
-            item: makeItemProxy(item, event, transaction), 
+            item: makeItemProxy(item, event, context, transaction), 
             values: newValues, 
             channels: newChannels, 
             name: newName,
@@ -2478,7 +2504,7 @@ export class ActionUtils {
             audit.auditItem(ChangeType.CREATE, item.id, item.identifier, { added: itemChanges }, this.#context.getCurrentUser()!.login, item.createdAt)
         }
 
-        return makeItemProxy(item, 'createItem')
+        return makeItemProxy(item, 'createItem', this.#context)
     }
 
     /* public async createItemRelation(relationIdentifier: string, identifier: string, itemIdentifier: string, targetIdentifier: string, values: any, skipActions = false) {
@@ -2601,7 +2627,7 @@ export class ActionUtils {
             audit.auditItemRelation(ChangeType.CREATE, itemRelation.id, itemRelation.identifier, { added: itemRelationChanges }, this.#context.getCurrentUser()!.login, itemRelation.createdAt)
         }
 
-        return makeItemRelationProxy(itemRelation)
+        return makeItemRelationProxy(itemRelation, 'createItemRelation', this.#context)
     }
 
     /* public async removeItemRelation(id: string) {
