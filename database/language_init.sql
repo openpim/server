@@ -1,2 +1,0 @@
-insert into languages (id, identifier, name, "tenantId", "createdBy", "createdAt" , "updatedBy" , "updatedAt" ) 
-values (nextval('languages_id_seq'), 'en', '{"en":"English"}'::jsonb, 'default', 'system', now(), 'system', now())
