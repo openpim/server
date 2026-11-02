@@ -239,7 +239,7 @@ export class ModelManager {
                 const server = serversArr[i]
                 const request = `query { reloadModelRemotely( id: "${id}", parentId: "${parentId}", serverUuid: "${serverUuid}", entity: ${entity}, del: ${del} ) }`
                 const query = { query: request }
-                logger.debug(`Reloading model remotely for server ${server}`)
+                logger.info(`Reloading model remotely for server ${server}, entity: ${entity}, id: ${id}, del: ${del}`)
                 try {
                     const res = await fetch(server + '/graphql', {
                         method: 'post',

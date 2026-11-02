@@ -31,16 +31,16 @@ export default {
             const action = actionIndex !== -1 ? existedActions[actionIndex] : null
             if (del && actionIndex !== -1) {
               existedActions.splice(actionIndex, 1)
-              logger.debug(`Remote reload: action removed ${id}`)
+              logger.info(`Remote reload: action removed ${id}`)
             } else {
               const act = await Action.applyScope(context).findOne({ where: { id } })
               if (act && actionIndex !== -1) {
                 existedActions[actionIndex] = act
-                logger.debug('Remote reload: action updated')
+                logger.info(`Remote reload: action updated ${id}`)
                 logger.debug(JSON.stringify(existedActions[actionIndex]))
               } else if (act && actionIndex === -1) {
                 existedActions.push(act)
-                logger.debug('Remote reload:: action added')
+                logger.info(`Remote reload:: action added ${id}`)
                 logger.debug(JSON.stringify(act))
               }
             }
@@ -59,19 +59,19 @@ export default {
               } else {
                 mng.removeAttributeFromIndexes(parseInt(id))
               }
-              logger.debug(`Remote reload: attribute removed ${id}`)
+              logger.info(`Remote reload: attribute removed ${id}`)
             } else {
               const attr = await Attribute.applyScope(context).findOne({ where: { id } })
               if (existedAttr && attr) {
                 const attrIndex = existedGroup.getAttributes().findIndex(el => el.id === parseInt(id))
                 existedGroup.getAttributes()[attrIndex] = attr
                 mng.upsertAttributeIndexes(attr)
-                logger.debug('Remote reload: attribute updated')
+                logger.info(`Remote reload: attribute updated ${id}`)
                 logger.debug(JSON.stringify(existedGroup.getAttributes()[attrIndex]))
               } else if (!existedAttr && attr) {
                 existedGroup.getAttributes().push(attr)
                 mng.upsertAttributeIndexes(attr)
-                logger.debug('Remote reload: attribute added')
+                logger.info(`Remote reload: attribute added ${id}`)
                 logger.debug(JSON.stringify(attr))
               }
             }
@@ -81,16 +81,16 @@ export default {
             const attrGroupIndex = existedAttrGroups.findIndex(attrGroupWrapper => attrGroupWrapper.getGroup().id === parseInt(id))
             if (del && attrGroupIndex !== -1) {
               existedAttrGroups.splice(attrGroupIndex, 1)
-              logger.debug(`Remote reload: attribute group removed ${id}`)
+              logger.info(`Remote reload: attribute group removed ${id}`)
             } else {
               const attrGroup = await AttrGroup.applyScope(context).findOne({ where: { id }, include: [{ model: Attribute }] })
               if (attrGroup && attrGroupIndex !== -1) {
                 existedAttrGroups[attrGroupIndex] = new AttrGroupWrapper(attrGroup, await attrGroup.getAttributes())
-                logger.debug('Remote reload: attribute group updated')
+                logger.info(`Remote reload: attribute group updated ${id}`)
                 logger.debug(JSON.stringify(existedAttrGroups[attrGroupIndex]))
               } else if (attrGroup && attrGroupIndex === -1) {
                 existedAttrGroups.push(new AttrGroupWrapper(attrGroup, await attrGroup.getAttributes()))
-                logger.debug('Remote reload: attribute group added')
+                logger.info(`Remote reload: attribute group added ${id}`)
                 logger.debug(JSON.stringify(attrGroup))
               }
             }
@@ -100,17 +100,17 @@ export default {
             const channelIndex = existedChannels.findIndex(channel => channel.id === parseInt(id))
             if (del && channelIndex !== -1) {
               existedChannels.splice(channelIndex, 1)
-              logger.debug(`Remote reload: channel removed ${id}`)
+              logger.info(`Remote reload: channel removed ${id}`)
             } else {
               const channel = await Channel.applyScope(context).findOne({ where: { id } })
               if (channel && channelIndex !== -1) {
                 existedChannels[channelIndex] = channel
-                logger.debug('Remote reload: channel updated')
+                logger.info(`Remote reload: channel updated ${id}`)
                 logger.debug(JSON.stringify(existedChannels[channelIndex]))
                 ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId).startChannel(channel)
               } else if (channel && channelIndex === -1) {
                 existedChannels.push(channel)
-                logger.debug('Remote reload: channel added')
+                logger.info(`Remote reload: channel added ${id}`)
                 logger.debug(JSON.stringify(channel))
                 ChannelsManagerFactory.getInstance().getChannelsManager(context.getCurrentUser()!.tenantId).startChannel(channel)
               }
@@ -121,16 +121,16 @@ export default {
             const dashboardIndex = existedDashboards.findIndex(dashboard => dashboard.id === parseInt(id))
             if (del && dashboardIndex !== -1) {
               existedDashboards.splice(dashboardIndex, 1)
-              logger.debug(`Remote reload: dashboard removed ${id}`)
+              logger.info(`Remote reload: dashboard removed ${id}`)
             } else {
               const dashboard = await Dashboard.applyScope(context).findOne({ where: { id } })
               if (dashboard && dashboardIndex !== -1) {
                 existedDashboards[dashboardIndex] = dashboard
-                logger.debug('Remote reload: dashboard updated')
+                logger.info(`Remote reload: dashboard updated ${id}`)
                 logger.debug(JSON.stringify(existedDashboards[dashboardIndex]))
               } else if (dashboard && dashboardIndex === -1) {
                 existedDashboards.push(dashboard)
-                logger.debug('Remote reload: dashboard added')
+                logger.info(`Remote reload: dashboard added ${id}`)
                 logger.debug(JSON.stringify(dashboard))
               }
             }
@@ -140,16 +140,16 @@ export default {
             const importConfigIndex = existedImportConfigs.findIndex(importConfig => importConfig.id === parseInt(id))
             if (del && importConfigIndex !== -1) {
               existedImportConfigs.splice(importConfigIndex, 1)
-              logger.debug(`Remote reload: import config removed ${id}`)
+              logger.info(`Remote reload: import config removed ${id}`)
             } else {
               const importConfig = await ImportConfig.applyScope(context).findOne({ where: { id } })
               if (importConfig && importConfigIndex !== -1) {
                 existedImportConfigs[importConfigIndex] = importConfig
-                logger.debug('Remote reload: import config updated')
+                logger.info(`Remote reload: import config updated ${id}`)
                 logger.debug(JSON.stringify(existedImportConfigs[importConfigIndex]))
               } else if (importConfig && importConfigIndex === -1) {
                 existedImportConfigs.push(importConfig)
-                logger.debug('Remote reload: import config added')
+                logger.info(`Remote reload: import config added ${id}`)
                 logger.debug(JSON.stringify(importConfig))
               }
             }
@@ -159,16 +159,16 @@ export default {
             const lngIndex = existedLanguages.findIndex(lng => lng.id === parseInt(id))
             if (del && lngIndex !== -1) {
               existedLanguages.splice(lngIndex, 1)
-              logger.debug(`Remote reload: language removed ${id}`)
+              logger.info(`Remote reload: language removed ${id}`)
             } else {
               const lng = await Language.findOne({ where: { id } })
               if (lng && lngIndex !== -1) {
                 existedLanguages[lngIndex] = lng
-                logger.debug('Remote reload: language updated')
+                logger.info(`Remote reload: language updated ${id}`)
                 logger.debug(JSON.stringify(existedLanguages[lngIndex]))
               } else if (lng && lngIndex === -1) {
                 existedLanguages.push(lng)
-                logger.debug('Remote reload: language added')
+                logger.info(`Remote reload: language added ${id}`)
                 logger.debug(JSON.stringify(lng))
               }
             }
@@ -178,16 +178,16 @@ export default {
             const relIndex = existedRels.findIndex(rel => rel.id === parseInt(id))
             if (del && relIndex !== -1) {
               existedRels.splice(relIndex, 1)
-              logger.debug(`Remote reload: relation removed ${id}`)
+              logger.info(`Remote reload: relation removed ${id}`)
             } else {
               const rel = await Relation.applyScope(context).findOne({ where: { id } })
               if (rel && relIndex !== -1) {
                 existedRels[relIndex] = rel
-                logger.debug('Remote reload: relation updated')
+                logger.info(`Remote reload: relation updated ${id}`)
                 logger.debug(JSON.stringify(existedRels[relIndex]))
               } else if (rel && relIndex === -1) {
                 existedRels.push(rel)
-                logger.debug('Remote reload: relation added')
+                logger.info(`Remote reload: relation added ${id}`)
                 logger.debug(JSON.stringify(rel))
               }
             }
@@ -201,18 +201,18 @@ export default {
                 const idx = wrapper.getRoles().findIndex(data => data.id === id)
                 if (idx !== -1) wrapper.getRoles().splice(idx, 1)
               })
-              logger.debug(`Remote reload: role removed ${id}`)
+              logger.info(`Remote reload: role removed ${id}`)
             } else {
               const role = await Role.applyScope(context).findOne({ where: { id } })
               if (role && roleIndex !== -1) {
                 (<any>role).internalId = role.id
                 existedRoles[roleIndex] = role
-                logger.debug('Remote reload: role updated')
+                logger.info(`Remote reload: role updated ${id}`)
                 logger.debug(JSON.stringify(existedRoles[roleIndex]))
               } else if (role && roleIndex === -1) {
                 (<any>role).internalId = role.id
                 existedRoles.push(role)
-                logger.debug('Remote reload: role added')
+                logger.info(`Remote reload: role added ${id}`)
                 logger.debug(JSON.stringify(role))
               }
             }
@@ -226,10 +226,12 @@ export default {
               } else {
                 mng.getRoot().deleteChild(typeNode)
               }
+              logger.info(`Remote reload: type removed ${id}`)
             } else {
               const typeFromDB = await Type.applyScope(context).findOne({ where: { id } })
               if (!typeNode && typeFromDB) {
                 mng.addType(parseInt(parentId), typeFromDB)
+                logger.info(`Remote reload: type added ${id}`)
               } else {
                 const types: Type[] = await Type.findAll({
                   order: [['tenantId', 'DESC'], ['path', 'ASC']]
@@ -250,9 +252,9 @@ export default {
                   currentNode = node
                   currentLevel++
                 })
+                logger.info('Remote reload: types reloaded')
               }
             }
-            logger.debug('Remote reload: types reloaded')
             break
           }
           case 'USER':
@@ -260,19 +262,19 @@ export default {
             const userIndex = existedUsers.findIndex(user => user.getUser().id === parseInt(id))
             if (del && userIndex !== -1) {
               existedUsers.splice(userIndex, 1)
-              logger.debug(`Remote reload: user removed ${id}`)
+              logger.info(`Remote reload: user removed ${id}`)
             } else {
               const user = await User.applyScope(context).findOne({ where: { id } })
               const userRoles = user && user.roles ? user.roles.map((roleId: number) => mng!.getRoles().find(role => role.id === roleId)) : []
               if (user && userIndex != -1) {
                 (<any>user).internalId = user.id
                 existedUsers[userIndex] = new UserWrapper(user, userRoles)
-                logger.debug('Remote reload: user updated')
+                logger.info(`Remote reload: user updated ${id}`)
                 logger.debug(JSON.stringify(existedUsers[userIndex]))
               } else if (user && userIndex === -1) {
                 (<any>user).internalId = user.id
                 existedUsers.push(new UserWrapper(user, userRoles))
-                logger.debug('Remote reload: user added')
+                logger.info(`Remote reload: user added ${id}`)
                 logger.debug(JSON.stringify(user))
               }
             }
