@@ -1549,13 +1549,13 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
 }
 
 function makeItemProxy(item: any, event: string, context: Context, transaction: Transaction | null = null): Item {
-    let oldValues:any
+    /*let oldValues:any
     let oldChannels:any
     if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
         const rawItem = item.get({ plain: true })
         oldValues = structuredClone(rawItem.values)
         oldChannels = structuredClone(rawItem.channels)
-    }
+    }*/
 
     return new Proxy(item, {
         get: function (target, property, receiver) {
@@ -1563,11 +1563,11 @@ function makeItemProxy(item: any, event: string, context: Context, transaction: 
                 if (event === 'BeforeCreate') throw new Error('It is forbidden to call method save() during BeforeCreate')
 
                 return async (...args: any) => {
-                    if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
+                    /*if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
                         const itemDiff: AuditItem = diff({ values: oldValues, channels: oldChannels }, { values: target.values, channels: target.channels })
 
                         if (itemDiff && (!isObjectEmpty(itemDiff!.added) || !isObjectEmpty(itemDiff!.changed) || !isObjectEmpty(itemDiff!.deleted))) audit.auditItem(ChangeType.UPDATE, target.id, target.identifier, itemDiff!, context.getCurrentUser()!.login, target.updatedAt)
-                    }
+                    }*/
 
                     if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
@@ -1693,21 +1693,21 @@ export async function processItemRelationActions(context: Context, event: EventT
 }
 
 function makeItemRelationProxy(item: any, event: string | '', context: Context, transaction: Transaction | null = null) {
-    let oldValues:any
+    /*let oldValues:any
     if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
         const rawItem = item.get({ plain: true })
         oldValues = structuredClone(rawItem.values)
-    }
+    }*/
    
     return new Proxy(item, {
         get: function (target, property, receiver) {
             if ((<string>property) == 'save') {
                 return async (...args: any) => {
-                    if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
+                    /*if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
                         const relDiff: AuditItemRelation = diff({ values: oldValues}, { values: target.values })
 
                         if (relDiff && (!isObjectEmpty(relDiff!.added) || !isObjectEmpty(relDiff!.changed) || !isObjectEmpty(relDiff!.deleted))) audit.auditItemRelation(ChangeType.UPDATE, target.id, target.identifier, relDiff!, context.getCurrentUser()!.login, target.updatedAt)
-                    }
+                    }*/
 
                     if (transaction) args.push({ transaction })
                     return await target[property].apply(target, args)
