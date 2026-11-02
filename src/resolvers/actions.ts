@@ -250,7 +250,7 @@ export default {
                 const { values, log, compileError, message, error } = await testAction(context, act, item)
 
                 let itemDiff: AuditItem
-                if (audit.auditEnabled()) itemDiff = diff({ values: item.values, channels: item.channels }, { values: values, channels: channels })
+                if (audit.auditEnabled()) itemDiff = diff({ values: item.values}, { values: values })
     
                 item.values = values
 

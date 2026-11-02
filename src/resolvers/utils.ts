@@ -1551,7 +1551,7 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
 function makeItemProxy(item: any, event: string, context: Context, transaction: Transaction | null = null): Item {
     let oldValues:any
     let oldChannels:any
-    if (event === 'AfterCreate' || event === 'AfterUpdate') {
+    if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
         const rawItem = item.get({ plain: true })
         oldValues = structuredClone(rawItem.values)
         oldChannels = structuredClone(rawItem.channels)
@@ -1694,7 +1694,7 @@ export async function processItemRelationActions(context: Context, event: EventT
 
 function makeItemRelationProxy(item: any, event: string | '', context: Context, transaction: Transaction | null = null) {
     let oldValues:any
-    if (event === 'AfterCreate' || event === 'AfterUpdate') {
+    if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
         const rawItem = item.get({ plain: true })
         oldValues = structuredClone(rawItem.values)
     }
