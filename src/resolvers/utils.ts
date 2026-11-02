@@ -1548,7 +1548,7 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
     })
 }
 
-export function safeClone(value: any, seen: any = new WeakMap()) {
+export function safeClone(value: any, seen: any = new WeakMap()): any {
     if (value === null || typeof value !== 'object') {
         if (typeof value === 'function' || typeof value === 'symbol') {
             return undefined
