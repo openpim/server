@@ -1548,13 +1548,95 @@ function makeModelProxy(model: any, itemProxy: any, transaction: Transaction | n
     })
 }
 
+export function safeClone(value: any, seen: any = new WeakMap()) {
+    if (value === null || typeof value !== 'object') {
+        if (typeof value === 'function' || typeof value === 'symbol') {
+            return undefined
+        }
+        return value
+    }
+
+    if (seen.has(value)) {
+        return seen.get(value)
+    }
+
+    if (value instanceof Date) {
+        return new Date(value.getTime())
+    }
+
+    if (value instanceof RegExp) {
+        return new RegExp(value.source, value.flags)
+    }
+
+    if (ArrayBuffer.isView(value)) {
+        const Ctor: any = (value as any).constructor
+        const copy = new Ctor(value as any)
+        seen.set(value, copy)
+        return copy
+    }
+
+    if (value instanceof Map) {
+        const copy = new Map()
+        seen.set(value, copy)
+        for (const [k, v] of value) copy.set(safeClone(k, seen), safeClone(v, seen))
+        return copy
+    }
+
+    if (value instanceof Set) {
+        const copy = new Set()
+        seen.set(value, copy)
+        for (const v of value) copy.add(safeClone(v, seen))
+        return copy
+    }
+
+    if (typeof value.get === 'function') {
+        try {
+            return safeClone(value.get({ plain: true }), seen)
+        } catch {
+            // fall through
+        }
+    }
+
+    if (Array.isArray(value)) {
+        const copy: any[] = []
+        seen.set(value, copy)
+        for (let i = 0; i < value.length; i++) {
+            copy[i] = safeClone(value[i], seen)
+        }
+        return copy
+    }
+
+    const copy: any = {}
+    seen.set(value, copy)
+
+    const keys = Reflect.ownKeys(value)
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i]
+        if (typeof key === 'symbol') continue
+
+        let v: any
+        try {
+            v = value[key]
+        } catch {
+            continue
+        }
+
+        if (typeof v === 'function') continue
+        if (v === undefined) continue
+
+        copy[key] = safeClone(v, seen)
+    }
+
+    return copy
+}
+
 function makeItemProxy(item: any, event: string, context: Context, transaction: Transaction | null = null): Item {
     let oldValues:any
     let oldChannels:any
     if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
         const rawItem = item.get({ plain: true })
-        oldValues = structuredClone(rawItem.values)
-        oldChannels = structuredClone(rawItem.channels)
+        oldValues = safeClone(rawItem.values)
+        oldChannels = safeClone(rawItem.channels)
     }
 
     return new Proxy(item, {
@@ -1696,7 +1778,7 @@ function makeItemRelationProxy(item: any, event: string | '', context: Context, 
     let oldValues:any
     if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
         const rawItem = item.get({ plain: true })
-        oldValues = structuredClone(rawItem.values)
+        oldValues = safeClone(rawItem.values)
     }
    
     return new Proxy(item, {
