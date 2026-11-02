@@ -5,11 +5,12 @@ import NodeCache = require('node-cache')
 import { Item } from '../../models/items'
 import logger from '../../logger'
 import { sequelize } from '../../models'
-import { Op } from 'sequelize'
+import { Op, QueryTypes } from 'sequelize'
 import { ItemRelation } from '../../models/itemRelations'
 import Context from '../../context'
 import { processItemActions } from '../../resolvers/utils'
 import { EventType } from '../../models/actions'
+import { v4 as uuidv4 } from 'uuid'
 
 const DNS_API = 'https://seller.dns-shop.ru/api/v1beta1'
 
@@ -113,16 +114,37 @@ export class DnsChannelHandler extends ChannelHandler {
         return headers
     }
 
-    private async dnsRequest(channel: Channel, context: JobContext | null, method: string, path: string, body?: any, extraHeaders?: any): Promise<DnsResponse> {
-        const url = path.indexOf('http') === 0 ? path : DNS_API + path
+    private async dnsRequest(channel: Channel, context: JobContext | null, method: string, path: string, body?: any, extraHeaders?: any, serializedBody?: string, timeout?: number): Promise<DnsResponse> {
+        const controller = timeout === undefined ? undefined : new AbortController()
+        const deadline = timeout === undefined ? undefined : Date.now() + timeout
+        const timer = timeout === undefined ? undefined : setTimeout(() => controller!.abort(), timeout)
+        try {
+            return await this.performDnsRequest(channel, context, method, path, body, extraHeaders, serializedBody, controller?.signal, deadline)
+        } finally {
+            if (timer !== undefined) clearTimeout(timer)
+        }
+    }
 
-        await this.waitForRateLimit()
+    private async performDnsRequest(channel: Channel, context: JobContext | null, method: string, path: string, body: any, extraHeaders: any, serializedBody: string | undefined, signal: AbortSignal | undefined, deadline: number | undefined): Promise<DnsResponse> {
+        const url = path.indexOf('http') === 0 ? path : DNS_API + path
+        const remainingTime = () => {
+            if (deadline === undefined) return undefined
+            const remaining = deadline - Date.now()
+            if (remaining <= 0) throw new Error('Превышено время запроса DNS')
+            return remaining
+        }
+
+        await this.waitForRateLimit(remainingTime())
 
         // global throttle: DNS rate limits per API key, keep requests spaced out
         const minInterval = parseInt(process.env.OPENPIM_DNS_REQUEST_DELAY || '250', 10)
         if (minInterval > 0) {
             const delta = Date.now() - this.lastRequestAt
-            if (delta < minInterval) await this.sleep(minInterval - delta)
+            if (delta < minInterval) {
+                const remaining = remainingTime()
+                if (remaining !== undefined && minInterval - delta > remaining) throw new Error('Ожидание лимита DNS превышает время запроса')
+                await this.sleep(minInterval - delta)
+            }
         }
         this.lastRequestAt = Date.now()
 
@@ -130,7 +152,9 @@ export class DnsChannelHandler extends ChannelHandler {
             method,
             headers: this.authHeaders(channel, extraHeaders)
         }
-        if (body !== undefined) request.body = JSON.stringify(body)
+        if (body !== undefined) request.body = serializedBody === undefined ? JSON.stringify(body) : serializedBody
+        if (signal) request.signal = signal
+        remainingTime()
 
         const log = 'DNS request: ' + method.toUpperCase() + ' ' + url + (body !== undefined ? ' => ' + JSON.stringify(body) : '')
         logger.info(log)
@@ -190,12 +214,13 @@ export class DnsChannelHandler extends ChannelHandler {
         }
     }
 
-    private async waitForRateLimit(): Promise<void> {
+    private async waitForRateLimit(maxWaitMs?: number): Promise<void> {
         if (this.rateLimitRemaining !== 0) return
 
         const waitMs = this.rateLimitResetAt === null
             ? 1000
             : Math.max(0, this.rateLimitResetAt - Date.now())
+        if (maxWaitMs !== undefined && waitMs > maxWaitMs) throw new Error('Ожидание лимита DNS превышает время запроса')
         if (waitMs > 0) await this.sleep(waitMs)
         this.rateLimitRemaining = null
         this.rateLimitResetAt = null
@@ -533,6 +558,38 @@ export class DnsChannelHandler extends ChannelHandler {
             return
         }
 
+        // Resolve an uncertain create before evaluating today's mappings or values.
+        let current: Item | null
+        try {
+            current = await Item.findByPk(item.id)
+        } catch (error: any) {
+            const message = 'Ошибка чтения состояния товара DNS ' + item.identifier + ': ' + error.message
+            logger.error(message)
+            context.log += message + '\n'
+            return
+        }
+        const currentData = current?.channels[channel.identifier]
+        const needsRecovery = !!currentData?.dnsPendingCreate
+        if (current && current.tenantId === channel.tenantId && needsRecovery) {
+            try {
+                await this.createProduct(channel, item, undefined, context)
+            } catch (error: any) {
+                const message = 'Ошибка восстановления создания товара DNS ' + item.identifier + ': ' + error.message
+                logger.error(message)
+                context.log += message + '\n'
+                const data = item.channels[channel.identifier]
+                data.status = 3
+                data.message = message
+                data.dnsError = true
+                try {
+                    await this.saveItemIfChanged(channel, item)
+                } catch (saveError: any) {
+                    logger.error('Не удалось сохранить ошибку восстановления DNS: ' + saveError.message)
+                }
+            }
+            return
+        }
+
         for (const categoryId in channel.mappings) {
             const categoryConfig = channel.mappings[categoryId]
             if (!categoryConfig || categoryConfig.deleted) continue
@@ -587,67 +644,128 @@ export class DnsChannelHandler extends ChannelHandler {
     }
 
     async saveItemIfChanged(channel: Channel, item: Item, changedValues: any = {}, dnsId: string = '') {
-        const reloadedItem = await Item.findByPk(item.id) // refresh item from DB (other channels can already change it)
-        if (!reloadedItem) return
-        let changed = false
-        let valuesChanged = false
-        const data = item.channels[channel.identifier]
-        const newChannels: any = {}
-        newChannels[channel.identifier] = JSON.parse(JSON.stringify(reloadedItem.channels[channel.identifier] || {}))
-        const tmp = newChannels[channel.identifier]
+        const saved = await sequelize.transaction(async transaction => {
+            const reloadedItem = await Item.findOne({ where: { id: item.id, tenantId: channel.tenantId }, transaction })
+            if (!reloadedItem) return
+            const before = JSON.parse(JSON.stringify(reloadedItem))
+            let changed = false
+            let valuesChanged = false
+            const data = item.channels[channel.identifier]
+            const newChannels: any = {}
+            newChannels[channel.identifier] = JSON.parse(JSON.stringify(reloadedItem.channels[channel.identifier] || {}))
+            const tmp = newChannels[channel.identifier]
 
-        const storedDnsId = ('' + (data.dnsId || dnsId || '')).trim()
-        if (storedDnsId && tmp.dnsId !== storedDnsId) {
-            changed = true
-            tmp.dnsId = storedDnsId
-        }
-        if (tmp.status !== data.status || tmp.message !== data.message) {
-            changed = true
-            tmp.status = data.status
-            tmp.message = data.message
-        }
-        if (typeof data.syncedAt !== 'undefined' && tmp.syncedAt !== data.syncedAt) {
-            changed = true
-            tmp.syncedAt = data.syncedAt
-        }
-        for (const field of ['dnsError', 'dnsNeedsResubmission']) {
-            if (typeof data[field] !== 'undefined' && tmp[field] !== data[field]) {
+            // A stale worker must not overwrite a create already completed by another worker.
+            if (tmp.dnsId && !data.dnsId) return
+
+            const storedDnsId = ('' + (data.dnsId || dnsId || '')).trim()
+            if (storedDnsId && tmp.dnsId !== storedDnsId) {
                 changed = true
-                tmp[field] = data[field]
+                tmp.dnsId = storedDnsId
             }
-        }
-        const productUrl = storedDnsId ? 'https://www.dns-shop.ru/product/' + storedDnsId + '/' : data.url
-        if (productUrl && tmp.url !== productUrl) {
-            changed = true
-            tmp.url = productUrl
-        }
-
-        if (changedValues && Object.keys(changedValues).length > 0) {
-            changed = true
-            valuesChanged = true
-        }
-        if (changed) {
-            const ctx = Context.createAs('admin', channel.tenantId)
-            try {
-                if (valuesChanged) {
-                    await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem, reloadedItem.parentIdentifier, reloadedItem.name, changedValues, newChannels, false, false, false, null, { updateFromDns: channel.identifier })
-                    reloadedItem.values = { ...reloadedItem.values, ...changedValues }
-                    reloadedItem.changed('values', true)
+            if (tmp.status !== data.status || tmp.message !== data.message) {
+                changed = true
+                tmp.status = data.status
+                tmp.message = data.message
+            }
+            if (typeof data.syncedAt !== 'undefined' && tmp.syncedAt !== data.syncedAt) {
+                changed = true
+                tmp.syncedAt = data.syncedAt
+            }
+            for (const field of ['dnsError', 'dnsNeedsResubmission']) {
+                if (typeof data[field] !== 'undefined' && tmp[field] !== data[field]) {
+                    changed = true
+                    tmp[field] = data[field]
                 }
-            } catch (err: any) {
-                tmp.status = 3
-                tmp.message = 'Ошибка: ' + err.message
             }
-            reloadedItem.channels = { ...reloadedItem.channels, ...newChannels }
-            reloadedItem.changed('channels', true)
+            const productUrl = storedDnsId ? 'https://www.dns-shop.ru/product/' + storedDnsId + '/' : data.url
+            if (productUrl && tmp.url !== productUrl) {
+                changed = true
+                tmp.url = productUrl
+            }
 
-            await sequelize.transaction(async (t) => {
-                await reloadedItem.save({ transaction: t })
-            })
-            if (valuesChanged) {
-                await processItemActions(ctx, EventType.AfterUpdate, reloadedItem, reloadedItem.parentIdentifier, reloadedItem.name, reloadedItem.values, reloadedItem.channels, false, false, false, null, { updateFromDns: channel.identifier })
+            if (changedValues && Object.keys(changedValues).length > 0) {
+                changed = true
+                valuesChanged = true
             }
+            if (changed) {
+                const ctx = Context.createAs('admin', channel.tenantId)
+                try {
+                    if (valuesChanged) {
+                        await processItemActions(ctx, EventType.BeforeUpdate, reloadedItem, reloadedItem.parentIdentifier, reloadedItem.name, changedValues, newChannels, false, false, false, transaction, { updateFromDns: channel.identifier })
+                        reloadedItem.values = { ...reloadedItem.values, ...changedValues }
+                        reloadedItem.changed('values', true)
+                    }
+                } catch (err: any) {
+                    tmp.status = 3
+                    tmp.message = 'Ошибка: ' + err.message
+                }
+                reloadedItem.channels = { ...reloadedItem.channels, ...newChannels }
+                const updated = await this.saveDnsItemChanges(channel, reloadedItem, before, transaction, !data.dnsId)
+                if (updated) return { item: updated, valuesChanged }
+            }
+            return undefined
+        })
+        if (saved && saved.valuesChanged) {
+            const ctx = Context.createAs('admin', channel.tenantId)
+            const reloadedItem = saved.item
+            await processItemActions(ctx, EventType.AfterUpdate, reloadedItem, reloadedItem.parentIdentifier, reloadedItem.name, reloadedItem.values, reloadedItem.channels, false, false, false, null, { updateFromDns: channel.identifier })
         }
+    }
+
+    // Persist hook changes as deltas against the current database JSON. An edit to
+    // one value/channel must not restore stale fields read before another Web save.
+    private async saveDnsItemChanges(channel: Channel, item: Item, before: any, transaction: any, uncreated = false): Promise<Item | undefined> {
+        const after = JSON.parse(JSON.stringify(item))
+        const delta = (oldValue: any, newValue: any) => {
+            const oldObject = oldValue && typeof oldValue === 'object' ? oldValue : {}
+            const newObject = newValue && typeof newValue === 'object' ? newValue : {}
+            const set: any = {}
+            for (const key of Object.keys(newObject)) {
+                if (JSON.stringify(newObject[key]) !== JSON.stringify(oldObject[key])) set[key] = newObject[key]
+            }
+            return { set, remove: Object.keys(oldObject).filter(key => !(key in newObject)) }
+        }
+        const assignments: string[] = []
+        const bind: any = { itemId: item.id, tenantId: channel.tenantId, channel: channel.identifier, idAttr: channel.config.dnsIdAttr, uncreated }
+        for (const column of ['name', 'values', 'relations']) {
+            const change = delta(before[column], after[column])
+            if (!Object.keys(change.set).length && !change.remove.length) continue
+            bind[column + 'Set'] = JSON.stringify(change.set)
+            bind[column + 'Removed'] = change.remove
+            assignments.push(`"${column}" = (COALESCE(NULLIF("${column}", 'null'::jsonb), '{}'::jsonb) - CAST($${column}Removed AS text[])) || CAST($${column}Set AS jsonb)`)
+        }
+        const channelsBefore = before.channels || {}
+        const channelsAfter = after.channels || {}
+        const channelChanges: any = {}
+        for (const identifier of Object.keys(channelsAfter)) {
+            const change = delta(channelsBefore[identifier], channelsAfter[identifier])
+            if (Object.keys(change.set).length || change.remove.length) channelChanges[identifier] = change
+        }
+        const channelsRemoved = Object.keys(channelsBefore).filter(key => !(key in channelsAfter))
+        if (Object.keys(channelChanges).length || channelsRemoved.length) {
+            bind.channelChanges = JSON.stringify(channelChanges)
+            bind.channelsRemoved = channelsRemoved
+            assignments.push(`"channels" = (COALESCE(NULLIF("channels", 'null'::jsonb), '{}'::jsonb) - CAST($channelsRemoved AS text[])) ||
+                COALESCE((SELECT jsonb_object_agg(entry.key,
+                    (COALESCE(NULLIF("items"."channels" -> entry.key, 'null'::jsonb), '{}'::jsonb) - ARRAY(SELECT jsonb_array_elements_text(entry.value -> 'remove'))) || (entry.value -> 'set'))
+                    FROM jsonb_each(CAST($channelChanges AS jsonb)) AS entry), '{}'::jsonb)`)
+        }
+        const excluded = ['id', 'tenantId', 'createdAt', 'updatedAt', 'deletedAt', 'name', 'values', 'relations', 'channels']
+        let index = 0
+        for (const column of Object.keys(before)) {
+            if (excluded.includes(column) || JSON.stringify(before[column]) === JSON.stringify(after[column])) continue
+            const parameter = 'scalar' + index++
+            bind[parameter] = after[column] === undefined ? null : after[column]
+            assignments.push('"' + column.replace(/"/g, '""') + '" = $' + parameter)
+        }
+        if (!assignments.length) return item
+        assignments.push('"updatedAt" = NOW()')
+        const rows = await sequelize.query<Item>(`UPDATE "items" SET ${assignments.join(', ')}
+            WHERE "id" = $itemId AND "tenantId" = $tenantId AND "deletedAt" IS NULL
+            AND (NOT CAST($uncreated AS boolean) OR (COALESCE("channels" #>> ARRAY[CAST($channel AS text), 'dnsId'], '') = '' AND COALESCE("values" ->> CAST($idAttr AS text), '') = ''))
+            RETURNING *`, { bind, transaction, type: QueryTypes.SELECT, model: Item, mapToModel: true })
+        return rows[0]
     }
 
     async processItemInCategory(channel: Channel, item: Item, categoryConfig: any, language: string, context: JobContext): Promise<any> {
@@ -734,7 +852,7 @@ export class DnsChannelHandler extends ChannelHandler {
 
         // spec options
         const specAttrs = await this.getAttributes(channel, categoryConfig.id)
-        const optionValues: Record<string, string> = {}
+        const optionValues: Record<string, string[]> = {}
         for (const opt of specAttrs as any[]) {
             if (!opt.id || opt.id.indexOf(OPTION_PREFIX) !== 0) continue
             const cfg = attrs.find((a: any) => a.id === opt.id)
@@ -761,7 +879,7 @@ export class DnsChannelHandler extends ChannelHandler {
                 mapped.push('' + sv)
             }
             if (mapped.length > 0) {
-                optionValues[optionId.replace(/-/g, '')] = opt.multiValue ? mapped.join(', ') : mapped[0]
+                optionValues[optionId.replace(/-/g, '')] = opt.multiValue ? mapped : [mapped[0]]
             }
         }
 
@@ -769,7 +887,7 @@ export class DnsChannelHandler extends ChannelHandler {
         product.uniformSpecId = parsed.specId
         if (Object.keys(optionValues).length > 0) product.specOptionValues = optionValues
 
-        const existingId = item.values[channel.config.dnsIdAttr] ? ('' + item.values[channel.config.dnsIdAttr]).trim() : ''
+        const existingId = ('' + (item.values[channel.config.dnsIdAttr] || data.dnsId || '')).trim()
         let rejected = false
         let currentProduct: any = null
         if (existingId) {
@@ -832,27 +950,7 @@ export class DnsChannelHandler extends ChannelHandler {
         }
 
         if (!existingId) {
-            // create
-            const res = await this.dnsRequest(channel, context, 'post', '/products', product)
-            if (res.status !== 201) {
-                const msg = 'Ошибка создания товара в DNS: ' + this.describeError(res)
-                context.log += msg
-                this.reportChannelError(channel, item, msg, true)
-                return changedValues
-            }
-            const created = res.json || {}
-            const dnsId = created.id || this.extractLocationId(res.headers)
-            if (dnsId) {
-                changedValues[channel.config.dnsIdAttr] = dnsId
-                data.dnsId = dnsId
-                data.url = 'https://www.dns-shop.ru/product/' + dnsId + '/'
-            }
-            Object.assign(changedValues, this.getDnsCodeValues(channel, created))
-            data.status = 4
-            data.message = JSON.stringify(created)
-            data.dnsError = false
-            data.dnsNeedsResubmission = false
-            item.changed('channels', true)
+            await this.createProduct(channel, item, product, context)
         } else {
             // Both edit resources fully replace characteristics/media and require their own revision.
             const revisionHeader = editResource === 'rejection-correction' ? 'If-Product-Rejection-Correction-Revision' : 'If-Product-Uniform-Revision'
@@ -880,6 +978,93 @@ export class DnsChannelHandler extends ChannelHandler {
         }
 
         return changedValues
+    }
+
+    private async createProduct(channel: Channel, item: Item, product: any | undefined, context: JobContext): Promise<void> {
+        if (process.env.OPENPIM_DNS_EMULATION === 'true') {
+            context.log += 'Эмуляция DNS: сохранённый запрос создания не отправлен\n'
+            return
+        }
+        // Commit serialized request bytes before HTTP. Recovery happens before mappings.
+        const operation = await sequelize.transaction(async transaction => {
+            const current = await Item.findOne({ where: { id: item.id, tenantId: channel.tenantId }, transaction })
+            if (!current) throw new Error('Товар не найден: ' + item.id)
+            const data = current.channels[channel.identifier] || {}
+            if (data.dnsId || current.values?.[channel.config.dnsIdAttr]) return null
+            if (data.dnsPendingCreate) return data.dnsPendingCreate
+            if (product === undefined) return null
+            const pending = { key: '"' + uuidv4() + '"', body: JSON.stringify(product) }
+            const before = JSON.parse(JSON.stringify(current))
+            current.channels = { ...current.channels, [channel.identifier]: { ...data, dnsPendingCreate: pending } }
+            const updated = await this.saveDnsItemChanges(channel, current, before, transaction, true)
+            return updated?.channels[channel.identifier]?.dnsPendingCreate || null
+        })
+        if (!operation) return
+        if (typeof operation.key !== 'string' || !/^"[0-9a-f-]{36}"$/.test(operation.key) || typeof operation.body !== 'string') {
+            throw new Error('Некорректная сохранённая операция создания DNS; требуется проверка состояния товара')
+        }
+        const body = JSON.parse(operation.body)
+        const patch: any = {}
+        const values: any = {}
+        let res: DnsResponse | undefined
+        // No database transaction or row lock spans HTTP. The configured channel has one sender.
+        try {
+            res = await this.dnsRequest(channel, context, 'post', '/products', body, { 'Idempotency-Key': operation.key }, operation.body, 30000)
+        } catch (error: any) {
+            patch.status = 3
+            patch.dnsError = true
+            patch.message = 'Результат создания товара DNS неизвестен: ' + error.message + '. Повторная отправка использует сохранённый запрос.'
+            context.log += patch.message + '\n'
+        }
+        let removePending = false
+        if (res) {
+            const created = res.json || {}
+            const dnsId = res.status === 201 ? created.id || this.extractLocationId(res.headers) : ''
+            const rejected = res.status >= 400 && res.status < 500 && ![408, 409, 429].includes(res.status) && !created.params
+            removePending = !!dnsId || rejected
+            if (dnsId) {
+                values[channel.config.dnsIdAttr] = dnsId
+                Object.assign(values, this.getDnsCodeValues(channel, created))
+                Object.assign(patch, { dnsId, url: 'https://www.dns-shop.ru/product/' + dnsId + '/', status: 4,
+                    message: JSON.stringify(created), dnsError: false, dnsNeedsResubmission: false })
+            } else {
+                patch.status = 3
+                patch.dnsError = true
+                patch.message = res.status === 201
+                    ? 'DNS принял запрос, но не вернул идентификатор товара. Повторная отправка использует сохранённый запрос.'
+                    : 'Ошибка создания товара в DNS: ' + this.describeError(res)
+                context.log += patch.message + '\n'
+            }
+        }
+        const saved = await sequelize.transaction(async transaction => {
+            const current = await Item.findOne({ where: { id: item.id, tenantId: channel.tenantId }, transaction })
+            if (!current) throw new Error('Товар не найден: ' + item.id)
+            const before = JSON.parse(JSON.stringify(current))
+            const channels = { [channel.identifier]: { ...current.channels[channel.identifier], ...patch } }
+            if (removePending) delete channels[channel.identifier].dnsPendingCreate
+            else channels[channel.identifier].dnsPendingCreate = operation
+            const valuesChanged = Object.keys(values).length > 0
+            if (valuesChanged) {
+                const ctx = Context.createAs('admin', channel.tenantId)
+                await processItemActions(ctx, EventType.BeforeUpdate, current, current.parentIdentifier, current.name, values, channels, false, false, false, transaction, { updateFromDns: channel.identifier })
+                current.values = { ...current.values, ...values }
+            }
+            current.channels = { ...current.channels, ...channels }
+            const updated = await this.saveDnsItemChanges(channel, current, before, transaction)
+            return { current: updated || current, valuesChanged: !!updated && valuesChanged }
+        })
+        item.channels = saved.current.channels
+        item.values = saved.current.values
+        if (saved.valuesChanged) {
+            const ctx = Context.createAs('admin', channel.tenantId)
+            try {
+                await processItemActions(ctx, EventType.AfterUpdate, saved.current, saved.current.parentIdentifier, saved.current.name, saved.current.values, saved.current.channels, false, false, false, null, { updateFromDns: channel.identifier })
+            } catch (error: any) {
+                const message = 'Товар создан в DNS, ошибка AfterUpdate: ' + error.message
+                logger.error(message)
+                context.log += message + '\n'
+            }
+        }
     }
 
     private buildMedia(product: any): any[] {
