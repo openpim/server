@@ -238,20 +238,22 @@ export class ModelManager {
             for (let i = 0; i < serversArr.length; i++) {
                 const server = serversArr[i]
                 const request = `query { reloadModelRemotely( id: "${id}", parentId: "${parentId}", serverUuid: "${serverUuid}", entity: ${entity}, del: ${del} ) }`
-                const query = { query: request }
-                logger.info(`Reloading model remotely for server ${server}, entity: ${entity}, id: ${id}, del: ${del}`)
-                try {
-                    const res = await fetch(server + '/graphql', {
-                        method: 'post',
-                        body: JSON.stringify(query),
-                        headers: { 'Content-Type': 'application/json', 'x-token': xToken },
-                    })
-                    const json = await res.json()
-                    logger.debug(JSON.stringify(json))
-                } catch (err) {
-                    logger.error(`Failed to reload model remotely for server ${server}`)
-                    logger.error(err)
-                }
+                const query = { query: request };
+                (async () => {
+                    logger.info(`Reloading model remotely for server ${server}, entity: ${entity}, id: ${id}, del: ${del}`)
+                    try {
+                        const res = await fetch(server + '/graphql', {
+                            method: 'post',
+                            body: JSON.stringify(query),
+                            headers: { 'Content-Type': 'application/json', 'x-token': xToken },
+                        })
+                        const json = await res.json()
+                        logger.debug(JSON.stringify(json))
+                    } catch (err) {
+                        logger.error(`Failed to reload model remotely for server ${server}`)
+                        logger.error(err)
+                    }
+                })()
             }
         }
     }
