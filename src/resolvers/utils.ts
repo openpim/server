@@ -1631,6 +1631,8 @@ export function safeClone(value: any, seen: any = new WeakMap()): any {
 }
 
 function makeItemProxy(item: any, event: string, context: Context, transaction: Transaction | null = null): Item {
+    if (util.types.isProxy(item)) return item
+
     let oldValues:any
     let oldChannels:any
     if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
@@ -1775,6 +1777,8 @@ export async function processItemRelationActions(context: Context, event: EventT
 }
 
 function makeItemRelationProxy(item: any, event: string | '', context: Context, transaction: Transaction | null = null) {
+    if (util.types.isProxy(item)) return item
+
     let oldValues:any
     if (audit.auditEnabled() && (event === 'AfterCreate' || event === 'AfterUpdate')) {
         const rawItem = item.get({ plain: true })
