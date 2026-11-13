@@ -35,7 +35,7 @@ class Audit {
             })
         } catch (err:any) {
             logger.error(err)
-            logger.error("Error sending audit for item: " + JSON.stringify(err.meta.body.error)+", body: "+JSON.stringify(body))
+            logger.error("Error sending audit for item: " + JSON.stringify(err.meta?.body?.error)+", body: "+JSON.stringify(body))
         }
     }
 
@@ -57,7 +57,7 @@ class Audit {
             })
         } catch (err:any) {
             logger.error(err)
-            logger.error("Error sending audit for item relation" + JSON.stringify(err.meta.body.error) + ", body: "+JSON.stringify(body))
+            logger.error("Error sending audit for item relation" + JSON.stringify(err.meta?.body?.error) + ", body: "+JSON.stringify(body))
         }
     }
 
