@@ -641,14 +641,14 @@ export class WBNewChannelHandler extends ChannelHandler {
         // request to WB
         let request: any = { vendorCode: productCode, dimensions: { length: length || 0, width: width || 0, height: height || 0, weightBrutto: weightBrutto || 0 }, characteristics: [], sizes: [{ wbSize: "", skus: barcode ? (Array.isArray(barcode) ? barcode : ['' + barcode]) : []}]}
         if (price) request.sizes[0].price = price
-
+        
         if (nmID) {
             const existUrl = 'https://content-api.wildberries.ru/content/v2/get/cards/list'
             const existsBody = {	
                 settings: {
                     filter: {
                         withPhoto: -1,
-                        textSearch: productCode
+                        imtID: item.values[channel.config.imtIDAttr]
                     }
                 }
             }
@@ -656,6 +656,7 @@ export class WBNewChannelHandler extends ChannelHandler {
             if (serverConfig.wbRequestDelay) await this.sleep(serverConfig.wbRequestDelay)
             let msg = "Sending request Windberries: " + existUrl + " => " + JSON.stringify(existsBody)
             logger.info(msg)
+            if (channel.config.debug) context.log += msg+'\n'
             const resExisting = await fetch(existUrl, {
                 method: 'post',
                 body:    JSON.stringify(existsBody),
@@ -670,7 +671,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 return
             } else {
                 const json = await resExisting.json()
-                // if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json)+'\n'
+                if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json).slice(0, 100);+'\n'
                 const tst = json.cards.find((elem:any) => elem.nmID == nmID)
                 if (tst) {
                     request = tst
