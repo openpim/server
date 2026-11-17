@@ -18,6 +18,8 @@ import procResolvers from './processes'
 import tempResolvers from './templates'
 import authResolvers from './auth'
 import reloadResolvers from './reload'
+import aiChatResolvers from './aiChat'
+import { publicServerConfig } from '../ai/config'
 import mediaResolvers from './media'
 import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json'
 import LanguageDependentString from './utils/languageDependentString'
@@ -71,9 +73,7 @@ const resolver = {
             return 'pong'
         },
         serverConfig: () =>  {
-            const config = ModelManager.getServerConfig()
-            delete config.storage
-            return config
+            return publicServerConfig(ModelManager.getServerConfig())
         },
         nextId: async (parent: any, {seqName}: any, context: Context) => {
             context.checkAuth()
@@ -221,7 +221,8 @@ export default {
         ...tempResolvers.Query,
         ...authResolvers.Query,
         ...reloadResolvers.Query,
-        ...mediaResolvers.Query
+        ...mediaResolvers.Query,
+        ...aiChatResolvers.Query
     },
     Mutation: {
         ...resolver.Mutation,
@@ -241,8 +242,10 @@ export default {
         ...colResolvers.Mutation,
         ...procResolvers.Mutation,
         ...tempResolvers.Mutation,
-        ...importConfigResolvers.Mutation
+        ...importConfigResolvers.Mutation,
+        ...aiChatResolvers.Mutation
     },
+    AiChatMessage: aiChatResolvers.AiChatMessage,
     SearchResponse: {
         ...searchResolvers.SearchResponse
     },

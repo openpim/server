@@ -1,0 +1,42 @@
+type AiChatAvailability {
+  available: Boolean!
+  maxInputChars: Int!
+}
+type AiChat {
+  id: ID!
+  title: String!
+  createdAt: UTCDateTime!
+  updatedAt: UTCDateTime!
+}
+type AiChatMessage {
+  id: ID!
+  chatId: ID!
+  role: String!
+  content: String!
+  status: String!
+  error: String
+  responseDetails: JSON!
+  contextTruncated: Boolean!
+  createdAt: UTCDateTime!
+}
+type AiChatsPage {
+  rows: [AiChat!]!
+  total: Int!
+}
+type AiChatMessagesPage {
+  rows: [AiChatMessage!]!
+  total: Int!
+}
+type Query {
+  aiChatAvailability: AiChatAvailability!
+  aiChats(offset: Int = 0, limit: Int = 50): AiChatsPage!
+  aiChatMessages(chatId: ID!, offset: Int = 0, limit: Int = 50): AiChatMessagesPage!
+}
+type Mutation {
+  createAiChat: AiChat!
+  renameAiChat(id: ID!, title: String!): AiChat!
+  deleteAiChat(id: ID!): Boolean!
+  sendAiChatMessage(chatId: ID!, content: String!, requestId: ID!): AiChatMessage!
+  retryAiChatMessage(id: ID!): AiChatMessage!
+  cancelAiChatMessage(id: ID!): Boolean!
+}

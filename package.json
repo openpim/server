@@ -17,6 +17,7 @@
     "@aws-sdk/client-s3": "^3.600.0",
     "@elastic/elasticsearch": "^8.1.0",
     "@graphql-tools/schema": "^10.0.35",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "adm-zip": "^0.5.9",
     "archiver": "^5.3.1",
     "bcryptjs": "^2.4.3",
