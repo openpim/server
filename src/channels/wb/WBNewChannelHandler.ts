@@ -671,7 +671,7 @@ export class WBNewChannelHandler extends ChannelHandler {
                 return
             } else {
                 const json = await resExisting.json()
-                if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json).slice(0, 100);+'\n'
+                if (channel.config.debug) context.log += 'received response (load existing data):'+JSON.stringify(json).slice(0, 100)+'\n'
                 const tst = json.cards.find((elem:any) => elem.nmID == nmID)
                 if (tst) {
                     request = tst

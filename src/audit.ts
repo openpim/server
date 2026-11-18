@@ -1,14 +1,26 @@
 import { Client, ClientOptions } from '@elastic/elasticsearch'
+import { Client as ClientOpenSearch } from '@opensearch-project/opensearch'
 import logger from "./logger"
 
 class Audit {
-    private client: Client | null = null
+    private client: any | null = null
 
     public getClient() {
         if (!this.client) {
-            const config:ClientOptions = { node: process.env.AUDIT_URL }
-            if (process.env.AUDIT_USER && process.env.AUDIT_PASSWORD) config.auth = { username: process.env.AUDIT_USER, password: process.env.AUDIT_PASSWORD }
-            this.client = new Client(config)
+            if(process.env.AUDIT_MODE === 'OpenSearch') {
+                let nodeUrl = process.env.AUDIT_URL
+                if (process.env.AUDIT_USER && process.env.AUDIT_PASSWORD) {
+                    const auth = process.env.AUDIT_USER + ':' + process.env.AUDIT_PASSWORD
+                    nodeUrl = nodeUrl?.replace('://', '://' + auth + '@')
+                }
+                logger.info(`Using OpenSearch audit mode with url: ${nodeUrl?.replace(process.env.AUDIT_PASSWORD!, '<REDACTED>')}`)
+                this.client = new ClientOpenSearch({ node: nodeUrl })
+            } else {
+                const config:ClientOptions = { node: process.env.AUDIT_URL }
+                if (process.env.AUDIT_USER && process.env.AUDIT_PASSWORD) config.auth = { username: process.env.AUDIT_USER, password: process.env.AUDIT_PASSWORD }
+                logger.info(`Using Elasticsearch audit mode`)
+                this.client = new Client(config)
+            }
         }
         return this.client
     }    
@@ -78,8 +90,9 @@ class Audit {
                     sort: sort
                 }
             })
-            if (response.hits) {
-                return { count: response.hits.total.value, rows: response.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+            const body = process.env.AUDIT_MODE === 'OpenSearch' ? response.body?.hits : response.hits
+            if (body) {
+                return { count: body.total.value, rows: body.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
             } else {
                 logger.error(`Error getting audit for item, received response: ${JSON.stringify(response)}`)
                 return { count: 0, rows: []}
@@ -107,8 +120,9 @@ class Audit {
                         sort: sort
                     }
                 })
-                if (response.hits) {
-                    return { count: response.hits.total.value, rows: response.hits.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
+                const body = process.env.AUDIT_MODE === 'OpenSearch' ? response.body?.hits : response.hits
+                if (body) {
+                    return { count: body.total.value, rows: body.hits.map((elem:any) => { elem._source.id = elem._id; return elem._source })}
                 } else {
                     logger.error(`Error getting audit for item relation, received response: ${JSON.stringify(response)}`)
                     return { count: 0, rows: []}                
