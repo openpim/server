@@ -17,7 +17,7 @@ export class OpenAICompatibleProvider implements AiProvider {
         const response = await fetch(this.config.provider.baseUrl.replace(/\/$/, '') + '/chat/completions', {
             method: 'POST', redirect: 'error', signal: signal as any,
             size: this.config.limits.maxResponseBytes,
-            headers: { 'content-type': 'application/json', authorization: `Bearer ${this.config.provider.apiKey}` },
+            headers: { 'content-type': 'application/json', authorization: `Bearer ${this.config.provider.apiKey}`, ...(this.config.provider.headers || {}) },
             body: JSON.stringify({ model: this.config.provider.model, messages,
                 ...(tools.length ? { tools, tool_choice: 'auto' } : {}),
                 [this.config.provider.maxTokensParameter || 'max_tokens']: this.config.limits.maxOutputTokens, stream: false })

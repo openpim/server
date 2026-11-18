@@ -1,7 +1,7 @@
 export interface ChatIdentity { id: number; tenantId: string }
 export interface ChatConfig {
     tenantId: string
-    provider: { adapter: string; baseUrl: string; apiKey: string; model: string; maxTokensParameter?: 'max_tokens' | 'max_completion_tokens' }
+    provider: { adapter: string; baseUrl: string; apiKey: string; model: string; maxTokensParameter?: 'max_tokens' | 'max_completion_tokens'; headers?: Record<string, string> }
     mcp: { url: string; bearerToken: string }
     limits: {
         requestTimeoutMs: number; maxToolRounds: number; maxToolCalls: number
@@ -48,7 +48,16 @@ export function readChatConfig(server: any): ChatConfig {
     }
     // The product contract permits only one active request per user.
     limits.maxConcurrentRequestsPerUser = 1
-    return { ...raw, provider: { ...raw.provider, maxTokensParameter }, limits }
+    // Optional provider headers (gateways may require routing headers such as x-opencode-session).
+    // Authorization and content-type stay under the server's control.
+    const headers: Record<string, string> = {}
+    for (const [key, value] of Object.entries(raw.provider?.headers || {})) {
+        const name = String(key).trim().toLowerCase()
+        if (!name || name === 'authorization' || name === 'content-type') continue
+        if (typeof value !== 'string' || !value.trim()) continue
+        headers[name] = value
+    }
+    return { ...raw, provider: { ...raw.provider, maxTokensParameter, headers }, limits }
 }
 
 export function publicServerConfig(server: any): any {
